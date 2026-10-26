@@ -16,6 +16,7 @@
 		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
+		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
 		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		B1A1CC022C00000400000001 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				B1A1E1F02C00000100000008 /* CoinPusherView.swift */,
+				B1A1CC022C00000400000001 /* SlotMachineView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -227,6 +230,7 @@
 				B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */,
 				B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */,
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
+				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -1,8 +1,6 @@
 import SwiftUI
 
-// Slot models moved to GameState.swift to avoid scope issues across folders.
-
-// MARK: - V7.0 老虎机视图 - 参考顶级Slot游戏设计
+// MARK: - 老虎机视图
 
 struct SlotMachineView: View {
     let reels: [[SlotSymbol]]
@@ -29,8 +27,7 @@ struct SlotMachineView: View {
             
             // 旋转按钮
             SpinButton(spinState: spinState, action: onSpin)
-                // 使用设计系统常量进行自适应定位，避免硬编码
-                .position(x: UIScreen.main.bounds.width * DS.spinButtonXPercent, y: 70)
+                .position(x: 320, y: 70)
         }
     }
 }
@@ -38,35 +35,61 @@ struct SlotMachineView: View {
 // MARK: - 老虎机外框
 
 struct SlotMachineFrame: View {
+    @State private var blink = false
+    
     var body: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.15, green: 0.08, blue: 0.03),
-                        Color(red: 0.25, green: 0.12, blue: 0.06),
-                        Color(red: 0.15, green: 0.08, blue: 0.03)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.yellow.opacity(0.9),
-                                Color.orange.opacity(0.7),
-                                Color.yellow.opacity(0.9)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 4
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.15, green: 0.08, blue: 0.03),
+                            Color(red: 0.25, green: 0.12, blue: 0.06),
+                            Color(red: 0.15, green: 0.08, blue: 0.03)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-            )
-            .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
+                )
+                .overlay(
+                    ZStack {
+                        // 金色外圈
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.yellow, .orange, .yellow],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 4
+                            )
+                        
+                        // 闪烁彩灯
+                        ForEach(0..<12) { i in
+                            Circle()
+                                .fill(blinkColor(i))
+                                .frame(width: 6, height: 6)
+                                .offset(y: -75)
+                                .rotationEffect(.degrees(Double(i) * 30))
+                        }
+                    }
+                )
+                .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
+                blink.toggle()
+            }
+        }
+    }
+    
+    func blinkColor(_ i: Int) -> Color {
+        let colors: [Color] = [.red, .yellow, .blue, .green]
+        if blink {
+            return colors[(i + 1) % colors.count]
+        } else {
+            return colors[i % colors.count]
+        }
     }
 }
 
@@ -116,6 +139,8 @@ struct SlotReelView: View {
                     offset = 0
                 }
             }
+        case .revealing:
+            break
         case .spinIdle:
             break
         }
@@ -301,28 +326,5 @@ struct SpinButton: View {
         }
         .disabled(isSpinning)
         .opacity(isSpinning ? 0.8 : 1.0)
-    }
-}
-
-// MARK: - 预览
-
-struct SlotMachineView_Previews: PreviewProvider {
-    static var sampleReels: [[SlotSymbol]] = [
-        [SlotSymbol(type: .seven), SlotSymbol(type: .bar), SlotSymbol(type: .wild)],
-        [SlotSymbol(type: .heart), SlotSymbol(type: .seven), SlotSymbol(type: .diamond)],
-        [SlotSymbol(type: .star), SlotSymbol(type: .nine), SlotSymbol(type: .jack)],
-        [SlotSymbol(type: .king), SlotSymbol(type: .bar), SlotSymbol(type: .seven)],
-        [SlotSymbol(type: .wild), SlotSymbol(type: .heart), SlotSymbol(type: .star)]
-    ]
-    
-    static var previews: some View {
-        SlotMachineView(
-            reels: sampleReels,
-            spinState: .spinIdle,
-            onSpin: {}
-        )
-        .frame(height: 140)
-        .padding()
-        .background(Color.black)
     }
 }
