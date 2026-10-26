@@ -19,6 +19,16 @@
 		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		B1A1CC032C00000400000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B1A1E1D72C00000100000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B1A1E1DE2C00000100000000;
+			remoteInfo = CoinBounce;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		B1A1E1DF2C00000100000000 /* CoinBounce.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoinBounce.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1E1E22C00000100000001 /* CoinBounceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceApp.swift; sourceTree = "<group>"; };
@@ -164,6 +174,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				B1A1CC042C00000400000001 /* PBXTargetDependency */,
 			);
 			name = CoinBounceTests;
 			productName = CoinBounceTests;
@@ -244,6 +255,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B1A1CC042C00000400000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B1A1E1DE2C00000100000000 /* CoinBounce */;
+			targetProxy = B1A1CC032C00000400000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B1A1E1F42C00000100000000 /* Debug */ = {
