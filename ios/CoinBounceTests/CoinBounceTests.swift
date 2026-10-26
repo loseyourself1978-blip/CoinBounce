@@ -110,6 +110,26 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertGreaterThan(updatedCoin.y, -200, "重力作用下金币应向下移动")
     }
 
+    func test_frameDelta_usesActualInterval() {
+        XCTAssertEqual(GameState.clampedFrameDelta(1.0 / 120.0), 1.0 / 120.0, accuracy: 1e-9, "120Hz 帧应使用实际间隔")
+        XCTAssertEqual(GameState.clampedFrameDelta(1.0 / 60.0), 1.0 / 60.0, accuracy: 1e-9)
+    }
+
+    func test_frameDelta_isCapped() {
+        XCTAssertEqual(GameState.clampedFrameDelta(0.5), GameConstants.maxFrameDelta, "掉帧时步长不应超过上限")
+        XCTAssertEqual(GameState.clampedFrameDelta(0), GameConstants.defaultFrameDelta, "无效间隔回落到默认步长")
+    }
+
+    func test_physics_halfStepMovesLessThanFullStep() {
+        state.active2DCoins = [Active2DCoin(x: 0, y: -200, vx: 0, vy: 100)]
+        state.step(dt: 1.0 / 120.0)
+        let half = state.active2DCoins[0].y + 200
+        state.active2DCoins = [Active2DCoin(x: 0, y: -200, vx: 0, vy: 100)]
+        state.step(dt: 1.0 / 60.0)
+        let full = state.active2DCoins[0].y + 200
+        XCTAssertLessThan(half, full, "步长越小金币位移越小")
+    }
+
     func test_physics_boundary_bounce() {
         var coin = Active2DCoin(x: -150, y: -200, vx: -100, vy: 0)
         state.active2DCoins.append(coin)

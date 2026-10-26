@@ -188,6 +188,7 @@ class GameState: ObservableObject {
     @Published var pusherOffset: CGFloat = 0
 
     private var displayLink: CADisplayLink?
+    private var lastFrameTimestamp: CFTimeInterval?
     private var comboResetTimer: Timer?
 
     // MARK: - 物理常量
@@ -233,15 +234,38 @@ class GameState: ObservableObject {
     }
 
     func startDisplayLink() {
-        displayLink = CADisplayLink(target: self, selector: #selector(updateFrame))
+        // 只保留一个 display link，重复调用（如 onAppear）不会叠加物理步进
+        guard displayLink == nil else { return }
+        lastFrameTimestamp = nil
+        displayLink = CADisplayLink(target: self, selector: #selector(displayLinkFired(_:)))
         displayLink?.preferredFramesPerSecond = 60
         displayLink?.add(to: .main, forMode: .common)
     }
 
+    @objc private func displayLinkFired(_ link: CADisplayLink) {
+        let raw: CFTimeInterval
+        if let last = lastFrameTimestamp {
+            raw = link.timestamp - last
+        } else {
+            raw = link.targetTimestamp - link.timestamp
+        }
+        lastFrameTimestamp = link.timestamp
+        step(dt: GameState.clampedFrameDelta(raw))
+    }
+
+    /// 实际帧间隔 → 物理步长，上限 GameConstants.maxFrameDelta
+    static func clampedFrameDelta(_ raw: CFTimeInterval) -> CGFloat {
+        guard raw > 0 else { return GameConstants.defaultFrameDelta }
+        return min(CGFloat(raw), GameConstants.maxFrameDelta)
+    }
+
+    /// 以 60Hz 固定步长推进一帧（供测试使用）
+    func updateFrame() {
+        step(dt: GameConstants.defaultFrameDelta)
+    }
+
     // MARK: - 物理更新（V8.0: 空间网格优化防卡顿）
-    @objc func updateFrame() {
-        let dt: CGFloat = 1.0 / 60.0
-        
+    func step(dt: CGFloat) {
         // === 滑块控制 ===
         sliderTime += dt
         coinSliderOffset = coinSliderRange * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))

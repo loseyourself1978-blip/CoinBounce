@@ -35,6 +35,10 @@ struct GameConstants {
     static let enemyMaxHealth: Int = 5
     static let cardLightGoal: Int = 7
 
+    // Frame timing
+    static let defaultFrameDelta: CGFloat = 1.0 / 60.0
+    static let maxFrameDelta: CGFloat = 1.0 / 30.0   // 掉帧时限制单步时长，防止金币穿透
+
     // Moving Deflector
     static let deflectorOscillationSpeed: Double = 1.5
 
