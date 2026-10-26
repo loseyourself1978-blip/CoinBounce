@@ -805,6 +805,8 @@ struct HollowBonusSliderTarget: View {
                 Text("BONUS")
                     .font(.system(size: min(exactWidth * 0.2, h * 0.4), weight: .black))
                     .foregroundColor(.yellow)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
             }
         }
         .frame(width: exactWidth, height: h)

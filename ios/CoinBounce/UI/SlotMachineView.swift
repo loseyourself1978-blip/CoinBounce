@@ -68,14 +68,14 @@ struct SlotMachineFrame: View {
                                 lineWidth: 4
                             )
                         
-                        // 闪烁彩灯
-                        ForEach(0..<12) { i in
-                            Circle()
-                                .fill(blinkColor(i))
-                                .frame(width: 6, height: 6)
-                                .offset(y: -75)
-                                .rotationEffect(.degrees(Double(i) * 30))
+                        // 闪烁彩灯：沿上下边框排列，不超出外框
+                        VStack {
+                            lightRow(offset: 0)
+                            Spacer()
+                            lightRow(offset: 1)
                         }
+                        .padding(.vertical, 1)
+                        .padding(.horizontal, 18)
                     }
                 )
                 .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
@@ -87,6 +87,17 @@ struct SlotMachineFrame: View {
         }
     }
     
+    private func lightRow(offset: Int) -> some View {
+        HStack {
+            ForEach(0..<8) { i in
+                Circle()
+                    .fill(blinkColor(i + offset))
+                    .frame(width: 5, height: 5)
+                if i < 7 { Spacer(minLength: 0) }
+            }
+        }
+    }
+
     func blinkColor(_ i: Int) -> Color {
         let colors: [Color] = [.red, .yellow, .blue, .green]
         if blink {
@@ -129,6 +140,8 @@ struct SlotReelView: View {
                 handleSpinStateChange(newState, symbolHeight: symbolHeight)
             }
         }
+        // 只显示 3 行，滚动中的其余符号不溢出到下方区域
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private func handleSpinStateChange(_ state: SlotSpinState, symbolHeight: CGFloat) {
