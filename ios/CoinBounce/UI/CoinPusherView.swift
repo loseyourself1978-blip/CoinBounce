@@ -9,6 +9,7 @@ struct CoinPusherView: View {
     @ObservedObject private var ads = AdsManager.shared
     @State private var arrowBounce = false
     @State private var showNoCoinsHint = false
+    @State private var showSettings = false
 
     var body: some View {
         // 外层不忽略安全区，才能读到真实的安全区边距；内容再铺满整屏
@@ -132,6 +133,9 @@ struct CoinPusherView: View {
         if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
             gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
         }
+        if ProcessInfo.processInfo.arguments.contains("-debugShowSettings") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showSettings = true }
+        }
         if ProcessInfo.processInfo.arguments.contains("-debugAutoAd") {
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
                 guard AdsManager.shared.isAdReady else { return }
@@ -184,6 +188,14 @@ struct CoinPusherView: View {
             CoinBalanceView(coins: gameState.availableCoins)
                 .padding(.leading, 10)
                 .padding(.top, 6)
+        }
+        .overlay(alignment: .topTrailing) {
+            SettingsButton { showSettings = true }
+                .padding(.trailing, 10)
+                .padding(.top, 4)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
 
