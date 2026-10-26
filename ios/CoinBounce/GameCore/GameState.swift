@@ -115,7 +115,7 @@ class GameState: ObservableObject {
     static let shared = GameState()
 
     // MARK: - 核心数值
-    @Published var availableCoins: Int = 1000
+    @Published var availableCoins: Int = GameConstants.initialCoins
     @Published var totalCoinsWon: Int = 0
     @Published var currentMode: ModeType = .pusher
     @Published var currentLevel: Int = 3
@@ -440,7 +440,7 @@ class GameState: ObservableObject {
         let coinRadius: CGFloat = 14
         let dropped = bedCoins.filter { $0.y > bedLength - coinRadius }
         if !dropped.isEmpty {
-            addCoins(dropped.count * 10)
+            addCoins(dropped.count * GameConstants.bedDropReward)
             bedCoins.removeAll { $0.y > bedLength - coinRadius }
         }
 
@@ -531,9 +531,8 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.litFruitIndex = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
-            addFloatingScore(text: "+10", x: fruitCenterXPositions[index], y: fruitRowYTop, color: .yellow)
-            availableCoins += 10
-            totalCoinsWon += 10
+            addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: fruitCenterXPositions[index], y: fruitRowYTop, color: .yellow)
+            addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.showCardSelection = true }
             }
@@ -666,31 +665,34 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); addCoins(500); addFloatingScore(text: "+500", x: 0, y: 0, color: .yellow)
+        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: 0, y: 0, color: .yellow)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: 0, y: -200, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
     }
 
     private func slotBigWin() {
-        currentWin = .bigWin(coins: 200); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); addCoins(200); addFloatingScore(text: "+200", x: 0, y: 0, color: .orange)
+        currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
+        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: 0, y: 0, color: .orange)
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: 0, y: -200, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
     }
 
     private func slotSmallWin() {
-        currentWin = .smallWin(coins: 30); HapticManager.shared.smallWin()
-        addCoins(30); addFloatingScore(text: "+30", x: 0, y: 0, color: .green)
+        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin()
+        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: 0, y: 0, color: .green)
     }
 
     func selectCardReward(_ choice: CardReward) {
-        showCardSelection = false; rewardAmount = choice == .coins ? 100 : 0; showRewardModal = true
-        if choice == .coins { addCoins(100) }
+        showCardSelection = false; rewardAmount = choice == .coins ? GameConstants.cardCoinsReward : 0; showRewardModal = true
+        if choice == .coins { addCoins(GameConstants.cardCoinsReward) }
         else {
             var un = fruitsLit.enumerated().filter({ !$0.element }).map({ $0.offset })
-            if un.count >= 2 { un.shuffle(); fruitsLit[un[0]] = true; fruitsLit[un[1]] = true }
+            if un.count >= GameConstants.cardFruitsToLight {
+                un.shuffle()
+                for idx in un.prefix(GameConstants.cardFruitsToLight) { fruitsLit[idx] = true }
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.showRewardModal = false }
     }

@@ -21,6 +21,15 @@ struct GameConstants {
     static let initialCoins: Int = 1000
     static let dailyLoginBonus: Int = 50
 
+    // Rewards (数值沿用 v9.5，平衡性后续单独调整)
+    static let bedDropReward: Int = 10        // 每枚落下推币台的金币
+    static let fruitHitReward: Int = 10       // 首次点亮一个水果
+    static let slotSmallWinReward: Int = 30
+    static let slotBigWinReward: Int = 200
+    static let slotJackpotReward: Int = 500
+    static let cardCoinsReward: Int = 100     // 7 水果全亮后选「金币」
+    static let cardFruitsToLight: Int = 2     // 7 水果全亮后选「水果」
+
     // RPG Battle
     static let coinsPerAttack: Int = 10
     static let enemyMaxHealth: Int = 5
