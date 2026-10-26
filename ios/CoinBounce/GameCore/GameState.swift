@@ -115,14 +115,14 @@ class GameState: ObservableObject {
     static let shared = GameState()
 
     // MARK: - 核心数值
-    @Published var availableCoins: Int = GameConstants.initialCoins
-    @Published var totalCoinsWon: Int = 0
+    @Published var availableCoins: Int = GameConstants.initialCoins { didSet { scheduleSave() } }
+    @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
     @Published var currentMode: ModeType = .pusher
     @Published var currentLevel: Int = 3
 
     // MARK: - 新手引导
     @Published var showTutorialArrow: Bool = true
-    @Published var hasDroppedFirstCoin: Bool = false
+    @Published var hasDroppedFirstCoin: Bool = false { didSet { scheduleSave() } }
 
     // MARK: - 滑块系统
     @Published var coinSliderOffset: CGFloat = 0.0
@@ -137,7 +137,7 @@ class GameState: ObservableObject {
     private let bonusHitHalfWidth: CGFloat = UIScreen.main.bounds.width / 14
 
     // MARK: - 水果系统
-    @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7)
+    @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7) { didSet { scheduleSave() } }
     @Published var litFruitIndex: Int? = nil
     @Published var fruitBounceIndex: Int? = nil
     @Published var fruitPulseIndex: Int? = nil // V9.4: 命中的缩放效果
@@ -191,6 +191,10 @@ class GameState: ObservableObject {
     private var lastFrameTimestamp: CFTimeInterval?
     private var comboResetTimer: Timer?
 
+    // MARK: - 存档
+    var saveStore = SaveStore()
+    private var savePending = false
+
     // MARK: - 物理常量
     let slotBaffleRadius: CGFloat = 16
     let slotBaffleTopX: [CGFloat] = [-56, 0, 56] 
@@ -215,6 +219,7 @@ class GameState: ObservableObject {
     enum ModeType { case pusher, pinball, breakout }
 
     private init() {
+        applySave(saveStore.load() ?? .fresh)
         initializeSlotReels()
         startDisplayLink()
     }
@@ -227,6 +232,38 @@ class GameState: ObservableObject {
         bonusSliderOffset = 0
     }
     
+    var currentSaveData: SaveData {
+        SaveData(
+            availableCoins: availableCoins,
+            totalCoinsWon: totalCoinsWon,
+            fruitsLit: fruitsLit,
+            hasDroppedFirstCoin: hasDroppedFirstCoin
+        )
+    }
+
+    func applySave(_ data: SaveData) {
+        availableCoins = max(0, data.availableCoins)
+        totalCoinsWon = max(0, data.totalCoinsWon)
+        fruitsLit = data.fruitsLit.count == SaveData.fresh.fruitsLit.count ? data.fruitsLit : SaveData.fresh.fruitsLit
+        hasDroppedFirstCoin = data.hasDroppedFirstCoin
+        showTutorialArrow = !data.hasDroppedFirstCoin
+    }
+
+    func saveNow() {
+        savePending = false
+        saveStore.save(currentSaveData)
+    }
+
+    /// 同一帧内的多次数值变化合并成一次写入
+    private func scheduleSave() {
+        guard !savePending else { return }
+        savePending = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.savePending else { return }
+            self.saveNow()
+        }
+    }
+
     private func initializeSlotReels() {
         slotReels = (0..<5).map { _ in
             (0..<10).map { _ in SlotSymbol(type: SymbolType.allCases.randomElement()!) }
@@ -512,8 +549,10 @@ class GameState: ObservableObject {
     }
 
     // MARK: - 行为接口
+    var canDropCoin: Bool { availableCoins > 0 }
+
     func dropCoin(atX explicitX: CGFloat? = nil) {
-        guard availableCoins > 0 else { return }
+        guard canDropCoin else { return }
         availableCoins -= 1
         hasDroppedFirstCoin = true
         showTutorialArrow = false
@@ -548,6 +587,11 @@ class GameState: ObservableObject {
         // y: 75 对应推币台起始位置
         let newCoin = PusherCoin(x: x, y: 75, vx: CGFloat.random(in: -10...10), vy: 50)
         bedCoins.append(newCoin)
+    }
+
+    /// 金币用完时的补币入口
+    func requestFreeCoins() {
+        // TODO: 接入激励视频广告，看完后 addCoins(...) 发放金币
     }
 
     func addCoins(_ amount: Int) {

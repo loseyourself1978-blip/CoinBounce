@@ -9,10 +9,14 @@ import XCTest
 final class CoinBounceTests: XCTestCase {
 
     var state: GameState!
+    let testDefaults = UserDefaults(suiteName: "CoinBounceTests")!
 
     override func setUp() {
         super.setUp()
         state = GameState.shared
+        // 测试写入独立存档，避免覆盖模拟器里的游戏进度
+        state.saveStore = SaveStore(defaults: testDefaults, key: "CoinBounceTests.SaveData")
+        state.saveStore.clear()
         // 重置到干净状态
         state.availableCoins = 100
         state.active2DCoins.removeAll()
@@ -53,6 +57,14 @@ final class CoinBounceTests: XCTestCase {
         state.availableCoins = 0
         state.dropCoin()
         XCTAssertEqual(state.active2DCoins.count, 0, "余额为零时不应生成金币")
+    }
+
+    func test_dropCoin_zeroBalance_cannotDrop() {
+        state.availableCoins = 0
+        XCTAssertFalse(state.canDropCoin, "金币为 0 时投币按钮应不可用")
+        state.dropCoin()
+        XCTAssertEqual(state.availableCoins, 0, "金币为 0 时投币不应扣成负数")
+        XCTAssertTrue(state.active2DCoins.isEmpty)
     }
 
     func test_dropCoin_setsHasDroppedFirstCoin() {
@@ -262,6 +274,54 @@ final class CoinBounceTests: XCTestCase {
         let initial = state.totalCoinsWon
         state.addCoins(100)
         XCTAssertEqual(state.totalCoinsWon, initial + 100, "totalCoinsWon应更新")
+    }
+
+    // ============================================================
+    // MARK: - 8. 存档
+    // ============================================================
+
+    func test_saveStore_roundTrip() {
+        let store = SaveStore(defaults: testDefaults, key: "CoinBounceTests.roundTrip")
+        store.clear()
+        XCTAssertNil(store.load(), "无存档时应返回 nil")
+        let data = SaveData(availableCoins: 321, totalCoinsWon: 45,
+                            fruitsLit: [true, false, true, false, false, false, true],
+                            hasDroppedFirstCoin: true)
+        store.save(data)
+        XCTAssertEqual(store.load(), data, "存档读写应往返一致")
+        store.clear()
+    }
+
+    func test_gameState_saveAndRestore() {
+        state.availableCoins = 777
+        state.totalCoinsWon = 12
+        state.fruitsLit = [true, true, false, false, false, false, false]
+        state.hasDroppedFirstCoin = true
+        state.saveNow()
+
+        state.applySave(.fresh)
+        XCTAssertEqual(state.availableCoins, GameConstants.initialCoins)
+        XCTAssertTrue(state.showTutorialArrow, "新存档应显示新手箭头")
+
+        state.applySave(state.saveStore.load()!)
+        XCTAssertEqual(state.availableCoins, 777)
+        XCTAssertEqual(state.totalCoinsWon, 12)
+        XCTAssertEqual(state.fruitsLit, [true, true, false, false, false, false, false])
+        XCTAssertTrue(state.hasDroppedFirstCoin)
+        XCTAssertFalse(state.showTutorialArrow, "已投过币的存档不应再显示新手箭头")
+    }
+
+    func test_freshSave_startsWith1000Coins() {
+        XCTAssertEqual(SaveData.fresh.availableCoins, 1000, "首次安装应有 1000 金币")
+        XCTAssertEqual(SaveData.fresh.fruitsLit.count, 7)
+    }
+
+    func test_coinChange_isPersisted() {
+        state.availableCoins = 500
+        let saved = expectation(description: "coalesced save")
+        DispatchQueue.main.async { saved.fulfill() }
+        wait(for: [saved], timeout: 1.0)
+        XCTAssertEqual(state.saveStore.load()?.availableCoins, 500, "金币变化后应自动保存")
     }
 
     // ============================================================

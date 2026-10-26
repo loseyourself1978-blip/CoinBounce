@@ -17,6 +17,7 @@
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
 		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
+		B1A1CC052C00000400000001 /* SaveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC062C00000400000001 /* SaveStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +43,7 @@
 		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		B1A1CC022C00000400000001 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
+		B1A1CC062C00000400000001 /* SaveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +78,7 @@
 				B1A1E1E42C00000100000002 /* GameConstants.swift */,
 				B1A1E1E62C00000100000003 /* GameState.swift */,
 				B1A1BB022C00000300000001 /* HapticManager.swift */,
+				B1A1CC062C00000400000001 /* SaveStore.swift */,
 			);
 			path = GameCore;
 			sourceTree = "<group>";
@@ -243,6 +246,7 @@
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
 				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
+				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

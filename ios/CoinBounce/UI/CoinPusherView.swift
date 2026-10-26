@@ -10,6 +10,7 @@ struct CoinPusherView: View {
     @State private var showArrow = true
     @State private var arrowBounce = false
     @State private var fallingCoins: [FallingCoin] = []
+    @State private var showNoCoinsHint = false
 
     var body: some View {
         GeometryReader { geo in
@@ -594,6 +595,7 @@ struct CoinPusherView: View {
                         Hexagon().stroke(Color(red: 0.98, green: 0.90, blue: 0.55), lineWidth: 3)
                     )
                     .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 6)
+                    .saturation(gameState.canDropCoin ? 1 : 0)
 
                 Hexagon()
                     .fill(Color.black.opacity(0.25))
@@ -605,8 +607,27 @@ struct CoinPusherView: View {
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     )
             }
+            .opacity(gameState.canDropCoin ? 1 : 0.5)
             .onTapGesture {
-                gameState.dropCoin()
+                if gameState.canDropCoin {
+                    gameState.dropCoin()
+                } else {
+                    gameState.requestFreeCoins()
+                    showNoCoinsHint = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
+                }
+            }
+
+            // 金币用完提示
+            if showNoCoinsHint {
+                Text("金币不足")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.black.opacity(0.75)))
+                    .offset(y: -buttonSize * 0.75)
+                    .transition(.opacity)
             }
         }
         .frame(height: h)
