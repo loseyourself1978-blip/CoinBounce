@@ -20,6 +20,7 @@ final class CoinBounceTests: XCTestCase {
         // 重置到干净状态
         state.availableCoins = 100
         state.active2DCoins.removeAll()
+        state.bedCoins.removeAll()
         state.fruitsLit = Array(repeating: false, count: 7)
         state.litFruitIndex = nil
         state.fruitBounceIndex = nil
