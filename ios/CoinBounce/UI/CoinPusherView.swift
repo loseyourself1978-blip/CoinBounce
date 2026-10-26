@@ -691,6 +691,8 @@ struct LocalCoinCanvasLayer: View {
     var body: some View {
         TimelineView(.animation) { timeline in
             Canvas { context, size in
+                // 每个动画帧重画：显式依赖 timeline.date，否则 Canvas 可能不刷新
+                _ = timeline.date
                 let state = GameState.shared
                 // 物理坐标就是屏幕坐标，直接绘制
 
