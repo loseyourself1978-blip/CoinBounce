@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */; };
+		C046F49F5DA252D59510B3F0 /* AdsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01550AC5A455675584028A5 /* AdsManager.swift */; };
+		C01AD1F3908B38A4F60ABA0A /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C08BE306C19A1AD748AA16 /* AppConfig.swift */; };
+		C0A0D5000000000000000005 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = C0A0D5000000000000000003 /* GoogleMobileAds */; };
+		C0A0D5000000000000000006 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = C0A0D5000000000000000004 /* GoogleUserMessagingPlatform */; };
 		C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */; };
 		C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */ = {isa = PBXBuildFile; fileRef = C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */; };
 		C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */ = {isa = PBXBuildFile; fileRef = C065A216266C4D4C0CD3793D /* sfx_win_big.wav */; };
@@ -48,6 +53,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRewardTests.swift; sourceTree = "<group>"; };
+		C04022E061E3BAB702D507BB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C01550AC5A455675584028A5 /* AdsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdsManager.swift; sourceTree = "<group>"; };
+		C0C08BE306C19A1AD748AA16 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAudioTests.swift; sourceTree = "<group>"; };
 		C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_small.wav; sourceTree = "<group>"; };
 		C065A216266C4D4C0CD3793D /* sfx_win_big.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_big.wav; sourceTree = "<group>"; };
@@ -85,6 +94,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0A0D5000000000000000005 /* GoogleMobileAds in Frameworks */,
+				C0A0D5000000000000000006 /* GoogleUserMessagingPlatform in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -121,7 +132,8 @@
 			isa = PBXGroup;
 			children = (
 				B1A1E1E22C00000100000001 /* CoinBounceApp.swift */,
-			);
+							C0C08BE306C19A1AD748AA16 /* AppConfig.swift */,
+);
 			path = App;
 			sourceTree = "<group>";
 		};
@@ -135,6 +147,7 @@
 				B1A1DD022C00000500000001 /* GameLayout.swift */,
 							C0AFC3BAB814249E2557C10D /* SettingsStore.swift */,
 				C0A6513C75A7B7AA2979393A /* AudioManager.swift */,
+				C01550AC5A455675584028A5 /* AdsManager.swift */,
 );
 			path = GameCore;
 			sourceTree = "<group>";
@@ -176,6 +189,7 @@
 				B1A1E1B62C00000100000001 /* UI */,
 				B1A1E1F22C00000100000009 /* Assets.xcassets */,
 							C0D773A5B713E8706AF20636 /* Audio */,
+				C04022E061E3BAB702D507BB /* Info.plist */,
 );
 			path = CoinBounce;
 			sourceTree = "<group>";
@@ -186,6 +200,7 @@
 				B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */,
 				B1A1DD042C00000500000001 /* GameLayoutTests.swift */,
 							C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
+				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
 );
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -206,6 +221,10 @@
 			dependencies = (
 			);
 			name = CoinBounce;
+			packageProductDependencies = (
+				C0A0D5000000000000000003 /* GoogleMobileAds */,
+				C0A0D5000000000000000004 /* GoogleUserMessagingPlatform */,
+			);
 			productName = CoinBounce;
 			productReference = B1A1E1DF2C00000100000000 /* CoinBounce.app */;
 			productType = "com.apple.product-type.application";
@@ -255,6 +274,10 @@
 				Base,
 			);
 			mainGroup = B1A1E1D62C00000100000000;
+			packageReferences = (
+				C0A0D5000000000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				C0A0D5000000000000000002 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
+			);
 			productRefGroup = B1A1E1E02C00000100000000 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -305,6 +328,8 @@
 				B1A1DD012C00000500000001 /* GameLayout.swift in Sources */,
 							C08F63CDDDBA3BE7105554DD /* SettingsStore.swift in Sources */,
 				C079D1C28017942DBAFC45E1 /* AudioManager.swift in Sources */,
+				C01AD1F3908B38A4F60ABA0A /* AppConfig.swift in Sources */,
+				C046F49F5DA252D59510B3F0 /* AdsManager.swift in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -315,6 +340,7 @@
 				B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */,
 				B1A1DD032C00000500000001 /* GameLayoutTests.swift in Sources */,
 							C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
+				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,6 +466,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BZJWQJ352K;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CoinBounce/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -465,6 +492,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BZJWQJ352K;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CoinBounce/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -556,6 +584,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C0A0D5000000000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+		C0A0D5000000000000000002 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C0A0D5000000000000000003 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A0D5000000000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+		C0A0D5000000000000000004 /* GoogleUserMessagingPlatform */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A0D5000000000000000002 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */;
+			productName = GoogleUserMessagingPlatform;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B1A1E1D72C00000100000000 /* Project object */;
 }

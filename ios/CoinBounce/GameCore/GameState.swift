@@ -119,6 +119,12 @@ class GameState: ObservableObject {
     @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
     @Published var currentLevel: Int = 3
 
+    // MARK: - 激励广告领币
+    @Published var adRewardDay: String? = nil { didSet { scheduleSave() } }
+    @Published var adRewardsClaimed: Int = 0 { didSet { scheduleSave() } }
+    /// 激励广告来源，测试里可替换
+    var adPresenter: RewardedAdPresenting = AdsManager.shared
+
     // MARK: - 新手引导
     @Published var showTutorialArrow: Bool = true
     @Published var hasDroppedFirstCoin: Bool = false { didSet { scheduleSave() } }
@@ -224,7 +230,9 @@ class GameState: ObservableObject {
             availableCoins: availableCoins,
             totalCoinsWon: totalCoinsWon,
             fruitsLit: fruitsLit,
-            hasDroppedFirstCoin: hasDroppedFirstCoin
+            hasDroppedFirstCoin: hasDroppedFirstCoin,
+            adRewardDay: adRewardDay,
+            adRewardsClaimed: adRewardsClaimed
         )
     }
 
@@ -233,6 +241,8 @@ class GameState: ObservableObject {
         totalCoinsWon = max(0, data.totalCoinsWon)
         fruitsLit = data.fruitsLit.count == SaveData.fresh.fruitsLit.count ? data.fruitsLit : SaveData.fresh.fruitsLit
         hasDroppedFirstCoin = data.hasDroppedFirstCoin
+        adRewardDay = data.adRewardDay
+        adRewardsClaimed = max(0, data.adRewardsClaimed ?? 0)
         showTutorialArrow = !data.hasDroppedFirstCoin
     }
 
@@ -652,9 +662,43 @@ class GameState: ObservableObject {
         bedCoins.append(newCoin)
     }
 
-    /// 金币用完时的补币入口
+    /// 本地日期，用于每日次数重置
+    static func dayKey(for date: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    /// 今天已领取的次数（跨日自动归零）
+    func adRewardsUsed(on date: Date = Date()) -> Int {
+        adRewardDay == GameState.dayKey(for: date) ? adRewardsClaimed : 0
+    }
+
+    /// 是否显示「看广告领金币」：金币低于阈值且今天还有次数
+    func canOfferAdReward(now: Date = Date()) -> Bool {
+        availableCoins < GameConstants.adRewardCoinThreshold
+            && adRewardsUsed(on: now) < GameConstants.adRewardDailyLimit
+    }
+
+    /// 金币不足时的补币入口：播放激励广告，只有看完（SDK 发放奖励回调）才加金币
     func requestFreeCoins() {
-        // TODO: 接入激励视频广告，看完后 addCoins(...) 发放金币
+        guard canOfferAdReward(), adPresenter.isAdReady else { return }
+        adPresenter.showRewardedAd { [weak self] in
+            self?.grantAdReward()
+        }
+    }
+
+    /// 激励广告看完后的发奖；超过每日次数时不发
+    @discardableResult
+    func grantAdReward(now: Date = Date()) -> Bool {
+        let used = adRewardsUsed(on: now)
+        guard used < GameConstants.adRewardDailyLimit else { return false }
+        adRewardDay = GameState.dayKey(for: now)
+        adRewardsClaimed = used + 1
+        addCoins(GameConstants.adRewardCoins)
+        #if DEBUG
+        NSLog("[Ads] granted %d coins, balance %d, today %d", GameConstants.adRewardCoins, availableCoins, adRewardsClaimed)
+        #endif
+        return true
     }
 
     func addCoins(_ amount: Int) {
