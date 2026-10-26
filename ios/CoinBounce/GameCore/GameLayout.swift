@@ -57,7 +57,7 @@ struct GameLayout: Equatable {
     static let legacyBedLength: CGFloat = 215
 
     /// 各区域占安全区内高度的比例，合计 1
-    static let heightRatios: [CGFloat] = [0.075, 0.155, 0.045, 0.165, 0.080, 0.045, 0.335, 0.100]
+    static let heightRatios: [CGFloat] = [0.075, 0.155, 0.045, 0.165, 0.080, 0.045, 0.325, 0.110]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -106,11 +106,12 @@ struct GameLayout: Equatable {
         fieldMinX = left + coinRadius
         fieldMaxX = right - coinRadius
 
-        // 战斗区格挡：横向间距按 v9.5 的 56/145 比例，纵向放在 1/4、1/2、3/4 高度
+        // 战斗区格挡：放在两侧人物之间（人物中心约在 13% / 87% 宽度），
+        // 纵向放在 30%、55%、80% 高度，避开顶部的 VS / 连击文字
         pegRadius = 6
-        let pegStep = (contentW / 2 - coinRadius) * (56.0 / 145.0)
+        let pegStep = contentW * 0.15
         let field = bands[3]
-        let rowYs = [0.25, 0.5, 0.75].map { field.minY + field.height * $0 }
+        let rowYs = [0.30, 0.55, 0.80].map { field.minY + field.height * $0 }
         pegRows = [
             [-1, 0, 1].map { CGPoint(x: centerX + pegStep * $0, y: rowYs[0]) },
             [-1.5, -0.5, 0.5, 1.5].map { CGPoint(x: centerX + pegStep * $0, y: rowYs[1]) },
@@ -135,7 +136,8 @@ struct GameLayout: Equatable {
         pusherFrontRestY = bedTopY + 40 * bedScale
         pusherStroke = 27 * bedScale
         bedEntryY = bedTopY + 75 * bedScale
-        bedDropY = pusher.maxY - coinRadius
+        // 前沿留出比一枚金币更高的掉落口，最前排金币探出台面时口子仍然可见
+        bedDropY = pusher.maxY - (coinRadius * 2 + 8)
         let bedHalfW = size.width * 0.91 / 2
         bedMinX = size.width / 2 - bedHalfW + coinRadius
         bedMaxX = size.width / 2 + bedHalfW - coinRadius
