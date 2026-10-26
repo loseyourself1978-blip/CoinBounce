@@ -147,6 +147,17 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertEqual(state.slotSpinState, .spinning, "开始旋转后状态应为spinning")
     }
 
+    func test_slotMachine_spinReturnsToIdle() {
+        state.spinSlot()
+        XCTAssertEqual(state.slotSpinState, .spinning, "spinSlot 应从 idle 进入 spinning")
+
+        let returned = expectation(description: "slot back to idle")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { returned.fulfill() }
+        wait(for: [returned], timeout: 6.0)
+        XCTAssertEqual(state.slotSpinState, .spinIdle, "五轴停止后应回到 idle")
+        XCTAssertEqual(state.stoppedColumns.count, 5, "五个轴都应停止")
+    }
+
     func test_slotMachine_cannotSpinWhileSpinning() {
         state.spinSlotMachine()
         let firstState = state.slotSpinState

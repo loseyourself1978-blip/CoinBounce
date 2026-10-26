@@ -26,7 +26,7 @@ struct CoinPusherView: View {
                     SlotMachineView(
                         reels: gameState.slotReels,
                         spinState: gameState.slotSpinState,
-                        onSpin: { gameState.slotSpinState = .spinning }
+                        onSpin: { gameState.spinSlot() }
                     )
                     .frame(height: sh * 0.150)
                     .padding(.horizontal, 10)
