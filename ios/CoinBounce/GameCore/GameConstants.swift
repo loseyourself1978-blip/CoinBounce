@@ -63,43 +63,7 @@ struct GameConstants {
     static let pusherIntervalRange: ClosedRange<TimeInterval> = 10...20
     static let pusherFastInterval: ClosedRange<TimeInterval> = 5.0...8.0
 
-    // Hidden Mode Triggers
-    static let pinballBaseProbability: Double = 0.008
-    static let breakoutBaseProbability: Double = 0.008
-    static let modeBoostProbability: Double = 0.04
-    static let modeBoostDuration: TimeInterval = 60.0
-
     static let coinCompensationRatio: Int = 1
-
-    enum SlotSymbol: String, CaseIterable {
-        case seven = "7"
-        case joker = "Joker"
-        case coin = "Coin"
-        case castle = "Castle"
-        case princess = "Princess"
-    }
-
-    static func getSlotReward(for symbols: [SlotSymbol]) -> (coins: Int, buff: BuffType?) {
-        let unique = Set(symbols)
-        if unique.count == 1, let symbol = symbols.first {
-            switch symbol {
-            case .seven:    return (8, .pinballBoost)
-            case .joker:    return (18, .breakoutBoost)
-            case .coin:     return (5, .fastPusher)
-            case .castle:   return (8, .deflectorBoost)
-            case .princess: return (15, .freeCoin)
-            }
-        }
-        return (1, nil)
-    }
-
-    enum BuffType {
-        case pinballBoost
-        case breakoutBoost
-        case fastPusher
-        case deflectorBoost
-        case freeCoin
-    }
 }
 
 extension UIColor {

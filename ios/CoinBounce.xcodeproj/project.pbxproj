@@ -10,8 +10,6 @@
 		B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E22C00000100000001 /* CoinBounceApp.swift */; };
 		B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E42C00000100000002 /* GameConstants.swift */; };
 		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
-		B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EC2C00000100000006 /* PinballScene.swift */; };
-		B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EE2C00000100000007 /* BreakoutScene.swift */; };
 		B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1F02C00000100000008 /* CoinPusherView.swift */; };
 		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
@@ -39,8 +37,6 @@
 		B1A1E1E22C00000100000001 /* CoinBounceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceApp.swift; sourceTree = "<group>"; };
 		B1A1E1E42C00000100000002 /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
 		B1A1E1E62C00000100000003 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
-		B1A1E1EC2C00000100000006 /* PinballScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinballScene.swift; sourceTree = "<group>"; };
-		B1A1E1EE2C00000100000007 /* BreakoutScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutScene.swift; sourceTree = "<group>"; };
 		B1A1E1F02C00000100000008 /* CoinPusherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherView.swift; sourceTree = "<group>"; };
 		B1A1E1F22C00000100000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
@@ -92,22 +88,6 @@
 			path = GameCore;
 			sourceTree = "<group>";
 		};
-		B1A1E1B42C00000100000001 /* Pinball */ = {
-			isa = PBXGroup;
-			children = (
-				B1A1E1EC2C00000100000006 /* PinballScene.swift */,
-			);
-			path = Pinball;
-			sourceTree = "<group>";
-		};
-		B1A1E1B52C00000100000001 /* Breakout */ = {
-			isa = PBXGroup;
-			children = (
-				B1A1E1EE2C00000100000007 /* BreakoutScene.swift */,
-			);
-			path = Breakout;
-			sourceTree = "<group>";
-		};
 		B1A1E1B62C00000100000001 /* UI */ = {
 			isa = PBXGroup;
 			children = (
@@ -142,8 +122,6 @@
 			children = (
 				B1A1E1B02C00000100000001 /* App */,
 				B1A1E1B12C00000100000001 /* GameCore */,
-				B1A1E1B42C00000100000001 /* Pinball */,
-				B1A1E1B52C00000100000001 /* Breakout */,
 				B1A1E1B62C00000100000001 /* UI */,
 				B1A1E1F22C00000100000009 /* Assets.xcassets */,
 			);
@@ -253,8 +231,6 @@
 				B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */,
 				B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */,
 				B1A1E1E52C00000100000003 /* GameState.swift in Sources */,
-				B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */,
-				B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */,
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
 				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
 				B1A1EE032C00000600000001 /* PusherBedBackground.swift in Sources */,

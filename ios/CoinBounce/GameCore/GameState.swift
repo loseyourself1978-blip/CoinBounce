@@ -117,7 +117,6 @@ class GameState: ObservableObject {
     // MARK: - 核心数值
     @Published var availableCoins: Int = GameConstants.initialCoins { didSet { scheduleSave() } }
     @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
-    @Published var currentMode: ModeType = .pusher
     @Published var currentLevel: Int = 3
 
     // MARK: - 新手引导
@@ -201,7 +200,6 @@ class GameState: ObservableObject {
     // MARK: - 物理常量（纵向数值按 layout.fallScale / bedScale 换算）
     private let gravityBase: CGFloat = 920.0
 
-    enum ModeType { case pusher, pinball, breakout }
 
     private init() {
         applySave(saveStore.load() ?? .fresh)
@@ -864,7 +862,6 @@ class GameState: ObservableObject {
         }
     }
 
-    func switchMode(to mode: ModeType) { withAnimation(.easeInOut(duration: 0.3)) { currentMode = mode } }
 }
 
 // MARK: - 颜色扩展
