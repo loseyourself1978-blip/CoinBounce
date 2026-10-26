@@ -38,6 +38,9 @@ struct GameConstants {
     // Frame timing
     static let defaultFrameDelta: CGFloat = 1.0 / 60.0
     static let maxFrameDelta: CGFloat = 1.0 / 30.0   // 掉帧时限制单步时长，防止金币穿透
+    /// 整体速度系数：每帧推进 实际帧间隔 × simulationSpeed 的游戏时间（拆成 ≤1/60s 的子步）。
+    /// v9.5.2 因为重复的 display link 每帧走两步 1/60s，2.0 与当时的手感一致
+    static let simulationSpeed: CGFloat = 2.0
 
     // Moving Deflector
     static let deflectorOscillationSpeed: Double = 1.5

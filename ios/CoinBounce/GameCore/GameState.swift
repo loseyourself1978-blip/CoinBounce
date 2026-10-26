@@ -286,9 +286,18 @@ class GameState: ObservableObject {
             raw = link.targetTimestamp - link.timestamp
         }
         lastFrameTimestamp = link.timestamp
-        step(dt: GameState.clampedFrameDelta(raw))
+        advance(by: GameState.clampedFrameDelta(raw))
     }
 
+    /// 按 simulationSpeed 推进真实时间 frameDelta，拆成不超过 1/60s 的子步，避免快速金币穿过格挡
+    func advance(by frameDelta: CGFloat) {
+        var remaining = frameDelta * GameConstants.simulationSpeed
+        while remaining > 1e-6 {
+            let dt = min(remaining, GameConstants.defaultFrameDelta)
+            step(dt: dt)
+            remaining -= dt
+        }
+    }
 
     /// 实际帧间隔 → 物理步长，上限 GameConstants.maxFrameDelta
     static func clampedFrameDelta(_ raw: CFTimeInterval) -> CGFloat {
