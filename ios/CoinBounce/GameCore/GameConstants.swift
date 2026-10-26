@@ -1,0 +1,84 @@
+import Foundation
+import CoreGraphics
+import UIKit
+
+// MARK: - GameConstants V5.0
+struct GameConstants {
+    // Core Positioning
+    static let dropZoneHeight: CGFloat = 0.10
+    static let trajectoryZoneHeight: CGFloat = 0.20
+    static let slotZoneHeight: CGFloat = 0.20
+    static let distributionZoneHeight: CGFloat = 0.15
+    static let pusherZoneHeight: CGFloat = 0.35
+
+    // Physics Parameters
+    static let coinRestitution: CGFloat = 0.01
+    static let coinFriction: CGFloat = 1.0
+    static let coinLinearDamping: CGFloat = 0.8
+    static let coinAngularDamping: CGFloat = 0.8
+
+    // Initial State
+    static let initialCoins: Int = 1000
+    static let dailyLoginBonus: Int = 50
+
+    // RPG Battle
+    static let coinsPerAttack: Int = 10
+    static let enemyMaxHealth: Int = 5
+    static let cardLightGoal: Int = 7
+
+    // Moving Deflector
+    static let deflectorOscillationSpeed: Double = 1.5
+
+    // Slot Machine
+    static let slotTriggerProbability: Double = 0.40
+    static let slotSpinDuration: TimeInterval = 3.5
+    static let slotStaggerDelay: TimeInterval = 0.4
+
+    // Pusher Bar
+    static let pusherTopDeckHeight: CGFloat = 0.15
+    static let pusherMainBedHeight: CGFloat = 0.15
+    static let pusherIntervalRange: ClosedRange<TimeInterval> = 10...20
+    static let pusherFastInterval: ClosedRange<TimeInterval> = 5.0...8.0
+
+    // Hidden Mode Triggers
+    static let pinballBaseProbability: Double = 0.008
+    static let breakoutBaseProbability: Double = 0.008
+    static let modeBoostProbability: Double = 0.04
+    static let modeBoostDuration: TimeInterval = 60.0
+
+    static let coinCompensationRatio: Int = 1
+
+    enum SlotSymbol: String, CaseIterable {
+        case seven = "7"
+        case joker = "Joker"
+        case coin = "Coin"
+        case castle = "Castle"
+        case princess = "Princess"
+    }
+
+    static func getSlotReward(for symbols: [SlotSymbol]) -> (coins: Int, buff: BuffType?) {
+        let unique = Set(symbols)
+        if unique.count == 1, let symbol = symbols.first {
+            switch symbol {
+            case .seven:    return (8, .pinballBoost)
+            case .joker:    return (18, .breakoutBoost)
+            case .coin:     return (5, .fastPusher)
+            case .castle:   return (8, .deflectorBoost)
+            case .princess: return (15, .freeCoin)
+            }
+        }
+        return (1, nil)
+    }
+
+    enum BuffType {
+        case pinballBoost
+        case breakoutBoost
+        case fastPusher
+        case deflectorBoost
+        case freeCoin
+    }
+}
+
+extension UIColor {
+    static let gold = UIColor(red: 1.0, green: 0.84, blue: 0.0, alpha: 1.0)
+}

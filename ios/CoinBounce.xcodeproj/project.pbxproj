@@ -1,0 +1,518 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E22C00000100000001 /* CoinBounceApp.swift */; };
+		B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E42C00000100000002 /* GameConstants.swift */; };
+		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
+		B1A1E1E72C00000100000004 /* CoinPusherScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000004 /* CoinPusherScene.swift */; };
+		B1A1E1E92C00000100000005 /* SlotMachineNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */; };
+		B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EC2C00000100000006 /* PinballScene.swift */; };
+		B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EE2C00000100000007 /* BreakoutScene.swift */; };
+		B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1F02C00000100000008 /* CoinPusherView.swift */; };
+		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
+		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
+		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
+		B1A1BB032C00000300000001 /* ArcadeMiddleUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */; };
+		B1A1BB052C00000300000001 /* ArcadeBottomUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */; };
+		B1A1BB072C00000300000001 /* ArcadeUIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */; };
+		B1A1E1E72C00000100000400 /* GameScene2_5D.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000400 /* GameScene2_5D.swift */; };
+		B1A1E1E72C00000100000500 /* GameScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000500 /* GameScene3D.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B1A1E1DF2C00000100000000 /* CoinBounce.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoinBounce.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1A1E1E22C00000100000001 /* CoinBounceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceApp.swift; sourceTree = "<group>"; };
+		B1A1E1E42C00000100000002 /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
+		B1A1E1E62C00000100000003 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		B1A1E1E82C00000100000004 /* CoinPusherScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherScene.swift; sourceTree = "<group>"; };
+		B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineNode.swift; sourceTree = "<group>"; };
+		B1A1E1EC2C00000100000006 /* PinballScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinballScene.swift; sourceTree = "<group>"; };
+		B1A1E1EE2C00000100000007 /* BreakoutScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutScene.swift; sourceTree = "<group>"; };
+		B1A1E1F02C00000100000008 /* CoinPusherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherView.swift; sourceTree = "<group>"; };
+		B1A1E1F22C00000100000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
+		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeMiddleUI.swift; sourceTree = "<group>"; };
+		B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeBottomUI.swift; sourceTree = "<group>"; };
+		B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeUIComponents.swift; sourceTree = "<group>"; };
+		B1A1E1E82C00000100000400 /* GameScene2_5D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene2_5D.swift; sourceTree = "<group>"; };
+		B1A1E1E82C00000100000500 /* GameScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene3D.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B1A1E1DC2C00000100000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1A1AAAC2C00000200000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B1A1E1B02C00000100000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1E22C00000100000001 /* CoinBounceApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B1A1E1B12C00000100000001 /* GameCore */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1E42C00000100000002 /* GameConstants.swift */,
+				B1A1E1E62C00000100000003 /* GameState.swift */,
+				B1A1BB022C00000300000001 /* HapticManager.swift */,
+			);
+			path = GameCore;
+			sourceTree = "<group>";
+		};
+		B1A1E1B22C00000100000001 /* CoinPusher */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1E82C00000100000004 /* CoinPusherScene.swift */,
+				B1A1E1E82C00000100000400 /* GameScene2_5D.swift */,
+				B1A1E1E82C00000100000500 /* GameScene3D.swift */,
+			);
+			path = CoinPusher;
+			sourceTree = "<group>";
+		};
+		B1A1E1B32C00000100000001 /* SlotMachine */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */,
+			);
+			path = SlotMachine;
+			sourceTree = "<group>";
+		};
+		B1A1E1B42C00000100000001 /* Pinball */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1EC2C00000100000006 /* PinballScene.swift */,
+			);
+			path = Pinball;
+			sourceTree = "<group>";
+		};
+		B1A1E1B52C00000100000001 /* Breakout */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1EE2C00000100000007 /* BreakoutScene.swift */,
+			);
+			path = Breakout;
+			sourceTree = "<group>";
+		};
+		B1A1E1B62C00000100000001 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1F02C00000100000008 /* CoinPusherView.swift */,
+				B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */,
+				B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */,
+				B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		B1A1E1D62C00000100000000 = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1E12C00000100000000 /* CoinBounce */,
+				B1A1E1E02C00000100000000 /* Products */,
+				B1A1AAB02C00000200000001 /* CoinBounceTests */,
+			);
+			sourceTree = "<group>";
+		};
+		B1A1E1E02C00000100000000 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1DF2C00000100000000 /* CoinBounce.app */,
+				B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B1A1E1E12C00000100000000 /* CoinBounce */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1E1B02C00000100000001 /* App */,
+				B1A1E1B12C00000100000001 /* GameCore */,
+				B1A1E1B22C00000100000001 /* CoinPusher */,
+				B1A1E1B32C00000100000001 /* SlotMachine */,
+				B1A1E1B42C00000100000001 /* Pinball */,
+				B1A1E1B52C00000100000001 /* Breakout */,
+				B1A1E1B62C00000100000001 /* UI */,
+				B1A1E1F22C00000100000009 /* Assets.xcassets */,
+			);
+			path = CoinBounce;
+			sourceTree = "<group>";
+		};
+		B1A1AAB02C00000200000001 /* CoinBounceTests */ = {
+			isa = PBXGroup;
+			children = (
+				B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */,
+			);
+			path = CoinBounceTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B1A1E1DE2C00000100000000 /* CoinBounce */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1A1E1F62C00000100000000 /* Build configuration list for PBXNativeTarget "CoinBounce" */;
+			buildPhases = (
+				B1A1E1DB2C00000100000000 /* Sources */,
+				B1A1E1DC2C00000100000000 /* Frameworks */,
+				B1A1E1DD2C00000100000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CoinBounce;
+			productName = CoinBounce;
+			productReference = B1A1E1DF2C00000100000000 /* CoinBounce.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B1A1AAAE2C00000200000001 /* CoinBounceTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1A1AAB32C00000200000001 /* Build configuration list for PBXNativeTarget "CoinBounceTests" */;
+			buildPhases = (
+				B1A1AAAD2C00000200000001 /* Sources */,
+				B1A1AAAC2C00000200000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CoinBounceTests;
+			productName = CoinBounceTests;
+			productReference = B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B1A1E1D72C00000100000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1400;
+				LastUpgradeCheck = 1400;
+				TargetAttributes = {
+					B1A1E1DE2C00000100000000 = {
+						CreatedOnToolsVersion = 14.0;
+					};
+					B1A1AAAE2C00000200000001 = {
+						CreatedOnToolsVersion = 14.0;
+						TestTargetID = B1A1E1DE2C00000100000000;
+					};
+				};
+			};
+			buildConfigurationList = B1A1E1DA2C00000100000000 /* Build configuration list for PBXProject "CoinBounce" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B1A1E1D62C00000100000000;
+			productRefGroup = B1A1E1E02C00000100000000 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B1A1E1DE2C00000100000000 /* CoinBounce */,
+				B1A1AAAE2C00000200000001 /* CoinBounceTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B1A1E1DD2C00000100000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B1A1E1DB2C00000100000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */,
+				B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */,
+				B1A1E1E52C00000100000003 /* GameState.swift in Sources */,
+				B1A1E1E72C00000100000004 /* CoinPusherScene.swift in Sources */,
+				B1A1E1E92C00000100000005 /* SlotMachineNode.swift in Sources */,
+				B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */,
+				B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */,
+				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
+				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
+				B1A1BB032C00000300000001 /* ArcadeMiddleUI.swift in Sources */,
+				B1A1BB052C00000300000001 /* ArcadeBottomUI.swift in Sources */,
+				B1A1BB072C00000300000001 /* ArcadeUIComponents.swift in Sources */,
+				B1A1E1E72C00000100000400 /* GameScene2_5D.swift in Sources */,
+				B1A1E1E72C00000100000500 /* GameScene3D.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1A1AAAD2C00000200000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B1A1E1F42C00000100000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B1A1E1F52C00000100000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B1A1E1F72C00000100000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BZJWQJ352K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.coinbounce.CoinBounce;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B1A1E1F82C00000100000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BZJWQJ352K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.coinbounce.CoinBounce;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B1A1AAB12C00000200000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = BZJWQJ352K;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.coinbounce.CoinBounceTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CoinBounce.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CoinBounce";
+			};
+			name = Debug;
+		};
+		B1A1AAB22C00000200000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = BZJWQJ352K;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.coinbounce.CoinBounceTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CoinBounce.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CoinBounce";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B1A1E1DA2C00000100000000 /* Build configuration list for PBXProject "CoinBounce" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1A1E1F42C00000100000000 /* Debug */,
+				B1A1E1F52C00000100000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B1A1E1F62C00000100000000 /* Build configuration list for PBXNativeTarget "CoinBounce" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1A1E1F72C00000100000000 /* Debug */,
+				B1A1E1F82C00000100000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B1A1AAB32C00000200000001 /* Build configuration list for PBXNativeTarget "CoinBounceTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1A1AAB12C00000200000001 /* Debug */,
+				B1A1AAB22C00000200000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B1A1E1D72C00000100000000 /* Project object */;
+}

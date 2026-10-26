@@ -1,0 +1,38 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode / Swift
+DerivedData/
+*.xcresult
+*.xcarchive
+ios/build/
+ios/**/build/
+
+# Android / Gradle
+android/.gradle/
+android/**/build/
+android/local.properties
+
+# Tooling outputs
+build/
+*.log
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Work logs (keep if you want them versioned)
+.workbuddy/
+
+
+# Xcode 用户数据
+xcuserdata/
+*.xcuserstate
+
+# 大媒体与参考素材（已归档到仓库外）
+*.mov
+*.MP4
+*.mp4
+samples/
+video_frames/

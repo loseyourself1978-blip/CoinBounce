@@ -1,0 +1,14 @@
+{
+  "name": "ref_400x880",
+  "target_size": [400, 880],
+  "regions": [
+    { "id": "slot", "label": "老虎机区域", "box": [30, 245, 370, 465] },
+    { "id": "battle", "label": "战斗区域", "box": [30, 470, 370, 565] },
+    { "id": "fruit", "label": "水果灯/卡牌条", "box": [20, 565, 380, 645] },
+    { "id": "bonus", "label": "BONUS标签附近", "box": [120, 620, 280, 700] },
+    { "id": "pusher", "label": "推币台区域", "box": [0, 645, 400, 835] },
+    { "id": "button", "label": "投币按钮/箭头", "box": [120, 740, 280, 880] }
+  ],
+  "notes": "All boxes are in the normalized 400x880 coordinate space after resizing."
+}
+
