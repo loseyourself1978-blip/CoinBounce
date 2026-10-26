@@ -117,6 +117,11 @@ struct CoinPusherView: View {
             }
         }
         .frame(height: h)
+        .overlay(alignment: .topLeading) {
+            CoinBalanceView(coins: gameState.availableCoins)
+                .padding(.leading, 10)
+                .padding(.top, 6)
+        }
     }
 
     // MARK: - COIN滑块 + BONUS滑块轨道
@@ -632,6 +637,38 @@ struct CoinPusherView: View {
         }
         .frame(height: h)
         .background(Color(red: 0.06, green: 0.05, blue: 0.03))
+    }
+}
+
+// MARK: - 金币余额
+struct CoinBalanceView: View {
+    let coins: Int
+    @State private var bump = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(LinearGradient(colors: [Color(red: 1.0, green: 0.9, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.1)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(Circle().stroke(Color(red: 0.5, green: 0.3, blue: 0.0), lineWidth: 1))
+                .overlay(Text("¥").font(.system(size: 10, weight: .black)).foregroundColor(Color(red: 0.4, green: 0.2, blue: 0.0)))
+                .frame(width: 18, height: 18)
+            Text("\(coins)")
+                .font(.system(size: 15, weight: .black, design: .rounded))
+                .monospacedDigit()
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(Color.black.opacity(0.55)))
+        .overlay(Capsule().stroke(Color.arcadeGold.opacity(0.8), lineWidth: 1))
+        .scaleEffect(bump ? 1.12 : 1.0)
+        .onChange(of: coins) { _ in
+            withAnimation(.spring(response: 0.18, dampingFraction: 0.5)) { bump = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.easeOut(duration: 0.2)) { bump = false }
+            }
+        }
     }
 }
 
