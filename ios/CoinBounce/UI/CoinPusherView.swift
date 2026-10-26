@@ -59,8 +59,29 @@ struct CoinPusherView: View {
                     FloatingScoreView(score: score)
                         .position(x: sw/2 + score.x, y: sh * 0.7 + score.y)
                 }
+
+                // 奖励/庆祝层
+                if gameState.showJackpotExplosion {
+                    JackpotCelebrationView(amount: GameConstants.slotJackpotReward)
+                        .frame(width: sw, height: sh)
+                }
+                if gameState.showCardSelection {
+                    CardSelectionView { choice in
+                        withAnimation(.easeOut(duration: 0.2)) { gameState.selectCardReward(choice) }
+                    }
+                    .frame(width: sw, height: sh)
+                }
+                if gameState.showRewardModal {
+                    RewardModalView(amount: gameState.rewardAmount) {
+                        withAnimation(.easeOut(duration: 0.2)) { gameState.showRewardModal = false }
+                    }
+                    .frame(width: sw, height: sh)
+                }
             }
             .background(Color(red: 0.05, green: 0.04, blue: 0.02))
+            .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
+            .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
+            .animation(.easeOut(duration: 0.25), value: gameState.showRewardModal)
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {

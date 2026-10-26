@@ -18,6 +18,7 @@
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
 		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
 		B1A1CC052C00000400000001 /* SaveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC062C00000400000001 /* SaveStore.swift */; };
+		B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC082C00000400000001 /* RewardOverlays.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,7 @@
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		B1A1CC022C00000400000001 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
 		B1A1CC062C00000400000001 /* SaveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStore.swift; sourceTree = "<group>"; };
+		B1A1CC082C00000400000001 /* RewardOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardOverlays.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +106,7 @@
 			children = (
 				B1A1E1F02C00000100000008 /* CoinPusherView.swift */,
 				B1A1CC022C00000400000001 /* SlotMachineView.swift */,
+				B1A1CC082C00000400000001 /* RewardOverlays.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -245,6 +248,7 @@
 				B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */,
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
 				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
+				B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
 				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
 			);

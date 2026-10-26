@@ -220,6 +220,8 @@ class GameState: ObservableObject {
 
     private init() {
         applySave(saveStore.load() ?? .fresh)
+        // 上次退出时水果已全亮但未选奖励：重新弹出选择
+        if fruitsLit.allSatisfy({ $0 }) { showCardSelection = true }
         initializeSlotReels()
         startDisplayLink()
     }
@@ -765,7 +767,12 @@ class GameState: ObservableObject {
     }
 
     func selectCardReward(_ choice: CardReward) {
-        showCardSelection = false; rewardAmount = choice == .coins ? GameConstants.cardCoinsReward : 0; showRewardModal = true
+        guard showCardSelection else { return }
+        showCardSelection = false
+        // 选完重置水果，「水果」奖励在新一轮开局直接点亮若干个
+        fruitsLit = SaveData.fresh.fruitsLit
+        rewardAmount = choice == .coins ? GameConstants.cardCoinsReward : 0
+        showRewardModal = true
         if choice == .coins { addCoins(GameConstants.cardCoinsReward) }
         else {
             var un = fruitsLit.enumerated().filter({ !$0.element }).map({ $0.offset })
