@@ -243,9 +243,12 @@ struct CoinPusherView: View {
                     ForEach(0..<4) { _ in
                         Image(systemName: "tree.fill")
                             .foregroundColor(Color.black.opacity(0.3))
-                            .font(.system(size: h * 0.4))
+                            .font(.system(size: min(h * 0.4, w * 0.11)))
                     }
                 }
+                // 固定为区域宽度：树太宽时不能把整个战斗区撑宽
+                .frame(width: max(0, w - 20))
+                .clipped()
                 .offset(y: -h * 0.1)
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -268,15 +271,25 @@ struct CoinPusherView: View {
                 // 血条
                 HealthBar(progress: 0.8, color: .green, width: w * 0.18)
             }
-            .position(x: w * 0.22, y: h * 0.5)
+            .position(x: w * 0.13, y: h * 0.5)
 
-            // VS 文字
-            Text("VS")
-                .font(.system(size: w * 0.08, weight: .black, design: .rounded))
-                .foregroundStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
-                .italic()
-                .shadow(color: .black, radius: 4)
-                .position(x: w * 0.50, y: h * 0.45)
+            // 顶部中间：VS，连击时换成连击文字（格挡在它下方，不重叠）
+            if gameState.combo.isActive {
+                Text(gameState.combo.message)
+                    .font(.system(size: min(w * 0.05, h * 0.15), weight: .black, design: .rounded))
+                    .foregroundStyle(LinearGradient(colors: [.red, .orange, .yellow], startPoint: .top, endPoint: .bottom))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(width: w * 0.5)
+                    .position(x: w * 0.50, y: h * 0.14)
+            } else {
+                Text("VS")
+                    .font(.system(size: min(w * 0.08, h * 0.2), weight: .black, design: .rounded))
+                    .foregroundStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
+                    .italic()
+                    .shadow(color: .black, radius: 4)
+                    .position(x: w * 0.50, y: h * 0.14)
+            }
 
             // 右侧敌人
             VStack(spacing: 2) {
@@ -295,15 +308,7 @@ struct CoinPusherView: View {
                 // 血条
                 HealthBar(progress: 0.6, color: .red, width: w * 0.18)
             }
-            .position(x: w * 0.78, y: h * 0.5)
-
-            // 连击文字
-            if gameState.combo.isActive {
-                Text(gameState.combo.message)
-                    .font(.system(size: w * 0.05, weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.red, .orange, .yellow], startPoint: .top, endPoint: .bottom))
-                    .position(x: w * 0.50, y: h * 0.75)
-            }
+            .position(x: w * 0.87, y: h * 0.5)
         }
         .frame(width: w, height: h)
     }
@@ -397,21 +402,15 @@ struct CoinPusherView: View {
         let h = layout.pusher.height
 
         ZStack(alignment: .top) {
-            // 参考推币台背景图：固定为区域大小，不能撑宽父视图
-            Image("coin_pusher_ref")
-                .resizable()
-                .scaledToFill()
+            // 台面、侧栏、后挡板、掉落口（不画金币，金币全部由物理绘制）
+            PusherBedBackground(layout: layout)
                 .frame(width: w, height: h)
-                .clipped()
 
             // 推块组件：前沿 = 物理里的 pusherFrontRestY + pusherOffset
             pusherAssembly(w: w, frontY: layout.pusherFrontRestY - layout.pusher.minY + gameState.pusherOffset)
 
-            // 左右斜坡
+            // 左右引导斜坡
             ramps(w: w, h: h * 0.40)
-
-            // 喷币管
-            coinSprayers(w: w, h: h * 0.40)
         }
         .frame(width: w, height: h)
         .clipped()
@@ -495,10 +494,7 @@ struct CoinPusherView: View {
             path.addLine(to: CGPoint(x: 0, y: h * 0.6))
             path.closeSubpath()
         }
-        .fill(LinearGradient(stops: [
-            .init(color: Color(red: 0.20, green: 0.32, blue: 0.28), location: 0.0),
-            .init(color: Color(red: 0.16, green: 0.25, blue: 0.22), location: 1.0)
-        ], startPoint: .top, endPoint: .bottom))
+        .fill(PusherBedBackground.rampGradient)
 
         // 右侧斜坡 (330-431像素)
         Path { path in
@@ -507,53 +503,15 @@ struct CoinPusherView: View {
             path.addLine(to: CGPoint(x: w, y: h * 0.6))
             path.closeSubpath()
         }
-        .fill(LinearGradient(stops: [
-            .init(color: Color(red: 0.20, green: 0.32, blue: 0.28), location: 0.0),
-            .init(color: Color(red: 0.16, green: 0.25, blue: 0.22), location: 1.0)
-        ], startPoint: .top, endPoint: .bottom))
-    }
-
-    // MARK: - 喷币管
-    @ViewBuilder
-    func coinSprayers(w: CGFloat, h: CGFloat) -> some View {
-        // 左侧喷币管
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(LinearGradient(stops: [
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 0.0),
-                    .init(color: Color(red: 0.20, green: 0.40, blue: 0.25), location: 0.5),
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 1.0)
-                ], startPoint: .top, endPoint: .bottom))
-                .frame(width: w * 0.035, height: h * 0.35)
-
-            // 喷口
-            Circle()
-                .fill(Color(red: 0.15, green: 0.30, blue: 0.20))
-                .frame(width: w * 0.045, height: w * 0.045)
-        }
-        .position(x: w * 0.11, y: h * 0.20)
-
-        // 右侧喷币管
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(LinearGradient(stops: [
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 0.0),
-                    .init(color: Color(red: 0.20, green: 0.40, blue: 0.25), location: 0.5),
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 1.0)
-                ], startPoint: .top, endPoint: .bottom))
-                .frame(width: w * 0.035, height: h * 0.35)
-
-            Circle()
-                .fill(Color(red: 0.15, green: 0.30, blue: 0.20))
-                .frame(width: w * 0.045, height: w * 0.045)
-        }
-        .position(x: w * 0.89, y: h * 0.20)
+        .fill(PusherBedBackground.rampGradient)
     }
 
     // MARK: - 投币按钮
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat) -> some View {
-        let buttonSize = min(w * 0.22, h * 0.85)
+        // 按钮略偏下，引导箭头和提示放在按钮上方、本区域之内，不被推币台盖住
+        let buttonSize = min(w * 0.22, h * 0.62)
+        let buttonY = h * 0.12
 
         ZStack {
             // 投币按钮（居中，贴近参考App）
@@ -567,7 +525,7 @@ struct CoinPusherView: View {
                     .font(.system(size: buttonSize * 0.18, weight: .black))
                     .foregroundStyle(LinearGradient(colors: [.yellow, .white], startPoint: .top, endPoint: .bottom))
                     .shadow(color: .yellow.opacity(0.8), radius: 8)
-                    .offset(y: -buttonSize * 0.75 + (arrowBounce ? 6 : 0))
+                    .offset(y: buttonY - buttonSize * 0.7 + (arrowBounce ? 5 : 0))
                 }
 
                 // 六边形投币按钮（对齐参考App）
@@ -588,6 +546,7 @@ struct CoinPusherView: View {
                     )
                     .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 6)
                     .saturation(gameState.canDropCoin ? 1 : 0)
+                    .offset(y: buttonY)
 
                 Hexagon()
                     .fill(Color.black.opacity(0.25))
@@ -598,6 +557,7 @@ struct CoinPusherView: View {
                             .foregroundStyle(LinearGradient(colors: [.yellow, .white], startPoint: .top, endPoint: .bottom))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     )
+                    .offset(y: buttonY)
             }
             .opacity(gameState.canDropCoin ? 1 : 0.5)
             .onTapGesture {
@@ -618,7 +578,7 @@ struct CoinPusherView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Capsule().fill(Color.black.opacity(0.75)))
-                    .offset(y: -buttonSize * 0.75)
+                    .offset(y: buttonY - buttonSize * 0.7)
                     .transition(.opacity)
             }
         }

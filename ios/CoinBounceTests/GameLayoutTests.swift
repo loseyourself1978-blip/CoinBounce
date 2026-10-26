@@ -228,3 +228,108 @@ final class GameLayoutTests: XCTestCase {
     }
 }
 
+
+// ============================================================
+// MARK: - 开局预铺金币
+// ============================================================
+
+final class PusherPrefillTests: XCTestCase {
+
+    let layouts: [GameLayout] = [
+        GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)),
+        GameLayout(size: CGSize(width: 393, height: 852), safeArea: EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)),
+        GameLayout(size: CGSize(width: 440, height: 956), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
+    ]
+
+    var state: GameState!
+
+    override func setUp() {
+        super.setUp()
+        state = GameState.shared
+        state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "PusherPrefillTests")!, key: "PusherPrefillTests.SaveData")
+        state.saveStore.clear()
+        state.resetForTesting()
+        state.availableCoins = 100
+        state.active2DCoins.removeAll()
+        state.bedCoins.removeAll()
+        state.slotSpinState = .spinIdle
+    }
+
+    override func tearDown() {
+        state.bedCoins.removeAll()
+        state.resetForTesting()
+        super.tearDown()
+    }
+
+    private func simulate(seconds: Double) {
+        for _ in 0..<Int(seconds * 60) { state.advance(by: 1.0 / 60.0) }
+    }
+
+    func test_prefill_coinsInsideBedWithoutOverlap() {
+        for l in layouts {
+            let points = GameState.prefillPositions(for: l)
+            XCTAssertGreaterThan(points.count, 20, "应预铺一层金币")
+            for p in points {
+                XCTAssertTrue(p.x >= l.bedMinX - 0.001 && p.x <= l.bedMaxX + 0.001)
+                XCTAssertTrue(p.y > l.pusherFrontRestY + l.pusherStroke && p.y < l.bedDropY, "预铺金币在推板最远处之前、掉落线之后")
+            }
+            for i in 0..<points.count {
+                for j in (i + 1)..<points.count {
+                    let d = hypot(points[i].x - points[j].x, points[i].y - points[j].y)
+                    XCTAssertGreaterThanOrEqual(d, l.coinRadius * 2, "预铺金币不重叠")
+                }
+            }
+        }
+    }
+
+    func test_prefill_idlePusherDropsAtMostTwo() {
+        for l in layouts {
+            state.resetForTesting()
+            state.updateLayout(l)
+            state.prefillBed()
+            let before = state.bedDropCount
+            simulate(seconds: 20)
+            XCTAssertLessThanOrEqual(state.bedDropCount - before, 2, "\(l.size) 不投币时推板空转不应大量掉落")
+        }
+    }
+
+    func test_prefill_fewCoinsPushSomeOff() {
+        for l in layouts {
+            state.resetForTesting()
+            state.updateLayout(l)
+            state.prefillBed()
+            state.availableCoins = 100
+            let dropsBefore = state.bedDropCount
+            for _ in 0..<5 {
+                state.dropCoin()
+                simulate(seconds: 1)
+            }
+            simulate(seconds: 3)
+            let drops = state.bedDropCount - dropsBefore
+            XCTAssertGreaterThanOrEqual(drops, 1, "\(l.size) 投 5 枚币后应至少推落 1 枚")
+        }
+    }
+
+    func test_prefill_droppedCoinsPayReward() {
+        let l = layouts[1]
+        state.updateLayout(l)
+        state.prefillBed()
+        state.availableCoins = 100
+        let won = state.totalCoinsWon
+        let dropsBefore = state.bedDropCount
+        let fruitsBefore = state.fruitsLit.filter { $0 }.count
+        for _ in 0..<5 { state.dropCoin(); simulate(seconds: 1) }
+        simulate(seconds: 3)
+        let fruitsLit = state.fruitsLit.filter { $0 }.count - fruitsBefore
+        XCTAssertEqual(state.totalCoinsWon - won,
+                       (state.bedDropCount - dropsBefore) * GameConstants.bedDropReward + fruitsLit * GameConstants.fruitHitReward,
+                       "推落的金币按 bedDropReward 计分")
+    }
+
+    func test_layoutChange_beforeAnyDrop_refillsForNewScreen() {
+        state.updateLayout(layouts[1])
+        state.prefillBed()
+        state.updateLayout(layouts[0])
+        XCTAssertEqual(state.bedCoins.count, GameState.prefillPositions(for: layouts[0]).count)
+    }
+}

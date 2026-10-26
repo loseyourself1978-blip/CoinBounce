@@ -21,14 +21,21 @@ struct GameConstants {
     static let initialCoins: Int = 1000
     static let dailyLoginBonus: Int = 50
 
-    // Rewards (数值沿用 v9.5，平衡性后续单独调整)
-    static let bedDropReward: Int = 10        // 每枚落下推币台的金币
+    // Rewards
+    static let bedDropReward: Int = 1         // 每枚落下推币台的金币（推落 1 枚得 1 枚，奖励靠水果和老虎机）
     static let fruitHitReward: Int = 10       // 首次点亮一个水果
     static let slotSmallWinReward: Int = 30
     static let slotBigWinReward: Int = 200
     static let slotJackpotReward: Int = 500
     static let cardCoinsReward: Int = 100     // 7 水果全亮后选「金币」
     static let cardFruitsToLight: Int = 2     // 7 水果全亮后选「水果」
+
+    // 开局预铺金币（推币台）
+    static let prefillMaxRows: Int = 12            // 最多铺几排（屏幕矮时自动减少）
+    static let prefillEdgeGap: CGFloat = 0.08       // 最前排距离掉落线（金币直径）
+    static let prefillBackGap: CGFloat = 0.0        // 最后一排与推板最远处的间隙（金币直径）
+    static let prefillRowLooseness: CGFloat = 1.04 // 排距至少为密排的 1.04 倍，太密会一投就大量掉落
+    static let bedSolverPasses: Int = 4             // 推币台碰撞位置分离的迭代次数
 
     // RPG Battle
     static let coinsPerAttack: Int = 10
