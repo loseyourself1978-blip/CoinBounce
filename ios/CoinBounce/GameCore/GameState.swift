@@ -129,12 +129,12 @@ class GameState: ObservableObject {
     @Published var bonusSliderOffset: CGFloat = 0.0
     
     private var sliderTime: CGFloat = 0
-    private let coinSliderRange: CGFloat = UIScreen.main.bounds.width * 0.40
-    private let bonusSliderRange: CGFloat = UIScreen.main.bounds.width * 0.40
     private let coinSliderSpeed: Double = 1.0
     private let bonusSliderSpeed: Double = 1.2
-    // BONUS 目标宽度为屏宽 1/7（见 HollowBonusSliderTarget），命中半宽取其一半
-    private let bonusHitHalfWidth: CGFloat = UIScreen.main.bounds.width / 14
+
+    // MARK: - 布局（物理坐标 = 屏幕坐标）
+    /// 由 CoinPusherView 根据真实屏幕传入；之前使用参考尺寸
+    private(set) var layout: GameLayout = .reference
 
     // MARK: - 水果系统
     @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7) { didSet { scheduleSave() } }
@@ -195,25 +195,7 @@ class GameState: ObservableObject {
     var saveStore = SaveStore()
     private var savePending = false
 
-    // MARK: - 物理常量
-    let slotBaffleRadius: CGFloat = 16
-    let slotBaffleTopX: [CGFloat] = [-56, 0, 56] 
-    let slotBaffleTopY: CGFloat = -140
-    let slotBaffleMidX: [CGFloat] = [-84, -28, 28, 84] 
-    let slotBaffleMidY: CGFloat = 0
-    let slotBaffleBotX: [CGFloat] = [-56, 0, 56] 
-    let slotBaffleBotY: CGFloat = 140
-
-    let fruitCenterXPositions: [CGFloat] = [-120, -80, -40, 0, 40, 80, 120]
-    let fruitBaffleXPositions: [CGFloat] = [-100, -60, -20, 20, 60, 100]
-    
-    // V8.0: 校准的 Y 坐标 (基于全屏)
-    let fruitRowYTop: CGFloat = -65
-    let fruitRowYBottom: CGFloat = 10
-    let bonusYTop: CGFloat = -20
-    let bonusYBottom: CGFloat = 80
-    let enter3DY: CGFloat = 20
-
+    // MARK: - 物理常量（纵向数值按 layout.fallScale / bedScale 换算）
     private let gravityBase: CGFloat = 920.0
 
     enum ModeType { case pusher, pinball, breakout }
@@ -228,6 +210,7 @@ class GameState: ObservableObject {
     
     // V9.0: 为自动化测试提供的重置接口
     func resetForTesting() {
+        layout = .reference
         sliderTime = 0
         pusherOffset = 0
         coinSliderOffset = 0
@@ -272,6 +255,20 @@ class GameState: ObservableObject {
         }
     }
 
+    /// 屏幕尺寸或安全区变化时由视图调用
+    func updateLayout(_ newLayout: GameLayout) {
+        guard newLayout != layout else { return }
+        layout = newLayout
+        // 已在场上的金币夹回新边界内
+        for i in active2DCoins.indices {
+            active2DCoins[i].x = min(max(active2DCoins[i].x, layout.fieldMinX), layout.fieldMaxX)
+        }
+        for i in bedCoins.indices {
+            bedCoins[i].x = min(max(bedCoins[i].x, layout.bedMinX), layout.bedMaxX)
+            bedCoins[i].y = min(max(bedCoins[i].y, layout.bedEntryY), layout.bedDropY - 1)
+        }
+    }
+
     func startDisplayLink() {
         // 只保留一个 display link，重复调用（如 onAppear）不会叠加物理步进
         guard displayLink == nil else { return }
@@ -289,7 +286,17 @@ class GameState: ObservableObject {
             raw = link.targetTimestamp - link.timestamp
         }
         lastFrameTimestamp = link.timestamp
-        step(dt: GameState.clampedFrameDelta(raw))
+        advance(by: GameState.clampedFrameDelta(raw))
+    }
+
+    /// 按 simulationSpeed 推进真实时间 frameDelta，拆成不超过 1/60s 的子步，避免快速金币穿过格挡
+    func advance(by frameDelta: CGFloat) {
+        var remaining = frameDelta * GameConstants.simulationSpeed
+        while remaining > 1e-6 {
+            let dt = min(remaining, GameConstants.defaultFrameDelta)
+            step(dt: dt)
+            remaining -= dt
+        }
     }
 
     /// 实际帧间隔 → 物理步长，上限 GameConstants.maxFrameDelta
@@ -307,12 +314,12 @@ class GameState: ObservableObject {
     func step(dt: CGFloat) {
         // === 滑块控制 ===
         sliderTime += dt
-        coinSliderOffset = coinSliderRange * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
-        bonusSliderOffset = bonusSliderRange * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
+        coinSliderOffset = layout.coinSliderTravel * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
+        bonusSliderOffset = layout.bonusSliderTravel * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
         
-        // 推子正弦运动
+        // 推子正弦运动（0…pusherStroke）
         let lastPusherOffset = pusherOffset
-        pusherOffset = (CGFloat(sin(Double(sliderTime) * 2.32)) + 1.0) * 13.5
+        pusherOffset = (CGFloat(sin(Double(sliderTime) * 2.32)) + 1.0) * layout.pusherStroke / 2
         let pusherVelocity = (pusherOffset - lastPusherOffset) / dt
         
         // === 2. 粒子物理组件 (V9.4) ===
@@ -327,7 +334,8 @@ class GameState: ObservableObject {
         }
         
         // === 3. 2D 掉落金币物理 ===
-        let gravity = gravityBase
+        let L = layout
+        let gravity = gravityBase * L.fallScale
         let friction2D: CGFloat = 0.992
 
         for i in 0..<active2DCoins.count {
@@ -348,20 +356,20 @@ class GameState: ObservableObject {
             let coin = active2DCoins[i]
 
             // 边界
-            let boundary: CGFloat = 145
-            if coin.x < -boundary {
-                active2DCoins[i].x = -boundary
+            if coin.x < L.fieldMinX {
+                active2DCoins[i].x = L.fieldMinX
                 active2DCoins[i].vx = abs(active2DCoins[i].vx) * 0.65
-            } else if coin.x > boundary {
-                active2DCoins[i].x = boundary
+            } else if coin.x > L.fieldMaxX {
+                active2DCoins[i].x = L.fieldMaxX
                 active2DCoins[i].vx = -abs(active2DCoins[i].vx) * 0.65
             }
 
             // 推币台前缘挤压
-            if coin.y > enter3DY - 40 {
-                active2DCoins[i].vy += pusherOffset * 0.1
+            let squeezeY = L.bedEntryY - 40 * L.fallScale
+            if coin.y > squeezeY {
+                active2DCoins[i].vy += pusherOffset / L.bedScale * 0.1 * L.fallScale
                 for j in 0..<active2DCoins.count {
-                    if i != j && active2DCoins[j].y > enter3DY - 40 {
+                    if i != j && active2DCoins[j].y > squeezeY {
                         let dx = active2DCoins[i].x - active2DCoins[j].x
                         let dy = active2DCoins[i].y - active2DCoins[j].y
                         let distSq = dx*dx + dy*dy
@@ -375,27 +383,27 @@ class GameState: ObservableObject {
             }
 
             // 交互格挡
-            handleBaffle(i: i, baffleXs: slotBaffleTopX, baffleY: slotBaffleTopY, idOffset: 0)
-            handleBaffle(i: i, baffleXs: slotBaffleMidX, baffleY: slotBaffleMidY, idOffset: 4)
-            handleBaffle(i: i, baffleXs: slotBaffleBotX, baffleY: slotBaffleBotY, idOffset: 8)
+            for (row, pegs) in L.pegRows.enumerated() {
+                handleBaffle(i: i, pegs: pegs, idOffset: row * 4)
+            }
 
             // 水果行区域判定
-            if coin.y > fruitRowYTop && coin.y < fruitRowYBottom {
-                for (baffleIdx, baffleX) in fruitBaffleXPositions.enumerated() {
+            if coin.y > L.fruitBar.minY && coin.y < L.fruitBar.maxY {
+                for (baffleIdx, baffleX) in L.fruitBaffleXs.enumerated() {
                     let dx = coin.x - baffleX
-                    if abs(dx) < 22 && !coin.hasBounced.contains(baffleIdx + 10) {
+                    if abs(dx) < L.fruitBaffleHalfWidth && !coin.hasBounced.contains(baffleIdx + 20) {
                         active2DCoins[i].vx += dx > 0 ? 90 : -90
                         active2DCoins[i].vy *= 0.7
-                        active2DCoins[i].hasBounced.append(baffleIdx + 10)
+                        active2DCoins[i].hasBounced.append(baffleIdx + 20)
                         HapticManager.shared.baffleHit()
                         break
                     }
                 }
                 
                 if !coin.fruitTriggered {
-                    for (idx, fruitX) in fruitCenterXPositions.enumerated() {
-                        let dx = coin.x - fruitX
-                        if abs(dx) < 28 { 
+                    for (idx, fruit) in L.fruitCenters.enumerated() {
+                        let dx = coin.x - fruit.x
+                        if abs(dx) < L.fruitHitHalfWidth {
                             active2DCoins[i].fruitTriggered = true
                             triggerFruitHit(index: idx)
                             combo.hit(type: "fruit")
@@ -407,20 +415,20 @@ class GameState: ObservableObject {
                 }
             }
 
-            // BONUS 滑块命中：金币穿过水果行下沿时落在 BONUS 目标范围内
-            if !coin.bonusTriggered && coin.y > bonusYTop && coin.y < enter3DY
-                && abs(coin.x - bonusSliderOffset) < bonusHitHalfWidth {
+            // BONUS 滑块命中：金币穿过 BONUS 轨道时落在滑块范围内
+            if !coin.bonusTriggered && coin.y > L.bonusLane.minY && coin.y < L.bonusLane.maxY
+                && abs(coin.x - L.bonusSliderCenter(offset: bonusSliderOffset).x) < L.bonusSliderWidth / 2 {
                 active2DCoins[i].bonusTriggered = true
                 triggerBonusHit()
             }
 
-            // 转移到推币床 (3D环境模拟)
-            if coin.y > enter3DY {
-                active2DCoins[i].y = enter3DY + 1000
+            // 转移到推币床
+            if coin.y > L.bedEntryY {
+                active2DCoins[i].y = .infinity
                 spawnBedCoin(x: coin.x)
             }
         }
-        active2DCoins.removeAll { $0.y > enter3DY + 500 }
+        active2DCoins.removeAll { $0.y > L.bedEntryY }
 
         // === 2. 推币床物理核心 (空间网格 + 真实骑跨 + 波浪推动) ===
         updatePusherBedPhysics(dt: dt, pusherVelocity: pusherVelocity)
@@ -430,10 +438,10 @@ class GameState: ObservableObject {
     }
 
     private func updatePusherBedPhysics(dt: CGFloat, pusherVelocity: CGFloat) {
+        let L = layout
         let friction: CGFloat = 0.93 // 增加摩擦力，增加“厚重感”
-        let pusherLimitY = pusherOffset + 40 // 扩大推子感应区
+        let pusherLimitY = L.pusherFrontRestY + pusherOffset // 推板前沿
         let cellW: CGFloat = 32
-        let bedLength: CGFloat = 215
         var grid: [String: [Int]] = [:]
         
         // 1. 基础位移 & 填充网格
@@ -503,31 +511,35 @@ class GameState: ObservableObject {
         
         // 3. 约束与掉落
         for i in 0..<bedCoins.count {
-            if abs(bedCoins[i].x) > 138 {
-                bedCoins[i].x = bedCoins[i].x > 0 ? 138 : -138
+            if bedCoins[i].x < L.bedMinX || bedCoins[i].x > L.bedMaxX {
+                bedCoins[i].x = min(max(bedCoins[i].x, L.bedMinX), L.bedMaxX)
                 bedCoins[i].vx *= -0.3
+            }
+            // 不会被推回推板后面
+            if bedCoins[i].y < pusherLimitY {
+                bedCoins[i].y = pusherLimitY
             }
         }
         
-        let coinRadius: CGFloat = 14
-        let dropped = bedCoins.filter { $0.y > bedLength - coinRadius }
+        let dropped = bedCoins.filter { $0.y > L.bedDropY }
         if !dropped.isEmpty {
             addCoins(dropped.count * GameConstants.bedDropReward)
-            bedCoins.removeAll { $0.y > bedLength - coinRadius }
+            bedCoins.removeAll { $0.y > L.bedDropY }
         }
 
         if bedCoins.count > 120 { bedCoins.removeFirst(bedCoins.count - 120) }
     }
 
-    private func handleBaffle(i: Int, baffleXs: [CGFloat], baffleY: CGFloat, idOffset: Int) {
+    private func handleBaffle(i: Int, pegs: [CGPoint], idOffset: Int) {
         let coin = active2DCoins[i]
-        guard abs(coin.y - baffleY) < 15 else { return }
+        guard let pegY = pegs.first?.y, abs(coin.y - pegY) < 15 else { return }
         
-        for (idx, bx) in baffleXs.enumerated() {
+        for (idx, peg) in pegs.enumerated() {
             let uniqueId = idOffset + idx
+            let bx = peg.x
             if !coin.hasBounced.contains(uniqueId) {
                 let dx = coin.x - bx
-                if abs(dx) < (coin.radius + 10) {
+                if abs(dx) < (coin.radius + layout.pegRadius + 4) {
                     active2DCoins[i].vx += dx > 0 ? 110 : -110
                     active2DCoins[i].vy *= -0.3
                     active2DCoins[i].hasBounced.append(uniqueId)
@@ -562,32 +574,25 @@ class GameState: ObservableObject {
 
         let sideOffset: CGFloat = isNextDropRight ? 26 : -26
         isNextDropRight.toggle()
-        let dropX = coinSliderOffset + sideOffset 
+        let slider = layout.coinSliderCenter(offset: coinSliderOffset)
+        let dropX = min(max(slider.x + sideOffset, layout.fieldMinX), layout.fieldMaxX)
         
         let newCoin = Active2DCoin(
             x: dropX,
-            y: -360, // Iteration 9+ 精准校准高度 (适配 UI 滑道顶端)
+            y: layout.coinSpawnY, // 从 COIN 滑块中心落下
             vx: CGFloat.random(in: -3...3),
-            vy: CGFloat.random(in: 120...180) 
-        )
-        active2DCoins.append(newCoin)
-    }
-
-    func dropBonusCoin() {
-        HapticManager.shared.coinDrop()
-        let dropX = bonusSliderOffset + CGFloat.random(in: -20...20)
-        let newCoin = Active2DCoin(
-            x: dropX,
-            y: -230, // 精确对准紫色滑块中心
-            vx: CGFloat.random(in: -40...40),
-            vy: CGFloat.random(in: 80...150)
+            vy: CGFloat.random(in: 120...180) * layout.fallScale
         )
         active2DCoins.append(newCoin)
     }
 
     private func spawnBedCoin(x: CGFloat) {
-        // y: 75 对应推币台起始位置
-        let newCoin = PusherCoin(x: x, y: 75, vx: CGFloat.random(in: -10...10), vy: 50)
+        let newCoin = PusherCoin(
+            x: min(max(x, layout.bedMinX), layout.bedMaxX),
+            y: layout.bedEntryY,
+            vx: CGFloat.random(in: -10...10),
+            vy: 50 * layout.bedScale
+        )
         bedCoins.append(newCoin)
     }
 
@@ -610,7 +615,7 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.litFruitIndex = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
-            addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: fruitCenterXPositions[index], y: fruitRowYTop, color: .yellow)
+            addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
             addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.showCardSelection = true }
@@ -622,7 +627,7 @@ class GameState: ObservableObject {
         // 老虎机正在转时忽略
         guard !isSpinning else { return }
         HapticManager.shared.bonusTriggered()
-        addFloatingScore(text: "BONUS!", x: 0, y: bonusYTop, color: .orange)
+        addFloatingScore(text: "BONUS!", x: layout.centerX, y: layout.bonusLane.minY, color: .orange)
         spinSlot()
     }
 
@@ -747,23 +752,23 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: 0, y: 0, color: .yellow)
+        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
         // V9.4 Particle Explosion
-        spawnParticles(count: 100, x: 0, y: -200, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
+        spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
     }
 
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: 0, y: 0, color: .orange)
+        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
         // V9.4 Particle Explosion
-        spawnParticles(count: 50, x: 0, y: -200, colors: [.orange, .yellow, .white])
+        spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
     }
 
     private func slotSmallWin() {
         currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin()
-        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: 0, y: 0, color: .green)
+        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green)
     }
 
     func selectCardReward(_ choice: CardReward) {

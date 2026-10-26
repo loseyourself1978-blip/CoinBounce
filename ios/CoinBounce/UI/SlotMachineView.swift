@@ -5,10 +5,13 @@ import SwiftUI
 struct SlotMachineView: View {
     let reels: [[SlotSymbol]]
     let spinState: SlotSpinState
+    /// 转轴区和 SPIN 按钮在本视图内的位置（来自 GameLayout，互不重叠）
+    let reelsFrame: CGRect
+    let spinFrame: CGRect
     let onSpin: () -> Void
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topLeading) {
             // 老虎机外框
             SlotMachineFrame()
             
@@ -22,12 +25,13 @@ struct SlotMachineView: View {
                     )
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .frame(width: reelsFrame.width, height: reelsFrame.height)
+            .position(x: reelsFrame.midX, y: reelsFrame.midY)
             
             // 旋转按钮
-            SpinButton(spinState: spinState, action: onSpin)
-                .position(x: 320, y: 70)
+            SpinButton(spinState: spinState, diameter: spinFrame.width, action: onSpin)
+                .frame(width: spinFrame.width, height: spinFrame.height)
+                .position(x: spinFrame.midX, y: spinFrame.midY)
         }
     }
 }
@@ -64,14 +68,14 @@ struct SlotMachineFrame: View {
                                 lineWidth: 4
                             )
                         
-                        // 闪烁彩灯
-                        ForEach(0..<12) { i in
-                            Circle()
-                                .fill(blinkColor(i))
-                                .frame(width: 6, height: 6)
-                                .offset(y: -75)
-                                .rotationEffect(.degrees(Double(i) * 30))
+                        // 闪烁彩灯：沿上下边框排列，不超出外框
+                        VStack {
+                            lightRow(offset: 0)
+                            Spacer()
+                            lightRow(offset: 1)
                         }
+                        .padding(.vertical, 1)
+                        .padding(.horizontal, 18)
                     }
                 )
                 .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
@@ -83,6 +87,17 @@ struct SlotMachineFrame: View {
         }
     }
     
+    private func lightRow(offset: Int) -> some View {
+        HStack {
+            ForEach(0..<8) { i in
+                Circle()
+                    .fill(blinkColor(i + offset))
+                    .frame(width: 5, height: 5)
+                if i < 7 { Spacer(minLength: 0) }
+            }
+        }
+    }
+
     func blinkColor(_ i: Int) -> Color {
         let colors: [Color] = [.red, .yellow, .blue, .green]
         if blink {
@@ -125,6 +140,8 @@ struct SlotReelView: View {
                 handleSpinStateChange(newState, symbolHeight: symbolHeight)
             }
         }
+        // 只显示 3 行，滚动中的其余符号不溢出到下方区域
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private func handleSpinStateChange(_ state: SlotSpinState, symbolHeight: CGFloat) {
@@ -268,6 +285,7 @@ struct SymbolContent: View {
 
 struct SpinButton: View {
     let spinState: SlotSpinState
+    var diameter: CGFloat = 60
     let action: () -> Void
     
     var isSpinning: Bool {
@@ -281,7 +299,7 @@ struct SpinButton: View {
                 // 外圈发光
                 Circle()
                     .fill(Color.red.opacity(0.3))
-                    .frame(width: 70, height: 70)
+                    .frame(width: diameter * 1.15, height: diameter * 1.15)
                     .blur(radius: isSpinning ? 5 : 15)
                     .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isSpinning)
                 
@@ -292,10 +310,10 @@ struct SpinButton: View {
                             colors: [Color.red, Color.orange],
                             center: .center,
                             startRadius: 5,
-                            endRadius: 30
+                            endRadius: diameter / 2
                         )
                     )
-                    .frame(width: 60, height: 60)
+                    .frame(width: diameter, height: diameter)
                     .overlay(
                         Circle()
                             .stroke(
@@ -316,10 +334,10 @@ struct SpinButton: View {
                 } else {
                     VStack(spacing: 2) {
                         Text("SPIN")
-                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .font(.system(size: diameter * 0.22, weight: .black, design: .rounded))
                             .foregroundColor(.white)
                         Text("🎰")
-                            .font(.system(size: 14))
+                            .font(.system(size: diameter * 0.23))
                     }
                 }
             }
