@@ -397,21 +397,15 @@ struct CoinPusherView: View {
         let h = layout.pusher.height
 
         ZStack(alignment: .top) {
-            // 参考推币台背景图：固定为区域大小，不能撑宽父视图
-            Image("coin_pusher_ref")
-                .resizable()
-                .scaledToFill()
+            // 台面、侧栏、后挡板、掉落口（不画金币，金币全部由物理绘制）
+            PusherBedBackground(layout: layout)
                 .frame(width: w, height: h)
-                .clipped()
 
             // 推块组件：前沿 = 物理里的 pusherFrontRestY + pusherOffset
             pusherAssembly(w: w, frontY: layout.pusherFrontRestY - layout.pusher.minY + gameState.pusherOffset)
 
-            // 左右斜坡
+            // 左右引导斜坡
             ramps(w: w, h: h * 0.40)
-
-            // 喷币管
-            coinSprayers(w: w, h: h * 0.40)
         }
         .frame(width: w, height: h)
         .clipped()
@@ -495,10 +489,7 @@ struct CoinPusherView: View {
             path.addLine(to: CGPoint(x: 0, y: h * 0.6))
             path.closeSubpath()
         }
-        .fill(LinearGradient(stops: [
-            .init(color: Color(red: 0.20, green: 0.32, blue: 0.28), location: 0.0),
-            .init(color: Color(red: 0.16, green: 0.25, blue: 0.22), location: 1.0)
-        ], startPoint: .top, endPoint: .bottom))
+        .fill(PusherBedBackground.rampGradient)
 
         // 右侧斜坡 (330-431像素)
         Path { path in
@@ -507,47 +498,7 @@ struct CoinPusherView: View {
             path.addLine(to: CGPoint(x: w, y: h * 0.6))
             path.closeSubpath()
         }
-        .fill(LinearGradient(stops: [
-            .init(color: Color(red: 0.20, green: 0.32, blue: 0.28), location: 0.0),
-            .init(color: Color(red: 0.16, green: 0.25, blue: 0.22), location: 1.0)
-        ], startPoint: .top, endPoint: .bottom))
-    }
-
-    // MARK: - 喷币管
-    @ViewBuilder
-    func coinSprayers(w: CGFloat, h: CGFloat) -> some View {
-        // 左侧喷币管
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(LinearGradient(stops: [
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 0.0),
-                    .init(color: Color(red: 0.20, green: 0.40, blue: 0.25), location: 0.5),
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 1.0)
-                ], startPoint: .top, endPoint: .bottom))
-                .frame(width: w * 0.035, height: h * 0.35)
-
-            // 喷口
-            Circle()
-                .fill(Color(red: 0.15, green: 0.30, blue: 0.20))
-                .frame(width: w * 0.045, height: w * 0.045)
-        }
-        .position(x: w * 0.11, y: h * 0.20)
-
-        // 右侧喷币管
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(LinearGradient(stops: [
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 0.0),
-                    .init(color: Color(red: 0.20, green: 0.40, blue: 0.25), location: 0.5),
-                    .init(color: Color(red: 0.30, green: 0.55, blue: 0.35), location: 1.0)
-                ], startPoint: .top, endPoint: .bottom))
-                .frame(width: w * 0.035, height: h * 0.35)
-
-            Circle()
-                .fill(Color(red: 0.15, green: 0.30, blue: 0.20))
-                .frame(width: w * 0.045, height: w * 0.045)
-        }
-        .position(x: w * 0.89, y: h * 0.20)
+        .fill(PusherBedBackground.rampGradient)
     }
 
     // MARK: - 投币按钮
