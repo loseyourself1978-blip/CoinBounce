@@ -30,6 +30,11 @@ struct GameConstants {
     static let cardCoinsReward: Int = 100     // 7 水果全亮后选「金币」
     static let cardFruitsToLight: Int = 2     // 7 水果全亮后选「水果」
 
+    // 激励广告领币
+    static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
+    static let adRewardCoinThreshold: Int = 10      // 金币低于这个数才显示领币按钮
+    static let adRewardDailyLimit: Int = 5          // 每天最多领取次数（按本地日期重置）
+
     // 开局预铺金币（推币台）
     static let prefillMaxRows: Int = 12            // 最多铺几排（屏幕矮时自动减少）
     static let prefillEdgeGap: CGFloat = 0.08       // 最前排距离掉落线（金币直径）

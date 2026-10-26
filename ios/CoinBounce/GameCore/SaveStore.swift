@@ -6,6 +6,9 @@ struct SaveData: Codable, Equatable {
     var totalCoinsWon: Int
     var fruitsLit: [Bool]
     var hasDroppedFirstCoin: Bool
+    /// 激励广告领币：最近一次领取的本地日期（yyyy-MM-dd）和当天已领次数（旧存档没有这两项）
+    var adRewardDay: String? = nil
+    var adRewardsClaimed: Int? = nil
 
     /// 首次安装的初始存档
     static let fresh = SaveData(

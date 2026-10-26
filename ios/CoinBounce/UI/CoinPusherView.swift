@@ -6,8 +6,10 @@ import SpriteKit
 
 struct CoinPusherView: View {
     @StateObject private var gameState = GameState.shared
+    @ObservedObject private var ads = AdsManager.shared
     @State private var arrowBounce = false
     @State private var showNoCoinsHint = false
+    @State private var showSettings = false
 
     var body: some View {
         // 外层不忽略安全区，才能读到真实的安全区边距；内容再铺满整屏
@@ -120,8 +122,27 @@ struct CoinPusherView: View {
 
         // 启动显示链路
         GameState.shared.startDisplayLink()
+        // 预加载音效并按设置开始背景音乐
+        AudioManager.shared.updateMusic()
+
+        // 广告：UMP 同意 → ATT → 初始化 SDK → 预加载（等窗口就绪后开始）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { AdsManager.shared.start() }
 
         #if DEBUG
+        // 截图用：-debugSetCoins N 把金币设为 N；-debugAutoAd 在广告加载好后自动点「看广告领金币」
+        if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
+            gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
+        }
+        if ProcessInfo.processInfo.arguments.contains("-debugShowSettings") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showSettings = true }
+        }
+        if ProcessInfo.processInfo.arguments.contains("-debugAutoAd") {
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                guard AdsManager.shared.isAdReady else { return }
+                timer.invalidate()
+                gameState.requestFreeCoins()
+            }
+        }
         // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
         let autoDrop = UserDefaults.standard.integer(forKey: "debugAutoDrop")
         for i in 0..<autoDrop {
@@ -167,6 +188,14 @@ struct CoinPusherView: View {
             CoinBalanceView(coins: gameState.availableCoins)
                 .padding(.leading, 10)
                 .padding(.top, 6)
+        }
+        .overlay(alignment: .topTrailing) {
+            SettingsButton { showSettings = true }
+                .padding(.trailing, 10)
+                .padding(.top, 4)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
 
@@ -564,10 +593,17 @@ struct CoinPusherView: View {
                 if gameState.canDropCoin {
                     gameState.dropCoin()
                 } else {
+                    AudioManager.shared.play(.noCoins)
                     gameState.requestFreeCoins()
                     showNoCoinsHint = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
                 }
+            }
+
+            // 金币不足时：看激励广告领金币（广告没加载好时显示加载中，不影响游戏）
+            if gameState.canOfferAdReward() {
+                adRewardButton(width: min(w * 0.3, 130), height: min(44, h * 0.5))
+                    .offset(x: min(w * 0.34, w / 2 - 75), y: buttonY)
             }
 
             // 金币用完提示
@@ -583,6 +619,37 @@ struct CoinPusherView: View {
             }
         }
         .frame(width: w, height: h)
+    }
+}
+
+extension CoinPusherView {
+    @ViewBuilder
+    func adRewardButton(width: CGFloat, height: CGFloat) -> some View {
+        Button {
+            AudioManager.shared.play(.buttonTap)
+            gameState.requestFreeCoins()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: ads.isAdReady ? "play.rectangle.fill" : "hourglass")
+                    .font(.system(size: height * 0.4, weight: .bold))
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(ads.isAdReady ? "看广告" : "广告加载中")
+                        .font(.system(size: height * 0.27, weight: .bold, design: .rounded))
+                    Text("领 \(GameConstants.adRewardCoins) 金币")
+                        .font(.system(size: height * 0.3, weight: .black, design: .rounded))
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .frame(width: width, height: height)
+            .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.2, green: 0.7, blue: 0.3), Color(red: 0.1, green: 0.45, blue: 0.2)],
+                                                      startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.7), lineWidth: 1.5))
+            .opacity(ads.isAdReady ? 1 : 0.6)
+        }
+        .disabled(!ads.isAdReady)
     }
 }
 

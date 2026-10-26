@@ -119,6 +119,12 @@ class GameState: ObservableObject {
     @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
     @Published var currentLevel: Int = 3
 
+    // MARK: - 激励广告领币
+    @Published var adRewardDay: String? = nil { didSet { scheduleSave() } }
+    @Published var adRewardsClaimed: Int = 0 { didSet { scheduleSave() } }
+    /// 激励广告来源，测试里可替换
+    var adPresenter: RewardedAdPresenting = AdsManager.shared
+
     // MARK: - 新手引导
     @Published var showTutorialArrow: Bool = true
     @Published var hasDroppedFirstCoin: Bool = false { didSet { scheduleSave() } }
@@ -224,7 +230,9 @@ class GameState: ObservableObject {
             availableCoins: availableCoins,
             totalCoinsWon: totalCoinsWon,
             fruitsLit: fruitsLit,
-            hasDroppedFirstCoin: hasDroppedFirstCoin
+            hasDroppedFirstCoin: hasDroppedFirstCoin,
+            adRewardDay: adRewardDay,
+            adRewardsClaimed: adRewardsClaimed
         )
     }
 
@@ -233,6 +241,8 @@ class GameState: ObservableObject {
         totalCoinsWon = max(0, data.totalCoinsWon)
         fruitsLit = data.fruitsLit.count == SaveData.fresh.fruitsLit.count ? data.fruitsLit : SaveData.fresh.fruitsLit
         hasDroppedFirstCoin = data.hasDroppedFirstCoin
+        adRewardDay = data.adRewardDay
+        adRewardsClaimed = max(0, data.adRewardsClaimed ?? 0)
         showTutorialArrow = !data.hasDroppedFirstCoin
     }
 
@@ -435,6 +445,7 @@ class GameState: ObservableObject {
                         active2DCoins[i].vy *= 0.7
                         active2DCoins[i].hasBounced.append(baffleIdx + 20)
                         HapticManager.shared.baffleHit()
+                        AudioManager.shared.play(.baffleHit)
                         break
                     }
                 }
@@ -574,6 +585,7 @@ class GameState: ObservableObject {
         let dropped = bedCoins.filter { $0.y > L.bedDropY }
         if !dropped.isEmpty {
             bedDropCount += dropped.count
+            AudioManager.shared.play(.bedDrop)
             addCoins(dropped.count * GameConstants.bedDropReward)
             bedCoins.removeAll { $0.y > L.bedDropY }
         }
@@ -595,6 +607,7 @@ class GameState: ObservableObject {
                     active2DCoins[i].vy *= -0.3
                     active2DCoins[i].hasBounced.append(uniqueId)
                     HapticManager.shared.baffleHit()
+                    AudioManager.shared.play(.baffleHit)
                     baffleHitPositions.append((x: bx, y: coin.y, time: Date()))
                     combo.hit(type: "baffle")
                     showComboText = combo.isActive
@@ -622,6 +635,7 @@ class GameState: ObservableObject {
         hasDroppedFirstCoin = true
         showTutorialArrow = false
         HapticManager.shared.coinDrop()
+        AudioManager.shared.play(.coinDrop)
 
         let sideOffset: CGFloat = isNextDropRight ? 26 : -26
         isNextDropRight.toggle()
@@ -648,9 +662,43 @@ class GameState: ObservableObject {
         bedCoins.append(newCoin)
     }
 
-    /// 金币用完时的补币入口
+    /// 本地日期，用于每日次数重置
+    static func dayKey(for date: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    /// 今天已领取的次数（跨日自动归零）
+    func adRewardsUsed(on date: Date = Date()) -> Int {
+        adRewardDay == GameState.dayKey(for: date) ? adRewardsClaimed : 0
+    }
+
+    /// 是否显示「看广告领金币」：金币低于阈值且今天还有次数
+    func canOfferAdReward(now: Date = Date()) -> Bool {
+        availableCoins < GameConstants.adRewardCoinThreshold
+            && adRewardsUsed(on: now) < GameConstants.adRewardDailyLimit
+    }
+
+    /// 金币不足时的补币入口：播放激励广告，只有看完（SDK 发放奖励回调）才加金币
     func requestFreeCoins() {
-        // TODO: 接入激励视频广告，看完后 addCoins(...) 发放金币
+        guard canOfferAdReward(), adPresenter.isAdReady else { return }
+        adPresenter.showRewardedAd { [weak self] in
+            self?.grantAdReward()
+        }
+    }
+
+    /// 激励广告看完后的发奖；超过每日次数时不发
+    @discardableResult
+    func grantAdReward(now: Date = Date()) -> Bool {
+        let used = adRewardsUsed(on: now)
+        guard used < GameConstants.adRewardDailyLimit else { return false }
+        adRewardDay = GameState.dayKey(for: now)
+        adRewardsClaimed = used + 1
+        addCoins(GameConstants.adRewardCoins)
+        #if DEBUG
+        NSLog("[Ads] granted %d coins, balance %d, today %d", GameConstants.adRewardCoins, availableCoins, adRewardsClaimed)
+        #endif
+        return true
     }
 
     func addCoins(_ amount: Int) {
@@ -667,6 +715,7 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.litFruitIndex = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
+            AudioManager.shared.play(.fruitLit)
             addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
             addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
@@ -718,6 +767,7 @@ class GameState: ObservableObject {
         slotFlashColumns.removeAll()
         currentWin = .none
         HapticManager.shared.slotStart()
+        AudioManager.shared.play(.slotSpin)
         
         let symbolMap: [SymbolType] = SymbolType.allCases
         
@@ -755,6 +805,7 @@ class GameState: ObservableObject {
                 self.stoppedColumns.insert(col)
                 self.slotScrollOffsets[col] = 0
                 HapticManager.shared.slotStop()
+                AudioManager.shared.play(.slotStop)
                 if col == 4 { 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
                         self.evaluateWin()
@@ -804,7 +855,7 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -812,14 +863,14 @@ class GameState: ObservableObject {
 
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
+        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
     }
 
     private func slotSmallWin() {
-        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin()
+        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin(); AudioManager.shared.play(.winSmall)
         addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green)
     }
 

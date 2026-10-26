@@ -294,7 +294,7 @@ struct SpinButton: View {
     }
     
     var body: some View {
-        Button(action: action) {
+        Button(action: { AudioManager.shared.play(.buttonTap); action() }) {
             ZStack {
                 // 外圈发光
                 Circle()
