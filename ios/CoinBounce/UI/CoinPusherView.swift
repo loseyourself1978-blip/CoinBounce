@@ -121,6 +121,13 @@ struct CoinPusherView: View {
         // 启动显示链路
         GameState.shared.startDisplayLink()
 
+        #if DEBUG
+        // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
+        let autoDrop = UserDefaults.standard.integer(forKey: "debugAutoDrop")
+        for i in 0..<autoDrop {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 + Double(i) * 0.35) { gameState.dropCoin() }
+        }
+        #endif
     }
 
     // MARK: - Jackpot + 过渡色组合
