@@ -10,6 +10,7 @@ struct CoinBounceApp: App {
         }
         .onChange(of: scenePhase) { phase in
             if phase != .active { GameState.shared.saveNow() }
+            if phase == .active { AudioManager.shared.updateMusic() }
         }
     }
 }

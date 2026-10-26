@@ -435,6 +435,7 @@ class GameState: ObservableObject {
                         active2DCoins[i].vy *= 0.7
                         active2DCoins[i].hasBounced.append(baffleIdx + 20)
                         HapticManager.shared.baffleHit()
+                        AudioManager.shared.play(.baffleHit)
                         break
                     }
                 }
@@ -574,6 +575,7 @@ class GameState: ObservableObject {
         let dropped = bedCoins.filter { $0.y > L.bedDropY }
         if !dropped.isEmpty {
             bedDropCount += dropped.count
+            AudioManager.shared.play(.bedDrop)
             addCoins(dropped.count * GameConstants.bedDropReward)
             bedCoins.removeAll { $0.y > L.bedDropY }
         }
@@ -595,6 +597,7 @@ class GameState: ObservableObject {
                     active2DCoins[i].vy *= -0.3
                     active2DCoins[i].hasBounced.append(uniqueId)
                     HapticManager.shared.baffleHit()
+                    AudioManager.shared.play(.baffleHit)
                     baffleHitPositions.append((x: bx, y: coin.y, time: Date()))
                     combo.hit(type: "baffle")
                     showComboText = combo.isActive
@@ -622,6 +625,7 @@ class GameState: ObservableObject {
         hasDroppedFirstCoin = true
         showTutorialArrow = false
         HapticManager.shared.coinDrop()
+        AudioManager.shared.play(.coinDrop)
 
         let sideOffset: CGFloat = isNextDropRight ? 26 : -26
         isNextDropRight.toggle()
@@ -667,6 +671,7 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.litFruitIndex = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
+            AudioManager.shared.play(.fruitLit)
             addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
             addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
@@ -718,6 +723,7 @@ class GameState: ObservableObject {
         slotFlashColumns.removeAll()
         currentWin = .none
         HapticManager.shared.slotStart()
+        AudioManager.shared.play(.slotSpin)
         
         let symbolMap: [SymbolType] = SymbolType.allCases
         
@@ -755,6 +761,7 @@ class GameState: ObservableObject {
                 self.stoppedColumns.insert(col)
                 self.slotScrollOffsets[col] = 0
                 HapticManager.shared.slotStop()
+                AudioManager.shared.play(.slotStop)
                 if col == 4 { 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
                         self.evaluateWin()
@@ -804,7 +811,7 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -812,14 +819,14 @@ class GameState: ObservableObject {
 
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
+        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
     }
 
     private func slotSmallWin() {
-        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin()
+        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin(); AudioManager.shared.play(.winSmall)
         addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green)
     }
 

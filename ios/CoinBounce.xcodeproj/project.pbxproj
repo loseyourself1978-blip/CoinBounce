@@ -7,6 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */; };
+		C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */ = {isa = PBXBuildFile; fileRef = C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */; };
+		C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */ = {isa = PBXBuildFile; fileRef = C065A216266C4D4C0CD3793D /* sfx_win_big.wav */; };
+		C02B91ABF6D4853D700EE10E /* sfx_slot_stop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */; };
+		C064F742390651D88B659F01 /* sfx_slot_spin.wav in Resources */ = {isa = PBXBuildFile; fileRef = C01A8C670299D69B11017774 /* sfx_slot_spin.wav */; };
+		C02881A25E77EF9DBB7E89ED /* sfx_no_coins.wav in Resources */ = {isa = PBXBuildFile; fileRef = C026F5EB2678C99744DDA993 /* sfx_no_coins.wav */; };
+		C043C65F1E488BEC41029C47 /* sfx_jackpot.wav in Resources */ = {isa = PBXBuildFile; fileRef = C013055A43B134AF24AA5599 /* sfx_jackpot.wav */; };
+		C07516CB54148100DE592C7D /* sfx_fruit_lit.wav in Resources */ = {isa = PBXBuildFile; fileRef = C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */; };
+		C0C5FD123EB80F14316E31CC /* sfx_coin_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0E2449189777C40043D660E /* sfx_coin_drop.wav */; };
+		C08FCC85DCDDC53F9A6F30B6 /* sfx_button_tap.wav in Resources */ = {isa = PBXBuildFile; fileRef = C01604C22446141689D01124 /* sfx_button_tap.wav */; };
+		C05023BDDC0F0C704285337C /* sfx_bed_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */; };
+		C032AA4BDB461E49F4A4A008 /* sfx_baffle_hit.wav in Resources */ = {isa = PBXBuildFile; fileRef = C03D722AF32143CA34474B39 /* sfx_baffle_hit.wav */; };
+		C02890FCAC11FF1B0DCEEBF4 /* bgm_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0BB5A849F7E5C9460FB8051 /* bgm_loop.wav */; };
+		C079D1C28017942DBAFC45E1 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A6513C75A7B7AA2979393A /* AudioManager.swift */; };
+		C08F63CDDDBA3BE7105554DD /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AFC3BAB814249E2557C10D /* SettingsStore.swift */; };
 		B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E22C00000100000001 /* CoinBounceApp.swift */; };
 		B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E42C00000100000002 /* GameConstants.swift */; };
 		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
@@ -33,6 +48,21 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAudioTests.swift; sourceTree = "<group>"; };
+		C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_small.wav; sourceTree = "<group>"; };
+		C065A216266C4D4C0CD3793D /* sfx_win_big.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_big.wav; sourceTree = "<group>"; };
+		C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_slot_stop.wav; sourceTree = "<group>"; };
+		C01A8C670299D69B11017774 /* sfx_slot_spin.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_slot_spin.wav; sourceTree = "<group>"; };
+		C026F5EB2678C99744DDA993 /* sfx_no_coins.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_no_coins.wav; sourceTree = "<group>"; };
+		C013055A43B134AF24AA5599 /* sfx_jackpot.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_jackpot.wav; sourceTree = "<group>"; };
+		C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_fruit_lit.wav; sourceTree = "<group>"; };
+		C0E2449189777C40043D660E /* sfx_coin_drop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_coin_drop.wav; sourceTree = "<group>"; };
+		C01604C22446141689D01124 /* sfx_button_tap.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_button_tap.wav; sourceTree = "<group>"; };
+		C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_bed_drop.wav; sourceTree = "<group>"; };
+		C03D722AF32143CA34474B39 /* sfx_baffle_hit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_baffle_hit.wav; sourceTree = "<group>"; };
+		C0BB5A849F7E5C9460FB8051 /* bgm_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bgm_loop.wav; sourceTree = "<group>"; };
+		C0A6513C75A7B7AA2979393A /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		C0AFC3BAB814249E2557C10D /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		B1A1E1DF2C00000100000000 /* CoinBounce.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoinBounce.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1E1E22C00000100000001 /* CoinBounceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceApp.swift; sourceTree = "<group>"; };
 		B1A1E1E42C00000100000002 /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
@@ -68,6 +98,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C0D773A5B713E8706AF20636 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+							C0BB5A849F7E5C9460FB8051 /* bgm_loop.wav */,
+				C03D722AF32143CA34474B39 /* sfx_baffle_hit.wav */,
+				C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */,
+				C01604C22446141689D01124 /* sfx_button_tap.wav */,
+				C0E2449189777C40043D660E /* sfx_coin_drop.wav */,
+				C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */,
+				C013055A43B134AF24AA5599 /* sfx_jackpot.wav */,
+				C026F5EB2678C99744DDA993 /* sfx_no_coins.wav */,
+				C01A8C670299D69B11017774 /* sfx_slot_spin.wav */,
+				C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */,
+				C065A216266C4D4C0CD3793D /* sfx_win_big.wav */,
+				C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */,
+);
+			path = Audio;
+			sourceTree = "<group>";
+		};
 		B1A1E1B02C00000100000001 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -84,7 +133,9 @@
 				B1A1BB022C00000300000001 /* HapticManager.swift */,
 				B1A1CC062C00000400000001 /* SaveStore.swift */,
 				B1A1DD022C00000500000001 /* GameLayout.swift */,
-			);
+							C0AFC3BAB814249E2557C10D /* SettingsStore.swift */,
+				C0A6513C75A7B7AA2979393A /* AudioManager.swift */,
+);
 			path = GameCore;
 			sourceTree = "<group>";
 		};
@@ -124,7 +175,8 @@
 				B1A1E1B12C00000100000001 /* GameCore */,
 				B1A1E1B62C00000100000001 /* UI */,
 				B1A1E1F22C00000100000009 /* Assets.xcassets */,
-			);
+							C0D773A5B713E8706AF20636 /* Audio */,
+);
 			path = CoinBounce;
 			sourceTree = "<group>";
 		};
@@ -133,7 +185,8 @@
 			children = (
 				B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */,
 				B1A1DD042C00000500000001 /* GameLayoutTests.swift */,
-			);
+							C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
+);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
 		};
@@ -218,7 +271,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */,
-			);
+							C02890FCAC11FF1B0DCEEBF4 /* bgm_loop.wav in Resources */,
+				C032AA4BDB461E49F4A4A008 /* sfx_baffle_hit.wav in Resources */,
+				C05023BDDC0F0C704285337C /* sfx_bed_drop.wav in Resources */,
+				C08FCC85DCDDC53F9A6F30B6 /* sfx_button_tap.wav in Resources */,
+				C0C5FD123EB80F14316E31CC /* sfx_coin_drop.wav in Resources */,
+				C07516CB54148100DE592C7D /* sfx_fruit_lit.wav in Resources */,
+				C043C65F1E488BEC41029C47 /* sfx_jackpot.wav in Resources */,
+				C02881A25E77EF9DBB7E89ED /* sfx_no_coins.wav in Resources */,
+				C064F742390651D88B659F01 /* sfx_slot_spin.wav in Resources */,
+				C02B91ABF6D4853D700EE10E /* sfx_slot_stop.wav in Resources */,
+				C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */,
+				C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -238,7 +303,9 @@
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
 				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
 				B1A1DD012C00000500000001 /* GameLayout.swift in Sources */,
-			);
+							C08F63CDDDBA3BE7105554DD /* SettingsStore.swift in Sources */,
+				C079D1C28017942DBAFC45E1 /* AudioManager.swift in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B1A1AAAD2C00000200000001 /* Sources */ = {
@@ -247,7 +314,8 @@
 			files = (
 				B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */,
 				B1A1DD032C00000500000001 /* GameLayoutTests.swift in Sources */,
-			);
+							C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */

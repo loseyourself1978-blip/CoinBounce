@@ -25,7 +25,7 @@ struct CardSelectionView: View {
     }
 
     private func card(icon: String, title: String, subtitle: String, choice: GameState.CardReward) -> some View {
-        Button { onSelect(choice) } label: {
+        Button { AudioManager.shared.play(.buttonTap); onSelect(choice) } label: {
             VStack(spacing: 6) {
                 Text(icon).font(.system(size: 40))
                 Text(title)

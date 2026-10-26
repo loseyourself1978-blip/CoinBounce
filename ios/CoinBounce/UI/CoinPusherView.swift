@@ -120,6 +120,8 @@ struct CoinPusherView: View {
 
         // 启动显示链路
         GameState.shared.startDisplayLink()
+        // 预加载音效并按设置开始背景音乐
+        AudioManager.shared.updateMusic()
 
         #if DEBUG
         // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
@@ -564,6 +566,7 @@ struct CoinPusherView: View {
                 if gameState.canDropCoin {
                     gameState.dropCoin()
                 } else {
+                    AudioManager.shared.play(.noCoins)
                     gameState.requestFreeCoins()
                     showNoCoinsHint = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
