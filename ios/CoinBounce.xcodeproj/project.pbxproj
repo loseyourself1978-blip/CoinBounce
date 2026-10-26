@@ -18,6 +18,7 @@
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
 		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
 		B1A1CC052C00000400000001 /* SaveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC062C00000400000001 /* SaveStore.swift */; };
+		B1A1DD012C00000500000001 /* GameLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1DD022C00000500000001 /* GameLayout.swift */; };
 		B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC082C00000400000001 /* RewardOverlays.swift */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,7 @@
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		B1A1CC022C00000400000001 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
 		B1A1CC062C00000400000001 /* SaveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStore.swift; sourceTree = "<group>"; };
+		B1A1DD022C00000500000001 /* GameLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameLayout.swift; sourceTree = "<group>"; };
 		B1A1CC082C00000400000001 /* RewardOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardOverlays.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -81,6 +83,7 @@
 				B1A1E1E62C00000100000003 /* GameState.swift */,
 				B1A1BB022C00000300000001 /* HapticManager.swift */,
 				B1A1CC062C00000400000001 /* SaveStore.swift */,
+				B1A1DD022C00000500000001 /* GameLayout.swift */,
 			);
 			path = GameCore;
 			sourceTree = "<group>";
@@ -251,6 +254,7 @@
 				B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
 				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
+				B1A1DD012C00000500000001 /* GameLayout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

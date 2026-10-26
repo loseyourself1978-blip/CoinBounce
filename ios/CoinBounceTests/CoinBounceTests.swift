@@ -362,7 +362,7 @@ final class CoinBounceTests: XCTestCase {
             XCTFail("金币生成失败")
             return
         }
-        XCTAssertEqual(coin.y, -360, "Iteration 12: 投币初始 Y 坐标应为 -360 (匹配全新本地坐标系)")
+        XCTAssertEqual(coin.y, state.layout.coinSpawnY, "投币初始 Y 坐标应为 COIN 滑块中心（GameLayout）")
     }
 
     func test_iteration9_bedPhysics_waveDrive() {
