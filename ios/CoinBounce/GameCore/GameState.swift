@@ -133,6 +133,8 @@ class GameState: ObservableObject {
     private let bonusSliderRange: CGFloat = UIScreen.main.bounds.width * 0.40
     private let coinSliderSpeed: Double = 1.0
     private let bonusSliderSpeed: Double = 1.2
+    // BONUS 目标宽度为屏宽 1/7（见 HollowBonusSliderTarget），命中半宽取其一半
+    private let bonusHitHalfWidth: CGFloat = UIScreen.main.bounds.width / 14
 
     // MARK: - 水果系统
     @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7)
@@ -342,6 +344,13 @@ class GameState: ObservableObject {
                 }
             }
 
+            // BONUS 滑块命中：金币穿过水果行下沿时落在 BONUS 目标范围内
+            if !coin.bonusTriggered && coin.y > bonusYTop && coin.y < enter3DY
+                && abs(coin.x - bonusSliderOffset) < bonusHitHalfWidth {
+                active2DCoins[i].bonusTriggered = true
+                triggerBonusHit()
+            }
+
             // 转移到推币床 (3D环境模拟)
             if coin.y > enter3DY {
                 active2DCoins[i].y = enter3DY + 1000
@@ -539,9 +548,12 @@ class GameState: ObservableObject {
         }
     }
 
-    private func triggerBonusHit() {
-        HapticManager.shared.baffleHit()
+    func triggerBonusHit() {
+        // 老虎机正在转时忽略
+        guard !isSpinning else { return }
+        HapticManager.shared.bonusTriggered()
         addFloatingScore(text: "BONUS!", x: 0, y: bonusYTop, color: .orange)
+        spinSlot()
     }
 
     private func resetComboTimer() {

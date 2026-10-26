@@ -158,6 +158,21 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertEqual(state.stoppedColumns.count, 5, "五个轴都应停止")
     }
 
+    func test_bonusHit_startsSlotMachine() {
+        XCTAssertEqual(state.slotSpinState, .spinIdle)
+        state.triggerBonusHit()
+        XCTAssertEqual(state.slotSpinState, .spinning, "BONUS 命中应触发老虎机")
+    }
+
+    func test_bonusHit_ignoredWhileSpinning() {
+        state.spinSlot()
+        let reelsBefore = state.slotReels.map { $0.map(\.id) }
+        let scoresBefore = state.floatingScores.count
+        state.triggerBonusHit()
+        XCTAssertEqual(state.slotReels.map { $0.map(\.id) }, reelsBefore, "转动中再次命中 BONUS 不应重新开转")
+        XCTAssertEqual(state.floatingScores.count, scoresBefore, "转动中命中 BONUS 应被忽略")
+    }
+
     func test_slotMachine_cannotSpinWhileSpinning() {
         state.spinSlotMachine()
         let firstState = state.slotSpinState
