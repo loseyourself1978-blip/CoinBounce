@@ -10,6 +10,7 @@ struct CoinPusherView: View {
     @State private var showArrow = true
     @State private var arrowBounce = false
     @State private var fallingCoins: [FallingCoin] = []
+    @State private var showNoCoinsHint = false
 
     var body: some View {
         GeometryReader { geo in
@@ -26,7 +27,7 @@ struct CoinPusherView: View {
                     SlotMachineView(
                         reels: gameState.slotReels,
                         spinState: gameState.slotSpinState,
-                        onSpin: { gameState.slotSpinState = .spinning }
+                        onSpin: { gameState.spinSlot() }
                     )
                     .frame(height: sh * 0.150)
                     .padding(.horizontal, 10)
@@ -58,8 +59,29 @@ struct CoinPusherView: View {
                     FloatingScoreView(score: score)
                         .position(x: sw/2 + score.x, y: sh * 0.7 + score.y)
                 }
+
+                // 奖励/庆祝层
+                if gameState.showJackpotExplosion {
+                    JackpotCelebrationView(amount: GameConstants.slotJackpotReward)
+                        .frame(width: sw, height: sh)
+                }
+                if gameState.showCardSelection {
+                    CardSelectionView { choice in
+                        withAnimation(.easeOut(duration: 0.2)) { gameState.selectCardReward(choice) }
+                    }
+                    .frame(width: sw, height: sh)
+                }
+                if gameState.showRewardModal {
+                    RewardModalView(amount: gameState.rewardAmount) {
+                        withAnimation(.easeOut(duration: 0.2)) { gameState.showRewardModal = false }
+                    }
+                    .frame(width: sw, height: sh)
+                }
             }
             .background(Color(red: 0.05, green: 0.04, blue: 0.02))
+            .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
+            .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
+            .animation(.easeOut(duration: 0.25), value: gameState.showRewardModal)
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
@@ -116,6 +138,11 @@ struct CoinPusherView: View {
             }
         }
         .frame(height: h)
+        .overlay(alignment: .topLeading) {
+            CoinBalanceView(coins: gameState.availableCoins)
+                .padding(.leading, 10)
+                .padding(.top, 6)
+        }
     }
 
     // MARK: - COIN滑块 + BONUS滑块轨道
@@ -594,6 +621,7 @@ struct CoinPusherView: View {
                         Hexagon().stroke(Color(red: 0.98, green: 0.90, blue: 0.55), lineWidth: 3)
                     )
                     .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 6)
+                    .saturation(gameState.canDropCoin ? 1 : 0)
 
                 Hexagon()
                     .fill(Color.black.opacity(0.25))
@@ -605,12 +633,63 @@ struct CoinPusherView: View {
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     )
             }
+            .opacity(gameState.canDropCoin ? 1 : 0.5)
             .onTapGesture {
-                gameState.dropCoin()
+                if gameState.canDropCoin {
+                    gameState.dropCoin()
+                } else {
+                    gameState.requestFreeCoins()
+                    showNoCoinsHint = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
+                }
+            }
+
+            // 金币用完提示
+            if showNoCoinsHint {
+                Text("金币不足")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.black.opacity(0.75)))
+                    .offset(y: -buttonSize * 0.75)
+                    .transition(.opacity)
             }
         }
         .frame(height: h)
         .background(Color(red: 0.06, green: 0.05, blue: 0.03))
+    }
+}
+
+// MARK: - 金币余额
+struct CoinBalanceView: View {
+    let coins: Int
+    @State private var bump = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(LinearGradient(colors: [Color(red: 1.0, green: 0.9, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.1)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(Circle().stroke(Color(red: 0.5, green: 0.3, blue: 0.0), lineWidth: 1))
+                .overlay(Text("¥").font(.system(size: 10, weight: .black)).foregroundColor(Color(red: 0.4, green: 0.2, blue: 0.0)))
+                .frame(width: 18, height: 18)
+            Text("\(coins)")
+                .font(.system(size: 15, weight: .black, design: .rounded))
+                .monospacedDigit()
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(Color.black.opacity(0.55)))
+        .overlay(Capsule().stroke(Color.arcadeGold.opacity(0.8), lineWidth: 1))
+        .scaleEffect(bump ? 1.12 : 1.0)
+        .onChange(of: coins) { _ in
+            withAnimation(.spring(response: 0.18, dampingFraction: 0.5)) { bump = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.easeOut(duration: 0.2)) { bump = false }
+            }
+        }
     }
 }
 
@@ -813,333 +892,3 @@ struct FallingCoin: Identifiable {
 #Preview {
     CoinPusherView()
 }
-// SlotMachineView inlined below
-
-struct SlotMachineView: View {
-    let reels: [[SlotSymbol]]
-    let spinState: SlotSpinState
-    let onSpin: () -> Void
-    
-    var body: some View {
-        ZStack {
-            // 老虎机外框
-            SlotMachineFrame()
-            
-            // 5个滚轴
-            HStack(spacing: 4) {
-                ForEach(0..<5) { index in
-                    SlotReelView(
-                        symbols: reels[index],
-                        reelIndex: index,
-                        spinState: spinState
-                    )
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            
-            // 旋转按钮
-            SpinButton(spinState: spinState, action: onSpin)
-                .position(x: 320, y: 70)
-        }
-    }
-}
-
-// MARK: - 老虎机外框
-
-struct SlotMachineFrame: View {
-    @State private var blink = false
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.15, green: 0.08, blue: 0.03),
-                            Color(red: 0.25, green: 0.12, blue: 0.06),
-                            Color(red: 0.15, green: 0.08, blue: 0.03)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    ZStack {
-                        // 金色外圈
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.yellow, .orange, .yellow],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 4
-                            )
-                        
-                        // 闪烁彩灯
-                        ForEach(0..<12) { i in
-                            Circle()
-                                .fill(blinkColor(i))
-                                .frame(width: 6, height: 6)
-                                .offset(y: -75)
-                                .rotationEffect(.degrees(Double(i) * 30))
-                        }
-                    }
-                )
-                .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
-        }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
-                blink.toggle()
-            }
-        }
-    }
-    
-    func blinkColor(_ i: Int) -> Color {
-        let colors: [Color] = [.red, .yellow, .blue, .green]
-        if blink {
-            return colors[(i + 1) % colors.count]
-        } else {
-            return colors[i % colors.count]
-        }
-    }
-}
-
-// MARK: - 滚轴视图
-
-struct SlotReelView: View {
-    let symbols: [SlotSymbol]
-    let reelIndex: Int
-    let spinState: SlotSpinState
-    
-    @State private var offset: CGFloat = 0
-    
-    var body: some View {
-        GeometryReader { geo in
-            let symbolHeight = geo.size.height / 3
-            
-            VStack(spacing: 0) {
-                ForEach(symbols) { symbol in
-                    SlotSymbolCell(symbol: symbol, size: symbolHeight)
-                        .frame(height: symbolHeight)
-                }
-            }
-            .offset(y: offset)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.3))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.black.opacity(0.6), lineWidth: 2)
-            )
-            .onChange(of: spinState) { newState in
-                handleSpinStateChange(newState, symbolHeight: symbolHeight)
-            }
-        }
-    }
-    
-    private func handleSpinStateChange(_ state: SlotSpinState, symbolHeight: CGFloat) {
-        switch state {
-        case .spinning:
-            withAnimation(.linear(duration: 0.08).repeatForever(autoreverses: false)) {
-                offset += symbolHeight
-            }
-        case .stopping(let stopIndex):
-            if reelIndex == stopIndex {
-                withAnimation(.easeOut(duration: 0.4)) {
-                    offset = 0
-                }
-            }
-        case .revealing:
-            break
-        case .spinIdle:
-            break
-        }
-    }
-}
-
-// MARK: - 老虎机符号单元 (V7.0 精美设计)
-
-struct SlotSymbolCell: View {
-    let symbol: SlotSymbol
-    let size: CGFloat
-    
-    var body: some View {
-        ZStack {
-            // 背景渐变
-            SymbolBackground(type: symbol.type)
-            
-            // 符号内容
-            SymbolContent(type: symbol.type, size: size)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-// MARK: - 符号背景
-
-struct SymbolBackground: View {
-    let type: SymbolType
-    
-    var gradientColors: [Color] {
-        switch type {
-        case .wild:
-            return [Color.purple.opacity(0.9), Color.red.opacity(0.7), Color.purple.opacity(0.8)]
-        case .seven:
-            return [Color.red.opacity(0.9), Color.orange.opacity(0.7), Color.red.opacity(0.8)]
-        case .bar:
-            return [Color.blue.opacity(0.9), Color.cyan.opacity(0.6), Color.blue.opacity(0.8)]
-        case .heart:
-            return [Color.pink.opacity(0.9), Color.red.opacity(0.7), Color.pink.opacity(0.8)]
-        case .diamond:
-            return [Color.cyan.opacity(0.9), Color.blue.opacity(0.6), Color.cyan.opacity(0.8)]
-        case .star:
-            return [Color.yellow.opacity(0.9), Color.orange.opacity(0.7), Color.yellow.opacity(0.8)]
-        case .nine:
-            return [Color.green.opacity(0.9), Color.teal.opacity(0.6), Color.green.opacity(0.8)]
-        case .jack:
-            return [Color.orange.opacity(0.9), Color.yellow.opacity(0.6), Color.orange.opacity(0.8)]
-        case .king:
-            return [Color.indigo.opacity(0.9), Color.purple.opacity(0.7), Color.indigo.opacity(0.8)]
-        }
-    }
-    
-    var body: some View {
-        LinearGradient(
-            colors: gradientColors,
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .overlay(
-            // 内部光晕效果
-            RadialGradient(
-                colors: [Color.white.opacity(0.2), Color.clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: size * 0.4
-            )
-        )
-    }
-    
-    private var size: CGFloat { 60 }
-}
-
-// MARK: - 符号内容
-
-struct SymbolContent: View {
-    let type: SymbolType
-    let size: CGFloat
-    
-    var body: some View {
-        let config = symbolConfig(for: type)
-        
-        ZStack {
-            // 外发光环
-            Circle()
-                .stroke(config.glowColor.opacity(0.6), lineWidth: 2)
-                .frame(width: size * 0.8, height: size * 0.8)
-                .blur(radius: 4)
-            
-            // 内发光
-            Circle()
-                .fill(config.glowColor.opacity(0.15))
-                .frame(width: size * 0.7, height: size * 0.7)
-                .blur(radius: 8)
-            
-            // 主符号
-            Text(config.emoji)
-                .font(.system(size: size * 0.45))
-                .shadow(color: config.glowColor.opacity(0.8), radius: 6, x: 0, y: 0)
-            
-            // 底部标签
-            Text(config.label)
-                .font(.system(size: size * 0.16, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .shadow(color: .black, radius: 2, x: 0, y: 1)
-                .offset(y: size * 0.28)
-        }
-    }
-    
-    private func symbolConfig(for type: SymbolType) -> (emoji: String, label: String, glowColor: Color) {
-        switch type {
-        case .wild:  return ("👑", "WILD", Color.yellow)
-        case .seven: return ("7️⃣", "SEVEN", Color.red)
-        case .bar:   return ("🎯", "BAR", Color.cyan)
-        case .heart: return ("❤️", "HEART", Color.pink)
-        case .diamond: return ("💎", "DIAMOND", Color.cyan)
-        case .star:  return ("⭐", "STAR", Color.yellow)
-        case .nine:  return ("9️⃣", "NINE", Color.green)
-        case .jack:  return ("🎭", "JACK", Color.orange)
-        case .king:  return ("🦁", "KING", Color.purple)
-        }
-    }
-}
-
-// MARK: - 旋转按钮
-
-struct SpinButton: View {
-    let spinState: SlotSpinState
-    let action: () -> Void
-    
-    var isSpinning: Bool {
-        if case .spinning = spinState { return true }
-        return false
-    }
-    
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                // 外圈发光
-                Circle()
-                    .fill(Color.red.opacity(0.3))
-                    .frame(width: 70, height: 70)
-                    .blur(radius: isSpinning ? 5 : 15)
-                    .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isSpinning)
-                
-                // 按钮主体
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.red, Color.orange],
-                            center: .center,
-                            startRadius: 5,
-                            endRadius: 30
-                        )
-                    )
-                    .frame(width: 60, height: 60)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.yellow, Color.white.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 3
-                            )
-                    )
-                    .shadow(color: .red.opacity(0.7), radius: 10, x: 0, y: 4)
-                
-                if isSpinning {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.2)
-                } else {
-                    VStack(spacing: 2) {
-                        Text("SPIN")
-                            .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("🎰")
-                            .font(.system(size: 14))
-                    }
-                }
-            }
-        }
-        .disabled(isSpinning)
-        .opacity(isSpinning ? 0.8 : 1.0)
-    }
-}
-
-// End of file

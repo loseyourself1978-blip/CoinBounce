@@ -10,28 +10,32 @@
 		B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E22C00000100000001 /* CoinBounceApp.swift */; };
 		B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E42C00000100000002 /* GameConstants.swift */; };
 		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
-		B1A1E1E72C00000100000004 /* CoinPusherScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000004 /* CoinPusherScene.swift */; };
-		B1A1E1E92C00000100000005 /* SlotMachineNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */; };
 		B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EC2C00000100000006 /* PinballScene.swift */; };
 		B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1EE2C00000100000007 /* BreakoutScene.swift */; };
 		B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1F02C00000100000008 /* CoinPusherView.swift */; };
 		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
-		B1A1BB032C00000300000001 /* ArcadeMiddleUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */; };
-		B1A1BB052C00000300000001 /* ArcadeBottomUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */; };
-		B1A1BB072C00000300000001 /* ArcadeUIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */; };
-		B1A1E1E72C00000100000400 /* GameScene2_5D.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000400 /* GameScene2_5D.swift */; };
-		B1A1E1E72C00000100000500 /* GameScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E82C00000100000500 /* GameScene3D.swift */; };
+		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
+		B1A1CC052C00000400000001 /* SaveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC062C00000400000001 /* SaveStore.swift */; };
+		B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC082C00000400000001 /* RewardOverlays.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B1A1CC032C00000400000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B1A1E1D72C00000100000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B1A1E1DE2C00000100000000;
+			remoteInfo = CoinBounce;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		B1A1E1DF2C00000100000000 /* CoinBounce.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoinBounce.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1E1E22C00000100000001 /* CoinBounceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceApp.swift; sourceTree = "<group>"; };
 		B1A1E1E42C00000100000002 /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
 		B1A1E1E62C00000100000003 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
-		B1A1E1E82C00000100000004 /* CoinPusherScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherScene.swift; sourceTree = "<group>"; };
-		B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineNode.swift; sourceTree = "<group>"; };
 		B1A1E1EC2C00000100000006 /* PinballScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinballScene.swift; sourceTree = "<group>"; };
 		B1A1E1EE2C00000100000007 /* BreakoutScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakoutScene.swift; sourceTree = "<group>"; };
 		B1A1E1F02C00000100000008 /* CoinPusherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherView.swift; sourceTree = "<group>"; };
@@ -39,11 +43,9 @@
 		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
 		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
-		B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeMiddleUI.swift; sourceTree = "<group>"; };
-		B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeBottomUI.swift; sourceTree = "<group>"; };
-		B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeUIComponents.swift; sourceTree = "<group>"; };
-		B1A1E1E82C00000100000400 /* GameScene2_5D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene2_5D.swift; sourceTree = "<group>"; };
-		B1A1E1E82C00000100000500 /* GameScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene3D.swift; sourceTree = "<group>"; };
+		B1A1CC022C00000400000001 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
+		B1A1CC062C00000400000001 /* SaveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStore.swift; sourceTree = "<group>"; };
+		B1A1CC082C00000400000001 /* RewardOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardOverlays.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,26 +80,9 @@
 				B1A1E1E42C00000100000002 /* GameConstants.swift */,
 				B1A1E1E62C00000100000003 /* GameState.swift */,
 				B1A1BB022C00000300000001 /* HapticManager.swift */,
+				B1A1CC062C00000400000001 /* SaveStore.swift */,
 			);
 			path = GameCore;
-			sourceTree = "<group>";
-		};
-		B1A1E1B22C00000100000001 /* CoinPusher */ = {
-			isa = PBXGroup;
-			children = (
-				B1A1E1E82C00000100000004 /* CoinPusherScene.swift */,
-				B1A1E1E82C00000100000400 /* GameScene2_5D.swift */,
-				B1A1E1E82C00000100000500 /* GameScene3D.swift */,
-			);
-			path = CoinPusher;
-			sourceTree = "<group>";
-		};
-		B1A1E1B32C00000100000001 /* SlotMachine */ = {
-			isa = PBXGroup;
-			children = (
-				B1A1E1EA2C00000100000005 /* SlotMachineNode.swift */,
-			);
-			path = SlotMachine;
 			sourceTree = "<group>";
 		};
 		B1A1E1B42C00000100000001 /* Pinball */ = {
@@ -120,9 +105,8 @@
 			isa = PBXGroup;
 			children = (
 				B1A1E1F02C00000100000008 /* CoinPusherView.swift */,
-				B1A1BB042C00000300000001 /* ArcadeMiddleUI.swift */,
-				B1A1BB062C00000300000001 /* ArcadeBottomUI.swift */,
-				B1A1BB082C00000300000001 /* ArcadeUIComponents.swift */,
+				B1A1CC022C00000400000001 /* SlotMachineView.swift */,
+				B1A1CC082C00000400000001 /* RewardOverlays.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -150,8 +134,6 @@
 			children = (
 				B1A1E1B02C00000100000001 /* App */,
 				B1A1E1B12C00000100000001 /* GameCore */,
-				B1A1E1B22C00000100000001 /* CoinPusher */,
-				B1A1E1B32C00000100000001 /* SlotMachine */,
 				B1A1E1B42C00000100000001 /* Pinball */,
 				B1A1E1B52C00000100000001 /* Breakout */,
 				B1A1E1B62C00000100000001 /* UI */,
@@ -198,6 +180,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				B1A1CC042C00000400000001 /* PBXTargetDependency */,
 			);
 			name = CoinBounceTests;
 			productName = CoinBounceTests;
@@ -261,17 +244,13 @@
 				B1A1E1E12C00000100000001 /* CoinBounceApp.swift in Sources */,
 				B1A1E1E32C00000100000002 /* GameConstants.swift in Sources */,
 				B1A1E1E52C00000100000003 /* GameState.swift in Sources */,
-				B1A1E1E72C00000100000004 /* CoinPusherScene.swift in Sources */,
-				B1A1E1E92C00000100000005 /* SlotMachineNode.swift in Sources */,
 				B1A1E1EB2C00000100000006 /* PinballScene.swift in Sources */,
 				B1A1E1ED2C00000100000007 /* BreakoutScene.swift in Sources */,
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
+				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
+				B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
-				B1A1BB032C00000300000001 /* ArcadeMiddleUI.swift in Sources */,
-				B1A1BB052C00000300000001 /* ArcadeBottomUI.swift in Sources */,
-				B1A1BB072C00000300000001 /* ArcadeUIComponents.swift in Sources */,
-				B1A1E1E72C00000100000400 /* GameScene2_5D.swift in Sources */,
-				B1A1E1E72C00000100000500 /* GameScene3D.swift in Sources */,
+				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -284,6 +263,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B1A1CC042C00000400000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B1A1E1DE2C00000100000000 /* CoinBounce */;
+			targetProxy = B1A1CC032C00000400000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B1A1E1F42C00000100000000 /* Debug */ = {
@@ -409,7 +396,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -434,7 +421,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -455,7 +442,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CoinBounce.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CoinBounce";
 			};
 			name = Debug;
@@ -477,7 +464,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CoinBounce.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CoinBounce";
 			};
 			name = Release;

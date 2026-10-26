@@ -115,14 +115,14 @@ class GameState: ObservableObject {
     static let shared = GameState()
 
     // MARK: - 核心数值
-    @Published var availableCoins: Int = 1000
-    @Published var totalCoinsWon: Int = 0
+    @Published var availableCoins: Int = GameConstants.initialCoins { didSet { scheduleSave() } }
+    @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
     @Published var currentMode: ModeType = .pusher
     @Published var currentLevel: Int = 3
 
     // MARK: - 新手引导
     @Published var showTutorialArrow: Bool = true
-    @Published var hasDroppedFirstCoin: Bool = false
+    @Published var hasDroppedFirstCoin: Bool = false { didSet { scheduleSave() } }
 
     // MARK: - 滑块系统
     @Published var coinSliderOffset: CGFloat = 0.0
@@ -133,9 +133,11 @@ class GameState: ObservableObject {
     private let bonusSliderRange: CGFloat = UIScreen.main.bounds.width * 0.40
     private let coinSliderSpeed: Double = 1.0
     private let bonusSliderSpeed: Double = 1.2
+    // BONUS 目标宽度为屏宽 1/7（见 HollowBonusSliderTarget），命中半宽取其一半
+    private let bonusHitHalfWidth: CGFloat = UIScreen.main.bounds.width / 14
 
     // MARK: - 水果系统
-    @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7)
+    @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7) { didSet { scheduleSave() } }
     @Published var litFruitIndex: Int? = nil
     @Published var fruitBounceIndex: Int? = nil
     @Published var fruitPulseIndex: Int? = nil // V9.4: 命中的缩放效果
@@ -186,7 +188,12 @@ class GameState: ObservableObject {
     @Published var pusherOffset: CGFloat = 0
 
     private var displayLink: CADisplayLink?
+    private var lastFrameTimestamp: CFTimeInterval?
     private var comboResetTimer: Timer?
+
+    // MARK: - 存档
+    var saveStore = SaveStore()
+    private var savePending = false
 
     // MARK: - 物理常量
     let slotBaffleRadius: CGFloat = 16
@@ -212,6 +219,9 @@ class GameState: ObservableObject {
     enum ModeType { case pusher, pinball, breakout }
 
     private init() {
+        applySave(saveStore.load() ?? .fresh)
+        // 上次退出时水果已全亮但未选奖励：重新弹出选择
+        if fruitsLit.allSatisfy({ $0 }) { showCardSelection = true }
         initializeSlotReels()
         startDisplayLink()
     }
@@ -224,6 +234,38 @@ class GameState: ObservableObject {
         bonusSliderOffset = 0
     }
     
+    var currentSaveData: SaveData {
+        SaveData(
+            availableCoins: availableCoins,
+            totalCoinsWon: totalCoinsWon,
+            fruitsLit: fruitsLit,
+            hasDroppedFirstCoin: hasDroppedFirstCoin
+        )
+    }
+
+    func applySave(_ data: SaveData) {
+        availableCoins = max(0, data.availableCoins)
+        totalCoinsWon = max(0, data.totalCoinsWon)
+        fruitsLit = data.fruitsLit.count == SaveData.fresh.fruitsLit.count ? data.fruitsLit : SaveData.fresh.fruitsLit
+        hasDroppedFirstCoin = data.hasDroppedFirstCoin
+        showTutorialArrow = !data.hasDroppedFirstCoin
+    }
+
+    func saveNow() {
+        savePending = false
+        saveStore.save(currentSaveData)
+    }
+
+    /// 同一帧内的多次数值变化合并成一次写入
+    private func scheduleSave() {
+        guard !savePending else { return }
+        savePending = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.savePending else { return }
+            self.saveNow()
+        }
+    }
+
     private func initializeSlotReels() {
         slotReels = (0..<5).map { _ in
             (0..<10).map { _ in SlotSymbol(type: SymbolType.allCases.randomElement()!) }
@@ -231,15 +273,38 @@ class GameState: ObservableObject {
     }
 
     func startDisplayLink() {
-        displayLink = CADisplayLink(target: self, selector: #selector(updateFrame))
+        // 只保留一个 display link，重复调用（如 onAppear）不会叠加物理步进
+        guard displayLink == nil else { return }
+        lastFrameTimestamp = nil
+        displayLink = CADisplayLink(target: self, selector: #selector(displayLinkFired(_:)))
         displayLink?.preferredFramesPerSecond = 60
         displayLink?.add(to: .main, forMode: .common)
     }
 
+    @objc private func displayLinkFired(_ link: CADisplayLink) {
+        let raw: CFTimeInterval
+        if let last = lastFrameTimestamp {
+            raw = link.timestamp - last
+        } else {
+            raw = link.targetTimestamp - link.timestamp
+        }
+        lastFrameTimestamp = link.timestamp
+        step(dt: GameState.clampedFrameDelta(raw))
+    }
+
+    /// 实际帧间隔 → 物理步长，上限 GameConstants.maxFrameDelta
+    static func clampedFrameDelta(_ raw: CFTimeInterval) -> CGFloat {
+        guard raw > 0 else { return GameConstants.defaultFrameDelta }
+        return min(CGFloat(raw), GameConstants.maxFrameDelta)
+    }
+
+    /// 以 60Hz 固定步长推进一帧（供测试使用）
+    func updateFrame() {
+        step(dt: GameConstants.defaultFrameDelta)
+    }
+
     // MARK: - 物理更新（V8.0: 空间网格优化防卡顿）
-    @objc func updateFrame() {
-        let dt: CGFloat = 1.0 / 60.0
-        
+    func step(dt: CGFloat) {
         // === 滑块控制 ===
         sliderTime += dt
         coinSliderOffset = coinSliderRange * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
@@ -342,6 +407,13 @@ class GameState: ObservableObject {
                 }
             }
 
+            // BONUS 滑块命中：金币穿过水果行下沿时落在 BONUS 目标范围内
+            if !coin.bonusTriggered && coin.y > bonusYTop && coin.y < enter3DY
+                && abs(coin.x - bonusSliderOffset) < bonusHitHalfWidth {
+                active2DCoins[i].bonusTriggered = true
+                triggerBonusHit()
+            }
+
             // 转移到推币床 (3D环境模拟)
             if coin.y > enter3DY {
                 active2DCoins[i].y = enter3DY + 1000
@@ -440,7 +512,7 @@ class GameState: ObservableObject {
         let coinRadius: CGFloat = 14
         let dropped = bedCoins.filter { $0.y > bedLength - coinRadius }
         if !dropped.isEmpty {
-            addCoins(dropped.count * 10)
+            addCoins(dropped.count * GameConstants.bedDropReward)
             bedCoins.removeAll { $0.y > bedLength - coinRadius }
         }
 
@@ -479,8 +551,10 @@ class GameState: ObservableObject {
     }
 
     // MARK: - 行为接口
+    var canDropCoin: Bool { availableCoins > 0 }
+
     func dropCoin(atX explicitX: CGFloat? = nil) {
-        guard availableCoins > 0 else { return }
+        guard canDropCoin else { return }
         availableCoins -= 1
         hasDroppedFirstCoin = true
         showTutorialArrow = false
@@ -517,6 +591,11 @@ class GameState: ObservableObject {
         bedCoins.append(newCoin)
     }
 
+    /// 金币用完时的补币入口
+    func requestFreeCoins() {
+        // TODO: 接入激励视频广告，看完后 addCoins(...) 发放金币
+    }
+
     func addCoins(_ amount: Int) {
         availableCoins += amount
         totalCoinsWon += amount
@@ -531,18 +610,20 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.litFruitIndex = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
-            addFloatingScore(text: "+10", x: fruitCenterXPositions[index], y: fruitRowYTop, color: .yellow)
-            availableCoins += 10
-            totalCoinsWon += 10
+            addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: fruitCenterXPositions[index], y: fruitRowYTop, color: .yellow)
+            addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.showCardSelection = true }
             }
         }
     }
 
-    private func triggerBonusHit() {
-        HapticManager.shared.baffleHit()
+    func triggerBonusHit() {
+        // 老虎机正在转时忽略
+        guard !isSpinning else { return }
+        HapticManager.shared.bonusTriggered()
         addFloatingScore(text: "BONUS!", x: 0, y: bonusYTop, color: .orange)
+        spinSlot()
     }
 
     private func resetComboTimer() {
@@ -666,31 +747,39 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); addCoins(500); addFloatingScore(text: "+500", x: 0, y: 0, color: .yellow)
+        HapticManager.shared.jackpot(); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: 0, y: 0, color: .yellow)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: 0, y: -200, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
     }
 
     private func slotBigWin() {
-        currentWin = .bigWin(coins: 200); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); addCoins(200); addFloatingScore(text: "+200", x: 0, y: 0, color: .orange)
+        currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
+        HapticManager.shared.bigWin(); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: 0, y: 0, color: .orange)
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: 0, y: -200, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
     }
 
     private func slotSmallWin() {
-        currentWin = .smallWin(coins: 30); HapticManager.shared.smallWin()
-        addCoins(30); addFloatingScore(text: "+30", x: 0, y: 0, color: .green)
+        currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin()
+        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: 0, y: 0, color: .green)
     }
 
     func selectCardReward(_ choice: CardReward) {
-        showCardSelection = false; rewardAmount = choice == .coins ? 100 : 0; showRewardModal = true
-        if choice == .coins { addCoins(100) }
+        guard showCardSelection else { return }
+        showCardSelection = false
+        // 选完重置水果，「水果」奖励在新一轮开局直接点亮若干个
+        fruitsLit = SaveData.fresh.fruitsLit
+        rewardAmount = choice == .coins ? GameConstants.cardCoinsReward : 0
+        showRewardModal = true
+        if choice == .coins { addCoins(GameConstants.cardCoinsReward) }
         else {
             var un = fruitsLit.enumerated().filter({ !$0.element }).map({ $0.offset })
-            if un.count >= 2 { un.shuffle(); fruitsLit[un[0]] = true; fruitsLit[un[1]] = true }
+            if un.count >= GameConstants.cardFruitsToLight {
+                un.shuffle()
+                for idx in un.prefix(GameConstants.cardFruitsToLight) { fruitsLit[idx] = true }
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.showRewardModal = false }
     }
