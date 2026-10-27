@@ -160,8 +160,8 @@ class GameState: ObservableObject {
     var particles: [Particle] = []
     
     // MARK: - 2D 金币
-    // V9.0: 移除 @Published 以优化 60fps 渲染 (TimelineView 驱动)
-    var active2DCoins: [Active2DCoin] = []
+    /// 等待下落区（SpriteKit）生成的金币；DropFieldScene 每帧取走
+    var pendingDrops: [Active2DCoin] = []
     
     // MARK: - 老虎机
     @Published var slotSpinState: SlotSpinState = .spinIdle
@@ -272,10 +272,6 @@ class GameState: ObservableObject {
         guard newLayout != layout else { return }
         let old = layout
         layout = newLayout
-        // 已在场上的金币夹回新边界内
-        for i in active2DCoins.indices {
-            active2DCoins[i].x = min(max(active2DCoins[i].x, layout.fieldMinX), layout.fieldMaxX)
-        }
         // 预铺后还没有金币落上去：按新布局重新预铺；否则按比例换算到新推币台
         if bedIsUntouchedPrefill {
             prefillBed()
@@ -382,104 +378,6 @@ class GameState: ObservableObject {
             }
         }
         
-        // === 3. 2D 掉落金币物理 ===
-        let L = layout
-        let gravity = gravityBase * L.fallScale
-        let friction2D: CGFloat = 0.992
-
-        for i in 0..<active2DCoins.count {
-            active2DCoins[i].age = min(1.0, active2DCoins[i].age + dt * 4)
-            active2DCoins[i].vy += gravity * dt
-            active2DCoins[i].y  += active2DCoins[i].vy * dt
-            active2DCoins[i].x  += active2DCoins[i].vx * dt
-            active2DCoins[i].vx *= friction2D
-
-            // 轨迹
-            if Int(active2DCoins[i].age * 60) % 4 == 0 {
-                active2DCoins[i].trailPositions.append((x: active2DCoins[i].x, y: active2DCoins[i].y))
-                if active2DCoins[i].trailPositions.count > 5 {
-                    active2DCoins[i].trailPositions.removeFirst()
-                }
-            }
-
-            let coin = active2DCoins[i]
-
-            // 边界
-            if coin.x < L.fieldMinX {
-                active2DCoins[i].x = L.fieldMinX
-                active2DCoins[i].vx = abs(active2DCoins[i].vx) * 0.65
-            } else if coin.x > L.fieldMaxX {
-                active2DCoins[i].x = L.fieldMaxX
-                active2DCoins[i].vx = -abs(active2DCoins[i].vx) * 0.65
-            }
-
-            // 推币台前缘挤压
-            let squeezeY = L.bedEntryY - 40 * L.fallScale
-            if coin.y > squeezeY {
-                active2DCoins[i].vy += pusherOffset / L.bedScale * 0.1 * L.fallScale
-                for j in 0..<active2DCoins.count {
-                    if i != j && active2DCoins[j].y > squeezeY {
-                        let dx = active2DCoins[i].x - active2DCoins[j].x
-                        let dy = active2DCoins[i].y - active2DCoins[j].y
-                        let distSq = dx*dx + dy*dy
-                        if distSq < 784 { // 28^2
-                            let force: CGFloat = 15.0
-                            active2DCoins[i].vx += dx > 0 ? force : -force
-                            active2DCoins[i].vy += dy > 0 ? force : -force
-                        }
-                    }
-                }
-            }
-
-            // 交互格挡
-            for (row, pegs) in L.pegRows.enumerated() {
-                handleBaffle(i: i, pegs: pegs, idOffset: row * 4)
-            }
-
-            // 水果行区域判定
-            if coin.y > L.fruitBar.minY && coin.y < L.fruitBar.maxY {
-                for (baffleIdx, baffleX) in L.fruitBaffleXs.enumerated() {
-                    let dx = coin.x - baffleX
-                    if abs(dx) < L.fruitBaffleHalfWidth && !coin.hasBounced.contains(baffleIdx + 20) {
-                        active2DCoins[i].vx += dx > 0 ? 90 : -90
-                        active2DCoins[i].vy *= 0.7
-                        active2DCoins[i].hasBounced.append(baffleIdx + 20)
-                        HapticManager.shared.baffleHit()
-                        AudioManager.shared.play(.baffleHit)
-                        break
-                    }
-                }
-                
-                if !coin.fruitTriggered {
-                    for (idx, fruit) in L.fruitCenters.enumerated() {
-                        let dx = coin.x - fruit.x
-                        if abs(dx) < L.fruitHitHalfWidth {
-                            active2DCoins[i].fruitTriggered = true
-                            triggerFruitHit(index: idx)
-                            combo.hit(type: "fruit")
-                            showComboText = combo.isActive
-                            resetComboTimer()
-                            break
-                        }
-                    }
-                }
-            }
-
-            // BONUS 滑块命中：金币穿过 BONUS 轨道时落在滑块范围内
-            if !coin.bonusTriggered && coin.y > L.bonusLane.minY && coin.y < L.bonusLane.maxY
-                && abs(coin.x - L.bonusSliderCenter(offset: bonusSliderOffset).x) < L.bonusSliderWidth / 2 {
-                active2DCoins[i].bonusTriggered = true
-                triggerBonusHit()
-            }
-
-            // 转移到推币床
-            if coin.y > L.bedEntryY {
-                active2DCoins[i].y = .infinity
-                spawnBedCoin(x: coin.x)
-            }
-        }
-        active2DCoins.removeAll { $0.y > L.bedEntryY }
-
         // === 2. 推币床物理核心 (空间网格 + 真实骑跨 + 波浪推动) ===
         updatePusherBedPhysics(dt: dt, pusherVelocity: pusherVelocity)
         
@@ -593,30 +491,6 @@ class GameState: ObservableObject {
         if bedCoins.count > 120 { bedCoins.removeFirst(bedCoins.count - 120) }
     }
 
-    private func handleBaffle(i: Int, pegs: [CGPoint], idOffset: Int) {
-        let coin = active2DCoins[i]
-        guard let pegY = pegs.first?.y, abs(coin.y - pegY) < 15 else { return }
-        
-        for (idx, peg) in pegs.enumerated() {
-            let uniqueId = idOffset + idx
-            let bx = peg.x
-            if !coin.hasBounced.contains(uniqueId) {
-                let dx = coin.x - bx
-                if abs(dx) < (coin.radius + layout.pegRadius + 4) {
-                    active2DCoins[i].vx += dx > 0 ? 110 : -110
-                    active2DCoins[i].vy *= -0.3
-                    active2DCoins[i].hasBounced.append(uniqueId)
-                    HapticManager.shared.baffleHit()
-                    AudioManager.shared.play(.baffleHit)
-                    baffleHitPositions.append((x: bx, y: coin.y, time: Date()))
-                    combo.hit(type: "baffle")
-                    showComboText = combo.isActive
-                    resetComboTimer()
-                }
-            }
-        }
-    }
-
     private func updateSlotAnimation(dt: CGFloat) {
         let scrollSpeed: CGFloat = 280
         for i in 0..<5 {
@@ -642,13 +516,43 @@ class GameState: ObservableObject {
         let slider = layout.coinSliderCenter(offset: coinSliderOffset)
         let dropX = min(max(slider.x + sideOffset, layout.fieldMinX), layout.fieldMaxX)
         
-        let newCoin = Active2DCoin(
+        // 交给下落区（SpriteKit）生成金币：从 COIN 滑块中心落下
+        pendingDrops.append(Active2DCoin(
             x: dropX,
-            y: layout.coinSpawnY, // 从 COIN 滑块中心落下
-            vx: CGFloat.random(in: -3...3),
-            vy: CGFloat.random(in: 120...180) * layout.fallScale
-        )
-        active2DCoins.append(newCoin)
+            y: layout.coinSpawnY,
+            vx: CGFloat.random(in: -15...15),
+            vy: CGFloat.random(in: 60...90) * layout.fallScale
+        ))
+    }
+
+    // MARK: - 下落区事件（DropFieldScene 调用）
+
+    /// 金币穿过水果灯排：按所在列点亮水果
+    func coinCrossedFruitRow(x: CGFloat) {
+        guard let column = layout.fruitColumn(forX: x) else { return }
+        triggerFruitHit(index: column)
+        combo.hit(type: "fruit")
+        showComboText = combo.isActive
+        resetComboTimer()
+    }
+
+    /// 金币穿过 BONUS 轨道：从滑块中间穿过时启动老虎机，返回是否命中
+    @discardableResult
+    func coinCrossedBonusLane(x: CGFloat) -> Bool {
+        guard layout.bonusContains(x: x, offset: bonusSliderOffset) else { return false }
+        triggerBonusHit()
+        return true
+    }
+
+    /// 金币碰到老虎机符号、SPIN 按钮或水果钉：只有声音和震动（真实物理下碰撞很频繁，不计入连击）
+    func coinHitObstacle() {
+        HapticManager.shared.baffleHit()
+        AudioManager.shared.play(.baffleHit)
+    }
+
+    /// 金币越过下落区底部，进入推币台
+    func coinReachedPusher(x: CGFloat) {
+        spawnBedCoin(x: x)
     }
 
     private func spawnBedCoin(x: CGFloat) {

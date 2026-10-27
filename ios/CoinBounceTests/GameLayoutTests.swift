@@ -75,12 +75,18 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
-    func test_pegs_insideDropField() {
+    func test_slotObstacles_insideReels() {
         for (name, l) in screens {
-            XCTAssertEqual(l.pegRows.map(\.count), [3, 4, 3])
-            for peg in l.pegRows.joined() {
-                let r = l.pegRadius
-                assertInside(CGRect(x: peg.x - r, y: peg.y - r, width: r * 2, height: r * 2), l.dropField, "\(name) 格挡")
+            XCTAssertEqual(l.slotObstacles.count, 15, "5×3 个符号格")
+            for p in l.slotObstacles {
+                let r = l.slotObstacleRadius
+                assertInside(CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2), l.slotReels, "\(name) 符号格障碍")
+            }
+            // 相邻障碍之间要能让金币通过
+            let gap = l.slotObstacles[1].x - l.slotObstacles[0].x - l.slotObstacleRadius * 2
+            XCTAssertGreaterThan(gap, l.coinRadius * 2, "\(name) 金币能从符号之间穿过")
+            for p in l.fruitPins {
+                XCTAssertTrue(l.fruitBar.contains(p), "\(name) 水果钉在水果栏内")
             }
         }
     }
@@ -101,7 +107,10 @@ final class GameLayoutTests: XCTestCase {
     func test_coinPath_isOrderedTopToBottom() {
         for (name, l) in screens {
             XCTAssertTrue(l.sliderTrack.contains(CGPoint(x: l.centerX, y: l.coinSpawnY)), "\(name) 出币点")
-            XCTAssertLessThan(l.coinSpawnY, l.dropField.minY)
+            // 投币口在最顶端：金币依次经过老虎机、战斗区、水果、BONUS
+            XCTAssertLessThan(l.sliderTrack.maxY, l.slotMachine.minY + 0.001, "\(name) 投币口在老虎机上方")
+            XCTAssertLessThanOrEqual(l.slotMachine.maxY, l.dropField.minY + 0.001)
+            XCTAssertLessThan(l.coinSpawnY, l.slotMachine.minY)
             XCTAssertLessThanOrEqual(l.dropField.maxY, l.fruitBar.minY + 0.001)
             XCTAssertLessThanOrEqual(l.fruitBar.maxY, l.bonusLane.minY + 0.001)
             XCTAssertLessThanOrEqual(l.bonusLane.maxY, l.bedEntryY)
@@ -126,7 +135,7 @@ final class GameLayoutTests: XCTestCase {
         state.saveStore.clear()
         state.resetForTesting()
         state.availableCoins = 100
-        state.active2DCoins.removeAll()
+        state.pendingDrops.removeAll()
         state.bedCoins.removeAll()
         state.fruitsLit = Array(repeating: false, count: 7)
         state.showCardSelection = false
@@ -138,48 +147,58 @@ final class GameLayoutTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_dropCoin_spawnsUnderCoinSlider() {
+    func test_dropCoin_queuesCoinUnderSlider() {
         for (_, l) in screens {
             state.updateLayout(l)
-            state.active2DCoins.removeAll()
+            state.pendingDrops.removeAll()
             state.dropCoin()
-            let coin = state.active2DCoins.last!
+            let coin = state.pendingDrops.last!
             let slider = l.coinSliderCenter(offset: state.coinSliderOffset)
             XCTAssertEqual(coin.y, l.coinSpawnY)
             XCTAssertLessThanOrEqual(abs(coin.x - slider.x), 26.001, "金币从 COIN 滑块位置落下")
+            XCTAssertGreaterThan(coin.vy, 0, "初速度向下")
         }
     }
 
-    func test_coinFallingOnFruit_lightsThatFruit() {
+    func test_fruitColumn_matchesLamps() {
+        for (name, l) in screens {
+            for (i, c) in l.fruitCenters.enumerated() {
+                XCTAssertEqual(l.fruitColumn(forX: c.x), i, "\(name) 水果 \(i) 中心")
+                XCTAssertEqual(l.fruitColumn(forX: c.x - l.fruitLampWidth * 0.49), i)
+                XCTAssertEqual(l.fruitColumn(forX: c.x + l.fruitLampWidth * 0.49), i)
+            }
+            XCTAssertNil(l.fruitColumn(forX: l.fruitCenters[0].x - l.fruitLampWidth))
+            XCTAssertNil(l.fruitColumn(forX: l.fruitCenters[6].x + l.fruitLampWidth))
+        }
+    }
+
+    func test_coinCrossingFruitRow_lightsThatFruit() {
         for (name, l) in screens {
             state.updateLayout(l)
             for index in [0, 3, 6] {
                 state.fruitsLit = Array(repeating: false, count: 7)
-                let c = l.fruitCenters[index]
-                state.active2DCoins = [Active2DCoin(x: c.x, y: l.fruitBar.minY - 2, vx: 0, vy: 300)]
-                for _ in 0..<5 { state.step(dt: 1.0 / 60.0) }
-                XCTAssertTrue(state.fruitsLit[index], "\(name) 落在水果 \(index) 上应点亮它")
+                state.coinCrossedFruitRow(x: l.fruitCenters[index].x)
+                XCTAssertTrue(state.fruitsLit[index], "\(name) 经过水果 \(index) 应点亮它")
                 XCTAssertEqual(state.fruitsLit.filter { $0 }.count, 1, "\(name) 只点亮一个")
             }
         }
     }
 
-    func test_coinFallingOnBonusSlider_startsSlot() {
+    func test_coinThroughBonusSlider_startsSlot() {
         let l = screens[0].layout
         state.updateLayout(l)
         state.step(dt: 1.0 / 60.0)
         let bonus = l.bonusSliderCenter(offset: state.bonusSliderOffset)
-        state.active2DCoins = [Active2DCoin(x: bonus.x, y: l.bonusLane.minY + 1, vx: 0, vy: 0)]
-        state.step(dt: 1.0 / 240.0)
-        XCTAssertTrue(state.isSpinning, "落在 BONUS 滑块上应启动老虎机")
+        XCTAssertFalse(state.coinCrossedBonusLane(x: bonus.x + l.bonusSliderWidth), "偏离 BONUS 不触发")
+        XCTAssertFalse(state.isSpinning)
+        XCTAssertTrue(state.coinCrossedBonusLane(x: bonus.x), "从 BONUS 中间穿过")
+        XCTAssertTrue(state.isSpinning, "穿过 BONUS 应启动老虎机")
     }
 
-    func test_coinReachingBedEntry_becomesBedCoin() {
+    func test_coinReachingPusher_becomesBedCoin() {
         let l = screens[1].layout
         state.updateLayout(l)
-        state.active2DCoins = [Active2DCoin(x: l.centerX, y: l.bedEntryY - 1, vx: 0, vy: 300)]
-        state.step(dt: 1.0 / 60.0)
-        XCTAssertTrue(state.active2DCoins.isEmpty)
+        state.coinReachedPusher(x: l.centerX)
         XCTAssertEqual(state.bedCoins.count, 1)
         XCTAssertTrue(l.pusher.contains(CGPoint(x: state.bedCoins[0].x, y: state.bedCoins[0].y)), "推币台金币在推币台区域内")
     }
@@ -192,14 +211,6 @@ final class GameLayoutTests: XCTestCase {
         state.step(dt: 1.0 / 60.0)
         XCTAssertTrue(state.bedCoins.isEmpty)
         XCTAssertEqual(state.availableCoins, before + GameConstants.bedDropReward)
-    }
-
-    func test_fallingCoin_staysInsideField() {
-        let l = screens[0].layout
-        state.updateLayout(l)
-        state.active2DCoins = [Active2DCoin(x: l.fieldMaxX, y: l.dropField.minY, vx: 2000, vy: 0)]
-        state.step(dt: 1.0 / 60.0)
-        XCTAssertLessThanOrEqual(state.active2DCoins[0].x, l.fieldMaxX)
     }
 
     func test_sliderTravel_followsLayout() {
@@ -215,16 +226,13 @@ final class GameLayoutTests: XCTestCase {
     }
 
     func test_advance_appliesSimulationSpeedInSubsteps() {
-        let start = Active2DCoin(x: 200, y: 300, vx: 0, vy: 0)
-        state.active2DCoins = [start]
         state.advance(by: 1.0 / 60.0)
-        let advanced = state.active2DCoins[0].y
+        let advanced = state.coinSliderOffset
 
         state.resetForTesting()
-        state.active2DCoins = [start]
         let steps = Int((GameConstants.simulationSpeed).rounded())
         for _ in 0..<steps { state.step(dt: 1.0 / 60.0) }
-        XCTAssertEqual(advanced, state.active2DCoins[0].y, accuracy: 0.0001, "一帧 = simulationSpeed 个 1/60s 子步")
+        XCTAssertEqual(advanced, state.coinSliderOffset, accuracy: 0.0001, "一帧 = simulationSpeed 个 1/60s 子步")
     }
 }
 
@@ -250,7 +258,7 @@ final class PusherPrefillTests: XCTestCase {
         state.saveStore.clear()
         state.resetForTesting()
         state.availableCoins = 100
-        state.active2DCoins.removeAll()
+        state.pendingDrops.removeAll()
         state.bedCoins.removeAll()
         state.slotSpinState = .spinIdle
     }
@@ -261,8 +269,14 @@ final class PusherPrefillTests: XCTestCase {
         super.tearDown()
     }
 
+    /// 测试里没有 SpriteKit 下落区：排队的金币直接送进推币台（与下落区底部交接一致）
     private func simulate(seconds: Double) {
-        for _ in 0..<Int(seconds * 60) { state.advance(by: 1.0 / 60.0) }
+        for _ in 0..<Int(seconds * 60) {
+            let drops = state.pendingDrops
+            state.pendingDrops.removeAll()
+            drops.forEach { state.coinReachedPusher(x: $0.x) }
+            state.advance(by: 1.0 / 60.0)
+        }
     }
 
     func test_prefill_coinsInsideBedWithoutOverlap() {

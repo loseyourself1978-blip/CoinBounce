@@ -10,6 +10,9 @@ struct CoinPusherView: View {
     @State private var arrowBounce = false
     @State private var showNoCoinsHint = false
     @State private var showSettings = false
+    /// 下落区物理场景（SpriteKit），整屏透明覆盖在各区域之上
+    @State private var dropScene = DropFieldScene(gameState: GameState.shared)
+    @State private var holdDropTimer: Timer?
 
     var body: some View {
         // 外层不忽略安全区，才能读到真实的安全区边距；内容再铺满整屏
@@ -72,9 +75,17 @@ struct CoinPusherView: View {
                 coinDropButton(w: layout.dropButton.width, h: layout.dropButton.height)
                     .place(in: layout.dropButton)
 
-                // 金币、格挡、粒子：与物理同一坐标，直接按点绘制
+                // 推币台金币、粒子：与物理同一坐标，直接按点绘制
                 LocalCoinCanvasLayer(layout: layout)
                     .frame(width: sw, height: sh)
+
+                // 下落中的金币（SpriteKit）：画在老虎机、战斗区、水果灯排之上
+                SpriteView(scene: dropScene, options: [.allowsTransparency])
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
+
+                // BONUS 牌画在下落金币之上：金币从中间穿过时被牌遮住一段，形成穿透效果
+                bonusPlaque(layout: layout)
 
                 // 飞分特效层
                 ForEach(gameState.floatingScores) { score in
@@ -106,11 +117,24 @@ struct CoinPusherView: View {
             .animation(.easeOut(duration: 0.25), value: gameState.showRewardModal)
             .onAppear {
                 gameState.updateLayout(layout)
+                dropScene.apply(layout: layout)
                 startAnimations()
             }
             .onChange(of: layout) { newLayout in
                 gameState.updateLayout(newLayout)
+                dropScene.apply(layout: newLayout)
             }
+    }
+
+    private func dropOrHint() {
+        if gameState.canDropCoin {
+            gameState.dropCoin()
+        } else {
+            AudioManager.shared.play(.noCoins)
+            gameState.requestFreeCoins()
+            showNoCoinsHint = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
+        }
     }
 
     // MARK: - 动画控制
@@ -210,13 +234,20 @@ struct CoinPusherView: View {
         let slider = layout.coinSliderCenter(offset: gameState.coinSliderOffset)
 
         ZStack(alignment: .topLeading) {
-            // 白色轨道背景
-            LinearGradient(stops: [
-                .init(color: Color(red: 0.92, green: 0.92, blue: 0.88), location: 0.0),
-                .init(color: Color(red: 1.0, green: 1.0, blue: 0.98), location: 1.0)
-            ], startPoint: .leading, endPoint: .trailing)
-            .frame(width: layout.sliderTrack.width, height: h * 0.5)
-            .position(x: layout.sliderTrack.width / 2, y: h / 2)
+            // 投币口轨道：深色槽 + 上下两排跑马灯
+            Color(red: 0.12, green: 0.07, blue: 0.05)
+            RoundedRectangle(cornerRadius: h * 0.25)
+                .fill(LinearGradient(colors: [Color(red: 0.05, green: 0.03, blue: 0.02), Color(red: 0.2, green: 0.12, blue: 0.06)],
+                                     startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: h * 0.25).stroke(ArtPalette.gold, lineWidth: 2))
+                .frame(width: layout.fieldMaxX - layout.fieldMinX + layout.coinRadius * 2, height: h * 0.5)
+                .position(x: layout.centerX - layout.sliderTrack.minX, y: h / 2)
+            MarqueeLights(count: 14)
+                .frame(width: layout.fieldMaxX - layout.fieldMinX, height: h * 0.14)
+                .position(x: layout.centerX - layout.sliderTrack.minX, y: h * 0.1)
+            MarqueeLights(count: 14, phaseOffset: 1)
+                .frame(width: layout.fieldMaxX - layout.fieldMinX, height: h * 0.14)
+                .position(x: layout.centerX - layout.sliderTrack.minX, y: h * 0.9)
 
             // COIN滑块 (金币出口)，与 dropCoin 的落点同一位置
             coinSlider(w: layout.coinSliderWidth, h: h * 0.8)
@@ -420,9 +451,21 @@ struct CoinPusherView: View {
                 .fill(Color(red: 0.35, green: 0.25, blue: 0.10))
                 .frame(width: layout.fieldMaxX - layout.fieldMinX + layout.coinRadius * 2, height: 4)
                 .position(x: layout.centerX - lane.minX, y: lane.height / 2)
-            HollowBonusSliderTarget(width: layout.bonusSliderWidth, maxHeight: lane.height * 0.9)
-                .position(x: slider.x - lane.minX, y: slider.y - lane.minY)
+            // BONUS 牌后面的「孔洞」：金币从这里穿过
+            Capsule()
+                .fill(Color.black.opacity(0.7))
+                .frame(width: layout.bonusSliderWidth * 0.8, height: lane.height * 0.35)
+                .position(x: slider.x - lane.minX, y: lane.height / 2)
         }
+    }
+
+    /// BONUS 牌（整屏坐标），叠在下落金币之上
+    @ViewBuilder
+    func bonusPlaque(layout: GameLayout) -> some View {
+        let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
+        HollowBonusSliderTarget(width: layout.bonusSliderWidth, maxHeight: layout.bonusLane.height * 0.9)
+            .position(x: slider.x, y: slider.y)
+            .allowsHitTesting(false)
     }
 
     // MARK: - 推币台区域
@@ -590,16 +633,21 @@ struct CoinPusherView: View {
                     .offset(y: buttonY)
             }
             .opacity(gameState.canDropCoin ? 1 : 0.5)
-            .onTapGesture {
-                if gameState.canDropCoin {
-                    gameState.dropCoin()
-                } else {
-                    AudioManager.shared.play(.noCoins)
-                    gameState.requestFreeCoins()
-                    showNoCoinsHint = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showNoCoinsHint = false }
-                }
-            }
+            // 点一下投一枚；按住不放每 0.22 秒连投一枚
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard holdDropTimer == nil else { return }
+                        dropOrHint()
+                        holdDropTimer = Timer.scheduledTimer(withTimeInterval: 0.22, repeats: true) { _ in
+                            if gameState.canDropCoin { gameState.dropCoin() }
+                        }
+                    }
+                    .onEnded { _ in
+                        holdDropTimer?.invalidate()
+                        holdDropTimer = nil
+                    }
+            )
 
             // 金币不足时：看激励广告领金币（广告没加载好时显示加载中，不影响游戏）
             if gameState.canOfferAdReward() {
@@ -731,16 +779,6 @@ struct LocalCoinCanvasLayer: View {
                 let state = GameState.shared
                 // 物理坐标就是屏幕坐标，直接绘制
 
-                // 战斗区格挡
-                for peg in layout.pegRows.joined() {
-                    let r = layout.pegRadius
-                    let pegRect = CGRect(x: peg.x - r, y: peg.y - r, width: r * 2, height: r * 2)
-                    context.fill(Path(ellipseIn: pegRect), with: .radialGradient(
-                        Gradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.7), Color(red: 0.7, green: 0.5, blue: 0.1)]),
-                        center: CGPoint(x: pegRect.midX - r * 0.3, y: pegRect.midY - r * 0.3), startRadius: 0, endRadius: r * 1.4))
-                    context.stroke(Path(ellipseIn: pegRect), with: .color(.black.opacity(0.5)), lineWidth: 1)
-                }
-
                 // 推床金币（先画，下落金币在上层）
                 for coin in state.bedCoins.sorted(by: { $0.y < $1.y }) {
                     let coinRect = CGRect(
@@ -758,18 +796,6 @@ struct LocalCoinCanvasLayer: View {
                     ArtCoin.draw(in: context, rect: coinRect, brightness: 1.0 - brightnessShift)
                 }
 
-                // 下落金币
-                for coin in state.active2DCoins.sorted(by: { $0.y < $1.y }) {
-                    let coinRect = CGRect(
-                        x: coin.x - coin.radius,
-                        y: coin.y - coin.radius,
-                        width: coin.radius * 2,
-                        height: coin.radius * 2
-                    )
-                    
-                    ArtCoin.draw(in: context, rect: coinRect)
-                }
-                
                 // 粒子 (V9.4)
                 for particle in state.particles {
                     let pRect = CGRect(x: particle.x - 3, y: particle.y - 3, width: 6, height: 6)
