@@ -43,6 +43,8 @@ struct CoinPusherView: View {
                 SlotMachineView(
                     reels: gameState.slotReels,
                     spinState: gameState.slotSpinState,
+                    stoppedColumns: gameState.stoppedColumns,
+                    winLineActive: gameState.currentWin != .none && gameState.slotSpinState == .spinIdle,
                     reelsFrame: layout.slotReels.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY),
                     spinFrame: layout.spinButton.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY),
                     onSpin: { gameState.spinSlot() }
@@ -156,6 +158,11 @@ struct CoinPusherView: View {
         // 截图用：-debugSetCoins N 把金币设为 N；-debugAutoAd 在广告加载好后自动点「看广告领金币」
         if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
             gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
+        }
+        // 截图用：-debugAutoSpin 每 4.5 秒自动转一次老虎机
+        if ProcessInfo.processInfo.arguments.contains("-debugAutoSpin") {
+            Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in gameState.spinSlot() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { gameState.spinSlot() }
         }
         if ProcessInfo.processInfo.arguments.contains("-debugShowSettings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showSettings = true }

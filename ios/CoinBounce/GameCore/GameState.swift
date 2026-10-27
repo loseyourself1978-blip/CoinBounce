@@ -714,7 +714,11 @@ class GameState: ObservableObject {
                 if col == 4 { 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
                         self.evaluateWin()
-                        self.slotSpinState = .spinIdle 
+                        self.slotSpinState = .spinIdle
+                        // 中奖线显示 2.5 秒后熄灭
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            if self.slotSpinState == .spinIdle { self.currentWin = .none }
+                        } 
                     } 
                 }
             }

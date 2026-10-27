@@ -148,6 +148,22 @@ final class CoinBounceTests: XCTestCase {
     // MARK: - 4. 老虎机系统测试
     // ============================================================
 
+    func test_reelStrip_restShowsResultsInOrder() {
+        let rows = ReelStrip.visibleRows(position: 0, count: 10)
+        let visible = rows.filter { $0.y >= 0 && $0.y < 3 }.sorted { $0.y < $1.y }
+        XCTAssertEqual(visible.map(\.index), [0, 1, 2], "静止时显示结果 0、1、2")
+        XCTAssertEqual(visible.map(\.y), [0, 1, 2])
+    }
+
+    func test_reelStrip_scrollsDownAndWraps() {
+        let half = ReelStrip.visibleRows(position: 0.5, count: 10)
+        XCTAssertTrue(half.contains { $0.index == 0 && abs($0.y - 0.5) < 1e-9 }, "向下滚动半格")
+        let wrapped = ReelStrip.visibleRows(position: 13, count: 10)
+        let top = wrapped.first { abs($0.y) < 1e-9 }!
+        XCTAssertEqual(top.index, (0 - 13 % 10 + 10) % 10, "滚过一圈后循环")
+        XCTAssertEqual(Set(wrapped.map(\.slot)).count, 5, "每帧 5 行，各自唯一")
+    }
+
     func test_slotMachine_initialState_isIdle() {
         XCTAssertEqual(state.slotSpinState, .spinIdle, "老虎机初始状态应为idle")
     }
