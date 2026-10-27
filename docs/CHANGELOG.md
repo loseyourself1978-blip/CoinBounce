@@ -66,3 +66,9 @@
 
 - **隐私政策与支持页**：在 GitHub Pages（`gh-pages` 分支）发布英中双语的支持页（https://loseyourself1978-blip.github.io/CoinBounce/ ）和隐私政策（https://loseyourself1978-blip.github.io/CoinBounce/privacy.html ）。
 - **设置页**：隐私政策链接改为正式地址，新增「支持」链接；分组名改为「帮助与隐私」。
+
+## v9.10.0 (2026-10-27)
+
+- **英文本地化**：开发语言改为英文，保留简体中文，按系统语言自动切换（String Catalog：`Localizable.xcstrings`、`InfoPlist.xcstrings`）。覆盖设置页、领币按钮、金币不足提示、连击文字、卡牌奖励等全部界面文字；App 名称英文为 Coin Bounce，中文为「金币勇士大闯关」；ATT 授权说明中英各一版。SPIN、VS、BOSS、BONUS、JACKPOT 等街机用语两种语言都保留英文。
+- **支持页**：FAQ 用词与英文界面一致（gh-pages）。
+- **测试**：新增本地化测试（每个 key 都有中文、占位符一致、界面字面量都在 catalog 里、运行时能取到中文），共 82 个用例全部通过。
