@@ -6,6 +6,8 @@ import UserMessagingPlatform
 
 // MARK: - 激励广告接口（GameState 依赖它，测试里可替换）
 protocol RewardedAdPresenting: AnyObject {
+    /// 当前构建有可用的广告单元（Release 未配置正式单元时为 false，领币按钮隐藏）
+    var adsEnabled: Bool { get }
     var isAdReady: Bool { get }
     /// 展示激励广告；只有用户完整看完、SDK 回调发放奖励时才调用 onReward
     func showRewardedAd(onReward: @escaping () -> Void)
@@ -21,6 +23,8 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
     @Published private(set) var privacyOptionsRequired = false
 
     private var rewardedAd: RewardedAd?
+
+    var adsEnabled: Bool { AppConfig.rewardedAdUnitID != nil }
     private var hasStarted = false
     private var sdkStarted = false
 
@@ -78,8 +82,12 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
     // MARK: 加载 / 展示
     func loadRewardedAd() {
         guard sdkStarted, rewardedAd == nil, !isLoading else { return }
+        guard let adUnitID = AppConfig.rewardedAdUnitID else {
+            NSLog("[Ads] rewarded ad unit not configured for this build; ads disabled")
+            return
+        }
         isLoading = true
-        RewardedAd.load(with: AppConfig.rewardedAdUnitID, request: Request()) { [weak self] ad, error in
+        RewardedAd.load(with: adUnitID, request: Request()) { [weak self] ad, error in
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.isLoading = false

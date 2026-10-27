@@ -78,3 +78,10 @@
 - **原创美术**：新增 `UI/ArcadeArt.swift`，用 SwiftUI 矢量统一绘制金币（含 Canvas 中的下落金币和推币台金币）、7 种水果、9 种老虎机符号、勇士和 BOSS、SPIN 图标、闪烁的 Jackpot 标题框。风格为明亮卡通街机风，主色是金色、紫红和青绿，配深色描边。界面中已没有任何 emoji；连击文字也去掉了 emoji（中英文都改了）。
 - **App 图标**：`tools/icon/make_icon.swift` 用 CoreGraphics 渲染 1024×1024 无透明通道图标（大金币、弹跳轨迹、放射背景），替换来源不明的 `app_logo.jpg`。
 - **素材记录**：`docs/ASSET_LICENSES.md` 注明全部图形都是代码原创。
+
+## v9.11.1 (2026-10-27)
+
+- **AdMob 正式 App ID**：`GADApplicationIdentifier` 和 `AppConfig.adMobAppID` 改为 `ca-app-pub-9469890002230148~5839128885`（Debug 和 Release 都使用）。
+- **激励广告单元**：Debug 构建始终使用 Google 测试单元。Release 构建只使用本账号的正式单元；正式单元还是占位值时不加载广告、隐藏领币按钮并记录日志，不会误用测试 ID 或空 ID。
+- **文档**：新增 `docs/ADMOB.md`，记录发布商 ID、App ID、待补的广告单元 ID，以及上架后放置 app-ads.txt 的方法。
+- **测试**：新增 App ID 与 Info.plist 一致、Debug 用测试单元、Release 拒绝测试/占位/空 ID、无可用广告时隐藏按钮等用例。

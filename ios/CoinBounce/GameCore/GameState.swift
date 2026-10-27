@@ -675,7 +675,8 @@ class GameState: ObservableObject {
 
     /// 是否显示「看广告领金币」：金币低于阈值且今天还有次数
     func canOfferAdReward(now: Date = Date()) -> Bool {
-        availableCoins < GameConstants.adRewardCoinThreshold
+        adPresenter.adsEnabled
+            && availableCoins < GameConstants.adRewardCoinThreshold
             && adRewardsUsed(on: now) < GameConstants.adRewardDailyLimit
     }
 
