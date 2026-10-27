@@ -54,11 +54,17 @@ final class AdRewardTests: XCTestCase {
     }
 
     func test_releaseBuild_neverUsesTestOrPlaceholderAdUnit() {
-        for bad in [AppConfig.productionRewardedAdUnitID, "", AppConfig.testRewardedAdUnitID, "ca-app-pub-9469890002230148/"] {
+        for bad in ["REPLACE_WITH_REWARDED_AD_UNIT_ID", "", AppConfig.testRewardedAdUnitID, "ca-app-pub-9469890002230148/"] {
             XCTAssertNil(AppConfig.rewardedAdUnitID(isDebug: false, production: bad), "正式版不能用：\(bad)")
         }
         XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: false, production: "ca-app-pub-9469890002230148/1234567890"),
                        "ca-app-pub-9469890002230148/1234567890")
+    }
+
+    func test_productionAdUnit_isConfigured() {
+        XCTAssertEqual(AppConfig.productionRewardedAdUnitID, "ca-app-pub-9469890002230148/4967407051")
+        XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: false, production: AppConfig.productionRewardedAdUnitID),
+                       "ca-app-pub-9469890002230148/4967407051", "正式版使用正式激励广告单元")
     }
 
     func test_adsDisabled_hidesAdRewardButton() {

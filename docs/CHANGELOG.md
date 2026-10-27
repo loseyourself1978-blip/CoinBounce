@@ -85,3 +85,7 @@
 - **激励广告单元**：Debug 构建始终使用 Google 测试单元。Release 构建只使用本账号的正式单元；正式单元还是占位值时不加载广告、隐藏领币按钮并记录日志，不会误用测试 ID 或空 ID。
 - **文档**：新增 `docs/ADMOB.md`，记录发布商 ID、App ID、待补的广告单元 ID，以及上架后放置 app-ads.txt 的方法。
 - **测试**：新增 App ID 与 Info.plist 一致、Debug 用测试单元、Release 拒绝测试/占位/空 ID、无可用广告时隐藏按钮等用例。
+
+## v9.11.2 (2026-10-27)
+
+- **AdMob 正式激励广告单元**：`AppConfig.productionRewardedAdUnitID` 填入 `ca-app-pub-9469890002230148/4967407051`。Release 构建使用正式单元，Debug 构建仍然使用 Google 测试单元。

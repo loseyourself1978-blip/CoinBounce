@@ -4,14 +4,14 @@
 |---|---|---|
 | 发布商 ID | `pub-9469890002230148` | AdMob 后台 → 账号 |
 | App ID（Coin Bounce） | `ca-app-pub-9469890002230148~5839128885` | `Info.plist` 的 `GADApplicationIdentifier`、`AppConfig.adMobAppID` |
-| 激励广告单元 ID | **待补**（在 AdMob 后台创建激励广告单元后填入） | `AppConfig.productionRewardedAdUnitID` |
+| 激励广告单元 ID（Rewarded，奖励 50 coins） | `ca-app-pub-9469890002230148/4967407051` | `AppConfig.productionRewardedAdUnitID`（仅 Release 构建使用） |
 
 > 注意：`ca-app-pub-9469890002230148~6075852473` 是另一款 App「Line Reveal」的 App ID，不要用在本 App。
 
 ## 构建规则
 
 - **Debug 构建**：始终使用 Google 官方测试激励广告单元 `ca-app-pub-3940256099942544/1712485313`，避免开发时点到正式广告被判为无效流量。
-- **Release 构建**：使用正式激励广告单元。`productionRewardedAdUnitID` 还是占位值时，**不加载、不展示广告**（领币按钮隐藏，并记录日志），绝不会退回去用测试 ID 或空 ID。单元测试会检查这条规则。
+- **Release 构建**：使用正式激励广告单元 `ca-app-pub-9469890002230148/4967407051`。如果以后改成占位值或无效值，，**不加载、不展示广告**（领币按钮隐藏，并记录日志），绝不会退回去用测试 ID 或空 ID。单元测试会检查这条规则。
 
 ## 创建激励广告单元
 

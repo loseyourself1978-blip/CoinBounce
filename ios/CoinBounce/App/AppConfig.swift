@@ -8,8 +8,8 @@ enum AppConfig {
 
     /// Google 官方测试激励广告单元：Debug 构建一律使用，避免点到正式广告被判无效流量
     static let testRewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"
-    /// ⚠️ 正式激励广告单元：在 AdMob 后台创建后替换这个占位值
-    static let productionRewardedAdUnitID = "REPLACE_WITH_REWARDED_AD_UNIT_ID"
+    /// 正式激励广告单元（AdMob → Coin Bounce → Rewarded，奖励 50 coins）
+    static let productionRewardedAdUnitID = "ca-app-pub-9469890002230148/4967407051"
 
     /// 当前构建应使用的激励广告单元；Release 下正式 ID 还是占位值时返回 nil（不展示广告）
     static var rewardedAdUnitID: String? {
