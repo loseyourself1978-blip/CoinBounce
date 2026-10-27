@@ -77,6 +77,7 @@ final class BattleEffectsTests: XCTestCase {
     func test_bossKO_thenRevives() {
         var t = Date()
         let kos = state.bossDefeatedCount
+        let coinsBefore = state.availableCoins
         let hitsNeeded = Int(ceil(1 / GameConstants.bossDamagePerHit))
         for _ in 0..<hitsNeeded {
             state.coinCrossedBattle(now: t)
@@ -84,6 +85,7 @@ final class BattleEffectsTests: XCTestCase {
         }
         XCTAssertEqual(state.bossHealth, 0)
         XCTAssertEqual(state.bossDefeatedCount, kos + 1)
+        XCTAssertEqual(state.availableCoins, coinsBefore + GameConstants.bossKOReward, "KO 奖励计入余额")
         state.coinCrossedBattle(now: t)
         XCTAssertEqual(state.bossDefeatedCount, kos + 1, "KO 期间不再计算")
         let revived = expectation(description: "revive")

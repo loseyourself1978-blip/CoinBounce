@@ -191,19 +191,18 @@ final class GameLayoutTests: XCTestCase {
         XCTAssertTrue(state.isSpinning, "穿过 BONUS 应启动老虎机")
     }
 
-    func test_coinReachingPusher_handsOffToPusherWithFraction() {
+    func test_coinReachingPusher_handsOffAtSameScreenPoint() {
         let l = screens[1].layout
         state.updateLayout(l)
-        var received: [CGFloat] = []
-        state.onCoinToPusher = { fraction, _ in received.append(fraction) }
+        var received: [CGPoint] = []
+        state.onCoinToPusher = { point, _ in received.append(point) }
         defer { state.onCoinToPusher = nil }
         state.coinReachedPusher(x: l.centerX)
-        state.coinReachedPusher(x: l.fieldMinX)
         state.coinReachedPusher(x: l.fieldMaxX + 100)
-        XCTAssertEqual(received.count, 3)
-        XCTAssertEqual(received[0], 0, accuracy: 0.001, "中间投下落在台面中间")
-        XCTAssertEqual(received[1], -1, accuracy: 0.001, "最左")
-        XCTAssertEqual(received[2], 1, accuracy: 0.001, "超出范围夹到最右")
+        XCTAssertEqual(received.count, 2)
+        XCTAssertEqual(received[0].x, l.centerX - l.pusher.minX, accuracy: 0.001, "推币台视图内的横坐标与屏幕一致")
+        XCTAssertEqual(received[0].y, l.bedEntryY - l.pusher.minY, accuracy: 0.001, "纵坐标为交接线")
+        XCTAssertEqual(received[1].x, l.fieldMaxX - l.pusher.minX, accuracy: 0.001, "超出范围夹到边界")
     }
 
     func test_coinFellOffPusher_paysReward() {

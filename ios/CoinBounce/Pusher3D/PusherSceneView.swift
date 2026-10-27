@@ -8,6 +8,7 @@ struct PusherSceneView: UIViewRepresentable {
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
         view.scene = pusher.scene
+        pusher.view = view
         view.delegate = pusher
         view.isPlaying = true
         view.rendersContinuously = true

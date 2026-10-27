@@ -24,7 +24,6 @@ final class CoinBounceTests: XCTestCase {
         state.litFruitIndex = nil
         state.fruitBounceIndex = nil
         state.showCardSelection = false
-        state.showRewardModal = false
         state.showJackpotExplosion = false
         state.currentWin = .none
         state.stoppedColumns.removeAll()
@@ -210,34 +209,6 @@ final class CoinBounceTests: XCTestCase {
         // 测试宿主同时在渲染 3D 场景，主线程较忙时留足余量
         waitForExpectations(timeout: 5.0)
         XCTAssertTrue(state.showCardSelection, "所有水果点亮后应显示卡牌选择")
-    }
-
-    func test_cardReward_coins_addsCoinsAndResetsFruits() {
-        state.fruitsLit = Array(repeating: true, count: 7)
-        state.showCardSelection = true
-        let before = state.availableCoins
-        state.selectCardReward(.coins)
-        XCTAssertFalse(state.showCardSelection)
-        XCTAssertTrue(state.showRewardModal)
-        XCTAssertEqual(state.rewardAmount, GameConstants.cardCoinsReward)
-        XCTAssertEqual(state.availableCoins, before + GameConstants.cardCoinsReward)
-        XCTAssertTrue(state.fruitsLit.allSatisfy { !$0 }, "选完奖励后水果应重置")
-    }
-
-    func test_cardReward_fruits_lightsTwoAfterReset() {
-        state.fruitsLit = Array(repeating: true, count: 7)
-        state.showCardSelection = true
-        let before = state.availableCoins
-        state.selectCardReward(.fruits)
-        XCTAssertEqual(state.availableCoins, before, "选水果不应加金币")
-        XCTAssertEqual(state.fruitsLit.filter { $0 }.count, GameConstants.cardFruitsToLight, "重置后应点亮 2 个水果")
-    }
-
-    func test_cardReward_ignoredWhenNotOffered() {
-        state.showCardSelection = false
-        let before = state.availableCoins
-        state.selectCardReward(.coins)
-        XCTAssertEqual(state.availableCoins, before, "未弹出选择时不应发奖")
     }
 
     // ============================================================

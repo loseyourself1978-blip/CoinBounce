@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075D82C2DCA77FB779AC10E /* RewardCards.swift */; };
+		C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C09E74094A4667BE570DF287 /* RewardCardTests.swift */; };
 		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
 		C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07DAD123163FB2694651B70 /* Pusher3DTests.swift */; };
 		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
@@ -63,6 +65,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
+		C09E74094A4667BE570DF287 /* RewardCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCardTests.swift; sourceTree = "<group>"; };
 		C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleEffectsTests.swift; sourceTree = "<group>"; };
 		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
 		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
@@ -148,6 +152,7 @@
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
+				C09E74094A4667BE570DF287 /* RewardCardTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -172,6 +177,7 @@
 				C0AFC3BAB814249E2557C10D /* SettingsStore.swift */,
 				C0A6513C75A7B7AA2979393A /* AudioManager.swift */,
 				C01550AC5A455675584028A5 /* AdsManager.swift */,
+				C075D82C2DCA77FB779AC10E /* RewardCards.swift */,
 			);
 			path = GameCore;
 			sourceTree = "<group>";
@@ -365,6 +371,7 @@
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
+				C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,6 +397,7 @@
 				C0F327EBFA234B58F9BA788A /* DropFieldScene.swift in Sources */,
 				C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */,
 				C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */,
+				C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

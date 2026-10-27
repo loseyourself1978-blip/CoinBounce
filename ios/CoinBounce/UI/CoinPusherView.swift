@@ -108,28 +108,25 @@ struct CoinPusherView: View {
                         .frame(width: sw, height: sh)
                 }
                 if gameState.showCardSelection {
-                    CardSelectionView { choice in
-                        withAnimation(.easeOut(duration: 0.2)) { gameState.selectCardReward(choice) }
-                    }
-                    .frame(width: sw, height: sh)
-                }
-                if gameState.showRewardModal {
-                    RewardModalView(amount: gameState.rewardAmount) {
-                        withAnimation(.easeOut(duration: 0.2)) { gameState.showRewardModal = false }
-                    }
+                    CardSelectionView(cards: gameState.offeredCards, picked: gameState.pickedCard,
+                                      onPick: { gameState.pickCard($0) },
+                                      onFinished: { gameState.finishCardPick() })
                     .frame(width: sw, height: sh)
                 }
             }
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
             .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
-            .animation(.easeOut(duration: 0.25), value: gameState.showRewardModal)
             .onAppear {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
                 // 下落区 → 3D 推币台；3D 推币台掉落 → 计分
-                gameState.onCoinToPusher = { [pusher3D] fraction, special in pusher3D.dropCoin(xFraction: Float(fraction), special: special) }
+                gameState.onCoinToPusher = { [pusher3D] point, special in pusher3D.dropCoin(atViewPoint: point, special: special) }
                 pusher3D.onCoinDropped = { special in gameState.coinFellOffPusher(isSpecial: special) }
+            }
+            .onChange(of: gameState.pusherSpeedMultiplier) { pusher3D.setPusherSpeed($0) }
+            .onChange(of: gameState.wideMouthActive) { pusher3D.setEasyDrop($0) }
+            .onAppear {
                 startAnimations()
             }
             .onChange(of: layout) { newLayout in
