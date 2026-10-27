@@ -164,6 +164,11 @@ struct CoinPusherView: View {
         if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
             gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
         }
+        // 截图用：-debugResetFruits 清空水果进度，不弹出卡牌
+        if ProcessInfo.processInfo.arguments.contains("-debugResetFruits") {
+            gameState.fruitsLit = Array(repeating: false, count: 7)
+            gameState.finishCardPick()
+        }
         // 截图用：-debugAutoSpin 每 4.5 秒自动转一次老虎机
         if ProcessInfo.processInfo.arguments.contains("-debugAutoSpin") {
             Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in gameState.spinSlot() }
