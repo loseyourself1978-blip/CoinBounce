@@ -52,7 +52,9 @@ struct CoinPusherView: View {
                     spinState: gameState.slotSpinState,
                     stoppedColumns: gameState.stoppedColumns,
                     winLineActive: gameState.currentWin != .none && gameState.slotSpinState == .spinIdle,
-                    reelsFrame: layout.slotReels.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY)
+                    reelsFrame: layout.slotReels.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY),
+                    pins: layout.slotPins.map { CGPoint(x: $0.x - layout.slotMachine.minX, y: $0.y - layout.slotMachine.minY) },
+                    pinRadius: layout.slotPinRadius
                 )
                 .place(in: layout.slotMachine)
 
@@ -73,12 +75,18 @@ struct CoinPusherView: View {
                     .place(in: layout.bonusLane)
 
                 // ── 推币台 ──
-                PusherSceneView(pusher: pusher3D)
-                    .place(in: layout.pusher)
+                // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
+                CabinetPillar()
+                    .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: GameLayout.margin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
+                CabinetPillar()
+                    .place(in: CGRect(x: sw - GameLayout.margin, y: layout.sliderTrack.minY, width: GameLayout.margin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
 
-                // ── 投币按钮（背景延伸到底部安全区）──
-                Color(red: 0.06, green: 0.05, blue: 0.03)
-                    .place(in: CGRect(x: 0, y: layout.dropButton.minY, width: sw, height: sh - layout.dropButton.minY))
+                // 3D 推币台一直延伸到屏幕底部，投币按钮叠在台面前沿上（与参考布局一致）
+                PusherSceneView(pusher: pusher3D, coinDiameter: layout.coinRadius * 2,
+                                handoffY: layout.bedEntryY - layout.pusherView.minY)
+                    .place(in: layout.pusherView)
+
+                // ── 投币按钮 ──
                 coinDropButton(w: layout.dropButton.width, h: layout.dropButton.height)
                     .place(in: layout.dropButton)
 

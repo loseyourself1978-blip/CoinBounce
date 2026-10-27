@@ -126,8 +126,9 @@ class GameState: ObservableObject {
     @Published var bonusSliderOffset: CGFloat = 0.0
     
     private var sliderTime: CGFloat = 0
-    private let coinSliderSpeed: Double = 1.0
-    private let bonusSliderSpeed: Double = 1.2
+    /// 滑块角速度（游戏时间，已除以 simulationSpeed），周期见 GameConstants
+    private var coinSliderSpeed: Double { 2 * .pi / GameConstants.coinSliderPeriod / Double(GameConstants.simulationSpeed) }
+    private var bonusSliderSpeed: Double { 2 * .pi / GameConstants.bonusSliderPeriod / Double(GameConstants.simulationSpeed) }
 
     // MARK: - 布局（物理坐标 = 屏幕坐标）
     /// 由 CoinPusherView 根据真实屏幕传入；之前使用参考尺寸
@@ -424,7 +425,7 @@ class GameState: ObservableObject {
     /// 金币越过下落区底部，交给 3D 推币台：传入它在推币台视图里的屏幕位置，3D 金币在同一位置出现
     func coinReachedPusher(x: CGFloat, isSpecial: Bool = false) {
         let clampedX = min(max(x, layout.fieldMinX), layout.fieldMaxX)
-        let point = CGPoint(x: clampedX - layout.pusher.minX, y: layout.bedEntryY - layout.pusher.minY)
+        let point = CGPoint(x: clampedX - layout.pusherView.minX, y: layout.bedEntryY - layout.pusherView.minY)
         onCoinToPusher?(point, isSpecial)
     }
 

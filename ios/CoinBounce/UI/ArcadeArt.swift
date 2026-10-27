@@ -603,3 +603,35 @@ struct MarqueeLights: View {
         }
     }
 }
+
+// MARK: - 机柜立柱（左右两侧，金属圆柱质感 + 一列闪烁灯泡）
+
+struct CabinetPillar: View {
+    @State private var phase = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let count = max(4, Int(geo.size.height / 34))
+            ZStack {
+                // 圆柱高光：两侧暗、中间亮
+                LinearGradient(colors: [ArtPalette.goldDeep, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep],
+                               startPoint: .leading, endPoint: .trailing)
+                    .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
+                VStack(spacing: 0) {
+                    ForEach(0..<count, id: \.self) { i in
+                        Circle()
+                            .fill((i % 2 == 0) == phase ? Color(red: 1, green: 0.95, blue: 0.7) : ArtPalette.magenta)
+                            .shadow(color: ArtPalette.gold.opacity(0.9), radius: w * 0.35)
+                            .frame(width: w * 0.6, height: w * 0.6)
+                            .frame(maxHeight: .infinity)
+                    }
+                }
+            }
+            .frame(width: w, height: geo.size.height)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() }
+        }
+    }
+}

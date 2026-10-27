@@ -28,6 +28,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         var crossedFruit = false
         var crossedBonus = false
         var isSpecial = false
+        var spawnTime: TimeInterval = 0
         /// 中奖金币雨：纯视觉，不触发任何事件
         var isDecorative = false
         var lastObstacleHit: TimeInterval = 0
@@ -63,6 +64,9 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         staticRoot.removeAllChildren()
         for p in newLayout.slotObstacles {
             addObstacle(at: p, radius: newLayout.slotObstacleRadius)
+        }
+        for p in newLayout.slotPins {
+            addObstacle(at: p, radius: newLayout.slotPinRadius)
         }
         for p in newLayout.fruitPins {
             addObstacle(at: p, radius: newLayout.fruitPinRadius)
@@ -100,6 +104,13 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     private func spawn(_ request: Active2DCoin, decorative: Bool = false) {
         let r = layout.coinRadius
         let node = SKSpriteNode(texture: request.isSpecial ? specialTexture : faceTexture, size: CGSize(width: r * 2, height: r * 2))
+        // 投影：右下方的半透明暗影，让金币浮在机柜前方，有纵深感
+        let shadow = SKShapeNode(ellipseOf: CGSize(width: r * 2, height: r * 1.7))
+        shadow.fillColor = UIColor.black.withAlphaComponent(0.35)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: r * 0.25, y: -r * 0.35)
+        shadow.zPosition = -2
+        node.addChild(shadow)
         if request.isSpecial {
             // 特殊金币：外圈光晕
             let glow = SKShapeNode(circleOfRadius: r * 1.5)
@@ -124,6 +135,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         node.physicsBody = body
         let info = CoinInfo()
         info.isSpecial = request.isSpecial
+        info.spawnTime = lastUpdate
         info.isDecorative = decorative
         if decorative {
             body.collisionBitMask = Category.wall | Category.obstacle
@@ -183,6 +195,9 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
                 state.coinCrossedBonusLane(x: x)
             }
             if y >= layout.bedEntryY {
+                #if DEBUG
+                NSLog("[Drop] fall %.2fs", lastUpdate - info.spawnTime)
+                #endif
                 state.coinReachedPusher(x: x, isSpecial: info.isSpecial)
                 node.removeFromParent()
             } else if y > size.height + 50 || x < -50 || x > size.width + 50 {
@@ -198,6 +213,11 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         let now = lastUpdate
         guard now - info.lastObstacleHit > 0.15 else { return }   // 同一枚金币短时间内只算一次
         info.lastObstacleHit = now
+        // 碰到格挡时给一点随机侧向冲量，避免金币停在钉子正上方
+        if let body = coinBody.node?.physicsBody {
+            let dir: CGFloat = Bool.random() ? 1 : -1
+            body.applyImpulse(CGVector(dx: dir * CGFloat.random(in: 0.4...0.9), dy: 0))
+        }
         gameState?.coinHitObstacle()
     }
 
@@ -231,7 +251,11 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
                    UIColor(red: 1, green: 0.8, blue: 0.2, alpha: 1).cgColor,
                    UIColor(red: 0.8, green: 0.5, blue: 0.05, alpha: 1).cgColor]) as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.6, 1])!
-            cg.addEllipse(in: rect)
+            // 金币厚度：先画深色边缘（底部露出），再画略小、略偏上的币面
+            cg.setFillColor(UIColor(red: 0.55, green: 0.33, blue: 0.03, alpha: 1).cgColor)
+            cg.fillEllipse(in: rect)
+            let faceRect = CGRect(x: diameter * 0.02, y: 0, width: diameter * 0.96, height: diameter * 0.92)
+            cg.addEllipse(in: faceRect)
             cg.clip()
             cg.drawRadialGradient(g, startCenter: CGPoint(x: diameter * 0.35, y: diameter * 0.3), startRadius: 0,
                                   endCenter: CGPoint(x: diameter / 2, y: diameter / 2), endRadius: diameter * 0.7,
