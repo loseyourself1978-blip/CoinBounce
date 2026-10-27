@@ -33,6 +33,8 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         guard !hasStarted else { return }
         hasStarted = true
         #if DEBUG
+        // 自动化截图：-debugNoAds 完全不启动广告 SDK（正式 App ID 下 SDK 可能自带同意/跟踪弹窗，会挡住画面）
+        if ProcessInfo.processInfo.arguments.contains("-debugNoAds") { return }
         // 自动化截图：跳过同意表单和 ATT，直接验证广告加载与发奖
         if ProcessInfo.processInfo.arguments.contains("-debugSkipConsent") {
             sdkStarted = true

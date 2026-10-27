@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07DAD123163FB2694651B70 /* Pusher3DTests.swift */; };
+		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
+		C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */; };
 		C0F327EBFA234B58F9BA788A /* DropFieldScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */; };
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
@@ -20,7 +23,6 @@
 		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
 		B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1F02C00000100000008 /* CoinPusherView.swift */; };
 		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
-		B1A1EE032C00000600000001 /* PusherBedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1EE042C00000600000001 /* PusherBedBackground.swift */; };
 		C00EF1A5C77513DCDFAFAFDA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */; };
 		C01AD1F3908B38A4F60ABA0A /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C08BE306C19A1AD748AA16 /* AppConfig.swift */; };
 		C02881A25E77EF9DBB7E89ED /* sfx_no_coins.wav in Resources */ = {isa = PBXBuildFile; fileRef = C026F5EB2678C99744DDA993 /* sfx_no_coins.wav */; };
@@ -60,6 +62,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
+		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
+		C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherScene3D.swift; sourceTree = "<group>"; };
 		C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropFieldScene.swift; sourceTree = "<group>"; };
 		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
 		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,7 +80,6 @@
 		B1A1E1E62C00000100000003 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		B1A1E1F02C00000100000008 /* CoinPusherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPusherView.swift; sourceTree = "<group>"; };
 		B1A1E1F22C00000100000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		B1A1EE042C00000600000001 /* PusherBedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherBedBackground.swift; sourceTree = "<group>"; };
 		C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_bed_drop.wav; sourceTree = "<group>"; };
 		C013055A43B134AF24AA5599 /* sfx_jackpot.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_jackpot.wav; sourceTree = "<group>"; };
 		C01343A2745A50F8C65B2470 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -123,6 +127,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C080BA7BD9B6E1810AD5220C /* Pusher3D */ = {
+			isa = PBXGroup;
+			children = (
+				C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */,
+				C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */,
+			);
+			path = Pusher3D;
+			sourceTree = "<group>";
+		};
 		B1A1AAB02C00000200000001 /* CoinBounceTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -131,6 +144,7 @@
 				C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
 				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
+				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -164,7 +178,6 @@
 			children = (
 				B1A1E1F02C00000100000008 /* CoinPusherView.swift */,
 				B1A1CC022C00000400000001 /* SlotMachineView.swift */,
-				B1A1EE042C00000600000001 /* PusherBedBackground.swift */,
 				B1A1CC082C00000400000001 /* RewardOverlays.swift */,
 				C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */,
 				C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */,
@@ -203,6 +216,7 @@
 				C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */,
 				C01343A2745A50F8C65B2470 /* Localizable.xcstrings */,
 				C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */,
+				C080BA7BD9B6E1810AD5220C /* Pusher3D */,
 			);
 			path = CoinBounce;
 			sourceTree = "<group>";
@@ -346,6 +360,7 @@
 				C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
 				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
+				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,7 +373,6 @@
 				B1A1E1E52C00000100000003 /* GameState.swift in Sources */,
 				B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */,
 				B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */,
-				B1A1EE032C00000600000001 /* PusherBedBackground.swift in Sources */,
 				B1A1CC072C00000400000001 /* RewardOverlays.swift in Sources */,
 				B1A1BB012C00000300000001 /* HapticManager.swift in Sources */,
 				B1A1CC052C00000400000001 /* SaveStore.swift in Sources */,
@@ -370,6 +384,8 @@
 				C00EF1A5C77513DCDFAFAFDA /* SettingsView.swift in Sources */,
 				C0DD55AFF7CE14562A88B26D /* ArcadeArt.swift in Sources */,
 				C0F327EBFA234B58F9BA788A /* DropFieldScene.swift in Sources */,
+				C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */,
+				C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

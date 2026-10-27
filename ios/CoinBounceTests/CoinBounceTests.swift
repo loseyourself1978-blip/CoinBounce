@@ -20,7 +20,6 @@ final class CoinBounceTests: XCTestCase {
         // 重置到干净状态
         state.availableCoins = 100
         state.pendingDrops.removeAll()
-        state.bedCoins.removeAll()
         state.fruitsLit = Array(repeating: false, count: 7)
         state.litFruitIndex = nil
         state.fruitBounceIndex = nil
@@ -112,12 +111,6 @@ final class CoinBounceTests: XCTestCase {
     // MARK: - 3. 金币物理引擎测试
     // ============================================================
 
-    func test_physics_step_movesBedCoin() {
-        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
-        state.updateFrame()
-        XCTAssertGreaterThan(state.bedCoins[0].y, 600, "推币台金币按速度前进")
-    }
-
     func test_frameDelta_usesActualInterval() {
         XCTAssertEqual(GameState.clampedFrameDelta(1.0 / 120.0), 1.0 / 120.0, accuracy: 1e-9, "120Hz 帧应使用实际间隔")
         XCTAssertEqual(GameState.clampedFrameDelta(1.0 / 60.0), 1.0 / 60.0, accuracy: 1e-9)
@@ -126,22 +119,6 @@ final class CoinBounceTests: XCTestCase {
     func test_frameDelta_isCapped() {
         XCTAssertEqual(GameState.clampedFrameDelta(0.5), GameConstants.maxFrameDelta, "掉帧时步长不应超过上限")
         XCTAssertEqual(GameState.clampedFrameDelta(0), GameConstants.defaultFrameDelta, "无效间隔回落到默认步长")
-    }
-
-    func test_physics_halfStepMovesLessThanFullStep() {
-        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
-        state.step(dt: 1.0 / 120.0)
-        let half = state.bedCoins[0].y - 600
-        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
-        state.step(dt: 1.0 / 60.0)
-        let full = state.bedCoins[0].y - 600
-        XCTAssertLessThan(half, full, "步长越小金币位移越小")
-    }
-
-    func test_physics_bedBoundary_clampsCoin() {
-        state.bedCoins = [PusherCoin(x: -150, y: 600, vx: -100, vy: 0)]
-        state.updateFrame()
-        XCTAssertGreaterThanOrEqual(state.bedCoins[0].x, state.layout.bedMinX, "推币台金币不会越过左边界")
     }
 
     // ============================================================
@@ -230,7 +207,8 @@ final class CoinBounceTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             expectation.fulfill()
         }
-        waitForExpectations(timeout: 2.0)
+        // 测试宿主同时在渲染 3D 场景，主线程较忙时留足余量
+        waitForExpectations(timeout: 5.0)
         XCTAssertTrue(state.showCardSelection, "所有水果点亮后应显示卡牌选择")
     }
 
@@ -357,18 +335,6 @@ final class CoinBounceTests: XCTestCase {
             return
         }
         XCTAssertEqual(coin.y, state.layout.coinSpawnY, "投币初始 Y 坐标应为 COIN 滑块中心（GameLayout）")
-    }
-
-    func test_iteration9_bedPhysics_waveDrive() {
-        // 初始化一些金币到推子感应区
-        state.bedCoins = [PusherCoin(x: 0, y: 50, vx: 0, vy: 0, scale: 1.0, radius: 14)]
-        
-        // 模拟推子向前移动 (pusherVelocity > 0)
-        state.updateFrame() // 会自动计算并生成 pusherVelocity
-        
-        // 我们无法直接读取私有 pusherVelocity，但可以测量结果
-        let coin = state.bedCoins.first!
-        XCTAssertGreaterThan(abs(coin.vx), 0, "Iteration 9: 推子推动应产生随机 X 扰动")
     }
 
     func test_iteration9_fruitPattern_index5() {
