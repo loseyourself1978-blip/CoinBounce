@@ -78,6 +78,14 @@ final class SettingsAudioTests: XCTestCase {
         XCTAssertEqual(HapticManager.shared.playCount, before)
     }
 
+    func test_privacyAndSupportLinks_arePublishedHTTPS() {
+        for url in [AppConfig.privacyPolicyURL, AppConfig.supportURL] {
+            XCTAssertEqual(url.scheme, "https")
+            XCTAssertEqual(url.host, "loseyourself1978-blip.github.io", "不能是占位地址")
+        }
+        XCTAssertTrue(AppConfig.privacyPolicyURL.path.hasSuffix("privacy.html"))
+    }
+
     func test_hapticsOn_hapticManagerFires() {
         let before = HapticManager.shared.playCount
         HapticManager.shared.coinDrop()

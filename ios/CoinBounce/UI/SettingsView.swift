@@ -28,7 +28,10 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("隐私") {
+                Section("帮助与隐私") {
+                    Link(destination: AppConfig.supportURL) {
+                        Label("支持", systemImage: "questionmark.circle.fill")
+                    }
                     Link(destination: AppConfig.privacyPolicyURL) {
                         Label("隐私政策", systemImage: "hand.raised.fill")
                     }
