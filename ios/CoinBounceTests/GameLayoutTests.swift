@@ -114,11 +114,8 @@ final class GameLayoutTests: XCTestCase {
             XCTAssertLessThanOrEqual(l.dropField.maxY, l.fruitBar.minY + 0.001)
             XCTAssertLessThanOrEqual(l.fruitBar.maxY, l.bonusLane.minY + 0.001)
             XCTAssertLessThanOrEqual(l.bonusLane.maxY, l.bedEntryY)
-            XCTAssertLessThan(l.pusherFrontRestY + l.pusherStroke, l.bedEntryY, "\(name) 落币点在推板最远处之前")
-            XCTAssertLessThan(l.bedEntryY, l.bedDropY)
-            XCTAssertTrue(l.pusher.contains(CGPoint(x: l.size.width / 2, y: l.bedDropY)), "\(name) 掉落线在推币台内")
-            XCTAssertGreaterThanOrEqual(l.bedMinX - l.coinRadius, 0)
-            XCTAssertLessThanOrEqual(l.bedMaxX + l.coinRadius, l.size.width)
+            XCTAssertTrue(l.pusher.contains(CGPoint(x: l.centerX, y: l.bedEntryY)), "\(name) 交接线在推币台区域顶部")
+            XCTAssertLessThan(l.bedEntryY - l.pusher.minY, l.pusher.height * 0.2)
             XCTAssertGreaterThanOrEqual(l.fieldMinX - l.coinRadius, 0)
             XCTAssertLessThanOrEqual(l.fieldMaxX + l.coinRadius, l.size.width)
         }
@@ -136,7 +133,6 @@ final class GameLayoutTests: XCTestCase {
         state.resetForTesting()
         state.availableCoins = 100
         state.pendingDrops.removeAll()
-        state.bedCoins.removeAll()
         state.fruitsLit = Array(repeating: false, count: 7)
         state.showCardSelection = false
         state.slotSpinState = .spinIdle
@@ -195,22 +191,27 @@ final class GameLayoutTests: XCTestCase {
         XCTAssertTrue(state.isSpinning, "穿过 BONUS 应启动老虎机")
     }
 
-    func test_coinReachingPusher_becomesBedCoin() {
+    func test_coinReachingPusher_handsOffToPusherWithFraction() {
         let l = screens[1].layout
         state.updateLayout(l)
+        var received: [CGFloat] = []
+        state.onCoinToPusher = { received.append($0) }
+        defer { state.onCoinToPusher = nil }
         state.coinReachedPusher(x: l.centerX)
-        XCTAssertEqual(state.bedCoins.count, 1)
-        XCTAssertTrue(l.pusher.contains(CGPoint(x: state.bedCoins[0].x, y: state.bedCoins[0].y)), "推币台金币在推币台区域内")
+        state.coinReachedPusher(x: l.fieldMinX)
+        state.coinReachedPusher(x: l.fieldMaxX + 100)
+        XCTAssertEqual(received.count, 3)
+        XCTAssertEqual(received[0], 0, accuracy: 0.001, "中间投下落在台面中间")
+        XCTAssertEqual(received[1], -1, accuracy: 0.001, "最左")
+        XCTAssertEqual(received[2], 1, accuracy: 0.001, "超出范围夹到最右")
     }
 
-    func test_bedCoinPastDropLine_paysReward() {
-        let l = screens[1].layout
-        state.updateLayout(l)
+    func test_coinFellOffPusher_paysReward() {
         let before = state.availableCoins
-        state.bedCoins = [PusherCoin(x: l.size.width / 2, y: l.bedDropY + 1)]
-        state.step(dt: 1.0 / 60.0)
-        XCTAssertTrue(state.bedCoins.isEmpty)
+        let drops = state.bedDropCount
+        state.coinFellOffPusher()
         XCTAssertEqual(state.availableCoins, before + GameConstants.bedDropReward)
+        XCTAssertEqual(state.bedDropCount, drops + 1)
     }
 
     func test_sliderTravel_followsLayout() {
@@ -220,7 +221,6 @@ final class GameLayoutTests: XCTestCase {
                 state.step(dt: 1.0 / 30.0)
                 XCTAssertLessThanOrEqual(abs(state.coinSliderOffset), l.coinSliderTravel + 0.001)
                 XCTAssertLessThanOrEqual(abs(state.bonusSliderOffset), l.bonusSliderTravel + 0.001)
-                XCTAssertTrue((0...l.pusherStroke + 0.001).contains(state.pusherOffset))
             }
         }
     }
@@ -237,113 +237,3 @@ final class GameLayoutTests: XCTestCase {
 }
 
 
-// ============================================================
-// MARK: - 开局预铺金币
-// ============================================================
-
-final class PusherPrefillTests: XCTestCase {
-
-    let layouts: [GameLayout] = [
-        GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)),
-        GameLayout(size: CGSize(width: 393, height: 852), safeArea: EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)),
-        GameLayout(size: CGSize(width: 440, height: 956), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
-    ]
-
-    var state: GameState!
-
-    override func setUp() {
-        super.setUp()
-        state = GameState.shared
-        state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "PusherPrefillTests")!, key: "PusherPrefillTests.SaveData")
-        state.saveStore.clear()
-        state.resetForTesting()
-        state.availableCoins = 100
-        state.pendingDrops.removeAll()
-        state.bedCoins.removeAll()
-        state.slotSpinState = .spinIdle
-    }
-
-    override func tearDown() {
-        state.bedCoins.removeAll()
-        state.resetForTesting()
-        super.tearDown()
-    }
-
-    /// 测试里没有 SpriteKit 下落区：排队的金币直接送进推币台（与下落区底部交接一致）
-    private func simulate(seconds: Double) {
-        for _ in 0..<Int(seconds * 60) {
-            let drops = state.pendingDrops
-            state.pendingDrops.removeAll()
-            drops.forEach { state.coinReachedPusher(x: $0.x) }
-            state.advance(by: 1.0 / 60.0)
-        }
-    }
-
-    func test_prefill_coinsInsideBedWithoutOverlap() {
-        for l in layouts {
-            let points = GameState.prefillPositions(for: l)
-            XCTAssertGreaterThan(points.count, 20, "应预铺一层金币")
-            for p in points {
-                XCTAssertTrue(p.x >= l.bedMinX - 0.001 && p.x <= l.bedMaxX + 0.001)
-                XCTAssertTrue(p.y > l.pusherFrontRestY + l.pusherStroke && p.y < l.bedDropY, "预铺金币在推板最远处之前、掉落线之后")
-            }
-            for i in 0..<points.count {
-                for j in (i + 1)..<points.count {
-                    let d = hypot(points[i].x - points[j].x, points[i].y - points[j].y)
-                    XCTAssertGreaterThanOrEqual(d, l.coinRadius * 2, "预铺金币不重叠")
-                }
-            }
-        }
-    }
-
-    func test_prefill_idlePusherDropsAtMostTwo() {
-        for l in layouts {
-            state.resetForTesting()
-            state.updateLayout(l)
-            state.prefillBed()
-            let before = state.bedDropCount
-            simulate(seconds: 20)
-            XCTAssertLessThanOrEqual(state.bedDropCount - before, 2, "\(l.size) 不投币时推板空转不应大量掉落")
-        }
-    }
-
-    func test_prefill_fewCoinsPushSomeOff() {
-        for l in layouts {
-            state.resetForTesting()
-            state.updateLayout(l)
-            state.prefillBed()
-            state.availableCoins = 100
-            let dropsBefore = state.bedDropCount
-            for _ in 0..<5 {
-                state.dropCoin()
-                simulate(seconds: 1)
-            }
-            simulate(seconds: 3)
-            let drops = state.bedDropCount - dropsBefore
-            XCTAssertGreaterThanOrEqual(drops, 1, "\(l.size) 投 5 枚币后应至少推落 1 枚")
-        }
-    }
-
-    func test_prefill_droppedCoinsPayReward() {
-        let l = layouts[1]
-        state.updateLayout(l)
-        state.prefillBed()
-        state.availableCoins = 100
-        let won = state.totalCoinsWon
-        let dropsBefore = state.bedDropCount
-        let fruitsBefore = state.fruitsLit.filter { $0 }.count
-        for _ in 0..<5 { state.dropCoin(); simulate(seconds: 1) }
-        simulate(seconds: 3)
-        let fruitsLit = state.fruitsLit.filter { $0 }.count - fruitsBefore
-        XCTAssertEqual(state.totalCoinsWon - won,
-                       (state.bedDropCount - dropsBefore) * GameConstants.bedDropReward + fruitsLit * GameConstants.fruitHitReward,
-                       "推落的金币按 bedDropReward 计分")
-    }
-
-    func test_layoutChange_beforeAnyDrop_refillsForNewScreen() {
-        state.updateLayout(layouts[1])
-        state.prefillBed()
-        state.updateLayout(layouts[0])
-        XCTAssertEqual(state.bedCoins.count, GameState.prefillPositions(for: layouts[0]).count)
-    }
-}

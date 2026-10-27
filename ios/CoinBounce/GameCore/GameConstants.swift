@@ -35,13 +35,6 @@ struct GameConstants {
     static let adRewardCoinThreshold: Int = 10      // 金币低于这个数才显示领币按钮
     static let adRewardDailyLimit: Int = 5          // 每天最多领取次数（按本地日期重置）
 
-    // 开局预铺金币（推币台）
-    static let prefillMaxRows: Int = 12            // 最多铺几排（屏幕矮时自动减少）
-    static let prefillEdgeGap: CGFloat = 0.08       // 最前排距离掉落线（金币直径）
-    static let prefillBackGap: CGFloat = 0.0        // 最后一排与推板最远处的间隙（金币直径）
-    static let prefillRowLooseness: CGFloat = 1.04 // 排距至少为密排的 1.04 倍，太密会一投就大量掉落
-    static let bedSolverPasses: Int = 4             // 推币台碰撞位置分离的迭代次数
-
     // RPG Battle
     static let coinsPerAttack: Int = 10
     static let enemyMaxHealth: Int = 5

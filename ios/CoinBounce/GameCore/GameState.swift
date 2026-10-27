@@ -32,18 +32,6 @@ struct Active2DCoin: Identifiable {
     var age: CGFloat = 0
 }
 
-// MARK: - 推币床金币 (V8.0: 支持 Z 轴叠加)
-struct PusherCoin: Identifiable {
-    let id = UUID()
-    var x: CGFloat
-    var y: CGFloat
-    var z: CGFloat = 0      // Z 轴高度 (叠放)
-    var vx: CGFloat = 0
-    var vy: CGFloat = 0
-    var scale: CGFloat = 1.0
-    var radius: CGFloat = 14
-}
-
 // MARK: - 老虎机旋转状态
 enum SlotSpinState: Equatable {
     case spinIdle
@@ -180,12 +168,10 @@ class GameState: ObservableObject {
     @Published var floatingScores: [FloatingScore] = []
     @Published var baffleHitPositions: [(x: CGFloat, y: CGFloat, time: Date)] = []
     
-    // 推币床金币池
-    // V9.0: 移除 @Published 以优化 60fps
-    var bedCoins: [PusherCoin] = []
     /// 累计从推币台掉落得分的金币数
     private(set) var bedDropCount = 0
-    private var bedIsUntouchedPrefill = false
+    /// 下落区的金币到达推币台时调用：参数为横向位置（-1 左 … 1 右），由 3D 推币台生成金币
+    var onCoinToPusher: ((CGFloat) -> Void)?
     private var isNextDropRight: Bool = false
 
     // MARK: - 状态位
@@ -193,7 +179,6 @@ class GameState: ObservableObject {
     @Published var showRewardModal: Bool = false
     @Published var rewardAmount: Int = 0
     @Published var showJackpotExplosion: Bool = false
-    @Published var pusherOffset: CGFloat = 0
 
     private var displayLink: CADisplayLink?
     private var lastFrameTimestamp: CFTimeInterval?
@@ -203,8 +188,6 @@ class GameState: ObservableObject {
     var saveStore = SaveStore()
     private var savePending = false
 
-    // MARK: - 物理常量（纵向数值按 layout.fallScale / bedScale 换算）
-    private let gravityBase: CGFloat = 920.0
 
 
     private init() {
@@ -212,7 +195,6 @@ class GameState: ObservableObject {
         // 上次退出时水果已全亮但未选奖励：重新弹出选择
         if fruitsLit.allSatisfy({ $0 }) { showCardSelection = true }
         initializeSlotReels()
-        prefillBed()
         startDisplayLink()
     }
     
@@ -220,7 +202,6 @@ class GameState: ObservableObject {
     func resetForTesting() {
         layout = .reference
         sliderTime = 0
-        pusherOffset = 0
         coinSliderOffset = 0
         bonusSliderOffset = 0
     }
@@ -270,48 +251,7 @@ class GameState: ObservableObject {
     /// 屏幕尺寸或安全区变化时由视图调用
     func updateLayout(_ newLayout: GameLayout) {
         guard newLayout != layout else { return }
-        let old = layout
         layout = newLayout
-        // 预铺后还没有金币落上去：按新布局重新预铺；否则按比例换算到新推币台
-        if bedIsUntouchedPrefill {
-            prefillBed()
-            return
-        }
-        for i in bedCoins.indices {
-            let fx = (bedCoins[i].x - old.bedMinX) / max(1, old.bedMaxX - old.bedMinX)
-            let fy = (bedCoins[i].y - old.bedTopY) / max(1, old.bedDropY - old.bedTopY)
-            bedCoins[i].x = min(max(layout.bedMinX + fx * (layout.bedMaxX - layout.bedMinX), layout.bedMinX), layout.bedMaxX)
-            bedCoins[i].y = min(layout.bedTopY + fy * (layout.bedDropY - layout.bedTopY), layout.bedDropY - 1)
-        }
-    }
-
-    /// 开局在推币台上预铺一层金币（六边形密排，从掉落线往回铺），数量和位置见 GameConstants
-    func prefillBed() {
-        bedCoins = GameState.prefillPositions(for: layout).map { PusherCoin(x: $0.x, y: $0.y) }
-        bedIsUntouchedPrefill = true
-    }
-
-    static func prefillPositions(for L: GameLayout) -> [CGPoint] {
-        let d = L.coinRadius * 2 + 0.5
-        let rowStep = d * 0.866   // 六边形密排的排距
-        let frontY = L.bedDropY - GameConstants.prefillEdgeGap * d
-        // 最后一排与推板最远处之间至少留出 prefillBackGap 个金币直径
-        let backLimit = L.pusherFrontRestY + L.pusherStroke + L.coinRadius + GameConstants.prefillBackGap * d
-        guard frontY > backLimit else { return [] }
-        // 排数取整后均匀分布：最前排贴着掉落线，最后一排贴着推板最远处，各尺寸屏幕一致
-        let rows = min(GameConstants.prefillMaxRows, Int(floor((frontY - backLimit) / (rowStep * GameConstants.prefillRowLooseness))) + 1)
-        let step = rows > 1 ? (frontY - backLimit) / CGFloat(rows - 1) : 0
-        var points: [CGPoint] = []
-        for row in 0..<rows {
-            let y = frontY - CGFloat(row) * step
-            let offset = row % 2 == 0 ? 0 : d / 2
-            var x = L.bedMinX + offset
-            while x <= L.bedMaxX + 0.001 {
-                points.append(CGPoint(x: x, y: y))
-                x += d
-            }
-        }
-        return points
     }
 
     func startDisplayLink() {
@@ -362,10 +302,6 @@ class GameState: ObservableObject {
         coinSliderOffset = layout.coinSliderTravel * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
         bonusSliderOffset = layout.bonusSliderTravel * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
         
-        // 推子正弦运动（0…pusherStroke）
-        let lastPusherOffset = pusherOffset
-        pusherOffset = (CGFloat(sin(Double(sliderTime) * 2.32)) + 1.0) * layout.pusherStroke / 2
-        let pusherVelocity = (pusherOffset - lastPusherOffset) / dt
         
         // === 2. 粒子物理组件 (V9.4) ===
         for i in (0..<particles.count).reversed() {
@@ -378,117 +314,9 @@ class GameState: ObservableObject {
             }
         }
         
-        // === 2. 推币床物理核心 (空间网格 + 真实骑跨 + 波浪推动) ===
-        updatePusherBedPhysics(dt: dt, pusherVelocity: pusherVelocity)
         
         // === 3. 动画辅助 ===
         updateSlotAnimation(dt: dt)
-    }
-
-    private func updatePusherBedPhysics(dt: CGFloat, pusherVelocity: CGFloat) {
-        let L = layout
-        let friction: CGFloat = 0.93 // 增加摩擦力，增加“厚重感”
-        let pusherLimitY = L.pusherFrontRestY + pusherOffset // 推板前沿
-        let cellW: CGFloat = 32
-        var grid: [String: [Int]] = [:]
-        
-        // 1. 基础位移 & 填充网格
-        for i in 0..<bedCoins.count {
-            // 波浪推动 (Wave-style push)
-            if bedCoins[i].y - bedCoins[i].radius < pusherLimitY && pusherVelocity > 0 {
-                bedCoins[i].vy = max(bedCoins[i].vy, pusherVelocity * 0.9)
-                bedCoins[i].vx += CGFloat.random(in: -10...10)
-            }
-            
-            bedCoins[i].x += bedCoins[i].vx * dt
-            bedCoins[i].y += bedCoins[i].vy * dt
-            bedCoins[i].vx *= friction
-            bedCoins[i].vy *= friction
-            
-            let gx = Int(floor(bedCoins[i].x / cellW))
-            let gy = Int(floor(bedCoins[i].y / cellW))
-            grid["\(gx),\(gy)", default: []].append(i)
-        }
-        
-        // 2. 空间局部碰撞 (带有骑跨逻辑)；位置分离迭代多次，推力能传到金币堆前排
-        for pass in 0..<GameConstants.bedSolverPasses {
-        for i in 0..<bedCoins.count {
-            let gx = Int(floor(bedCoins[i].x / cellW))
-            let gy = Int(floor(bedCoins[i].y / cellW))
-            
-            for ox in -1...1 {
-                for oy in -1...1 {
-                    let key = "\(gx+ox),\(gy+oy)"
-                    guard let neighbors = grid[key] else { continue }
-                    for j in neighbors {
-                        if i >= j { continue }
-                        let dx = bedCoins[i].x - bedCoins[j].x
-                        let dy = bedCoins[i].y - bedCoins[j].y
-                        let distSq = dx*dx + dy*dy
-                        let dMin: CGFloat = 28
-                        
-                        if distSq < dMin * dMin {
-                            let dist = sqrt(distSq)
-                            let overlap = dMin - dist
-                            
-                            // 骑跨逻辑 (Climbing)
-                            if pass == 0 && overlap > 3 {
-                                if bedCoins[i].y < bedCoins[j].y {
-                                    bedCoins[i].z = min(18, bedCoins[i].z + overlap * 0.5)
-                                } else {
-                                    bedCoins[j].z = min(18, bedCoins[j].z + overlap * 0.5)
-                                }
-                            }
-                            
-                            // 挤压力 (受 Z 轴差影响)
-                            let zDiff = abs(bedCoins[i].z - bedCoins[j].z)
-                            let forceScale: CGFloat = zDiff > 10 ? 0.2 : 1.0
-                            let force = (overlap / dMin) * 45.0 * forceScale
-                            let angle = atan2(dy, dx)
-                            
-                            if pass == 0 {
-                                bedCoins[i].vx += cos(angle) * force
-                                bedCoins[i].vy += sin(angle) * force
-                                bedCoins[j].vx -= cos(angle) * force
-                                bedCoins[j].vy -= sin(angle) * force
-                            }
-
-                            // 位置分离：重叠的金币各退一半，推板的推力才能沿着金币堆传下去
-                            let separation = overlap * 0.5 * forceScale
-                            bedCoins[i].x += cos(angle) * separation
-                            bedCoins[i].y += sin(angle) * separation
-                            bedCoins[j].x -= cos(angle) * separation
-                            bedCoins[j].y -= sin(angle) * separation
-                        }
-                    }
-                }
-            }
-            // Z 轴平稳回落 (增加重力感)
-            if pass == 0 { bedCoins[i].z = max(0, bedCoins[i].z - 6.0 * dt) }
-        }
-        }
-        
-        // 3. 约束与掉落
-        for i in 0..<bedCoins.count {
-            if bedCoins[i].x < L.bedMinX || bedCoins[i].x > L.bedMaxX {
-                bedCoins[i].x = min(max(bedCoins[i].x, L.bedMinX), L.bedMaxX)
-                bedCoins[i].vx *= -0.3
-            }
-            // 不会被推回推板后面
-            if bedCoins[i].y - bedCoins[i].radius < pusherLimitY {
-                bedCoins[i].y = pusherLimitY + bedCoins[i].radius
-            }
-        }
-        
-        let dropped = bedCoins.filter { $0.y > L.bedDropY }
-        if !dropped.isEmpty {
-            bedDropCount += dropped.count
-            AudioManager.shared.play(.bedDrop)
-            addCoins(dropped.count * GameConstants.bedDropReward)
-            bedCoins.removeAll { $0.y > L.bedDropY }
-        }
-
-        if bedCoins.count > 120 { bedCoins.removeFirst(bedCoins.count - 120) }
     }
 
     private func updateSlotAnimation(dt: CGFloat) {
@@ -550,20 +378,17 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.baffleHit)
     }
 
-    /// 金币越过下落区底部，进入推币台
+    /// 金币越过下落区底部，交给 3D 推币台（按横向位置换算到台面宽度）
     func coinReachedPusher(x: CGFloat) {
-        spawnBedCoin(x: x)
+        onCoinToPusher?(layout.pusherFraction(forX: x))
     }
 
-    private func spawnBedCoin(x: CGFloat) {
-        bedIsUntouchedPrefill = false
-        let newCoin = PusherCoin(
-            x: min(max(x, layout.bedMinX), layout.bedMaxX),
-            y: layout.bedEntryY,
-            vx: CGFloat.random(in: -10...10),
-            vy: 50 * layout.bedScale
-        )
-        bedCoins.append(newCoin)
+    /// 3D 推币台上有金币从前沿掉落：计分
+    func coinFellOffPusher() {
+        bedDropCount += 1
+        addCoins(GameConstants.bedDropReward)
+        AudioManager.shared.play(.bedDrop)
+        HapticManager.shared.coinFall()
     }
 
     /// 本地日期，用于每日次数重置

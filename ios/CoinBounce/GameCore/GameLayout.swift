@@ -43,22 +43,14 @@ struct GameLayout: Equatable {
     let fruitBaffleHalfWidth: CGFloat
     let bonusSliderWidth: CGFloat
     let bonusSliderTravel: CGFloat
-    let bedEntryY: CGFloat             // 下落金币越过这条线后进入推币台
-    let bedTopY: CGFloat
-    let bedDropY: CGFloat              // 推币台金币越过这条线即掉落得分
-    let bedMinX: CGFloat
-    let bedMaxX: CGFloat
-    let pusherFrontRestY: CGFloat      // 推板前沿（静止）
-    let pusherStroke: CGFloat          // 推板行程
+    let bedEntryY: CGFloat             // 下落金币越过这条线后交给 3D 推币台（推币台区域顶部附近）
     /// 当前布局与 v9.5 物理（下落 380 单位、推币床 215 单位）的纵向比例，
     /// 用来换算重力、初速度等纵向数值，使不同屏幕上的下落时长一致
     let fallScale: CGFloat
-    let bedScale: CGFloat
 
     static let margin: CGFloat = 10
     /// v9.5 物理的下落高度（-360 → 20）和推币床长度
     static let legacyFallHeight: CGFloat = 380
-    static let legacyBedLength: CGFloat = 215
 
     /// 各区域占安全区内高度的比例，合计 1
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
@@ -141,18 +133,8 @@ struct GameLayout: Equatable {
         bonusSliderWidth = fruitLampWidth
         bonusSliderTravel = max(0, contentW / 2 - bonusSliderWidth / 2)
 
-        // 推币台：沿用 v9.5 推币床的比例（推板前沿 40、行程 27、落币点 75，全长 215）
-        bedTopY = pusher.minY
-        bedScale = pusher.height / GameLayout.legacyBedLength
-        pusherFrontRestY = bedTopY + 40 * bedScale
-        pusherStroke = 27 * bedScale
-        bedEntryY = bedTopY + 75 * bedScale
-        // 前沿留出比一枚金币更高的掉落口，最前排金币探出台面时口子仍然可见
-        bedDropY = pusher.maxY - (coinRadius * 2 + 8)
-        let bedHalfW = size.width * 0.91 / 2
-        bedMinX = size.width / 2 - bedHalfW + coinRadius
-        bedMaxX = size.width / 2 + bedHalfW - coinRadius
-
+        // 3D 推币台占满 pusher 区域；下落金币在区域顶部稍下方交接，3D 金币从上层台面落下
+        bedEntryY = pusher.minY + pusher.height * 0.08
         fallScale = (bedEntryY - coinSpawnY) / GameLayout.legacyFallHeight
     }
 
@@ -178,6 +160,12 @@ struct GameLayout: Equatable {
         let left = fruitCenters[0].x - fruitLampWidth / 2
         let col = Int(floor((x - left) / fruitLampWidth))
         return (0..<fruitCenters.count).contains(col) ? col : nil
+    }
+
+    /// 屏幕横坐标 → 3D 推币台横向位置（-1 左 … 1 右）
+    func pusherFraction(forX x: CGFloat) -> CGFloat {
+        let half = max(1, (fieldMaxX - fieldMinX) / 2)
+        return min(1, max(-1, (x - centerX) / half))
     }
 
     /// 金币是否正从 BONUS 滑块中间穿过

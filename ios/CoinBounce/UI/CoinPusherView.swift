@@ -12,6 +12,8 @@ struct CoinPusherView: View {
     @State private var showSettings = false
     /// 下落区物理场景（SpriteKit），整屏透明覆盖在各区域之上
     @State private var dropScene = DropFieldScene(gameState: GameState.shared)
+    /// 3D 推币台（SceneKit）
+    @State private var pusher3D = PusherScene3D()
     @State private var holdDropTimer: Timer?
 
     var body: some View {
@@ -68,7 +70,7 @@ struct CoinPusherView: View {
                     .place(in: layout.bonusLane)
 
                 // ── 推币台 ──
-                pusherAreaSection(layout: layout)
+                PusherSceneView(pusher: pusher3D)
                     .place(in: layout.pusher)
 
                 // ── 投币按钮（背景延伸到底部安全区）──
@@ -77,7 +79,7 @@ struct CoinPusherView: View {
                 coinDropButton(w: layout.dropButton.width, h: layout.dropButton.height)
                     .place(in: layout.dropButton)
 
-                // 推币台金币、粒子：与物理同一坐标，直接按点绘制
+                // 粒子：与物理同一坐标，直接按点绘制
                 LocalCoinCanvasLayer(layout: layout)
                     .frame(width: sw, height: sh)
 
@@ -120,6 +122,9 @@ struct CoinPusherView: View {
             .onAppear {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
+                // 下落区 → 3D 推币台；3D 推币台掉落 → 计分
+                gameState.onCoinToPusher = { [pusher3D] fraction in pusher3D.dropCoin(xFraction: Float(fraction)) }
+                pusher3D.onCoinDropped = { gameState.coinFellOffPusher() }
                 startAnimations()
             }
             .onChange(of: layout) { newLayout in
@@ -475,117 +480,6 @@ struct CoinPusherView: View {
             .allowsHitTesting(false)
     }
 
-    // MARK: - 推币台区域
-    @ViewBuilder
-    func pusherAreaSection(layout: GameLayout) -> some View {
-        let w = layout.pusher.width
-        let h = layout.pusher.height
-
-        ZStack(alignment: .top) {
-            // 台面、侧栏、后挡板、掉落口（不画金币，金币全部由物理绘制）
-            PusherBedBackground(layout: layout)
-                .frame(width: w, height: h)
-
-            // 推块组件：前沿 = 物理里的 pusherFrontRestY + pusherOffset
-            pusherAssembly(w: w, frontY: layout.pusherFrontRestY - layout.pusher.minY + gameState.pusherOffset)
-
-            // 左右引导斜坡
-            ramps(w: w, h: h * 0.40)
-        }
-        .frame(width: w, height: h)
-        .clipped()
-    }
-
-    // MARK: - 推块组件
-    @ViewBuilder
-    func pusherAssembly(w: CGFloat, frontY: CGFloat) -> some View {
-        let pusherW: CGFloat = w * 0.91  // 与 layout.bedMinX/bedMaxX 相同
-        let pusherH = max(0, frontY)
-
-        ZStack(alignment: .top) {
-            // 棕色推块
-            VStack(spacing: 0) {
-                // 红色格挡
-                Rectangle()
-                    .fill(Color(red: 0.65, green: 0.10, blue: 0.10))
-                    .frame(height: pusherH * 0.15)
-                // 上方金棕色
-                Rectangle()
-                    .fill(LinearGradient(stops: [
-                        .init(color: Color(red: 0.40, green: 0.26, blue: 0.10), location: 0.0),
-                        .init(color: Color(red: 0.34, green: 0.22, blue: 0.07), location: 0.5),
-                        .init(color: Color(red: 0.40, green: 0.26, blue: 0.10), location: 1.0)
-                    ], startPoint: .top, endPoint: .bottom))
-                    .frame(height: pusherH * 0.45)
-
-                // 中间金线
-                Rectangle()
-                    .fill(Color(red: 0.82, green: 0.66, blue: 0.31))
-                    .frame(height: pusherH * 0.04)
-
-                // 下方深色
-                Rectangle()
-                    .fill(Color(red: 0.12, green: 0.09, blue: 0.09))
-                    .frame(height: pusherH * 0.36)
-            }
-            .frame(width: pusherW, height: pusherH)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
-        }
-        .frame(width: w, height: pusherH, alignment: .top)
-    }
-
-    // MARK: - 金币堆
-    @ViewBuilder
-    func coinPile(w: CGFloat, h: CGFloat) -> some View {
-        let coinSize: CGFloat = w * 0.035  // 42/960 ≈ 4.5%
-        let cols = 14
-        let rows = 4
-
-        ZStack {
-            ForEach(0..<rows, id: \.self) { row in
-                ForEach(0..<cols, id: \.self) { col in
-                    let offsetX = CGFloat(col - cols/2) * coinSize * 1.05
-                    let offsetY = CGFloat(row) * coinSize * 0.50
-                    let brightness = 1.0 - Double(row) * 0.08
-
-                    Circle()
-                        .fill(Color(red: 0.92 * brightness, green: 0.59 * brightness, blue: 0.04 * brightness))
-                        .frame(width: coinSize, height: coinSize)
-                        .overlay {
-                            Circle()
-                                .stroke(Color(red: 0.80 * brightness, green: 0.50 * brightness, blue: 0.02), lineWidth: 0.5)
-                        }
-                        .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
-                        .offset(x: offsetX, y: offsetY)
-                }
-            }
-        }
-        .position(x: w/2, y: h * 0.60)
-    }
-
-    // MARK: - 左右斜坡
-    @ViewBuilder
-    func ramps(w: CGFloat, h: CGFloat) -> some View {
-        // 左侧斜坡 (46-139像素)
-        Path { path in
-            path.move(to: CGPoint(x: 0, y: 0))
-            path.addLine(to: CGPoint(x: w * 0.145, y: h * 0.6))
-            path.addLine(to: CGPoint(x: 0, y: h * 0.6))
-            path.closeSubpath()
-        }
-        .fill(PusherBedBackground.rampGradient)
-
-        // 右侧斜坡 (330-431像素)
-        Path { path in
-            path.move(to: CGPoint(x: w, y: 0))
-            path.addLine(to: CGPoint(x: w - w * 0.145, y: h * 0.6))
-            path.addLine(to: CGPoint(x: w, y: h * 0.6))
-            path.closeSubpath()
-        }
-        .fill(PusherBedBackground.rampGradient)
-    }
-
     // MARK: - 投币按钮
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat) -> some View {
@@ -785,23 +679,6 @@ struct LocalCoinCanvasLayer: View {
                 _ = timeline.date
                 let state = GameState.shared
                 // 物理坐标就是屏幕坐标，直接绘制
-
-                // 推床金币（先画，下落金币在上层）
-                for coin in state.bedCoins.sorted(by: { $0.y < $1.y }) {
-                    let coinRect = CGRect(
-                        x: coin.x - coin.radius,
-                        y: coin.y - coin.z * 0.5 - coin.radius,
-                        width: coin.radius * 2,
-                        height: coin.radius * 2
-                    )
-                    
-                    // 底层阴影 (深度感)
-                    context.fill(Path(ellipseIn: coinRect.offsetBy(dx: 2, dy: 2)), with: .color(Color.black.opacity(0.4)))
-                    
-                    // 原创金币（越靠前越暗一点，表现纵深）
-                    let brightnessShift = Double((coin.y - layout.bedTopY) / layout.pusher.height) * 0.1
-                    ArtCoin.draw(in: context, rect: coinRect, brightness: 1.0 - brightnessShift)
-                }
 
                 // 粒子 (V9.4)
                 for particle in state.particles {
