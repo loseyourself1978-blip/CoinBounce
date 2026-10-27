@@ -34,24 +34,24 @@
         }
       }
     },
-    "BLAZING! x%lld 💥": {
+    "BLAZING! x%lld": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "燃爆！x%lld 💥"
+            "value": "燃爆！x%lld"
           }
         }
       }
     },
-    "COMBO! x3 🔥": {
+    "COMBO! x3": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "连击！x3 🔥"
+            "value": "连击！x3"
           }
         }
       }
@@ -78,13 +78,13 @@
         }
       }
     },
-    "FEVER! x5 ⚡": {
+    "FEVER! x5": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "狂热！x5 ⚡"
+            "value": "狂热！x5"
           }
         }
       }
@@ -100,13 +100,13 @@
         }
       }
     },
-    "HOT! x4 🔥🔥": {
+    "HOT! x4": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "火热！x4 🔥🔥"
+            "value": "火热！x4"
           }
         }
       }
@@ -155,13 +155,13 @@
         }
       }
     },
-    "MAX COMBO! x%lld 🌟": {
+    "MAX COMBO! x%lld": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "超级连击！x%lld 🌟"
+            "value": "超级连击！x%lld"
           }
         }
       }

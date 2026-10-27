@@ -252,10 +252,10 @@ struct SymbolContent: View {
                 .frame(width: size * 0.7, height: size * 0.7)
                 .blur(radius: 8)
             
-            // 主符号
-            Text(config.emoji)
-                .font(.system(size: size * 0.45))
-                .shadow(color: config.glowColor.opacity(0.8), radius: 6, x: 0, y: 0)
+            // 主符号（矢量绘制）
+            SlotSymbolArt(type: type, size: size * 0.6)
+                .shadow(color: config.glowColor.opacity(0.8), radius: 4, x: 0, y: 0)
+                .offset(y: -size * 0.05)
             
             // 底部标签
             Text(config.label)
@@ -266,17 +266,17 @@ struct SymbolContent: View {
         }
     }
     
-    private func symbolConfig(for type: SymbolType) -> (emoji: String, label: String, glowColor: Color) {
+    private func symbolConfig(for type: SymbolType) -> (label: String, glowColor: Color) {
         switch type {
-        case .wild:  return ("👑", "WILD", Color.yellow)
-        case .seven: return ("7️⃣", "SEVEN", Color.red)
-        case .bar:   return ("🎯", "BAR", Color.cyan)
-        case .heart: return ("❤️", "HEART", Color.pink)
-        case .diamond: return ("💎", "DIAMOND", Color.cyan)
-        case .star:  return ("⭐", "STAR", Color.yellow)
-        case .nine:  return ("9️⃣", "NINE", Color.green)
-        case .jack:  return ("🎭", "JACK", Color.orange)
-        case .king:  return ("🦁", "KING", Color.purple)
+        case .wild:  return ("WILD", Color.yellow)
+        case .seven: return ("SEVEN", Color.red)
+        case .bar:   return ("BAR", Color.cyan)
+        case .heart: return ("HEART", Color.pink)
+        case .diamond: return ("DIAMOND", Color.cyan)
+        case .star:  return ("STAR", Color.yellow)
+        case .nine:  return ("NINE", Color.green)
+        case .jack:  return ("JACK", Color.orange)
+        case .king:  return ("KING", Color.purple)
         }
     }
 }
@@ -336,8 +336,7 @@ struct SpinButton: View {
                         Text("SPIN")
                             .font(.system(size: diameter * 0.22, weight: .black, design: .rounded))
                             .foregroundColor(.white)
-                        Text("🎰")
-                            .font(.system(size: diameter * 0.23))
+                        ReelsIcon(size: diameter * 0.42)
                     }
                 }
             }

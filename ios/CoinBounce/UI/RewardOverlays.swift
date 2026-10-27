@@ -15,8 +15,8 @@ struct CardSelectionView: View {
                     .shadow(color: .black, radius: 3)
 
                 HStack(spacing: 16) {
-                    card(icon: "💰", title: "+\(GameConstants.cardCoinsReward)", subtitle: "Coins", choice: .coins)
-                    card(icon: "🍓", title: "×\(GameConstants.cardFruitsToLight)", subtitle: "Light fruits", choice: .fruits)
+                    card(icon: AnyView(ArtCoin(size: 44)), title: "+\(GameConstants.cardCoinsReward)", subtitle: "Coins", choice: .coins)
+                    card(icon: AnyView(FruitIcon(index: 3, size: 48)), title: "×\(GameConstants.cardFruitsToLight)", subtitle: "Light fruits", choice: .fruits)
                 }
             }
             .padding(24)
@@ -24,10 +24,10 @@ struct CardSelectionView: View {
         .transition(.opacity)
     }
 
-    private func card(icon: String, title: String, subtitle: LocalizedStringKey, choice: GameState.CardReward) -> some View {
+    private func card(icon: AnyView, title: String, subtitle: LocalizedStringKey, choice: GameState.CardReward) -> some View {
         Button { AudioManager.shared.play(.buttonTap); onSelect(choice) } label: {
             VStack(spacing: 6) {
-                Text(icon).font(.system(size: 40))
+                icon.frame(height: 48)
                 Text(title)
                     .font(.system(size: 26, weight: .black, design: .rounded))
                     .foregroundColor(.white)
@@ -61,7 +61,9 @@ struct RewardModalView: View {
             Color.black.opacity(0.45).ignoresSafeArea()
 
             VStack(spacing: 8) {
-                Text(amount > 0 ? "💰" : "🍓").font(.system(size: 48))
+                Group {
+                    if amount > 0 { ArtCoin(size: 52) } else { FruitIcon(index: 3, size: 56) }
+                }
                 Text(amount > 0 ? LocalizedStringKey("+\(amount) coins") : LocalizedStringKey("Light \(GameConstants.cardFruitsToLight) fruits"))
                     .font(.system(size: 26, weight: .black, design: .rounded))
                     .foregroundColor(.white)

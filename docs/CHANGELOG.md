@@ -72,3 +72,9 @@
 - **英文本地化**：开发语言改为英文，保留简体中文，按系统语言自动切换（String Catalog：`Localizable.xcstrings`、`InfoPlist.xcstrings`）。覆盖设置页、领币按钮、金币不足提示、连击文字、卡牌奖励等全部界面文字；App 名称英文为 Coin Bounce，中文为「金币勇士大闯关」；ATT 授权说明中英各一版。SPIN、VS、BOSS、BONUS、JACKPOT 等街机用语两种语言都保留英文。
 - **支持页**：FAQ 用词与英文界面一致（gh-pages）。
 - **测试**：新增本地化测试（每个 key 都有中文、占位符一致、界面字面量都在 catalog 里、运行时能取到中文），共 82 个用例全部通过。
+
+## v9.11.0 (2026-10-27)
+
+- **原创美术**：新增 `UI/ArcadeArt.swift`，用 SwiftUI 矢量统一绘制金币（含 Canvas 中的下落金币和推币台金币）、7 种水果、9 种老虎机符号、勇士和 BOSS、SPIN 图标、闪烁的 Jackpot 标题框。风格为明亮卡通街机风，主色是金色、紫红和青绿，配深色描边。界面中已没有任何 emoji；连击文字也去掉了 emoji（中英文都改了）。
+- **App 图标**：`tools/icon/make_icon.swift` 用 CoreGraphics 渲染 1024×1024 无透明通道图标（大金币、弹跳轨迹、放射背景），替换来源不明的 `app_logo.jpg`。
+- **素材记录**：`docs/ASSET_LICENSES.md` 注明全部图形都是代码原创。

@@ -25,10 +25,16 @@
 | `sfx_no_coins.wav` | 金币不足 | 程序合成（下行两音方波） |
 | `bgm_loop.wav` | 背景音乐（8 小节循环，112 BPM） | 程序合成（原创旋律、贝斯、琶音） |
 
-## 图片
+## 图片与图形
 
-| 文件 | 来源 | 许可证 |
-|---|---|---|
-| `AppIcon.appiconset` | 待补充（上架前确认来源或替换为原创图标） | 待确认 |
+**全部为代码原创，没有使用 emoji、图片素材或第三方美术资源。**
 
-推币台、老虎机、战斗区等界面元素全部由 SwiftUI 代码绘制，没有使用图片素材。表情符号（🍎、👺 等）由系统字体渲染。
+| 内容 | 来源 |
+|---|---|
+| App 图标 `AppIcon.appiconset/AppIcon.png`（1024×1024，无透明通道） | `tools/icon/make_icon.swift` 用 CoreGraphics 绘制生成（`swift tools/icon/make_icon.swift` 可重新生成）；替换了来源不明的 `app_logo.jpg` |
+| 金币、7 种水果、9 种老虎机符号、勇士、BOSS、SPIN 图标、Jackpot 标题框 | `ios/CoinBounce/UI/ArcadeArt.swift`，SwiftUI 矢量形状 + 渐变 |
+| 推币台、老虎机外框、战斗区、按钮等界面元素 | SwiftUI 代码绘制 |
+
+- 作者：CoinBounce 项目（由 Claude Code 编写）
+- 许可证：项目自有原创作品，可商用
+- 文字使用 iOS 系统字体（SF Pro / 苹方）渲染，不随 App 分发字体文件。

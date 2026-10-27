@@ -1,9 +1,9 @@
 {
   "images" : [
     {
-      "filename" : "app_logo.jpg",
+      "filename" : "AppIcon.png",
       "idiom" : "universal",
-      "scale" : "1x",
+      "platform" : "ios",
       "size" : "1024x1024"
     }
   ],
