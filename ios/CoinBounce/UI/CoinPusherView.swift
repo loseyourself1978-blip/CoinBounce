@@ -52,9 +52,7 @@ struct CoinPusherView: View {
                     spinState: gameState.slotSpinState,
                     stoppedColumns: gameState.stoppedColumns,
                     winLineActive: gameState.currentWin != .none && gameState.slotSpinState == .spinIdle,
-                    reelsFrame: layout.slotReels.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY),
-                    spinFrame: layout.spinButton.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY),
-                    onSpin: { gameState.spinSlot() }
+                    reelsFrame: layout.slotReels.offsetBy(dx: -layout.slotMachine.minX, dy: -layout.slotMachine.minY)
                 )
                 .place(in: layout.slotMachine)
 
@@ -510,8 +508,8 @@ struct CoinPusherView: View {
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat) -> some View {
         // 按钮略偏下，引导箭头和提示放在按钮上方、本区域之内，不被推币台盖住
-        let buttonSize = min(w * 0.22, h * 0.62)
-        let buttonY = h * 0.12
+        let buttonSize = min(w * 0.2, h * 0.88)
+        let buttonY = h * 0.02
 
         ZStack {
             // 投币按钮（居中，贴近参考App）

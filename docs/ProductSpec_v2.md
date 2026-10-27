@@ -42,3 +42,9 @@ The Arcade Coin Pusher app is a 2.5D physical replication of the classic arcade 
 
 ## 7. Pusher Bed Physics (Iteration 6)
 * Coins on the bed respond to `pusherOffset`. Increasing density triggers horizontal "squeezing" forces, pushing outer coins off the ledge into the 3D zone.
+
+## 版本记录
+
+| 版本 | 日期 | 关键改动 | 验收 |
+|---|---|---|---|
+| 10.5.0 | 2026-10-27 | 推币台撑满屏宽、下落金币不旋转、老虎机只由 BONUS 触发（排队）、水果一轮约 40 枚 | 106 个单元测试通过；截图 `~/Downloads/CoinBounce_资料归档/截图_v10.5.0/` |

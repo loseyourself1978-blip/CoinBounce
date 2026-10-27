@@ -21,7 +21,6 @@ struct GameLayout: Equatable {
 
     // MARK: 老虎机内部
     let slotReels: CGRect
-    let spinButton: CGRect
 
     // MARK: 物理关键位置
     let coinRadius: CGFloat
@@ -32,8 +31,6 @@ struct GameLayout: Equatable {
     let fieldMaxX: CGFloat
     let slotObstacleRadius: CGFloat
     let slotObstacles: [CGPoint]       // 老虎机每个符号格的碰撞点（5×3），金币在符号之间弹跳
-    let spinObstacle: CGPoint          // SPIN 按钮也是障碍物
-    let spinObstacleRadius: CGFloat
     let fruitPinRadius: CGFloat
     let fruitPins: [CGPoint]           // 水果灯之间的小钉
     let fruitCenters: [CGPoint]        // 7 个水果
@@ -54,7 +51,7 @@ struct GameLayout: Equatable {
 
     /// 各区域占安全区内高度的比例，合计 1
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
-    static let heightRatios: [CGFloat] = [0.07, 0.05, 0.16, 0.12, 0.075, 0.05, 0.355, 0.12]
+    static let heightRatios: [CGFloat] = [0.07, 0.05, 0.16, 0.12, 0.075, 0.05, 0.39, 0.085]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -89,12 +86,9 @@ struct GameLayout: Equatable {
         pusher = bands[6]
         dropButton = bands[7]
 
-        // 老虎机：SPIN 按钮放在转轴右侧，不遮挡转轴
-        let slotInner = slotMachine.insetBy(dx: 8, dy: 8)
-        let spinD = min(slotInner.height * 0.75, 64)
-        spinButton = CGRect(x: slotInner.maxX - spinD, y: slotInner.midY - spinD / 2, width: spinD, height: spinD)
-        slotReels = CGRect(x: slotInner.minX, y: slotInner.minY,
-                           width: max(0, spinButton.minX - 6 - slotInner.minX), height: slotInner.height)
+        // 老虎机：没有 SPIN 按钮（只由 BONUS 触发），5 列转轴均匀铺满外框宽度
+        let slotInner = slotMachine.insetBy(dx: 10, dy: 8)
+        slotReels = slotInner
 
         coinRadius = 14
         coinSpawnY = sliderTrack.midY
@@ -116,8 +110,6 @@ struct GameLayout: Equatable {
             }
         }
         slotObstacles = obstacles
-        spinObstacle = CGPoint(x: spinButton.midX, y: spinButton.midY)
-        spinObstacleRadius = spinButton.width / 2
 
         // 水果：7 等分内容宽度；判定宽度按 v9.5 比例（间距 40 对应 28 / 22）
         let lampW = contentW / 7

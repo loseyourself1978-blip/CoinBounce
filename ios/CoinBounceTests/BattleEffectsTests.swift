@@ -105,4 +105,24 @@ final class BattleEffectsTests: XCTestCase {
         XCTAssertLessThan(GameConstants.coinRainSmallWin, GameConstants.coinRainBigWin)
         XCTAssertLessThan(GameConstants.coinRainBigWin, GameConstants.coinRainJackpot)
     }
+
+    // MARK: 下落不旋转
+    func test_fallingCoins_neverRotateOrFlip() {
+        let scene = DropFieldScene(gameState: state)
+        scene.apply(layout: state.layout)
+        state.randomUnit = { 0 }   // 包含特殊金币
+        for _ in 0..<5 { state.dropCoin() }
+        state.pendingCoinRain = 6
+        var t: TimeInterval = 1
+        for _ in 0..<30 {
+            scene.update(t)
+            t += 1.0 / 60
+            for node in scene.fallingCoinNodes {
+                XCTAssertEqual(node.xScale, 1, "下落中不翻转")
+                XCTAssertEqual(node.zRotation, 0, "下落中不旋转")
+                XCTAssertEqual(node.physicsBody?.allowsRotation, false)
+            }
+        }
+        XCTAssertGreaterThan(scene.fallingCoinNodes.count, 0)
+    }
 }

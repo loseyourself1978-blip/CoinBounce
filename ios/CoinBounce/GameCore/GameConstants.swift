@@ -40,6 +40,9 @@ struct GameConstants {
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
     static let bossDamagePerHit: Double = 0.06
     static let bossKOReward: Int = 20               // BOSS 被打倒奖励
+    /// 金币经过水果时点亮它的概率（v10.4 为 100%）。
+    /// 7 列均匀分布时，点亮全部水果平均需要 7 × H(7) / p ≈ 18.15 / p 枚：p = 0.45 → 约 40 枚
+    static let fruitLightChance: Double = 0.45
 
     // 手感（v10.4 整体调快）
     static let dropFallSeconds: Double = 0.77       // 下落区自由落体时长，v10.3 为 1.0（重力约 +70%，实际下落约快 30%）
