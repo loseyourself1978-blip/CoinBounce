@@ -15,6 +15,11 @@ struct CoinPusherView: View {
     /// 3D 推币台（SceneKit）
     @State private var pusher3D = PusherScene3D()
     @State private var holdDropTimer: Timer?
+    // 战斗区动画
+    @State private var warriorLunge: CGFloat = 0
+    @State private var bossShake: CGFloat = 0
+    @State private var bossFlash = false
+    @State private var bossKO = false
 
     var body: some View {
         // 外层不忽略安全区，才能读到真实的安全区边距；内容再铺满整屏
@@ -123,8 +128,8 @@ struct CoinPusherView: View {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
                 // 下落区 → 3D 推币台；3D 推币台掉落 → 计分
-                gameState.onCoinToPusher = { [pusher3D] fraction in pusher3D.dropCoin(xFraction: Float(fraction)) }
-                pusher3D.onCoinDropped = { gameState.coinFellOffPusher() }
+                gameState.onCoinToPusher = { [pusher3D] fraction, special in pusher3D.dropCoin(xFraction: Float(fraction), special: special) }
+                pusher3D.onCoinDropped = { special in gameState.coinFellOffPusher(isSpecial: special) }
                 startAnimations()
             }
             .onChange(of: layout) { newLayout in
@@ -338,13 +343,14 @@ struct CoinPusherView: View {
                         .frame(width: figure, height: figure)
                     WarriorFigure(size: figure * 0.85)
                 }
+                .offset(x: warriorLunge)
                 Text("Warrior")
                     .font(.system(size: min(w * 0.035, h * 0.12), weight: .black))
                     .foregroundColor(.white)
                     .shadow(radius: 2)
 
                 // 血条
-                HealthBar(progress: 0.8, color: .green, width: w * 0.18)
+                HealthBar(progress: 1, color: .green, width: w * 0.18)
             }
             .position(x: w * 0.13, y: h * 0.5)
 
@@ -373,18 +379,41 @@ struct CoinPusherView: View {
                         .fill(RadialGradient(colors: [.red.opacity(0.3), .clear], center: .center, startRadius: 0, endRadius: 20))
                         .frame(width: figure, height: figure)
                     BossFigure(size: figure * 0.85)
+                        .colorMultiply(bossFlash ? Color(red: 1, green: 0.45, blue: 0.45) : .white)
                 }
+                .offset(x: bossShake)
+                .rotationEffect(.degrees(bossKO ? 80 : 0), anchor: .bottom)
+                .opacity(bossKO ? 0.3 : 1)
                 Text("BOSS")
                     .font(.system(size: min(w * 0.030, h * 0.12), weight: .black))
                     .foregroundColor(.white)
                     .shadow(radius: 2)
 
                 // 血条
-                HealthBar(progress: 0.6, color: .red, width: w * 0.18)
+                HealthBar(progress: CGFloat(gameState.bossHealth), color: .red, width: w * 0.18)
+                    .animation(.easeOut(duration: 0.25), value: gameState.bossHealth)
             }
             .position(x: w * 0.87, y: h * 0.5)
         }
         .frame(width: w, height: h)
+        // 攻击：勇士向前冲、BOSS 抖动并闪红
+        .onChange(of: gameState.warriorAttackCount) { _ in
+            withAnimation(.easeOut(duration: 0.1)) { warriorLunge = w * 0.08 }
+            withAnimation(.easeIn(duration: 0.15).delay(0.12)) { warriorLunge = 0 }
+            bossFlash = true
+            withAnimation(.interpolatingSpring(stiffness: 600, damping: 6)) { bossShake = 6 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(.interpolatingSpring(stiffness: 600, damping: 8)) { bossShake = 0 }
+                bossFlash = false
+            }
+        }
+        // KO：BOSS 倒下，1.2 秒后站起
+        .onChange(of: gameState.bossDefeatedCount) { _ in
+            withAnimation(.easeIn(duration: 0.3)) { bossKO = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) { bossKO = false }
+            }
+        }
     }
 
     struct HealthBar: View {
@@ -616,10 +645,13 @@ struct CoinBalanceView: View {
                 .overlay(Circle().stroke(Color(red: 0.5, green: 0.3, blue: 0.0), lineWidth: 1))
                 .overlay(ArtCoin(size: 18))
                 .frame(width: 18, height: 18)
+            // 余额滚动计数：数字变化时逐位滚动
             Text("\(coins)")
                 .font(.system(size: 15, weight: .black, design: .rounded))
                 .monospacedDigit()
                 .foregroundColor(.white)
+                .contentTransition(.numericText())
+                .animation(.easeOut(duration: 0.35), value: coins)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -638,14 +670,28 @@ struct CoinBalanceView: View {
 // MARK: - 飞分特效
 struct FloatingScoreView: View {
     let score: FloatingScore
+    @State private var popped = false
 
     var body: some View {
-        Text(score.text)
-            .font(.system(size: 36, weight: .black, design: .rounded))
-            .foregroundStyle(score.color)
-            .shadow(color: .black.opacity(0.5), radius: 2, x: 1, y: 1)
-            .opacity(score.opacity)
-            .scaleEffect(score.scale)
+        if score.big {
+            // 中奖大号飞字：金色渐变 + 深色描边，弹出放大
+            Text(score.text)
+                .font(.system(size: 54, weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, score.color, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
+                .shadow(color: ArtPalette.outline, radius: 0, x: -1, y: -1)
+                .shadow(color: score.color.opacity(0.8), radius: 12)
+                .scaleEffect((popped ? 1 : 0.3) * score.scale)
+                .opacity(score.opacity)
+                .onAppear { withAnimation(.spring(response: 0.35, dampingFraction: 0.5)) { popped = true } }
+        } else {
+            Text(score.text)
+                .font(.system(size: 36, weight: .black, design: .rounded))
+                .foregroundStyle(score.color)
+                .shadow(color: .black.opacity(0.5), radius: 2, x: 1, y: 1)
+                .opacity(score.opacity)
+                .scaleEffect(score.scale)
+        }
     }
 }
 

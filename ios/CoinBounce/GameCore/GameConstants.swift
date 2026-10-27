@@ -35,6 +35,19 @@ struct GameConstants {
     static let adRewardCoinThreshold: Int = 10      // 金币低于这个数才显示领币按钮
     static let adRewardDailyLimit: Int = 5          // 每天最多领取次数（按本地日期重置）
 
+    // 特殊金币（发光）：投币时有一定概率出现，从推币台掉落时奖励更多（数值待确认）
+    static let specialCoinChance: Double = 0.05
+    static let specialCoinReward: Int = 10
+
+    // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
+    static let bossDamagePerHit: Double = 0.06
+    static let battleAttackCooldown: TimeInterval = 0.25
+
+    // 中奖金币雨（纯视觉，不计分）
+    static let coinRainSmallWin = 6
+    static let coinRainBigWin = 15
+    static let coinRainJackpot = 40
+
     // RPG Battle
     static let coinsPerAttack: Int = 10
     static let enemyMaxHealth: Int = 5

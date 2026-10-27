@@ -25,6 +25,8 @@ struct Active2DCoin: Identifiable {
     var vx: CGFloat
     var vy: CGFloat
     var radius: CGFloat = 14
+    /// 发光的特殊金币
+    var isSpecial = false
     var hasBounced: [Int] = []
     var fruitTriggered = false
     var bonusTriggered = false
@@ -96,6 +98,8 @@ struct FloatingScore: Identifiable {
     var opacity: Double = 1.0
     var scale: CGFloat = 1.0
     var color: Color = .arcadeGold
+    /// 中奖用的大号飞字
+    var big = false
 }
 
 // MARK: - GameState V8.0 - 超高性能物理驱动版
@@ -171,7 +175,18 @@ class GameState: ObservableObject {
     /// 累计从推币台掉落得分的金币数
     private(set) var bedDropCount = 0
     /// 下落区的金币到达推币台时调用：参数为横向位置（-1 左 … 1 右），由 3D 推币台生成金币
-    var onCoinToPusher: ((CGFloat) -> Void)?
+    var onCoinToPusher: ((_ fraction: CGFloat, _ isSpecial: Bool) -> Void)?
+    /// 等待下落区生成的中奖金币雨（纯视觉）
+    var pendingCoinRain = 0
+    /// 生成特殊金币用的随机数（测试里可替换）
+    var randomUnit: () -> Double = { Double.random(in: 0..<1) }
+
+    // MARK: - 战斗区
+    @Published var bossHealth: Double = 1
+    /// 每次攻击 / 受击 / KO 加 1，视图据此播放动画
+    @Published var warriorAttackCount = 0
+    @Published var bossDefeatedCount = 0
+    private var lastAttackTime: Date = .distantPast
     private var isNextDropRight: Bool = false
 
     // MARK: - 状态位
@@ -201,6 +216,8 @@ class GameState: ObservableObject {
     // V9.0: 为自动化测试提供的重置接口
     func resetForTesting() {
         layout = .reference
+        lastAttackTime = .distantPast
+        bossHealth = 1
         sliderTime = 0
         coinSliderOffset = 0
         bonusSliderOffset = 0
@@ -345,12 +362,14 @@ class GameState: ObservableObject {
         let dropX = min(max(slider.x + sideOffset, layout.fieldMinX), layout.fieldMaxX)
         
         // 交给下落区（SpriteKit）生成金币：从 COIN 滑块中心落下
-        pendingDrops.append(Active2DCoin(
+        var coin = Active2DCoin(
             x: dropX,
             y: layout.coinSpawnY,
             vx: CGFloat.random(in: -15...15),
             vy: CGFloat.random(in: 60...90) * layout.fallScale
-        ))
+        )
+        coin.isSpecial = randomUnit() < GameConstants.specialCoinChance
+        pendingDrops.append(coin)
     }
 
     // MARK: - 下落区事件（DropFieldScene 调用）
@@ -379,16 +398,36 @@ class GameState: ObservableObject {
     }
 
     /// 金币越过下落区底部，交给 3D 推币台（按横向位置换算到台面宽度）
-    func coinReachedPusher(x: CGFloat) {
-        onCoinToPusher?(layout.pusherFraction(forX: x))
+    func coinReachedPusher(x: CGFloat, isSpecial: Bool = false) {
+        onCoinToPusher?(layout.pusherFraction(forX: x), isSpecial)
     }
 
-    /// 3D 推币台上有金币从前沿掉落：计分
-    func coinFellOffPusher() {
+    /// 3D 推币台上有金币从前沿掉落：计分（特殊金币奖励更多）
+    func coinFellOffPusher(isSpecial: Bool = false) {
         bedDropCount += 1
-        addCoins(GameConstants.bedDropReward)
+        let reward = isSpecial ? GameConstants.specialCoinReward : GameConstants.bedDropReward
+        addCoins(reward)
         AudioManager.shared.play(.bedDrop)
         HapticManager.shared.coinFall()
+        if isSpecial {
+            addFloatingScore(text: "+\(reward)", x: layout.centerX, y: layout.pusher.maxY - 30, color: .yellow, big: true)
+        }
+    }
+
+    /// 金币穿过战斗区：勇士攻击、BOSS 掉血；血量归零时 KO，1.2 秒后满血复活
+    func coinCrossedBattle(now: Date = Date()) {
+        guard now.timeIntervalSince(lastAttackTime) >= GameConstants.battleAttackCooldown, bossHealth > 0 else { return }
+        lastAttackTime = now
+        warriorAttackCount += 1
+        bossHealth = max(0, bossHealth - GameConstants.bossDamagePerHit)
+        if bossHealth == 0 {
+            bossDefeatedCount += 1
+            addFloatingScore(text: "K.O.!", x: layout.dropField.maxX - layout.dropField.width * 0.13, y: layout.dropField.midY, color: .red, big: true)
+            HapticManager.shared.bigWin()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
+            }
+        }
     }
 
     /// 本地日期，用于每日次数重置
@@ -470,11 +509,12 @@ class GameState: ObservableObject {
         }
     }
 
-    func addFloatingScore(text: String, x: CGFloat, y: CGFloat, color: Color) {
-        let score = FloatingScore(text: text, x: x, y: y, color: color)
+    func addFloatingScore(text: String, x: CGFloat, y: CGFloat, color: Color, big: Bool = false) {
+        let score = FloatingScore(text: text, x: x, y: y, color: color, big: big)
         floatingScores.append(score)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(.easeOut(duration: 0.8)) {
+        let life: Double = big ? 1.4 : 0.8
+        DispatchQueue.main.asyncAfter(deadline: .now() + (big ? 0.5 : 0.05)) {
+            withAnimation(.easeOut(duration: life - 0.5 * (big ? 1 : 0))) {
                 if let idx = self.floatingScores.firstIndex(where: { $0.id == score.id }) {
                     self.floatingScores[idx].opacity = 0
                     self.floatingScores[idx].y -= 50
@@ -482,7 +522,7 @@ class GameState: ObservableObject {
                 }
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + life + 0.05) {
             self.floatingScores.removeAll { $0.id == score.id }
         }
     }
@@ -589,7 +629,7 @@ class GameState: ObservableObject {
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow)
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow, big: true); pendingCoinRain += GameConstants.coinRainJackpot
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -597,7 +637,7 @@ class GameState: ObservableObject {
 
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange)
+        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange, big: true); pendingCoinRain += GameConstants.coinRainBigWin
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
@@ -605,7 +645,7 @@ class GameState: ObservableObject {
 
     private func slotSmallWin() {
         currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin(); AudioManager.shared.play(.winSmall)
-        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green)
+        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green, big: true); pendingCoinRain += GameConstants.coinRainSmallWin
     }
 
     func selectCardReward(_ choice: CardReward) {

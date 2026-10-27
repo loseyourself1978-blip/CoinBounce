@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
 		C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07DAD123163FB2694651B70 /* Pusher3DTests.swift */; };
 		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
 		C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */; };
@@ -62,6 +63,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleEffectsTests.swift; sourceTree = "<group>"; };
 		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
 		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
 		C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherScene3D.swift; sourceTree = "<group>"; };
@@ -145,6 +147,7 @@
 				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
+				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -361,6 +364,7 @@
 				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
+				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
