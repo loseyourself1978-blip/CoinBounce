@@ -48,3 +48,4 @@ The Arcade Coin Pusher app is a 2.5D physical replication of the classic arcade 
 | 版本 | 日期 | 关键改动 | 验收 |
 |---|---|---|---|
 | 10.5.0 | 2026-10-27 | 推币台撑满屏宽、下落金币不旋转、老虎机只由 BONUS 触发（排队）、水果一轮约 40 枚 | 106 个单元测试通过；截图 `~/Downloads/CoinBounce_资料归档/截图_v10.5.0/` |
+| 10.6.0 | 2026-10-27 | 按参考比例调整布局（老虎机 27%、推币台叠在投币按钮下）、老虎机格挡、2D/3D 金币大小一致、滑块和推板减速、3D 感增强 | 113 个单元测试通过；截图 `~/Downloads/CoinBounce_资料归档/截图_v10.6.0/` |

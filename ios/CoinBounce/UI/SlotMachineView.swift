@@ -10,6 +10,9 @@ struct SlotMachineView: View {
     var winLineActive = false
     /// 转轴区在本视图内的位置（来自 GameLayout）；老虎机只由 BONUS 触发，没有 SPIN 按钮
     let reelsFrame: CGRect
+    /// 转轴之间的格挡钉（本视图坐标），与下落区物理一致
+    var pins: [CGPoint] = []
+    var pinRadius: CGFloat = 4
     
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -29,6 +32,17 @@ struct SlotMachineView: View {
             }
             .frame(width: reelsFrame.width, height: reelsFrame.height)
             .position(x: reelsFrame.midX, y: reelsFrame.midY)
+
+            // 格挡钉：金色铆钉，带高光和投影
+            ForEach(Array(pins.enumerated()), id: \.offset) { _, p in
+                Circle()
+                    .fill(RadialGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep],
+                                         center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: pinRadius * 1.4))
+                    .overlay(Circle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
+                    .shadow(color: .black.opacity(0.6), radius: 1.5, x: 1, y: 1.5)
+                    .frame(width: pinRadius * 2, height: pinRadius * 2)
+                    .position(p)
+            }
 
             // 中奖线：中间一行发光闪烁
             if winLineActive {

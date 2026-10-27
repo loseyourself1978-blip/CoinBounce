@@ -60,6 +60,49 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
+    func test_slotPins_insideReelsAndLeaveRoomForCoins() {
+        for (name, l) in screens {
+            XCTAssertEqual(l.slotPins.count, 16, "4 列间隔 × 4 条行界")
+            for p in l.slotPins {
+                XCTAssertTrue(l.slotReels.insetBy(dx: -1, dy: -1).contains(p), "\(name) 格挡钉在转轴区内")
+                for o in l.slotObstacles {
+                    let gap = hypot(p.x - o.x, p.y - o.y) - l.slotPinRadius - l.slotObstacleRadius
+                    XCTAssertGreaterThan(gap, l.coinRadius * 2, "\(name) 钉子和符号之间能通过一枚金币")
+                }
+            }
+        }
+    }
+
+    func test_layout_matchesReferenceProportions() {
+        let l = screens[1].layout
+        let usable = l.size.height - l.safeArea.top - l.safeArea.bottom
+        XCTAssertEqual(l.slotMachine.height / usable, 0.27, accuracy: 0.001, "老虎机约占 27%")
+        XCTAssertGreaterThan(l.slotMachine.height, l.dropField.height * 2.5, "老虎机明显高于战斗区")
+        XCTAssertEqual(l.pusherView.maxY, l.size.height, "推币台延伸到屏幕底部，投币按钮叠在上面")
+        XCTAssertTrue(l.pusherView.contains(CGPoint(x: l.dropButton.midX, y: l.dropButton.midY)))
+    }
+
+    func test_sliderTravel_matchesReference() {
+        for (name, l) in screens {
+            XCTAssertLessThanOrEqual(l.coinSliderTravel, l.size.width * GameConstants.coinSliderTravelFraction + 0.001, name)
+            XCTAssertLessThanOrEqual(l.bonusSliderTravel, l.size.width * GameConstants.bonusSliderTravelFraction + 0.001, name)
+        }
+    }
+
+    func test_coinSlider_periodFromConstants() {
+        state.resetForTesting()
+        state.advance(by: 0.05)
+        let start = state.coinSliderOffset
+        // 推进一个完整周期（真实时间）后回到相同位置
+        var t = 0.0
+        while t < GameConstants.coinSliderPeriod - 0.0001 { state.advance(by: 1.0 / 60); t += 1.0 / 60 }
+        XCTAssertEqual(state.coinSliderOffset, start, accuracy: 1.5, "COIN 滑块周期为 \(GameConstants.coinSliderPeriod) 秒")
+    }
+
+    func test_dropFallTime_constantsInReferenceRange() {
+        XCTAssertTrue((0.5...1.0).contains(GameConstants.dropFallSeconds), "自由落体时长在参考范围内，弹跳后总时长约 1.4～2 秒")
+    }
+
     func test_fruits_insideFruitBar() {
         for (name, l) in screens {
             XCTAssertEqual(l.fruitCenters.count, 7)

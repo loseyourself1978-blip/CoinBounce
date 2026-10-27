@@ -16,12 +16,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var pusherDepth: Float = 5
         var pusherStroke: Float = GameConstants.pusherStroke
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
-        var maxCoins = 130
-        var prefillCoins = 100
+        var maxCoins = 150
+        var prefillCoins = 130
     }
 
     let scene = SCNScene()
-    let config: Config
+    private(set) var config: Config
+    /// 相机节点（测试里用它做投影计算）
+    let cameraNode = SCNNode()
     private(set) var droppedCount = 0          // 掉出前沿的金币数（计分）
     /// 有金币从前沿掉落；参数为是否特殊金币（主线程回调）
     var onCoinDropped: ((_ isSpecial: Bool) -> Void)?
@@ -72,7 +74,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         camera.fieldOfView = 33   // 收窄视角：台面撑满屏幕宽度，侧板压在屏幕边缘
         camera.zNear = 0.1
         camera.zFar = 100
-        let cameraNode = SCNNode()
+        // 屏幕空间环境光遮蔽：金币堆叠处、推板下方自然变暗，增强立体感
+        camera.screenSpaceAmbientOcclusionIntensity = 0.9
+        camera.screenSpaceAmbientOcclusionRadius = 0.25
+        let cameraNode = self.cameraNode
         cameraNode.camera = camera
         cameraNode.position = SCNVector3(0, 12.0, 12.0)
         cameraNode.look(at: SCNVector3(0, -1.3, 0.7))   // 视线略低，台面前沿和接币盘填满推币台区域下部
@@ -86,8 +91,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         key.light!.intensity = 800
         key.light!.castsShadow = true
         key.light!.shadowMode = .deferred
-        key.light!.shadowRadius = 2
-        key.light!.shadowSampleCount = 4
+        key.light!.shadowRadius = 4          // 柔和阴影
+        key.light!.shadowSampleCount = 8
+        key.light!.shadowColor = UIColor.black.withAlphaComponent(0.55)
         key.eulerAngles = SCNVector3(-Float.pi / 2.4, 0, 0)   // 接近正上方，侧壁不再有大块阴影
         scene.rootNode.addChildNode(key)
         let ambient = SCNNode()
@@ -353,20 +359,52 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 承载场景的视图，用于把 2D 下落区的屏幕位置换算到 3D
     weak var view: SCNView?
 
+    // MARK: 金币尺寸校准（2D → 3D 交接时屏幕上大小一致）
+
+    /// 屏幕点 p 在推板顶面落币平面（z 固定）上对应的世界坐标
+    func worldPointOnHandoffPlane(_ p: CGPoint, in view: SCNSceneRenderer) -> SCNVector3? {
+        let planeZ = pusher.presentation.position.z + config.pusherDepth / 2 - 0.55
+        let near = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
+        let far = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
+        let dz = far.z - near.z
+        guard abs(dz) > 1e-4 else { return nil }
+        let t = (planeZ - near.z) / dz
+        return SCNVector3(near.x + (far.x - near.x) * t, near.y + (far.y - near.y) * t, planeZ)
+    }
+
+    /// 交接点处一枚 3D 金币在屏幕上的直径（点）
+    func projectedCoinDiameter(at p: CGPoint, in view: SCNSceneRenderer) -> CGFloat {
+        guard let w = worldPointOnHandoffPlane(p, in: view) else { return 0 }
+        let r = config.coinRadius
+        let a = view.projectPoint(SCNVector3(w.x - r, w.y, w.z))
+        let b = view.projectPoint(SCNVector3(w.x + r, w.y, w.z))
+        return CGFloat(abs(b.x - a.x))
+    }
+
+    /// 按视图尺寸和相机，把 3D 金币半径调到「交接点处屏幕直径 = 2D 金币直径」；尺寸变化时重新预铺
+    func calibrateCoinSize(view: SCNSceneRenderer, viewSize: CGSize, handoffY: CGFloat, targetDiameter: CGFloat) {
+        guard viewSize.width > 0, targetDiameter > 0 else { return }
+        let p = CGPoint(x: viewSize.width / 2, y: handoffY)
+        guard let w0 = worldPointOnHandoffPlane(p, in: view),
+              let w1 = worldPointOnHandoffPlane(CGPoint(x: p.x + 10, y: p.y), in: view) else { return }
+        let worldPerPoint = abs(w1.x - w0.x) / 10
+        let radius = Float(targetDiameter / 2) * worldPerPoint
+        guard radius > 0.05, abs(radius - config.coinRadius) / config.coinRadius > 0.01 else { return }
+        config.coinRadius = radius
+        coinGeometry.radius = CGFloat(radius)
+        specialGeometry.radius = CGFloat(radius)
+        coins.forEach { $0.removeFromParentNode() }
+        coins.removeAll()
+        prefill()
+    }
+
     /// 从 2D 下落区交接：金币出现在与 2D 金币相同的屏幕位置（view 坐标），带向下的速度，保证衔接连续
     func dropCoin(atViewPoint p: CGPoint, special: Bool = false) {
-        guard let view, view.bounds.width > 0 else {
+        guard let view, view.bounds.width > 0, var world = worldPointOnHandoffPlane(p, in: view) else {
             dropCoin(xFraction: Float(p.x / max(1, view?.bounds.width ?? 1)) * 2 - 1, special: special)
             return
         }
         let c = config
-        let planeZ = pusher.presentation.position.z + c.pusherDepth / 2 - 0.55
-        let near = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
-        let far = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
-        let dz = far.z - near.z
-        guard abs(dz) > 1e-4 else { dropCoin(xFraction: 0, special: special); return }
-        let t = (planeZ - near.z) / dz
-        var world = SCNVector3(near.x + (far.x - near.x) * t, near.y + (far.y - near.y) * t, planeZ)
         world.x = max(-(c.deckWidth / 2 - c.coinRadius - 0.1), min(c.deckWidth / 2 - c.coinRadius - 0.1, world.x))
         world.y = max(c.pusherHeight + c.coinRadius + 0.3, world.y)
         // 平着落下（不旋转），带向下速度；落到台面碰撞后才翻滚

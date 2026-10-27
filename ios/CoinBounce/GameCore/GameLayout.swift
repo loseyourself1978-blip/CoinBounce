@@ -18,6 +18,8 @@ struct GameLayout: Equatable {
     let bonusLane: CGRect       // BONUS 滑块
     let pusher: CGRect          // 推币台
     let dropButton: CGRect
+    /// 3D 推币台视图：从推币台区域顶部一直到屏幕底部，投币按钮叠在台面前沿之上（与参考布局一致）
+    let pusherView: CGRect
 
     // MARK: 老虎机内部
     let slotReels: CGRect
@@ -31,6 +33,8 @@ struct GameLayout: Equatable {
     let fieldMaxX: CGFloat
     let slotObstacleRadius: CGFloat
     let slotObstacles: [CGPoint]       // 老虎机每个符号格的碰撞点（5×3），金币在符号之间弹跳
+    let slotPins: [CGPoint]            // 转轴之间的格挡钉
+    let slotPinRadius: CGFloat
     let fruitPinRadius: CGFloat
     let fruitPins: [CGPoint]           // 水果灯之间的小钉
     let fruitCenters: [CGPoint]        // 7 个水果
@@ -51,7 +55,9 @@ struct GameLayout: Equatable {
 
     /// 各区域占安全区内高度的比例，合计 1
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
-    static let heightRatios: [CGFloat] = [0.07, 0.05, 0.16, 0.12, 0.075, 0.05, 0.39, 0.085]
+    /// 按参考 App 逐帧测量的屏幕高度比例（扣除我们更紧凑的顶栏后换算）：
+    /// 老虎机约占 27%（参考转轴窗口约占全屏 17%、连同 COIN 拱形轨道约 29%），战斗区约 9.5%，水果约 5.5%，BONUS 约 5.5%
+    static let heightRatios: [CGFloat] = [0.07, 0.055, 0.27, 0.095, 0.055, 0.055, 0.30, 0.10]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -85,15 +91,18 @@ struct GameLayout: Equatable {
         bonusLane = bands[5]
         pusher = bands[6]
         dropButton = bands[7]
+        pusherView = CGRect(x: 0, y: bands[6].minY, width: size.width, height: size.height - bands[6].minY)
 
         // 老虎机：没有 SPIN 按钮（只由 BONUS 触发），5 列转轴均匀铺满外框宽度
         let slotInner = slotMachine.insetBy(dx: 10, dy: 8)
         slotReels = slotInner
 
-        coinRadius = 14
+        // 金币直径约为屏宽的 6%（参考 App 下落中金币约 6% 屏宽），随屏幕宽度缩放
+        coinRadius = (contentW * 0.06 / 2).rounded()
         coinSpawnY = sliderTrack.midY
         coinSliderWidth = max(44, contentW * 0.14)
-        coinSliderTravel = max(0, contentW / 2 - coinSliderWidth / 2)
+        // 参考 App 的 COIN 滑块只在中间约 ±17% 屏宽内往复
+        coinSliderTravel = min(max(0, contentW / 2 - coinSliderWidth / 2), size.width * GameConstants.coinSliderTravelFraction)
         fieldMinX = left + coinRadius
         fieldMaxX = right - coinRadius
 
@@ -101,7 +110,7 @@ struct GameLayout: Equatable {
         let reelSpacing: CGFloat = 4
         let cellW = (slotReels.width - reelSpacing * 4) / 5
         let cellH = slotReels.height / 3
-        slotObstacleRadius = max(6, min(cellW, cellH) * 0.3)
+        slotObstacleRadius = max(6, min(cellW, cellH) * 0.25)   // 留出与格挡钉之间至少一枚金币的空隙
         var obstacles: [CGPoint] = []
         for row in 0..<3 {
             for col in 0..<5 {
@@ -110,6 +119,16 @@ struct GameLayout: Equatable {
             }
         }
         slotObstacles = obstacles
+        // 转轴之间的金色格挡钉：每列之间、每行交界处各一个，金币在符号间多次弹跳、下落变慢
+        slotPinRadius = max(3, cellW * 0.06)
+        var pins: [CGPoint] = []
+        for row in 0...3 {
+            for col in 1..<5 {
+                let x = slotReels.minX + (cellW + reelSpacing) * CGFloat(col) - reelSpacing / 2
+                pins.append(CGPoint(x: x, y: slotReels.minY + cellH * CGFloat(row) + (row == 0 ? slotPinRadius : row == 3 ? -slotPinRadius : 0)))
+            }
+        }
+        slotPins = pins
 
         // 水果：7 等分内容宽度；判定宽度按 v9.5 比例（间距 40 对应 28 / 22）
         let lampW = contentW / 7
@@ -123,7 +142,8 @@ struct GameLayout: Equatable {
         fruitPins = fruitBaffleXs.map { CGPoint(x: $0, y: bands[4].minY + bands[4].height * 0.2) }
 
         bonusSliderWidth = fruitLampWidth
-        bonusSliderTravel = max(0, contentW / 2 - bonusSliderWidth / 2)
+        // 参考 App 的 BONUS 滑块约 ±16% 屏宽
+        bonusSliderTravel = min(max(0, contentW / 2 - bonusSliderWidth / 2), size.width * GameConstants.bonusSliderTravelFraction)
 
         // 3D 推币台占满 pusher 区域；下落金币在区域顶部稍下方交接，3D 金币从上层台面落下
         bedEntryY = pusher.minY + pusher.height * 0.08
