@@ -16,47 +16,47 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("声音与震动") {
+                Section("Sound & Vibration") {
                     Toggle(isOn: $settingsStore.settings.soundEnabled) {
-                        Label("音效", systemImage: "speaker.wave.2.fill")
+                        Label("Sound Effects", systemImage: "speaker.wave.2.fill")
                     }
                     Toggle(isOn: $settingsStore.settings.musicEnabled) {
-                        Label("背景音乐", systemImage: "music.note")
+                        Label("Music", systemImage: "music.note")
                     }
                     Toggle(isOn: $settingsStore.settings.hapticsEnabled) {
-                        Label("震动", systemImage: "iphone.radiowaves.left.and.right")
+                        Label("Vibration", systemImage: "iphone.radiowaves.left.and.right")
                     }
                 }
 
-                Section("帮助与隐私") {
+                Section("Help & Privacy") {
                     Link(destination: AppConfig.supportURL) {
-                        Label("支持", systemImage: "questionmark.circle.fill")
+                        Label("Support", systemImage: "questionmark.circle.fill")
                     }
                     Link(destination: AppConfig.privacyPolicyURL) {
-                        Label("隐私政策", systemImage: "hand.raised.fill")
+                        Label("Privacy Policy", systemImage: "hand.raised.fill")
                     }
                     if ads.privacyOptionsRequired {
                         Button {
                             ads.presentPrivacyOptions()
                         } label: {
-                            Label("广告隐私选项", systemImage: "slider.horizontal.3")
+                            Label("Ad Privacy Options", systemImage: "slider.horizontal.3")
                         }
                     }
                 }
 
                 Section {
                     HStack {
-                        Text("版本")
+                        Text("Version")
                         Spacer()
                         Text(versionText).foregroundColor(.secondary)
                     }
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -80,6 +80,6 @@ struct SettingsButton: View {
                 .background(Circle().fill(Color.black.opacity(0.55)))
                 .overlay(Circle().stroke(Color.arcadeGold.opacity(0.8), lineWidth: 1))
         }
-        .accessibilityLabel("设置")
+        .accessibilityLabel("Settings")
     }
 }
