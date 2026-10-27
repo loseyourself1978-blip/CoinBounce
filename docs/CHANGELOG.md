@@ -61,3 +61,8 @@
 - **设置页**：顶部齿轮按钮打开。包含音效、音乐、震动开关（存档，`HapticManager` 也遵守震动开关）、隐私政策链接（占位地址）、广告隐私选项（地区规定要求时显示）和版本号。
 - **隐私**：新增 `PrivacyInfo.xcprivacy`，并在 `docs/PRIVACY_NOTES.md` 整理 App Store 隐私标签的填写内容和上架前待办。
 - **测试**：新增设置、音效、震动开关和激励广告规则（阈值、只在看完时发放、每日上限、跨日重置、存档兼容）的测试，共 77 个用例全部通过。
+
+## v9.9.1 (2026-10-27)
+
+- **隐私政策与支持页**：在 GitHub Pages（`gh-pages` 分支）发布英中双语的支持页（https://loseyourself1978-blip.github.io/CoinBounce/ ）和隐私政策（https://loseyourself1978-blip.github.io/CoinBounce/privacy.html ）。
+- **设置页**：隐私政策链接改为正式地址，新增「支持」链接；分组名改为「帮助与隐私」。
