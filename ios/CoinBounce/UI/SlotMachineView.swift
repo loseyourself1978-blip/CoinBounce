@@ -5,6 +5,9 @@ import SwiftUI
 struct SlotMachineView: View {
     let reels: [[SlotSymbol]]
     let spinState: SlotSpinState
+    var stoppedColumns: Set<Int> = []
+    /// 中奖时高亮中间一行（中奖线）
+    var winLineActive = false
     /// 转轴区和 SPIN 按钮在本视图内的位置（来自 GameLayout，互不重叠）
     let reelsFrame: CGRect
     let spinFrame: CGRect
@@ -21,12 +24,21 @@ struct SlotMachineView: View {
                     SlotReelView(
                         symbols: reels[index],
                         reelIndex: index,
-                        spinState: spinState
+                        spinState: spinState,
+                        isStopped: spinState == .spinIdle || stoppedColumns.contains(index)
                     )
                 }
             }
             .frame(width: reelsFrame.width, height: reelsFrame.height)
             .position(x: reelsFrame.midX, y: reelsFrame.midY)
+
+            // 中奖线：中间一行发光闪烁
+            if winLineActive {
+                WinLine()
+                    .frame(width: reelsFrame.width + 8, height: reelsFrame.height / 3)
+                    .position(x: reelsFrame.midX, y: reelsFrame.midY)
+                    .allowsHitTesting(false)
+            }
             
             // 旋转按钮
             SpinButton(spinState: spinState, diameter: spinFrame.width, action: onSpin)
@@ -114,53 +126,93 @@ struct SlotReelView: View {
     let symbols: [SlotSymbol]
     let reelIndex: Int
     let spinState: SlotSpinState
-    
-    @State private var offset: CGFloat = 0
-    
+    var isStopped = true
+
+    /// 本轴开始转动的时间；nil 表示静止（显示结果）
+    @State private var spinStart: Date?
+    /// 停轴回弹：停下时结果从上方落下（单位：格），再用弹簧回到 0
+    @State private var settle: CGFloat = 0
+
+    private static let symbolsPerSecond: Double = 16
+
     var body: some View {
         GeometryReader { geo in
-            let symbolHeight = geo.size.height / 3
-            
-            VStack(spacing: 0) {
-                ForEach(symbols) { symbol in
-                    SlotSymbolCell(symbol: symbol, size: symbolHeight)
-                        .frame(height: symbolHeight)
+            let cellH = geo.size.height / 3
+            TimelineView(.animation(paused: spinStart == nil)) { timeline in
+                let spinning = spinStart != nil
+                let position = spinning ? timeline.date.timeIntervalSince(spinStart!) * Self.symbolsPerSecond : 0
+                ZStack(alignment: .top) {
+                    ForEach(ReelStrip.visibleRows(position: position, count: symbols.count), id: \.slot) { row in
+                        SlotSymbolCell(symbol: symbols[row.index], size: cellH)
+                            .frame(width: geo.size.width, height: cellH)
+                            .offset(y: (row.y + (spinning ? 0 : settle)) * cellH)
+                    }
                 }
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                // 运动模糊：转动时纵向拉伸并模糊
+                .scaleEffect(x: 1, y: spinning ? 1.06 : 1)
+                .blur(radius: spinning ? 2.2 : 0)
             }
-            .offset(y: offset)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.3))
-            )
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.3)))
+            // 上下边缘的暗影，表现滚筒的弧度
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.black.opacity(0.6), lineWidth: 2)
+                LinearGradient(stops: [
+                    .init(color: .black.opacity(0.55), location: 0),
+                    .init(color: .clear, location: 0.22),
+                    .init(color: .clear, location: 0.78),
+                    .init(color: .black.opacity(0.55), location: 1)
+                ], startPoint: .top, endPoint: .bottom)
+                .allowsHitTesting(false)
             )
-            .onChange(of: spinState) { newState in
-                handleSpinStateChange(newState, symbolHeight: symbolHeight)
-            }
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.6), lineWidth: 2))
         }
         // 只显示 3 行，滚动中的其余符号不溢出到下方区域
         .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-    
-    private func handleSpinStateChange(_ state: SlotSpinState, symbolHeight: CGFloat) {
-        switch state {
-        case .spinning:
-            withAnimation(.linear(duration: 0.08).repeatForever(autoreverses: false)) {
-                offset += symbolHeight
-            }
-        case .stopping(let stopIndex):
-            if reelIndex == stopIndex {
-                withAnimation(.easeOut(duration: 0.4)) {
-                    offset = 0
+        .onChange(of: spinState) { state in
+            // 依次启动：每列晚 0.06 秒开始转
+            if case .spinning = state, spinStart == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(reelIndex) * 0.06) {
+                    spinStart = Date()
                 }
             }
-        case .revealing:
-            break
-        case .spinIdle:
-            break
         }
+        .onChange(of: isStopped) { stopped in
+            guard stopped, spinStart != nil else { return }
+            spinStart = nil
+            settle = -0.45
+            withAnimation(.interpolatingSpring(stiffness: 260, damping: 13)) { settle = 0 }
+        }
+    }
+}
+
+/// 转轴条带：根据滚动位置（以格为单位）算出可见的行
+enum ReelStrip {
+    struct Row { let slot: Int; let index: Int; let y: CGFloat }
+
+    /// position 增大时符号向下移动；返回 5 行（3 行可见 + 上下各 1 行，滚动和停轴回弹时不露空），y 以格为单位、0 为第一行顶部
+    static func visibleRows(position: Double, count: Int) -> [Row] {
+        guard count > 0 else { return [] }
+        let base = Int(floor(position))
+        let frac = CGFloat(position - Double(base))
+        return (-1...3).map { k in
+            // 静止时（position = 0）第 0、1、2 行显示 symbols[0]、[1]、[2]（即结果）
+            let index = ((k - base) % count + count) % count
+            return Row(slot: k + 1, index: index, y: CGFloat(k) + frac)
+        }
+    }
+}
+
+// MARK: - 中奖线
+
+struct WinLine: View {
+    @State private var glow = false
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldLight], startPoint: .leading, endPoint: .trailing),
+                    lineWidth: glow ? 5 : 3)
+            .shadow(color: ArtPalette.gold.opacity(glow ? 1 : 0.5), radius: glow ? 12 : 4)
+            .background(RoundedRectangle(cornerRadius: 6).fill(ArtPalette.goldLight.opacity(glow ? 0.18 : 0.06)))
+            .onAppear { withAnimation(.easeInOut(duration: 0.35).repeatForever()) { glow = true } }
     }
 }
 
