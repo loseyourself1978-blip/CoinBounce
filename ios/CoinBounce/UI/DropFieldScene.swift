@@ -58,7 +58,8 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         specialTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: false, special: true))
         // 重力：从投币口到推币台自由下落约 1 秒（加上空气阻力和弹跳，实际约 1.3～1.6 秒），与屏幕高度成比例
         let fall = newLayout.bedEntryY - newLayout.coinSpawnY
-        let accel = 2 * fall / (1.0 * 1.0)
+        let t = GameConstants.dropFallSeconds
+        let accel = 2 * fall / (t * t)
         physicsWorld.gravity = CGVector(dx: 0, dy: -accel / 150)   // SpriteKit 以 150 点为 1 米
 
         staticRoot.removeAllChildren()
@@ -118,7 +119,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         body.contactTestBitMask = Category.obstacle
         body.restitution = 0.38
         body.friction = 0.08
-        body.linearDamping = 0.45
+        body.linearDamping = GameConstants.dropLinearDamping
         body.allowsRotation = false
         body.mass = 0.02
         body.usesPreciseCollisionDetection = true

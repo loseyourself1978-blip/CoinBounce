@@ -27,8 +27,6 @@ struct GameConstants {
     static let slotSmallWinReward: Int = 30
     static let slotBigWinReward: Int = 200
     static let slotJackpotReward: Int = 500
-    static let cardCoinsReward: Int = 100     // 7 水果全亮后选「金币」
-    static let cardFruitsToLight: Int = 2     // 7 水果全亮后选「水果」
 
     // 激励广告领币
     static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
@@ -41,6 +39,15 @@ struct GameConstants {
 
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
     static let bossDamagePerHit: Double = 0.06
+    static let bossKOReward: Int = 20               // BOSS 被打倒奖励
+
+    // 手感（v10.4 整体调快）
+    static let dropFallSeconds: Double = 0.77       // 下落区自由落体时长，v10.3 为 1.0（重力约 +70%，实际下落约快 30%）
+    static let dropLinearDamping: CGFloat = 0.32    // 下落空气阻力，v10.3 为 0.45
+    static let pusherStroke: Float = 2.1            // 3D 推板行程，v10.3 为 1.8
+    static let pusherPeriod: Double = 1.8           // 3D 推板往复周期（秒），v10.3 为 2.4（快 25%）
+    static let deckFriction: CGFloat = 0.32         // 3D 下层台面摩擦，v10.3 为 0.45
+    static let pusherCoinFriction: CGFloat = 0.42         // 3D 金币摩擦，v10.3 为 0.55
     static let battleAttackCooldown: TimeInterval = 0.25
 
     // 中奖金币雨（纯视觉，不计分）

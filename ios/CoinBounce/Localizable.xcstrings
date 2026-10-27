@@ -1,13 +1,46 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "+%lld coins": {
+    "+100 Coins": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld 金币"
+            "value": "+100 金币"
+          }
+        }
+      }
+    },
+    "+200 Coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+200 金币"
+          }
+        }
+      }
+    },
+    "2 fruits start lit": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新一轮预先点亮 2 个水果"
+          }
+        }
+      }
+    },
+    "3 Free Spins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免费转 3 次"
           }
         }
       }
@@ -23,13 +56,24 @@
         }
       }
     },
-    "All fruits lit! Pick a reward": {
+    "Added to your balance": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "水果全亮！选择奖励"
+            "value": "直接加入余额"
+          }
+        }
+      }
+    },
+    "All fruits lit! Pick a card": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果全亮！选一张卡"
           }
         }
       }
@@ -56,13 +100,24 @@
         }
       }
     },
-    "Coins": {
+    "COMMON": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币"
+            "value": "普通"
+          }
+        }
+      }
+    },
+    "Coins slide off easier for 30s": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 秒内金币更容易掉落"
           }
         }
       }
@@ -78,6 +133,17 @@
         }
       }
     },
+    "Easy Drop": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轻松掉落"
+          }
+        }
+      }
+    },
     "FEVER! x5": {
       "extractionState": "manual",
       "localizations": {
@@ -85,6 +151,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "狂热！x5"
+          }
+        }
+      }
+    },
+    "Fruit Head Start": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果预亮"
           }
         }
       }
@@ -122,28 +199,6 @@
         }
       }
     },
-    "Light %lld fruits": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点亮 %lld 个水果"
-          }
-        }
-      }
-    },
-    "Light fruits": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点亮水果"
-          }
-        }
-      }
-    },
     "Loading ad…": {
       "extractionState": "manual",
       "localizations": {
@@ -151,6 +206,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "广告加载中"
+          }
+        }
+      }
+    },
+    "Lucky Coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幸运金币"
           }
         }
       }
@@ -188,6 +254,17 @@
         }
       }
     },
+    "Next 10 drops are glowing coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接下来 10 次投币都是发光金币"
+          }
+        }
+      }
+    },
     "Not enough coins": {
       "extractionState": "manual",
       "localizations": {
@@ -206,6 +283,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "隐私政策"
+          }
+        }
+      }
+    },
+    "Pusher moves faster for 30s": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推板加速 30 秒"
+          }
+        }
+      }
+    },
+    "RARE": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稀有"
+          }
+        }
+      }
+    },
+    "Reward unlocked!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奖励到手！"
           }
         }
       }
@@ -250,6 +360,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "支持"
+          }
+        }
+      }
+    },
+    "The slot spins 3 times": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "老虎机连转 3 次"
+          }
+        }
+      }
+    },
+    "Turbo Pusher": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推板加速"
           }
         }
       }

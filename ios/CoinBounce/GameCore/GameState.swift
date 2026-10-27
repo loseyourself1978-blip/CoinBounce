@@ -175,7 +175,8 @@ class GameState: ObservableObject {
     /// 累计从推币台掉落得分的金币数
     private(set) var bedDropCount = 0
     /// 下落区的金币到达推币台时调用：参数为横向位置（-1 左 … 1 右），由 3D 推币台生成金币
-    var onCoinToPusher: ((_ fraction: CGFloat, _ isSpecial: Bool) -> Void)?
+    /// 参数：金币在推币台视图内的位置（推币台区域左上角为原点）、是否特殊金币
+    var onCoinToPusher: ((_ pointInPusher: CGPoint, _ isSpecial: Bool) -> Void)?
     /// 等待下落区生成的中奖金币雨（纯视觉）
     var pendingCoinRain = 0
     /// 生成特殊金币用的随机数（测试里可替换）
@@ -191,8 +192,15 @@ class GameState: ObservableObject {
 
     // MARK: - 状态位
     @Published var showCardSelection: Bool = false
-    @Published var showRewardModal: Bool = false
-    @Published var rewardAmount: Int = 0
+    @Published var offeredCards: [RewardCard] = []
+    @Published var pickedCard: CardKind?
+    // 卡牌效果
+    var freeSpinsLeft = 0
+    var specialCoinsLeft = 0
+    var fastPusherUntil: Date?
+    var wideMouthUntil: Date?
+    @Published var pusherSpeedMultiplier: Double = 1
+    @Published var wideMouthActive = false
     @Published var showJackpotExplosion: Bool = false
 
     private var displayLink: CADisplayLink?
@@ -208,7 +216,7 @@ class GameState: ObservableObject {
     private init() {
         applySave(saveStore.load() ?? .fresh)
         // 上次退出时水果已全亮但未选奖励：重新弹出选择
-        if fruitsLit.allSatisfy({ $0 }) { showCardSelection = true }
+        if fruitsLit.allSatisfy({ $0 }) { presentCardPick() }
         initializeSlotReels()
         startDisplayLink()
     }
@@ -216,6 +224,14 @@ class GameState: ObservableObject {
     // V9.0: 为自动化测试提供的重置接口
     func resetForTesting() {
         layout = .reference
+        offeredCards = []
+        pickedCard = nil
+        freeSpinsLeft = 0
+        specialCoinsLeft = 0
+        fastPusherUntil = nil
+        wideMouthUntil = nil
+        pusherSpeedMultiplier = 1
+        wideMouthActive = false
         lastAttackTime = .distantPast
         bossHealth = 1
         sliderTime = 0
@@ -316,6 +332,7 @@ class GameState: ObservableObject {
     func step(dt: CGFloat) {
         // === 滑块控制 ===
         sliderTime += dt
+        updateCardEffects(now: Date())
         coinSliderOffset = layout.coinSliderTravel * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
         bonusSliderOffset = layout.bonusSliderTravel * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
         
@@ -368,7 +385,12 @@ class GameState: ObservableObject {
             vx: CGFloat.random(in: -15...15),
             vy: CGFloat.random(in: 60...90) * layout.fallScale
         )
-        coin.isSpecial = randomUnit() < GameConstants.specialCoinChance
+        if specialCoinsLeft > 0 {
+            specialCoinsLeft -= 1
+            coin.isSpecial = true
+        } else {
+            coin.isSpecial = randomUnit() < GameConstants.specialCoinChance
+        }
         pendingDrops.append(coin)
     }
 
@@ -397,9 +419,11 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.baffleHit)
     }
 
-    /// 金币越过下落区底部，交给 3D 推币台（按横向位置换算到台面宽度）
+    /// 金币越过下落区底部，交给 3D 推币台：传入它在推币台视图里的屏幕位置，3D 金币在同一位置出现
     func coinReachedPusher(x: CGFloat, isSpecial: Bool = false) {
-        onCoinToPusher?(layout.pusherFraction(forX: x), isSpecial)
+        let clampedX = min(max(x, layout.fieldMinX), layout.fieldMaxX)
+        let point = CGPoint(x: clampedX - layout.pusher.minX, y: layout.bedEntryY - layout.pusher.minY)
+        onCoinToPusher?(point, isSpecial)
     }
 
     /// 3D 推币台上有金币从前沿掉落：计分（特殊金币奖励更多）
@@ -422,7 +446,8 @@ class GameState: ObservableObject {
         bossHealth = max(0, bossHealth - GameConstants.bossDamagePerHit)
         if bossHealth == 0 {
             bossDefeatedCount += 1
-            addFloatingScore(text: "K.O.!", x: layout.dropField.maxX - layout.dropField.width * 0.13, y: layout.dropField.midY, color: .red, big: true)
+            addCoins(GameConstants.bossKOReward)
+            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.maxX - layout.dropField.width * 0.13, y: layout.dropField.midY, color: .red, big: true)
             HapticManager.shared.bigWin()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
                 withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
@@ -488,7 +513,7 @@ class GameState: ObservableObject {
             addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
             addCoins(GameConstants.fruitHitReward)
             if fruitsLit.allSatisfy({ $0 }) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.showCardSelection = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.presentCardPick() }
             }
         }
     }
@@ -580,6 +605,11 @@ class GameState: ObservableObject {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
                         self.evaluateWin()
                         self.slotSpinState = .spinIdle
+                        // 免费转动卡：还有次数就接着转
+                        if self.freeSpinsLeft > 0 {
+                            self.freeSpinsLeft -= 1
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.spinSlot() }
+                        }
                         // 中奖线显示 2.5 秒后熄灭
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                             if self.slotSpinState == .spinIdle { self.currentWin = .none }
@@ -648,25 +678,52 @@ class GameState: ObservableObject {
         addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green, big: true); pendingCoinRain += GameConstants.coinRainSmallWin
     }
 
-    func selectCardReward(_ choice: CardReward) {
-        guard showCardSelection else { return }
-        showCardSelection = false
-        // 选完重置水果，「水果」奖励在新一轮开局直接点亮若干个
-        fruitsLit = SaveData.fresh.fruitsLit
-        rewardAmount = choice == .coins ? GameConstants.cardCoinsReward : 0
-        showRewardModal = true
-        if choice == .coins { addCoins(GameConstants.cardCoinsReward) }
-        else {
-            var un = fruitsLit.enumerated().filter({ !$0.element }).map({ $0.offset })
-            if un.count >= GameConstants.cardFruitsToLight {
-                un.shuffle()
-                for idx in un.prefix(GameConstants.cardFruitsToLight) { fruitsLit[idx] = true }
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.showRewardModal = false }
+    // MARK: - 卡牌三选一
+
+    /// 7 水果全亮：抽 3 张卡展示
+    func presentCardPick() {
+        guard !showCardSelection else { return }
+        offeredCards = CardPool.draw(3, random: randomUnit)
+        pickedCard = nil
+        showCardSelection = true
     }
 
-    enum CardReward { case coins, fruits }
+    /// 选中一张卡：立即生效，水果重置；界面翻牌展示后调用 finishCardPick() 关闭
+    func pickCard(_ kind: CardKind, now: Date = Date()) {
+        guard showCardSelection, pickedCard == nil, offeredCards.contains(where: { $0.kind == kind }) else { return }
+        pickedCard = kind
+        fruitsLit = SaveData.fresh.fruitsLit
+        switch kind {
+        case .coins100: addCoins(100)
+        case .coins200: addCoins(200)
+        case .freeSpins:
+            // 先转一次，剩下的在每次停轴后自动接着转
+            freeSpinsLeft = CardPool.freeSpinCount - 1
+            if slotSpinState == .spinIdle { spinSlot() } else { freeSpinsLeft += 1 }
+        case .specialCoins: specialCoinsLeft += CardPool.specialCoinDrops
+        case .fastPusher: fastPusherUntil = now.addingTimeInterval(CardPool.fastPusherSeconds)
+        case .wideMouth: wideMouthUntil = now.addingTimeInterval(CardPool.wideMouthSeconds)
+        case .lightFruits:
+            for idx in (0..<fruitsLit.count).shuffled().prefix(CardPool.fruitsToLight) { fruitsLit[idx] = true }
+        }
+        updateCardEffects(now: now)
+        AudioManager.shared.play(.winSmall)
+    }
+
+    func finishCardPick() {
+        showCardSelection = false
+        offeredCards = []
+        pickedCard = nil
+    }
+
+    /// 计时效果到期检查（每帧调用）
+    func updateCardEffects(now: Date) {
+        let fast = (fastPusherUntil ?? .distantPast) > now
+        let speed = fast ? CardPool.fastPusherSpeed : 1
+        if pusherSpeedMultiplier != speed { pusherSpeedMultiplier = speed }
+        let wide = (wideMouthUntil ?? .distantPast) > now
+        if wideMouthActive != wide { wideMouthActive = wide }
+    }
     
     func lightUpFruit(at index: Int) {
         guard index >= 0 && index < fruitsLit.count else { return }
@@ -683,7 +740,7 @@ class GameState: ObservableObject {
     
     func checkAllFruitsLit() {
         if fruitsLit.allSatisfy({ $0 }) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.showCardSelection = true; HapticManager.shared.allFruitsLit() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.presentCardPick(); HapticManager.shared.allFruitsLit() }
         }
     }
 
