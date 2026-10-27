@@ -6,6 +6,7 @@ import XCTest
 // ============================================================
 
 private final class FakeAdPresenter: RewardedAdPresenting {
+    var adsEnabled = true
     var isAdReady = true
     var completes: Bool
     private(set) var shown = 0
@@ -40,7 +41,38 @@ final class AdRewardTests: XCTestCase {
         super.tearDown()
     }
 
+    func test_adMobAppID_matchesInfoPlist() {
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String, AppConfig.adMobAppID)
+        XCTAssertEqual(AppConfig.adMobAppID, "ca-app-pub-9469890002230148~5839128885")
+    }
+
+    func test_debugBuild_alwaysUsesTestAdUnit() {
+        XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: true, production: "ca-app-pub-9469890002230148/1234567890"), AppConfig.testRewardedAdUnitID)
+        #if DEBUG
+        XCTAssertEqual(AppConfig.rewardedAdUnitID, AppConfig.testRewardedAdUnitID)
+        #endif
+    }
+
+    func test_releaseBuild_neverUsesTestOrPlaceholderAdUnit() {
+        for bad in [AppConfig.productionRewardedAdUnitID, "", AppConfig.testRewardedAdUnitID, "ca-app-pub-9469890002230148/"] {
+            XCTAssertNil(AppConfig.rewardedAdUnitID(isDebug: false, production: bad), "正式版不能用：\(bad)")
+        }
+        XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: false, production: "ca-app-pub-9469890002230148/1234567890"),
+                       "ca-app-pub-9469890002230148/1234567890")
+    }
+
+    func test_adsDisabled_hidesAdRewardButton() {
+        let fake = FakeAdPresenter(completes: true)
+        fake.adsEnabled = false
+        state.adPresenter = fake
+        state.availableCoins = 0
+        XCTAssertFalse(state.canOfferAdReward(now: day1), "没有可用广告单元时不显示领币按钮")
+        state.requestFreeCoins()
+        XCTAssertEqual(fake.shown, 0)
+    }
+
     func test_offer_onlyBelowThreshold() {
+        state.adPresenter = FakeAdPresenter(completes: true)
         state.availableCoins = GameConstants.adRewardCoinThreshold - 1
         XCTAssertTrue(state.canOfferAdReward(now: day1))
         state.availableCoins = GameConstants.adRewardCoinThreshold
@@ -83,6 +115,7 @@ final class AdRewardTests: XCTestCase {
     }
 
     func test_dailyLimit() {
+        state.adPresenter = FakeAdPresenter(completes: true)
         for _ in 0..<GameConstants.adRewardDailyLimit {
             XCTAssertTrue(state.grantAdReward(now: day1))
         }
@@ -93,6 +126,7 @@ final class AdRewardTests: XCTestCase {
     }
 
     func test_limitResetsNextLocalDay() {
+        state.adPresenter = FakeAdPresenter(completes: true)
         for _ in 0..<GameConstants.adRewardDailyLimit { state.grantAdReward(now: day1) }
         XCTAssertEqual(state.adRewardsUsed(on: day2), 0, "跨日归零")
         state.availableCoins = 0

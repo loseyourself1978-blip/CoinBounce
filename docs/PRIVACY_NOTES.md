@@ -40,7 +40,9 @@ App 本身不收集：联系信息、健康、财务、通讯录、用户内容�
 
 ## 上架前待办
 
-- [ ] 换成 AdMob 后台里的正式 App ID 和激励广告单元 ID（`AppConfig.swift` 和 `Info.plist` 的 `GADApplicationIdentifier`）
+- [x] 正式 App ID `ca-app-pub-9469890002230148~5839128885` 已填入（见 `docs/ADMOB.md`）
+- [ ] 激励广告单元 ID：在 AdMob 创建后填入 `AppConfig.productionRewardedAdUnitID`
+- [ ] 上架后在开发者网站根域名放 `app-ads.txt` 并在 AdMob 验证应用（见 `docs/ADMOB.md`）
 - [ ] 在 AdMob 后台为 GDPR/US 州隐私法配置同意消息（UMP）和 IDFA 说明消息
 - [x] 隐私政策：https://loseyourself1978-blip.github.io/CoinBounce/privacy.html （`gh-pages` 分支，已填入 `AppConfig.privacyPolicyURL`）；上架时填到 App Store Connect
 - [x] 支持页（Support URL）：https://loseyourself1978-blip.github.io/CoinBounce/
