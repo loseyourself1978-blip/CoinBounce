@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */; };
+		C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */; };
+		C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C01343A2745A50F8C65B2470 /* Localizable.xcstrings */; };
 		C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */; };
 		C00EF1A5C77513DCDFAFAFDA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */; };
 		C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */; };
@@ -55,6 +58,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		C01343A2745A50F8C65B2470 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRewardTests.swift; sourceTree = "<group>"; };
@@ -196,6 +202,8 @@
 							C0D773A5B713E8706AF20636 /* Audio */,
 				C04022E061E3BAB702D507BB /* Info.plist */,
 				C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */,
+				C01343A2745A50F8C65B2470 /* Localizable.xcstrings */,
+				C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */,
 );
 			path = CoinBounce;
 			sourceTree = "<group>";
@@ -207,6 +215,7 @@
 				B1A1DD042C00000500000001 /* GameLayoutTests.swift */,
 							C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
 				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
+				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 );
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -278,6 +287,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = B1A1E1D62C00000100000000;
 			packageReferences = (
@@ -313,6 +323,8 @@
 				C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */,
 				C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */,
 				C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */,
+				C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */,
+				C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +361,7 @@
 				B1A1DD032C00000500000001 /* GameLayoutTests.swift in Sources */,
 							C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
 				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
+				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,6 +488,7 @@
 				DEVELOPMENT_TEAM = BZJWQJ352K;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CoinBounce/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Coin Bounce";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -501,6 +515,7 @@
 				DEVELOPMENT_TEAM = BZJWQJ352K;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CoinBounce/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Coin Bounce";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;

@@ -292,7 +292,7 @@ struct CoinPusherView: View {
                     Text("🛡️")
                         .font(.system(size: figure * 0.6))
                 }
-                Text("勇士")
+                Text("Warrior")
                     .font(.system(size: min(w * 0.035, h * 0.12), weight: .black))
                     .foregroundColor(.white)
                     .shadow(radius: 2)
@@ -608,7 +608,7 @@ struct CoinPusherView: View {
 
             // 金币用完提示
             if showNoCoinsHint {
-                Text("金币不足")
+                Text("Not enough coins")
                     .font(.system(size: 14, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
@@ -633,9 +633,9 @@ extension CoinPusherView {
                 Image(systemName: ads.isAdReady ? "play.rectangle.fill" : "hourglass")
                     .font(.system(size: height * 0.4, weight: .bold))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(ads.isAdReady ? "看广告" : "广告加载中")
+                    Text(ads.isAdReady ? LocalizedStringKey("Watch ad") : LocalizedStringKey("Loading ad…"))
                         .font(.system(size: height * 0.27, weight: .bold, design: .rounded))
-                    Text("领 \(GameConstants.adRewardCoins) 金币")
+                    Text("Get \(GameConstants.adRewardCoins) coins")
                         .font(.system(size: height * 0.3, weight: .black, design: .rounded))
                 }
                 .lineLimit(1)

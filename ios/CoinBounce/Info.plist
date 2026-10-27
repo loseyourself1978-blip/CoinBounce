@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- 与 GENERATE_INFOPLIST_FILE 生成的内容合并。
-     GADApplicationIdentifier 目前是 Google 官方测试 App ID，上架前必须换成 AdMob 后台里的正式 App ID（同时修改 AdConfig.swift）。
-     SKAdNetworkItems 来自 https://developers.google.com/admob/ios/quick-start （50 项，2026-10-26 获取）。 -->
 <plist version="1.0">
 <dict>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>用于为你提供更相关的广告。This identifier will be used to deliver more relevant ads to you.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
