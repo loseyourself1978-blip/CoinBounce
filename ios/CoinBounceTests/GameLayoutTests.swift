@@ -53,12 +53,10 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
-    func test_slotMachine_reelsAndSpinButton_insideFrameAndSeparate() {
+    func test_slotReels_fillSlotFrameWidth() {
         for (name, l) in screens {
             assertInside(l.slotReels, l.slotMachine, "\(name) 转轴")
-            assertInside(l.spinButton, l.slotMachine, "\(name) SPIN")
-            XCTAssertEqual(overlapArea(l.slotReels, l.spinButton), 0, "\(name) SPIN 遮挡转轴")
-            XCTAssertGreaterThan(l.slotReels.width, l.slotMachine.width * 0.6, "\(name) 转轴宽度")
+            XCTAssertGreaterThan(l.slotReels.width, l.slotMachine.width * 0.9, "\(name) 没有 SPIN 按钮，转轴铺满宽度")
         }
     }
 
@@ -169,6 +167,9 @@ final class GameLayoutTests: XCTestCase {
     }
 
     func test_coinCrossingFruitRow_lightsThatFruit() {
+        let original = state.randomUnit
+        state.randomUnit = { 0 }   // 必定点亮
+        defer { state.randomUnit = original }
         for (name, l) in screens {
             state.updateLayout(l)
             for index in [0, 3, 6] {

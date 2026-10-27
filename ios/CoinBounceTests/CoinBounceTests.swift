@@ -166,13 +166,29 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertEqual(state.slotSpinState, .spinning, "BONUS 命中应触发老虎机")
     }
 
-    func test_bonusHit_ignoredWhileSpinning() {
+    func test_bonusHit_whileSpinning_isQueued() {
         state.spinSlot()
         let reelsBefore = state.slotReels.map { $0.map(\.id) }
-        let scoresBefore = state.floatingScores.count
         state.triggerBonusHit()
-        XCTAssertEqual(state.slotReels.map { $0.map(\.id) }, reelsBefore, "转动中再次命中 BONUS 不应重新开转")
-        XCTAssertEqual(state.floatingScores.count, scoresBefore, "转动中命中 BONUS 应被忽略")
+        XCTAssertEqual(state.slotReels.map { $0.map(\.id) }, reelsBefore, "转动中命中 BONUS 不会重新开转")
+        XCTAssertEqual(state.queuedSpins, 1, "而是排队，停下后接着转")
+    }
+
+    func test_bonusHit_whenIdle_spinsImmediately() {
+        state.triggerBonusHit()
+        XCTAssertTrue(state.isSpinning)
+        XCTAssertEqual(state.queuedSpins, 0)
+    }
+
+    func test_queuedSpin_startsAfterStop() {
+        state.spinSlot()
+        state.triggerBonusHit()
+        let done = expectation(description: "second spin")
+        // 一次转动约 1.2 + 4×0.4 + 0.5 秒，之后 0.9 秒开始下一次
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) { done.fulfill() }
+        wait(for: [done], timeout: 8)
+        XCTAssertEqual(state.queuedSpins, 0, "排队的转动已开始")
+        XCTAssertTrue(state.isSpinning)
     }
 
     func test_slotMachine_cannotSpinWhileSpinning() {

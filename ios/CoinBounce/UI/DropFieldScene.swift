@@ -24,8 +24,6 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
 
     /// 每枚金币的状态
     private final class CoinInfo {
-        var flipPhase = CGFloat.random(in: 0...(2 * .pi))
-        var flipSpeed = CGFloat.random(in: 7...12)
         var crossedBattle = false
         var crossedFruit = false
         var crossedBonus = false
@@ -66,7 +64,6 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         for p in newLayout.slotObstacles {
             addObstacle(at: p, radius: newLayout.slotObstacleRadius)
         }
-        addObstacle(at: newLayout.spinObstacle, radius: newLayout.spinObstacleRadius * 0.85)
         for p in newLayout.fruitPins {
             addObstacle(at: p, radius: newLayout.fruitPinRadius)
         }
@@ -167,11 +164,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
             let y = screenY(node)
             let x = node.position.x
 
-            // 下落翻转：横向缩放模拟金币绕竖轴旋转，接近侧面时换成边缘贴图
-            info.flipPhase += info.flipSpeed * CGFloat(dt)
-            let c = abs(cos(info.flipPhase))
-            node.xScale = max(0.12, c)
-            node.texture = c < 0.3 ? edgeTexture : (info.isSpecial ? specialTexture : faceTexture)
+            // 下落中不旋转（与真实推币机一致），落到 3D 台面后才由物理产生翻滚
 
             if info.isDecorative {
                 if y >= layout.bedEntryY { node.removeFromParent() }
@@ -205,11 +198,12 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         let now = lastUpdate
         guard now - info.lastObstacleHit > 0.15 else { return }   // 同一枚金币短时间内只算一次
         info.lastObstacleHit = now
-        info.flipSpeed = CGFloat.random(in: 9...15)
         gameState?.coinHitObstacle()
     }
 
     var activeCoinCount: Int { coinRoot.children.count }
+    /// 下落中的金币节点（测试用）
+    var fallingCoinNodes: [SKSpriteNode] { coinRoot.children.compactMap { $0 as? SKSpriteNode } }
 
     // MARK: 金币贴图（代码绘制，正面星形，侧面为暗金色窄条）
     static func coinImage(diameter: CGFloat, edge: Bool, special: Bool = false) -> UIImage {

@@ -195,7 +195,8 @@ class GameState: ObservableObject {
     @Published var offeredCards: [RewardCard] = []
     @Published var pickedCard: CardKind?
     // 卡牌效果
-    var freeSpinsLeft = 0
+    /// 排队等待的老虎机转动次数（BONUS 连续命中、免费转动卡）
+    @Published var queuedSpins = 0
     var specialCoinsLeft = 0
     var fastPusherUntil: Date?
     var wideMouthUntil: Date?
@@ -226,7 +227,7 @@ class GameState: ObservableObject {
         layout = .reference
         offeredCards = []
         pickedCard = nil
-        freeSpinsLeft = 0
+        queuedSpins = 0
         specialCoinsLeft = 0
         fastPusherUntil = nil
         wideMouthUntil = nil
@@ -399,6 +400,7 @@ class GameState: ObservableObject {
     /// 金币穿过水果灯排：按所在列点亮水果
     func coinCrossedFruitRow(x: CGFloat) {
         guard let column = layout.fruitColumn(forX: x) else { return }
+        guard randomUnit() < GameConstants.fruitLightChance else { return }
         triggerFruitHit(index: column)
         combo.hit(type: "fruit")
         showComboText = combo.isActive
@@ -518,11 +520,22 @@ class GameState: ObservableObject {
         }
     }
 
+    /// 金币穿过 BONUS：老虎机空闲时立即转，正在转时排队（停下后接着转）
     func triggerBonusHit() {
-        // 老虎机正在转时忽略
-        guard !isSpinning else { return }
         HapticManager.shared.bonusTriggered()
         addFloatingScore(text: "BONUS!", x: layout.centerX, y: layout.bonusLane.minY, color: .orange)
+        queueSpins(1)
+    }
+
+    /// 排入 n 次转动；空闲时马上开始第一次
+    func queueSpins(_ n: Int) {
+        queuedSpins += n
+        startQueuedSpinIfIdle()
+    }
+
+    private func startQueuedSpinIfIdle() {
+        guard queuedSpins > 0, slotSpinState == .spinIdle else { return }
+        queuedSpins -= 1
         spinSlot()
     }
 
@@ -605,11 +618,11 @@ class GameState: ObservableObject {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
                         self.evaluateWin()
                         self.slotSpinState = .spinIdle
-                        // 免费转动卡：还有次数就接着转
-                        if self.freeSpinsLeft > 0 {
-                            self.freeSpinsLeft -= 1
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.spinSlot() }
+                        // 排队的转动（BONUS 连续命中、免费转动卡）稍等后接着转
+                        if self.queuedSpins > 0 {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { self.startQueuedSpinIfIdle() }
                         }
+
                         // 中奖线显示 2.5 秒后熄灭
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                             if self.slotSpinState == .spinIdle { self.currentWin = .none }
@@ -697,9 +710,8 @@ class GameState: ObservableObject {
         case .coins100: addCoins(100)
         case .coins200: addCoins(200)
         case .freeSpins:
-            // 先转一次，剩下的在每次停轴后自动接着转
-            freeSpinsLeft = CardPool.freeSpinCount - 1
-            if slotSpinState == .spinIdle { spinSlot() } else { freeSpinsLeft += 1 }
+            // 连续自动转 3 次
+            queueSpins(CardPool.freeSpinCount)
         case .specialCoins: specialCoinsLeft += CardPool.specialCoinDrops
         case .fastPusher: fastPusherUntil = now.addingTimeInterval(CardPool.fastPusherSeconds)
         case .wideMouth: wideMouthUntil = now.addingTimeInterval(CardPool.wideMouthSeconds)

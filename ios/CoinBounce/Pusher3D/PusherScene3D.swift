@@ -69,13 +69,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let camera = SCNCamera()
         // 按水平视角取景，保证整个台面宽度都在画面内；斜上方俯视，看得到台面纵深和金币厚度
         camera.projectionDirection = .horizontal
-        camera.fieldOfView = 44
+        camera.fieldOfView = 33   // 收窄视角：台面撑满屏幕宽度，侧板压在屏幕边缘
         camera.zNear = 0.1
         camera.zFar = 100
         let cameraNode = SCNNode()
         cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 13.0, 12.5)
-        cameraNode.look(at: SCNVector3(0, -0.4, -0.3))
+        cameraNode.position = SCNVector3(0, 12.0, 12.0)
+        cameraNode.look(at: SCNVector3(0, -1.3, 0.7))   // 视线略低，台面前沿和接币盘填满推币台区域下部
         scene.background.contents = PusherScene3D.backgroundImage()
         scene.rootNode.addChildNode(cameraNode)
 
@@ -369,8 +369,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var world = SCNVector3(near.x + (far.x - near.x) * t, near.y + (far.y - near.y) * t, planeZ)
         world.x = max(-(c.deckWidth / 2 - c.coinRadius - 0.1), min(c.deckWidth / 2 - c.coinRadius - 0.1, world.x))
         world.y = max(c.pusherHeight + c.coinRadius + 0.3, world.y)
-        // 与 2D 金币下落时一样竖着翻转进入，带向下速度
-        addCoin(at: world, tilt: Float.pi / 2 * 0.8,
+        // 平着落下（不旋转），带向下速度；落到台面碰撞后才翻滚
+        addCoin(at: world, tilt: Float.random(in: -0.08...0.08),
                 velocity: SCNVector3(Float.random(in: -0.3...0.3), -6, Float.random(in: 0.3...1.0)),
                 special: special)
     }
@@ -381,7 +381,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let x = max(-1, min(1, xFraction)) * (c.deckWidth / 2 - c.coinRadius - 0.1)
         let pusherTopZ = pusher.presentation.position.z + c.pusherDepth / 2 - 0.55
         addCoin(at: SCNVector3(x, 4.5, pusherTopZ),
-                tilt: Float.random(in: -1.2...1.2),
+                tilt: Float.random(in: -0.08...0.08),
                 velocity: SCNVector3(Float.random(in: -0.3...0.3), -2, Float.random(in: 0.5...1.5)),
                 special: special)
     }

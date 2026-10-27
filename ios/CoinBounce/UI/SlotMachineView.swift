@@ -8,10 +8,8 @@ struct SlotMachineView: View {
     var stoppedColumns: Set<Int> = []
     /// 中奖时高亮中间一行（中奖线）
     var winLineActive = false
-    /// 转轴区和 SPIN 按钮在本视图内的位置（来自 GameLayout，互不重叠）
+    /// 转轴区在本视图内的位置（来自 GameLayout）；老虎机只由 BONUS 触发，没有 SPIN 按钮
     let reelsFrame: CGRect
-    let spinFrame: CGRect
-    let onSpin: () -> Void
     
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -40,10 +38,6 @@ struct SlotMachineView: View {
                     .allowsHitTesting(false)
             }
             
-            // 旋转按钮
-            SpinButton(spinState: spinState, diameter: spinFrame.width, action: onSpin)
-                .frame(width: spinFrame.width, height: spinFrame.height)
-                .position(x: spinFrame.midX, y: spinFrame.midY)
         }
     }
 }
@@ -330,70 +324,5 @@ struct SymbolContent: View {
         case .jack:  return ("JACK", Color.orange)
         case .king:  return ("KING", Color.purple)
         }
-    }
-}
-
-// MARK: - 旋转按钮
-
-struct SpinButton: View {
-    let spinState: SlotSpinState
-    var diameter: CGFloat = 60
-    let action: () -> Void
-    
-    var isSpinning: Bool {
-        if case .spinning = spinState { return true }
-        return false
-    }
-    
-    var body: some View {
-        Button(action: { AudioManager.shared.play(.buttonTap); action() }) {
-            ZStack {
-                // 外圈发光
-                Circle()
-                    .fill(Color.red.opacity(0.3))
-                    .frame(width: diameter * 1.15, height: diameter * 1.15)
-                    .blur(radius: isSpinning ? 5 : 15)
-                    .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isSpinning)
-                
-                // 按钮主体
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.red, Color.orange],
-                            center: .center,
-                            startRadius: 5,
-                            endRadius: diameter / 2
-                        )
-                    )
-                    .frame(width: diameter, height: diameter)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.yellow, Color.white.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 3
-                            )
-                    )
-                    .shadow(color: .red.opacity(0.7), radius: 10, x: 0, y: 4)
-                
-                if isSpinning {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.2)
-                } else {
-                    VStack(spacing: 2) {
-                        Text("SPIN")
-                            .font(.system(size: diameter * 0.22, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        ReelsIcon(size: diameter * 0.42)
-                    }
-                }
-            }
-        }
-        .disabled(isSpinning)
-        .opacity(isSpinning ? 0.8 : 1.0)
     }
 }

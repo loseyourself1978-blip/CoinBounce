@@ -92,11 +92,48 @@ final class RewardCardTests: XCTestCase {
         XCTAssertEqual(state.availableCoins, before + 100, "只能选一次")
     }
 
-    func test_pick_freeSpins_startsSpinAndQueuesRest() {
+    func test_pick_freeSpins_queuesThreeSpins() {
         offer([.freeSpins, .coins100, .fastPusher])
         state.pickCard(.freeSpins)
-        XCTAssertTrue(state.isSpinning, "立即转一次")
-        XCTAssertEqual(state.freeSpinsLeft, CardPool.freeSpinCount - 1)
+        XCTAssertTrue(state.isSpinning, "立即开始第一次")
+        XCTAssertEqual(state.queuedSpins, CardPool.freeSpinCount - 1, "另外两次排队，自动接着转")
+    }
+
+    /// 用固定种子模拟：每枚金币均匀落在 7 列之一，按 fruitLightChance 点亮；一轮平均约 40 枚
+    func test_fruitRound_averagesAboutFortyCoins() {
+        var seed: UInt64 = 20261027
+        func next() -> Double {
+            seed = seed &* 6364136223846793005 &+ 1442695040888963407
+            return Double(seed >> 11) / Double(1 << 53)
+        }
+        state.randomUnit = next
+        let rounds = 400
+        var total = 0
+        for _ in 0..<rounds {
+            state.fruitsLit = Array(repeating: false, count: 7)
+            var coins = 0
+            while state.fruitsLit.contains(false) {
+                coins += 1
+                let column = min(6, Int(next() * 7))
+                state.coinCrossedFruitRow(x: state.layout.fruitCenters[column].x)
+            }
+            total += coins
+            state.showCardSelection = false
+        }
+        let average = Double(total) / Double(rounds)
+        XCTAssertEqual(average, 40, accuracy: 4, "一轮约 40 枚（实测 \(average)）")
+        print("FRUIT_ROUND_AVERAGE \(average)")
+    }
+
+    func test_fruitLightChance() {
+        state.fruitsLit = Array(repeating: false, count: 7)
+        let x = state.layout.fruitCenters[2].x
+        state.randomUnit = { 0.99 }
+        state.coinCrossedFruitRow(x: x)
+        XCTAssertFalse(state.fruitsLit[2], "概率没中不点亮")
+        state.randomUnit = { 0 }
+        state.coinCrossedFruitRow(x: x)
+        XCTAssertTrue(state.fruitsLit[2])
     }
 
     func test_pick_specialCoins_nextDropsAreSpecial() {
