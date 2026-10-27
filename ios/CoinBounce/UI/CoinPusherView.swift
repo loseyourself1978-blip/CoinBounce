@@ -165,11 +165,15 @@ struct CoinPusherView: View {
                 .init(color: Color(red: 0.98, green: 0.95, blue: 0.97), location: 1.00)   // 白色
             ], startPoint: .top, endPoint: .bottom)
 
+            // Jackpot 标题框
+            JackpotMarquee(width: min(w * 0.46, h * 3.2), height: h * 0.82)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             VStack(spacing: 0) {
                 Spacer()
                 Text("JACKPOT")
                     .font(.system(size: max(8, h * 0.15), weight: .black, design: .rounded))
-                    .foregroundColor(Color(red: 0.35, green: 0.18, blue: 0.05))
+                    .foregroundColor(ArtPalette.goldLight)
                     .tracking(3)
 
                 Text("100000")
@@ -289,8 +293,7 @@ struct CoinPusherView: View {
                     Circle()
                         .fill(RadialGradient(colors: [.white.opacity(0.4), .clear], center: .center, startRadius: 0, endRadius: 20))
                         .frame(width: figure, height: figure)
-                    Text("🛡️")
-                        .font(.system(size: figure * 0.6))
+                    WarriorFigure(size: figure * 0.85)
                 }
                 Text("Warrior")
                     .font(.system(size: min(w * 0.035, h * 0.12), weight: .black))
@@ -326,8 +329,7 @@ struct CoinPusherView: View {
                     Circle()
                         .fill(RadialGradient(colors: [.red.opacity(0.3), .clear], center: .center, startRadius: 0, endRadius: 20))
                         .frame(width: figure, height: figure)
-                    Text("👺")
-                        .font(.system(size: figure * 0.6))
+                    BossFigure(size: figure * 0.85)
                 }
                 Text("BOSS")
                     .font(.system(size: min(w * 0.030, h * 0.12), weight: .black))
@@ -361,7 +363,6 @@ struct CoinPusherView: View {
     // MARK: - 水果收集栏
     @ViewBuilder
     func fruitCollectionBar(layout: GameLayout) -> some View {
-        let fruits = ["🍎", "🍋", "🍇", "🍓", "🍑", "🍒", "🥝"]
         let bar = layout.fruitBar
         let iconSize = min(layout.fruitLampWidth * 0.8, bar.height * 0.6)
 
@@ -393,9 +394,9 @@ struct CoinPusherView: View {
                               LinearGradient(colors: [Color.gray.opacity(0.3), Color.black.opacity(0.5)], startPoint: .top, endPoint: .bottom))
                         .frame(width: iconSize, height: iconSize)
 
-                    // 水果emoji
-                    Text(fruits[index])
-                        .font(.system(size: iconSize * 0.5))
+                    // 水果（矢量绘制）
+                    FruitIcon(index: index, size: iconSize * 0.78)
+                        .saturation(gameState.fruitsLit[index] ? 1 : 0.35)
                 }
                 .opacity(gameState.fruitsLit[index] ? 1.0 : 0.6)
                 .scaleEffect(gameState.fruitPulseIndex == index ? 1.3 : 1.0)
@@ -664,7 +665,7 @@ struct CoinBalanceView: View {
                 .fill(LinearGradient(colors: [Color(red: 1.0, green: 0.9, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.1)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(Circle().stroke(Color(red: 0.5, green: 0.3, blue: 0.0), lineWidth: 1))
-                .overlay(Text("¥").font(.system(size: 10, weight: .black)).foregroundColor(Color(red: 0.4, green: 0.2, blue: 0.0)))
+                .overlay(ArtCoin(size: 18))
                 .frame(width: 18, height: 18)
             Text("\(coins)")
                 .font(.system(size: 15, weight: .black, design: .rounded))
@@ -752,19 +753,9 @@ struct LocalCoinCanvasLayer: View {
                     // 底层阴影 (深度感)
                     context.fill(Path(ellipseIn: coinRect.offsetBy(dx: 2, dy: 2)), with: .color(Color.black.opacity(0.4)))
                     
-                    // 动态光泽渐变 (根据 Y 轴微调色温)
+                    // 原创金币（越靠前越暗一点，表现纵深）
                     let brightnessShift = Double((coin.y - layout.bedTopY) / layout.pusher.height) * 0.1
-                    let coinGradient = Gradient(colors: [
-                        Color(red: 1.0, green: 0.98, blue: 0.8).opacity(1.0 - brightnessShift),
-                        Color(red: 0.95, green: 0.75, blue: 0.1),
-                        Color(red: 0.70, green: 0.45, blue: 0.05)
-                    ])
-                    
-                    context.fill(Path(ellipseIn: coinRect), with: .linearGradient(coinGradient, startPoint: CGPoint(x: coinRect.minX, y: coinRect.minY), endPoint: CGPoint(x: coinRect.maxX, y: coinRect.maxY)))
-                    context.stroke(Path(ellipseIn: coinRect), with: .color(Color(red: 0.5, green: 0.3, blue: 0.0)), lineWidth: 1.0)
-                    
-                    // 中心压印
-                    context.draw(Text("§").font(.system(size: coin.radius * 1.1, weight: .heavy)).foregroundColor(Color.black.opacity(0.15)), in: coinRect)
+                    ArtCoin.draw(in: context, rect: coinRect, brightness: 1.0 - brightnessShift)
                 }
 
                 // 下落金币
@@ -776,16 +767,7 @@ struct LocalCoinCanvasLayer: View {
                         height: coin.radius * 2
                     )
                     
-                    // 金色渐变主体
-                    let gradient = Gradient(colors: [
-                        Color(red: 1.0, green: 0.9, blue: 0.4),
-                        Color(red: 0.8, green: 0.5, blue: 0.1),
-                        Color(red: 0.6, green: 0.3, blue: 0.0)
-                    ])
-                    context.fill(Path(ellipseIn: coinRect), with: .linearGradient(gradient, startPoint: CGPoint(x: coinRect.minX, y: coinRect.minY), endPoint: CGPoint(x: coinRect.maxX, y: coinRect.maxY)))
-                    context.stroke(Path(ellipseIn: coinRect.insetBy(dx: 0.5, dy: 0.5)), with: .color(.white.opacity(0.4)), lineWidth: 1)
-                    context.stroke(Path(ellipseIn: coinRect), with: .color(.black.opacity(0.3)), lineWidth: 1.5)
-                    context.draw(Text("¥").font(.system(size: coin.radius * 1.2, weight: .black)).foregroundColor(Color(red: 0.4, green: 0.2, blue: 0.0).opacity(0.6)), in: coinRect)
+                    ArtCoin.draw(in: context, rect: coinRect)
                 }
                 
                 // 粒子 (V9.4)
@@ -834,8 +816,7 @@ struct HollowBonusSliderTarget: View {
             )
             
             HStack(spacing: 1) {
-                Text("💰")
-                    .font(.system(size: h * 0.45))
+                ArtCoin(size: h * 0.5)
                 Text("BONUS")
                     .font(.system(size: min(exactWidth * 0.2, h * 0.4), weight: .black))
                     .foregroundColor(.yellow)

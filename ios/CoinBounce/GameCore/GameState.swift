@@ -90,11 +90,11 @@ struct ComboData {
     private func comboMessage() -> String {
         switch count {
         case 2: return String(localized: "NICE! x2")
-        case 3: return String(localized: "COMBO! x3 🔥")
-        case 4: return String(localized: "HOT! x4 🔥🔥")
-        case 5: return String(localized: "FEVER! x5 ⚡")
-        case 6...9: return String(localized: "BLAZING! x\(count) 💥")
-        default: return String(localized: "MAX COMBO! x\(count) 🌟")
+        case 3: return String(localized: "COMBO! x3")
+        case 4: return String(localized: "HOT! x4")
+        case 5: return String(localized: "FEVER! x5")
+        case 6...9: return String(localized: "BLAZING! x\(count)")
+        default: return String(localized: "MAX COMBO! x\(count)")
         }
     }
 }
