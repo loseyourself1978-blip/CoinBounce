@@ -8,7 +8,7 @@ import XCTest
 final class LocalizationTests: XCTestCase {
     private let languages = ["en", "zh-Hans"]
     /// 两种语言都保持原样的街机用语（不需要翻译）
-    private let untranslated: Set<String> = ["SPIN", "VS", "BOSS", "BONUS", "BONUS!", "JACKPOT", "JACKPOT!", "1 COIN", "$"]
+    private let untranslated: Set<String> = ["SPIN", "VS", "BAR", "BOSS", "BONUS", "BONUS!", "JACKPOT", "JACKPOT!", "1 COIN", "$"]
 
     private var sourceDir: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("CoinBounce")

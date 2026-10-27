@@ -253,7 +253,7 @@ struct SymbolContent: View {
                 .blur(radius: 8)
             
             // 主符号（矢量绘制）
-            SlotSymbolArt(type: type, size: size * 0.5)
+            SlotSymbolArt(type: type, size: size * 0.6)
                 .shadow(color: config.glowColor.opacity(0.8), radius: 4, x: 0, y: 0)
                 .offset(y: -size * 0.05)
             
