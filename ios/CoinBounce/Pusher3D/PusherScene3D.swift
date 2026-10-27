@@ -23,7 +23,22 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     let scene = SCNScene()
     let config: Config
     private(set) var droppedCount = 0          // 掉出前沿的金币数（计分）
-    var onCoinDropped: (() -> Void)?
+    /// 有金币从前沿掉落；参数为是否特殊金币（主线程回调）
+    var onCoinDropped: ((_ isSpecial: Bool) -> Void)?
+    /// 特殊金币：白金色、自发光
+    private lazy var specialGeometry: SCNCylinder = {
+        let g = SCNCylinder(radius: CGFloat(config.coinRadius), height: CGFloat(config.coinThickness))
+        g.radialSegmentCount = 24
+        let m = SCNMaterial()
+        m.lightingModel = .physicallyBased
+        m.diffuse.contents = UIColor(red: 1, green: 0.97, blue: 0.8, alpha: 1)
+        m.emission.contents = UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 1)
+        m.metalness.contents = 0.6
+        m.roughness.contents = 0.2
+        g.materials = [m]
+        return g
+    }()
+    private static let specialName = "special"
 
     private var coins: [SCNNode] = []
     private let coinGeometry: SCNCylinder
@@ -197,9 +212,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     // MARK: 金币
     @discardableResult
-    func addCoin(at position: SCNVector3, tilt: Float = 0, velocity: SCNVector3 = SCNVector3Zero) -> SCNNode? {
+    func addCoin(at position: SCNVector3, tilt: Float = 0, velocity: SCNVector3 = SCNVector3Zero, special: Bool = false) -> SCNNode? {
         guard coins.count < config.maxCoins else { return nil }
-        let node = SCNNode(geometry: coinGeometry)
+        let node = SCNNode(geometry: special ? specialGeometry : coinGeometry)
+        if special { node.name = PusherScene3D.specialName }
         node.position = position
         node.eulerAngles = SCNVector3(tilt, Float.random(in: 0...(2 * .pi)), tilt * 0.5)
         node.castsShadow = true
@@ -244,13 +260,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     /// 从上方投下一枚金币，落到推板顶面（上层台面）。xFraction ∈ [-1, 1]
-    func dropCoin(xFraction: Float) {
+    func dropCoin(xFraction: Float, special: Bool = false) {
         let c = config
         let x = max(-1, min(1, xFraction)) * (c.deckWidth / 2 - c.coinRadius - 0.1)
         let pusherTopZ = pusher.presentation.position.z + c.pusherDepth / 2 - 0.55
         addCoin(at: SCNVector3(x, 4.5, pusherTopZ),
                 tilt: Float.random(in: -1.2...1.2),
-                velocity: SCNVector3(Float.random(in: -0.3...0.3), -2, Float.random(in: 0.5...1.5)))
+                velocity: SCNVector3(Float.random(in: -0.3...0.3), -2, Float.random(in: 0.5...1.5)),
+                special: special)
     }
 
     // MARK: 每帧：回收掉出前沿的金币 + 统计
@@ -267,19 +284,19 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     func renderer(_ renderer: SCNSceneRenderer, didSimulatePhysicsAtTime time: TimeInterval) {
-        var removed = 0
+        var removed: [Bool] = []
         coins.removeAll { node in
             if node.presentation.position.y < -2.5 {
+                removed.append(node.name == PusherScene3D.specialName)
                 node.removeFromParentNode()
-                removed += 1
                 return true
             }
             return false
         }
-        if removed > 0 {
-            droppedCount += removed
+        if !removed.isEmpty {
+            droppedCount += removed.count
             DispatchQueue.main.async { [weak self] in
-                for _ in 0..<removed { self?.onCoinDropped?() }
+                for special in removed { self?.onCoinDropped?(special) }
             }
         }
     }

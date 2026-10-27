@@ -195,7 +195,7 @@ final class GameLayoutTests: XCTestCase {
         let l = screens[1].layout
         state.updateLayout(l)
         var received: [CGFloat] = []
-        state.onCoinToPusher = { received.append($0) }
+        state.onCoinToPusher = { fraction, _ in received.append(fraction) }
         defer { state.onCoinToPusher = nil }
         state.coinReachedPusher(x: l.centerX)
         state.coinReachedPusher(x: l.fieldMinX)

@@ -19,14 +19,19 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     private let coinRoot = SKNode()
     private var faceTexture: SKTexture!
     private var edgeTexture: SKTexture!
+    private var specialTexture: SKTexture!
     private var lastUpdate: TimeInterval = 0
 
     /// 每枚金币的状态
     private final class CoinInfo {
         var flipPhase = CGFloat.random(in: 0...(2 * .pi))
         var flipSpeed = CGFloat.random(in: 7...12)
+        var crossedBattle = false
         var crossedFruit = false
         var crossedBonus = false
+        var isSpecial = false
+        /// 中奖金币雨：纯视觉，不触发任何事件
+        var isDecorative = false
         var lastObstacleHit: TimeInterval = 0
     }
 
@@ -50,6 +55,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         let r = newLayout.coinRadius
         faceTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: false))
         edgeTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: true))
+        specialTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: false, special: true))
         // 重力：从投币口到推币台自由下落约 1 秒（加上空气阻力和弹跳，实际约 1.3～1.6 秒），与屏幕高度成比例
         let fall = newLayout.bedEntryY - newLayout.coinSpawnY
         let accel = 2 * fall / (1.0 * 1.0)
@@ -93,9 +99,18 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     func screenY(_ node: SKNode) -> CGFloat { size.height - node.position.y }
 
     // MARK: 生成金币
-    private func spawn(_ request: Active2DCoin) {
+    private func spawn(_ request: Active2DCoin, decorative: Bool = false) {
         let r = layout.coinRadius
-        let node = SKSpriteNode(texture: faceTexture, size: CGSize(width: r * 2, height: r * 2))
+        let node = SKSpriteNode(texture: request.isSpecial ? specialTexture : faceTexture, size: CGSize(width: r * 2, height: r * 2))
+        if request.isSpecial {
+            // 特殊金币：外圈光晕
+            let glow = SKShapeNode(circleOfRadius: r * 1.5)
+            glow.fillColor = UIColor(red: 1, green: 0.95, blue: 0.6, alpha: 0.35)
+            glow.strokeColor = .clear
+            glow.glowWidth = r * 0.6
+            glow.zPosition = -1
+            node.addChild(glow)
+        }
         node.position = point(CGPoint(x: request.x, y: request.y))
         let body = SKPhysicsBody(circleOfRadius: r * 0.92)
         body.categoryBitMask = Category.coin
@@ -109,7 +124,14 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         body.usesPreciseCollisionDetection = true
         body.velocity = CGVector(dx: request.vx, dy: -request.vy)
         node.physicsBody = body
-        node.userData = ["info": CoinInfo()]
+        let info = CoinInfo()
+        info.isSpecial = request.isSpecial
+        info.isDecorative = decorative
+        if decorative {
+            body.collisionBitMask = Category.wall | Category.obstacle
+            body.contactTestBitMask = 0
+        }
+        node.userData = ["info": info]
         coinRoot.addChild(node)
     }
 
@@ -122,9 +144,21 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         if !state.pendingDrops.isEmpty {
             let drops = state.pendingDrops
             state.pendingDrops.removeAll()
-            drops.forEach(spawn)
+            drops.forEach { spawn($0) }
+        }
+        // 中奖金币雨：每帧放出几枚，从顶部随机位置落下
+        if state.pendingCoinRain > 0 {
+            let n = min(3, state.pendingCoinRain)
+            state.pendingCoinRain -= n
+            for _ in 0..<n {
+                spawn(Active2DCoin(x: CGFloat.random(in: layout.fieldMinX...layout.fieldMaxX),
+                                   y: layout.sliderTrack.minY,
+                                   vx: CGFloat.random(in: -60...60),
+                                   vy: CGFloat.random(in: 20...120)), decorative: true)
+            }
         }
 
+        let battleLine = layout.dropField.midY
         let fruitLine = layout.fruitBar.midY
         let bonusLine = layout.bonusLane.midY
         for case let node as SKSpriteNode in coinRoot.children {
@@ -136,8 +170,16 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
             info.flipPhase += info.flipSpeed * CGFloat(dt)
             let c = abs(cos(info.flipPhase))
             node.xScale = max(0.12, c)
-            node.texture = c < 0.3 ? edgeTexture : faceTexture
+            node.texture = c < 0.3 ? edgeTexture : (info.isSpecial ? specialTexture : faceTexture)
 
+            if info.isDecorative {
+                if y >= layout.bedEntryY { node.removeFromParent() }
+                continue
+            }
+            if !info.crossedBattle && y >= battleLine {
+                info.crossedBattle = true
+                state.coinCrossedBattle()
+            }
             if !info.crossedFruit && y >= fruitLine {
                 info.crossedFruit = true
                 state.coinCrossedFruitRow(x: x)
@@ -147,7 +189,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
                 state.coinCrossedBonusLane(x: x)
             }
             if y >= layout.bedEntryY {
-                state.coinReachedPusher(x: x)
+                state.coinReachedPusher(x: x, isSpecial: info.isSpecial)
                 node.removeFromParent()
             } else if y > size.height + 50 || x < -50 || x > size.width + 50 {
                 node.removeFromParent()
@@ -169,7 +211,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     var activeCoinCount: Int { coinRoot.children.count }
 
     // MARK: 金币贴图（代码绘制，正面星形，侧面为暗金色窄条）
-    static func coinImage(diameter: CGFloat, edge: Bool) -> UIImage {
+    static func coinImage(diameter: CGFloat, edge: Bool, special: Bool = false) -> UIImage {
         let scale: CGFloat = 3
         let size = CGSize(width: diameter, height: diameter)
         let format = UIGraphicsImageRendererFormat()
@@ -187,9 +229,12 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
                 cg.drawLinearGradient(g, start: CGPoint(x: 0, y: 0), end: CGPoint(x: diameter, y: 0), options: [])
                 return
             }
-            let colors = [UIColor(red: 1, green: 0.95, blue: 0.65, alpha: 1).cgColor,
-                          UIColor(red: 1, green: 0.8, blue: 0.2, alpha: 1).cgColor,
-                          UIColor(red: 0.8, green: 0.5, blue: 0.05, alpha: 1).cgColor] as CFArray
+            // 特殊金币：白金色，更亮
+            let colors = (special
+                ? [UIColor.white.cgColor, UIColor(red: 1, green: 0.97, blue: 0.75, alpha: 1).cgColor, UIColor(red: 0.95, green: 0.75, blue: 0.3, alpha: 1).cgColor]
+                : [UIColor(red: 1, green: 0.95, blue: 0.65, alpha: 1).cgColor,
+                   UIColor(red: 1, green: 0.8, blue: 0.2, alpha: 1).cgColor,
+                   UIColor(red: 0.8, green: 0.5, blue: 0.05, alpha: 1).cgColor]) as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.6, 1])!
             cg.addEllipse(in: rect)
             cg.clip()
