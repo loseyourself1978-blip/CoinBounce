@@ -30,8 +30,12 @@ struct GameLayout: Equatable {
     let coinSliderTravel: CGFloat      // COIN 滑块偏离中心的最大距离
     let fieldMinX: CGFloat             // 下落金币的左右边界（金币中心）
     let fieldMaxX: CGFloat
-    let pegRadius: CGFloat
-    let pegRows: [[CGPoint]]           // 战斗区格挡，3 行（3/4/3 个）
+    let slotObstacleRadius: CGFloat
+    let slotObstacles: [CGPoint]       // 老虎机每个符号格的碰撞点（5×3），金币在符号之间弹跳
+    let spinObstacle: CGPoint          // SPIN 按钮也是障碍物
+    let spinObstacleRadius: CGFloat
+    let fruitPinRadius: CGFloat
+    let fruitPins: [CGPoint]           // 水果灯之间的小钉
     let fruitCenters: [CGPoint]        // 7 个水果
     let fruitLampWidth: CGFloat
     let fruitHitHalfWidth: CGFloat
@@ -57,7 +61,8 @@ struct GameLayout: Equatable {
     static let legacyBedLength: CGFloat = 215
 
     /// 各区域占安全区内高度的比例，合计 1
-    static let heightRatios: [CGFloat] = [0.075, 0.155, 0.045, 0.165, 0.080, 0.045, 0.325, 0.110]
+    /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
+    static let heightRatios: [CGFloat] = [0.07, 0.05, 0.16, 0.12, 0.075, 0.05, 0.355, 0.12]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -84,8 +89,8 @@ struct GameLayout: Equatable {
             y += h
         }
         jackpot = bands[0]
-        slotMachine = bands[1].insetBy(dx: m, dy: 0)
-        sliderTrack = bands[2]
+        sliderTrack = bands[1]
+        slotMachine = bands[2].insetBy(dx: m, dy: 0)
         dropField = bands[3].insetBy(dx: m, dy: 0)
         fruitBar = bands[4]
         bonusLane = bands[5]
@@ -106,17 +111,21 @@ struct GameLayout: Equatable {
         fieldMinX = left + coinRadius
         fieldMaxX = right - coinRadius
 
-        // 战斗区格挡：放在两侧人物之间（人物中心约在 13% / 87% 宽度），
-        // 纵向放在 30%、55%、80% 高度，避开顶部的 VS / 连击文字
-        pegRadius = 6
-        let pegStep = contentW * 0.15
-        let field = bands[3]
-        let rowYs = [0.30, 0.55, 0.80].map { field.minY + field.height * $0 }
-        pegRows = [
-            [-1, 0, 1].map { CGPoint(x: centerX + pegStep * $0, y: rowYs[0]) },
-            [-1.5, -0.5, 0.5, 1.5].map { CGPoint(x: centerX + pegStep * $0, y: rowYs[1]) },
-            [-1, 0, 1].map { CGPoint(x: centerX + pegStep * $0, y: rowYs[2]) }
-        ]
+        // 老虎机符号格就是下落区的障碍物：每格中心一个碰撞圆（与 SlotMachineView 的 5 列、3 行、列间距 4 一致）
+        let reelSpacing: CGFloat = 4
+        let cellW = (slotReels.width - reelSpacing * 4) / 5
+        let cellH = slotReels.height / 3
+        slotObstacleRadius = max(6, min(cellW, cellH) * 0.3)
+        var obstacles: [CGPoint] = []
+        for row in 0..<3 {
+            for col in 0..<5 {
+                obstacles.append(CGPoint(x: slotReels.minX + (cellW + reelSpacing) * CGFloat(col) + cellW / 2,
+                                         y: slotReels.minY + cellH * (CGFloat(row) + 0.5)))
+            }
+        }
+        slotObstacles = obstacles
+        spinObstacle = CGPoint(x: spinButton.midX, y: spinButton.midY)
+        spinObstacleRadius = spinButton.width / 2
 
         // 水果：7 等分内容宽度；判定宽度按 v9.5 比例（间距 40 对应 28 / 22）
         let lampW = contentW / 7
@@ -126,6 +135,8 @@ struct GameLayout: Equatable {
         fruitHitHalfWidth = lampW * (28.0 / 40.0)
         fruitBaffleXs = (1..<7).map { left + lampW * CGFloat($0) }
         fruitBaffleHalfWidth = lampW * (22.0 / 40.0)
+        fruitPinRadius = 4
+        fruitPins = fruitBaffleXs.map { CGPoint(x: $0, y: bands[4].minY + bands[4].height * 0.2) }
 
         bonusSliderWidth = fruitLampWidth
         bonusSliderTravel = max(0, contentW / 2 - bonusSliderWidth / 2)
@@ -149,7 +160,7 @@ struct GameLayout: Equatable {
 
     /// 自上而下的全部区域，用于检查是否越界、重叠
     var regions: [(name: String, frame: CGRect)] {
-        [("jackpot", jackpot), ("slotMachine", slotMachine), ("sliderTrack", sliderTrack),
+        [("jackpot", jackpot), ("sliderTrack", sliderTrack), ("slotMachine", slotMachine),
          ("dropField", dropField), ("fruitBar", fruitBar), ("bonusLane", bonusLane),
          ("pusher", pusher), ("dropButton", dropButton)]
     }
@@ -160,5 +171,17 @@ struct GameLayout: Equatable {
 
     func bonusSliderCenter(offset: CGFloat) -> CGPoint {
         CGPoint(x: centerX + offset, y: bonusLane.midY)
+    }
+
+    /// 金币横坐标落在哪一个水果灯的列（0…6）；在内容区外返回 nil
+    func fruitColumn(forX x: CGFloat) -> Int? {
+        let left = fruitCenters[0].x - fruitLampWidth / 2
+        let col = Int(floor((x - left) / fruitLampWidth))
+        return (0..<fruitCenters.count).contains(col) ? col : nil
+    }
+
+    /// 金币是否正从 BONUS 滑块中间穿过
+    func bonusContains(x: CGFloat, offset: CGFloat) -> Bool {
+        abs(x - bonusSliderCenter(offset: offset).x) < bonusSliderWidth / 2
     }
 }

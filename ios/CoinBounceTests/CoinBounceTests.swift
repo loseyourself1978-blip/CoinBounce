@@ -19,7 +19,7 @@ final class CoinBounceTests: XCTestCase {
         state.saveStore.clear()
         // 重置到干净状态
         state.availableCoins = 100
-        state.active2DCoins.removeAll()
+        state.pendingDrops.removeAll()
         state.bedCoins.removeAll()
         state.fruitsLit = Array(repeating: false, count: 7)
         state.litFruitIndex = nil
@@ -51,13 +51,13 @@ final class CoinBounceTests: XCTestCase {
 
     func test_dropCoin_spawnsCoin() {
         state.dropCoin()
-        XCTAssertEqual(state.active2DCoins.count, 1, "应生成一枚2D金币")
+        XCTAssertEqual(state.pendingDrops.count, 1, "应排队一枚待下落的金币")
     }
 
     func test_dropCoin_failsWhenZeroBalance() {
         state.availableCoins = 0
         state.dropCoin()
-        XCTAssertEqual(state.active2DCoins.count, 0, "余额为零时不应生成金币")
+        XCTAssertEqual(state.pendingDrops.count, 0, "余额为零时不应生成金币")
     }
 
     func test_dropCoin_zeroBalance_cannotDrop() {
@@ -65,7 +65,7 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertFalse(state.canDropCoin, "金币为 0 时投币按钮应不可用")
         state.dropCoin()
         XCTAssertEqual(state.availableCoins, 0, "金币为 0 时投币不应扣成负数")
-        XCTAssertTrue(state.active2DCoins.isEmpty)
+        XCTAssertTrue(state.pendingDrops.isEmpty)
     }
 
     func test_dropCoin_setsHasDroppedFirstCoin() {
@@ -81,12 +81,12 @@ final class CoinBounceTests: XCTestCase {
             state.dropCoin()
         }
         XCTAssertEqual(state.availableCoins, 95, "连投5枚金币后余额为95")
-        XCTAssertEqual(state.active2DCoins.count, 5, "物理队列中应有5枚2D金币")
+        XCTAssertEqual(state.pendingDrops.count, 5, "下落队列中应有5枚金币")
     }
 
     func test_dropCoin_initialVelocity_isDownward() {
         state.dropCoin()
-        let coin = state.active2DCoins.first!
+        let coin = state.pendingDrops.first!
         XCTAssertGreaterThan(coin.vy, 0, "金币初始Y速度应向下（正值）")
     }
 
@@ -112,15 +112,10 @@ final class CoinBounceTests: XCTestCase {
     // MARK: - 3. 金币物理引擎测试
     // ============================================================
 
-    func test_physics_step_movesCoinsDownward() {
-        var coin = Active2DCoin(x: 0, y: -200, vx: 0, vy: 0)
-        state.active2DCoins.append(coin)
-        
-        // 模拟物理更新
+    func test_physics_step_movesBedCoin() {
+        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
         state.updateFrame()
-        
-        let updatedCoin = state.active2DCoins.first!
-        XCTAssertGreaterThan(updatedCoin.y, -200, "重力作用下金币应向下移动")
+        XCTAssertGreaterThan(state.bedCoins[0].y, 600, "推币台金币按速度前进")
     }
 
     func test_frameDelta_usesActualInterval() {
@@ -134,37 +129,19 @@ final class CoinBounceTests: XCTestCase {
     }
 
     func test_physics_halfStepMovesLessThanFullStep() {
-        state.active2DCoins = [Active2DCoin(x: 0, y: -200, vx: 0, vy: 100)]
+        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
         state.step(dt: 1.0 / 120.0)
-        let half = state.active2DCoins[0].y + 200
-        state.active2DCoins = [Active2DCoin(x: 0, y: -200, vx: 0, vy: 100)]
+        let half = state.bedCoins[0].y - 600
+        state.bedCoins = [PusherCoin(x: 200, y: 600, vx: 0, vy: 80)]
         state.step(dt: 1.0 / 60.0)
-        let full = state.active2DCoins[0].y + 200
+        let full = state.bedCoins[0].y - 600
         XCTAssertLessThan(half, full, "步长越小金币位移越小")
     }
 
-    func test_physics_boundary_bounce() {
-        var coin = Active2DCoin(x: -150, y: -200, vx: -100, vy: 0)
-        state.active2DCoins.append(coin)
-        
+    func test_physics_bedBoundary_clampsCoin() {
+        state.bedCoins = [PusherCoin(x: -150, y: 600, vx: -100, vy: 0)]
         state.updateFrame()
-        
-        let updatedCoin = state.active2DCoins.first!
-        XCTAssertGreaterThan(updatedCoin.vx, -100, "碰到左边界后X速度应反弹")
-    }
-
-    func test_coin_removedWhenBelowScreen() {
-        var coin = Active2DCoin(x: 0, y: 400, vx: 0, vy: 100)
-        state.active2DCoins.append(coin)
-        
-        // 多次更新直到金币离开屏幕
-        for _ in 0..<10 {
-            state.updateFrame()
-        }
-        
-        // 金币应该被移除或保留（取决于实现）
-        // 这里主要验证不会崩溃
-        XCTAssertTrue(true, "物理更新应正常执行")
+        XCTAssertGreaterThanOrEqual(state.bedCoins[0].x, state.layout.bedMinX, "推币台金币不会越过左边界")
     }
 
     // ============================================================
@@ -359,7 +336,7 @@ final class CoinBounceTests: XCTestCase {
 
     func test_iteration12_spawnHeight_calibrated() {
         state.dropCoin()
-        guard let coin = state.active2DCoins.last else {
+        guard let coin = state.pendingDrops.last else {
             XCTFail("金币生成失败")
             return
         }

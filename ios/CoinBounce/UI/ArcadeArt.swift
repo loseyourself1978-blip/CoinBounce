@@ -576,3 +576,30 @@ struct JackpotMarquee: View {
         }
     }
 }
+
+// MARK: - 跑马灯（投币口轨道上下两排）
+
+struct MarqueeLights: View {
+    let count: Int
+    var phaseOffset = 0
+    @State private var phase = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let d = min(geo.size.height, geo.size.width / CGFloat(count) * 0.6)
+            HStack(spacing: 0) {
+                ForEach(0..<count, id: \.self) { i in
+                    Circle()
+                        .fill(((i + phaseOffset) % 2 == 0) == phase ? ArtPalette.goldLight : ArtPalette.magenta)
+                        .shadow(color: ArtPalette.gold.opacity(0.8), radius: d * 0.4)
+                        .frame(width: d, height: d)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.45).repeatForever()) { phase.toggle() }
+        }
+    }
+}
