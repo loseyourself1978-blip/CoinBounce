@@ -58,3 +58,37 @@ extension Pusher3DTests {
         checkHandoffDiameter(GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)))
     }
 }
+
+// MARK: - v10.7 推板全部收回、两侧斜坡
+extension Pusher3DTests {
+    /// 推板收回到底时前沿与挡板前面齐平，挡板下沿与推板顶面的缝比金币还薄：
+    /// 推板上的金币会全部被挡板刮下，不会跟着推板回到挡板后面
+    func test_pusherRetractsFully_coinsScrapedOff() {
+        let pusher = PusherScene3D()
+        XCTAssertLessThanOrEqual(pusher.pusherFrontZRetracted, pusher.scraperFrontZ + 1e-4, "收回到底，推板前沿不露在挡板外")
+        XCTAssertLessThan(pusher.scraperBottomY - pusher.config.pusherHeight, pusher.config.coinThickness, "挡板与推板之间的缝比金币薄")
+        XCTAssertGreaterThan(pusher.pusherFrontZExtended, pusher.handoffPlaneZ + pusher.config.coinRadius, "推出时把交接处的金币全部推到台面上")
+        XCTAssertGreaterThan(pusher.handoffPlaneZ - pusher.config.coinRadius, pusher.scraperFrontZ, "金币落在挡板前方")
+    }
+
+    /// 斜坡在推板上方（不插进推板），外侧高、内侧低
+    func test_ramps_abovePusher_highOutside() {
+        let pusher = PusherScene3D()
+        XCTAssertEqual(pusher.rampNodes.count, 2)
+        for (node, side) in zip(pusher.rampNodes, [Float(-1), 1]) {
+            let (lo, hi) = node.boundingBox
+            var inner: Float = .infinity, outer: Float = -.infinity
+            var minY: Float = .infinity
+            for x in [lo.x, hi.x] { for y in [lo.y, hi.y] { for z in [lo.z, hi.z] {
+                let p = node.convertPosition(SCNVector3(x, y, z), to: nil)
+                minY = min(minY, p.y)
+                if (x > 0) == (side > 0) { outer = max(outer, p.y) } else { inner = min(inner, p.y) }
+            } } }
+            XCTAssertGreaterThan(minY, pusher.config.pusherHeight, "斜坡整体在推板顶面上方")
+            XCTAssertGreaterThan(outer, inner + 0.3, "外侧高、内侧低")
+            let edges = pusher.rampEdgeHeights(side: side)
+            XCTAssertGreaterThan(edges.inner, pusher.config.pusherHeight)
+            XCTAssertGreaterThan(edges.outer, edges.inner)
+        }
+    }
+}

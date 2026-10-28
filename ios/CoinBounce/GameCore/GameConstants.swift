@@ -40,14 +40,13 @@ struct GameConstants {
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
     static let bossDamagePerHit: Double = 0.06
     static let bossKOReward: Int = 20               // BOSS 被打倒奖励
-    /// 金币经过水果时点亮它的概率（v10.4 为 100%）。
-    /// 7 列均匀分布时，点亮全部水果平均需要 7 × H(7) / p ≈ 18.15 / p 枚：p = 0.45 → 约 40 枚
-    static let fruitLightChance: Double = 0.45
+    /// 水果灯命中区：金币中心离灯中心不超过「灯宽 × 该比例」才点亮（从灯中间穿过）
+    static let fruitHitZoneFraction: CGFloat = 0.35
 
     // 手感（v10.4 整体调快）
     static let dropFallSeconds: Double = 0.6       // 下落区自由落体时长（v10.5 为 0.77）；加上格挡弹跳，实际约 1.4～1.8 秒，参考约 1.4 秒
     static let dropLinearDamping: CGFloat = 0.3     // 下落空气阻力（v10.5 为 0.32）
-    static let pusherStroke: Float = 1.8            // 3D 推板行程（v10.5 为 2.1）
+    static let pusherStroke: Float = 2.2            // 3D 推板行程：每次从挡板后完全收回再推出 2.2（v10.6 为 1.8）
 
     // 滑块（按参考 App 测量）：COIN 约 ±17% 屏宽、周期约 4 秒；BONUS 约 ±16% 屏宽、周期约 4.6 秒
     static let coinSliderTravelFraction: CGFloat = 0.17

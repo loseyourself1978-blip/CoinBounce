@@ -9,7 +9,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     struct Config {
         var coinRadius: Float = 0.5
-        var coinThickness: Float = 0.14
+        var coinThickness: Float = 0.09   // 薄币：约为半径的 18%（校准半径时按比例更新）
         var deckWidth: Float = 8
         var deckDepth: Float = 7          // 下层台面：z 从 -deckDepth/2 到 +deckDepth/2
         var pusherHeight: Float = 0.7
@@ -31,13 +31,29 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     private lazy var specialGeometry: SCNCylinder = {
         let g = SCNCylinder(radius: CGFloat(config.coinRadius), height: CGFloat(config.coinThickness))
         g.radialSegmentCount = 24
-        let m = SCNMaterial()
-        m.lightingModel = .physicallyBased
-        m.diffuse.contents = UIColor(red: 1, green: 0.97, blue: 0.8, alpha: 1)
-        m.emission.contents = UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 1)
-        m.metalness.contents = 0.6
-        m.roughness.contents = 0.2
-        g.materials = [m]
+        // 与普通金币同样的浮雕正面和滚边，只是染成白金色并带柔和自发光（不再是一块纯白圆片）
+        let platinum = UIColor(red: 0.85, green: 0.93, blue: 1.0, alpha: 1)
+        let glow = UIColor(red: 1, green: 0.9, blue: 0.55, alpha: 1)
+        let side = SCNMaterial()
+        side.lightingModel = .physicallyBased
+        side.diffuse.contents = PusherScene3D.reededEdgeImage()
+        side.diffuse.wrapS = .repeat
+        side.diffuse.contentsTransform = SCNMatrix4MakeScale(24, 1, 1)
+        side.multiply.contents = platinum
+        side.emission.contents = glow
+        side.emission.intensity = 0.35
+        side.metalness.contents = 0.9
+        side.roughness.contents = 0.3
+        let face = SCNMaterial()
+        face.lightingModel = .physicallyBased
+        face.diffuse.contents = PusherScene3D.coinFaceImage()
+        face.normal.contents = PusherScene3D.coinFaceNormalImage()
+        face.multiply.contents = platinum
+        face.emission.contents = glow
+        face.emission.intensity = 0.3
+        face.metalness.contents = 0.85
+        face.roughness.contents = 0.3
+        g.materials = [side, face, face]
         return g
     }()
     private static let specialName = "special"
@@ -71,7 +87,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let camera = SCNCamera()
         // 按水平视角取景，保证整个台面宽度都在画面内；斜上方俯视，看得到台面纵深和金币厚度
         camera.projectionDirection = .horizontal
-        camera.fieldOfView = 33   // 收窄视角：台面撑满屏幕宽度，侧板压在屏幕边缘
+        camera.fieldOfView = 42   // 台面尽量撑满屏宽，同时两侧下方的侧板完整显示
         camera.zNear = 0.1
         camera.zFar = 100
         // 屏幕空间环境光遮蔽：金币堆叠处、推板下方自然变暗，增强立体感
@@ -108,14 +124,23 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
         // 金币材质：侧面金属金色，正反面用原创星形金币图案
         coinMaterial.lightingModel = .physicallyBased
-        coinMaterial.diffuse.contents = UIColor(red: 1.0, green: 0.76, blue: 0.22, alpha: 1)
-        coinMaterial.metalness.contents = 0.9
-        coinMaterial.roughness.contents = 0.3
+        // 侧面：齿纹边（竖条纹理 + 法线贴图），全金属
+        coinMaterial.diffuse.contents = PusherScene3D.reededEdgeImage()
+        coinMaterial.diffuse.wrapS = .repeat
+        coinMaterial.diffuse.contentsTransform = SCNMatrix4MakeScale(24, 1, 1)
+        coinMaterial.normal.contents = PusherScene3D.reededEdgeNormalImage()
+        coinMaterial.normal.wrapS = .repeat
+        coinMaterial.normal.contentsTransform = SCNMatrix4MakeScale(24, 1, 1)
+        coinMaterial.metalness.contents = 1.0
+        coinMaterial.roughness.contents = 0.25
+        // 正反面：原创星形图案 + 浮雕法线贴图（星形和内圈凸起、外缘倒角），金属反射环境光
         let face = SCNMaterial()
         face.lightingModel = .physicallyBased
         face.diffuse.contents = PusherScene3D.coinFaceImage()
-        face.metalness.contents = 0.75
-        face.roughness.contents = 0.28
+        face.normal.contents = PusherScene3D.coinFaceNormalImage()
+        face.normal.intensity = 1.0
+        face.metalness.contents = 0.95
+        face.roughness.contents = 0.22
         coinGeometry.materials = [coinMaterial, face, face]   // 侧面、顶面、底面
 
         // 原创程序纹理：台面菱格绒布、侧板漆面、推板花纹，配色与上半部的紫红 / 金 / 青绿统一
@@ -126,9 +151,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         felt.roughness.contents = 0.85
         let wood = material(UIColor(red: 0.55, green: 0.09, blue: 0.32, alpha: 1), metal: 0.35)   // 紫红漆面侧板
         wood.roughness.contents = 0.25
-        let red = material(UIColor.white)
+        // 推板：暗紫色金属 + 金色花纹，金属度高、略粗糙，读起来像金属
+        let red = material(UIColor.white, metal: 0.8)
         red.diffuse.contents = PusherScene3D.pusherImage()
-        red.roughness.contents = 0.35
+        red.roughness.contents = 0.3
         let gold = material(UIColor(red: 0.95, green: 0.72, blue: 0.25, alpha: 1), metal: 0.85)
         gold.roughness.contents = 0.25
         let neonTeal = material(UIColor(red: 0.1, green: 0.9, blue: 0.85, alpha: 1))
@@ -152,7 +178,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
         // 推板（运动学）：从台面后部伸出，前后往复
         let pusherNode = box(c.deckWidth - 0.05, c.pusherHeight, c.pusherDepth, red)
-        let restZ = -c.deckDepth / 2 - c.pusherDepth / 2 + 1.2
+        let restZ = pusherRestZ
         pusherNode.position = SCNVector3(0, c.pusherHeight / 2, restZ)
         let body = SCNPhysicsBody(type: .kinematic, shape: SCNPhysicsShape(node: pusherNode, options: nil))
         body.friction = 0.6
@@ -167,10 +193,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         edge.position = SCNVector3(0, c.pusherHeight / 2 + 0.01, c.pusherDepth / 2 - 0.02)
         pusherNode.addChildNode(edge)
 
-        // 刮板：固定在推板上方，离推板前沿（后退到底时）约 1 个单位；推板后退时上层金币被挡住，从前沿掉到下层
-        let scraperZ = restZ + c.pusherDepth / 2 - 1.15
-        let scraper = box(c.deckWidth, 2.0, 0.3, gold)
-        scraper.position = SCNVector3(0, c.pusherHeight + 1.0 + 0.02, scraperZ)
+        // 后挡板（刮板）：前表面正好在推板收回到底时的前沿位置，底边贴着推板顶面。
+        // 推板每次完全缩回到挡板后面，顶面上的金币全部被刮下、掉到下层台面
+        let scraper = box(c.deckWidth, PusherScene3D.scraperHeight, 0.3, red)
+        scraper.position = SCNVector3(0, scraperBottomY + PusherScene3D.scraperHeight / 2, scraperFrontZ - 0.15)
+        let scraperEdge = box(c.deckWidth, 0.08, 0.08, gold)
+        scraperEdge.position = SCNVector3(0, scraperBottomY + 0.04, scraperFrontZ + 0.02)
+        scene.rootNode.addChildNode(scraperEdge)
         staticBody(scraper, friction: 0.2)
         scene.rootNode.addChildNode(scraper)
 
@@ -205,6 +234,19 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             scene.rootNode.addChildNode(strip)
         }
 
+        // 前沿竖直截面：台面前沿下方的立面（深色渐变 + 金色边条 + 顶部发光缝），让玩家看清金币从这里掉落
+        let faceMat = material(UIColor.white, metal: 0.4)
+        faceMat.diffuse.contents = PusherScene3D.dropFaceImage()
+        faceMat.roughness.contents = 0.45
+        let dropFace = box(c.deckWidth + 0.6, 2.7, 0.12, faceMat)
+        dropFace.position = SCNVector3(0, -1.75, c.deckDepth / 2 - 0.02)
+        scene.rootNode.addChildNode(dropFace)
+        for side: Float in [-1, 1] {
+            let rail = box(0.18, 2.9, 0.22, gold)
+            rail.position = SCNVector3(side * (c.deckWidth / 2 + 0.3), -1.75, c.deckDepth / 2 + 0.05)
+            scene.rootNode.addChildNode(rail)
+        }
+
         // 前沿金边、下方接币盘（只做视觉）
         let lip = box(c.deckWidth + 0.6, 0.35, 0.35, gold)
         lip.position = SCNVector3(0, -0.22, c.deckDepth / 2 + 0.17)
@@ -225,11 +267,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
         // 两侧引导斜坡（后部角落）和装饰炮管
         for side: Float in [-1, 1] {
-            let ramp = box(1.6, 0.25, 3.2, wood)
-            ramp.position = SCNVector3(side * (c.deckWidth / 2 - 0.7), 0.55, -c.deckDepth / 2 + 1.0)
-            ramp.eulerAngles = SCNVector3(0, 0, -side * 0.5)
-            staticBody(ramp, friction: 0.2)
+            // 引导斜坡：在推板上方（不与推板相交），外侧高、内侧低，边缘落下的金币滑到推板顶面
+            let ramp = box(PusherScene3D.rampWidth, PusherScene3D.rampThickness, PusherScene3D.rampLength, wood)
+            ramp.position = rampCenter(side: side)
+            ramp.eulerAngles = SCNVector3(0, 0, side * PusherScene3D.rampAngle)
+            staticBody(ramp, friction: 0.12)
+            ramp.name = "ramp"
             scene.rootNode.addChildNode(ramp)
+            rampNodes.append(ramp)
 
             let barrel = SCNNode(geometry: SCNCylinder(radius: 0.35, height: 1.6))
             barrel.geometry?.materials = [material(UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1), metal: 0.7)]
@@ -291,7 +336,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let forward = SCNAction.moveBy(x: 0, y: 0, z: CGFloat(c.pusherStroke), duration: c.pusherPeriod / 2 / max(0.1, multiplier))
         forward.timingMode = .easeInEaseOut
         // 先回到起点再开始新的往复，避免位置漂移
-        let restZ = -c.deckDepth / 2 - c.pusherDepth / 2 + 1.2
+        let restZ = pusherRestZ
         let home = SCNAction.move(to: SCNVector3(0, c.pusherHeight / 2, restZ), duration: 0.15)
         pusher.runAction(.sequence([home, .repeatForever(.sequence([forward, forward.reversed()]))]), forKey: "push")
     }
@@ -359,11 +404,47 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 承载场景的视图，用于把 2D 下落区的屏幕位置换算到 3D
     weak var view: SCNView?
 
+    // MARK: 关键几何（测试也用）
+    static let scraperHeight: Float = 2.6
+    static let rampWidth: Float = 1.3
+    static let rampThickness: Float = 0.12
+    static let rampLength: Float = 2.2
+    static let rampAngle: Float = 0.38          // 约 22°，外侧高、内侧低
+    private(set) var rampNodes: [SCNNode] = []
+
+    /// 后挡板前表面 = 下层台面后缘
+    var scraperFrontZ: Float { -config.deckDepth / 2 }
+    /// 后挡板底边：比推板顶面高一点点，缝隙小于一枚金币厚度，金币钻不过去
+    var scraperBottomY: Float { config.pusherHeight + 0.01 }
+    /// 推板收回到底时的中心位置：前沿正好与挡板前表面齐平
+    var pusherRestZ: Float { scraperFrontZ - config.pusherDepth / 2 }
+    /// 推板前沿（收回到底 / 推到最远）
+    var pusherFrontZRetracted: Float { pusherRestZ + config.pusherDepth / 2 }
+    var pusherFrontZExtended: Float { pusherFrontZRetracted + config.pusherStroke }
+    /// 交接平面：挡板前方，落在推板顶面上
+    var handoffPlaneZ: Float { scraperFrontZ + config.coinRadius + 0.25 }
+
+    func rampCenter(side: Float) -> SCNVector3 {
+        // 内侧下沿比推板顶面高 0.12，外侧更高
+        let halfW = PusherScene3D.rampWidth / 2
+        let innerTop = config.pusherHeight + 0.12 + PusherScene3D.rampThickness / 2
+        let y = innerTop + sin(PusherScene3D.rampAngle) * halfW
+        return SCNVector3(side * (config.deckWidth / 2 - halfW), y, scraperFrontZ + PusherScene3D.rampLength / 2)
+    }
+
+    /// 斜坡底面内侧、外侧边缘的高度
+    func rampEdgeHeights(side: Float) -> (inner: Float, outer: Float) {
+        let c = rampCenter(side: side)
+        let dy = sin(PusherScene3D.rampAngle) * PusherScene3D.rampWidth / 2
+        let bottom = c.y - PusherScene3D.rampThickness / 2 / cos(PusherScene3D.rampAngle)
+        return (bottom - dy, bottom + dy)
+    }
+
     // MARK: 金币尺寸校准（2D → 3D 交接时屏幕上大小一致）
 
     /// 屏幕点 p 在推板顶面落币平面（z 固定）上对应的世界坐标
     func worldPointOnHandoffPlane(_ p: CGPoint, in view: SCNSceneRenderer) -> SCNVector3? {
-        let planeZ = pusher.presentation.position.z + config.pusherDepth / 2 - 0.55
+        let planeZ = handoffPlaneZ
         let near = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
         let far = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
         let dz = far.z - near.z
@@ -391,6 +472,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let radius = Float(targetDiameter / 2) * worldPerPoint
         guard radius > 0.05, abs(radius - config.coinRadius) / config.coinRadius > 0.01 else { return }
         config.coinRadius = radius
+        config.coinThickness = radius * 0.18
+        coinGeometry.height = CGFloat(config.coinThickness)
+        specialGeometry.height = CGFloat(config.coinThickness)
         coinGeometry.radius = CGFloat(radius)
         specialGeometry.radius = CGFloat(radius)
         coins.forEach { $0.removeFromParentNode() }
@@ -417,8 +501,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     func dropCoin(xFraction: Float, special: Bool = false) {
         let c = config
         let x = max(-1, min(1, xFraction)) * (c.deckWidth / 2 - c.coinRadius - 0.1)
-        let pusherTopZ = pusher.presentation.position.z + c.pusherDepth / 2 - 0.55
-        addCoin(at: SCNVector3(x, 4.5, pusherTopZ),
+        addCoin(at: SCNVector3(x, 4.5, handoffPlaneZ),
                 tilt: Float.random(in: -0.08...0.08),
                 velocity: SCNVector3(Float.random(in: -0.3...0.3), -2, Float.random(in: 0.5...1.5)),
                 special: special)
@@ -511,8 +594,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     static func pusherImage() -> UIImage {
         UIGraphicsImageRenderer(size: CGSize(width: 256, height: 128)).image { ctx in
             let cg = ctx.cgContext
-            let colors = [UIColor(red: 0.62, green: 0.08, blue: 0.3, alpha: 1).cgColor,
-                          UIColor(red: 0.35, green: 0.03, blue: 0.18, alpha: 1).cgColor] as CFArray
+            let colors = [UIColor(red: 0.30, green: 0.10, blue: 0.40, alpha: 1).cgColor,
+                          UIColor(red: 0.14, green: 0.04, blue: 0.20, alpha: 1).cgColor] as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])!
             cg.drawLinearGradient(g, start: .zero, end: CGPoint(x: 0, y: 128), options: [])
             cg.setStrokeColor(UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 0.9).cgColor)
@@ -525,6 +608,83 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             }
             cg.strokePath()
         }
+    }
+
+    /// 前沿立面：顶部发光缝、深紫到黑的竖向渐变和金色横纹
+    static func dropFaceImage() -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 64, height: 256)).image { ctx in
+            let cg = ctx.cgContext
+            let colors = [UIColor(red: 0.95, green: 0.75, blue: 0.3, alpha: 1).cgColor,
+                          UIColor(red: 0.25, green: 0.06, blue: 0.22, alpha: 1).cgColor,
+                          UIColor(red: 0.04, green: 0.01, blue: 0.04, alpha: 1).cgColor] as CFArray
+            let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.12, 1])!
+            cg.drawLinearGradient(g, start: .zero, end: CGPoint(x: 0, y: 256), options: [])
+            cg.setFillColor(UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 0.35).cgColor)
+            for y in stride(from: 60, to: 256, by: 48) { cg.fill(CGRect(x: 0, y: y, width: 64, height: 2)) }
+        }
+    }
+
+    // MARK: 金币贴图：齿纹边、浮雕法线
+
+    static func reededEdgeImage() -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16)).image { ctx in
+            UIColor(red: 0.95, green: 0.72, blue: 0.22, alpha: 1).setFill()
+            ctx.cgContext.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
+            UIColor(red: 0.62, green: 0.40, blue: 0.06, alpha: 1).setFill()
+            ctx.cgContext.fill(CGRect(x: 10, y: 0, width: 6, height: 16))
+        }
+    }
+
+    /// 齿纹边法线：横向正弦起伏
+    static func reededEdgeNormalImage() -> UIImage {
+        normalMap(width: 32, height: 4) { x, _ in 0.5 + 0.5 * sin(Double(x) / 32 * 2 * .pi) }
+    }
+
+    /// 币面浮雕：外缘倒角下沉、内圈凸环、五角星凸起
+    static func coinFaceNormalImage() -> UIImage {
+        let n = 128
+        let star = UIBezierPath()
+        for i in 0..<10 {
+            let a = Double(i) * .pi / 5 - .pi / 2
+            let r = i.isMultiple(of: 2) ? Double(n) * 0.26 : Double(n) * 0.12
+            let pt = CGPoint(x: Double(n) / 2 + cos(a) * r, y: Double(n) / 2 + sin(a) * r)
+            i == 0 ? star.move(to: pt) : star.addLine(to: pt)
+        }
+        star.close()
+        return normalMap(width: n, height: n) { x, y in
+            let dx = Double(x) - Double(n) / 2, dy = Double(y) - Double(n) / 2
+            let r = (dx * dx + dy * dy).squareRoot() / (Double(n) / 2)
+            var h = 0.5
+            if r > 0.9 { h -= (r - 0.9) * 4 }                 // 外缘倒角
+            if abs(r - 0.72) < 0.04 { h += 0.25 }             // 内圈凸环
+            if star.contains(CGPoint(x: x, y: y)) { h += 0.35 } // 星形凸起
+            return h
+        }
+    }
+
+    /// 由高度函数生成切线空间法线贴图
+    static func normalMap(width: Int, height: Int, height h: (Int, Int) -> Double) -> UIImage {
+        var heights = [Double](repeating: 0, count: width * height)
+        for y in 0..<height { for x in 0..<width { heights[y * width + x] = h(x, y) } }
+        func at(_ x: Int, _ y: Int) -> Double { heights[((y + height) % height) * width + ((x + width) % width)] }
+        var pixels = [UInt8](repeating: 255, count: width * height * 4)
+        let strength = 2.5
+        for y in 0..<height {
+            for x in 0..<width {
+                let dx = (at(x + 1, y) - at(x - 1, y)) * strength
+                let dy = (at(x, y + 1) - at(x, y - 1)) * strength
+                let len = (dx * dx + dy * dy + 1).squareRoot()
+                let i = (y * width + x) * 4
+                pixels[i] = UInt8(max(0, min(255, (-dx / len * 0.5 + 0.5) * 255)))
+                pixels[i + 1] = UInt8(max(0, min(255, (-dy / len * 0.5 + 0.5) * 255)))
+                pixels[i + 2] = UInt8(max(0, min(255, (1 / len * 0.5 + 0.5) * 255)))
+            }
+        }
+        let provider = CGDataProvider(data: Data(pixels) as CFData)!
+        let cg = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
+                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+                         provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)!
+        return UIImage(cgImage: cg)
     }
 
     static func backgroundImage() -> UIImage {

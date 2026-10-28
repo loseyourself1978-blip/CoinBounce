@@ -400,8 +400,9 @@ class GameState: ObservableObject {
 
     /// 金币穿过水果灯排：按所在列点亮水果
     func coinCrossedFruitRow(x: CGFloat) {
-        guard let column = layout.fruitColumn(forX: x) else { return }
-        guard randomUnit() < GameConstants.fruitLightChance else { return }
+        // 规则：金币从某个水果灯的中间穿过就点亮它；已亮的保持；7 个全亮后弹出卡牌，选完全部熄灭开始新一轮
+        guard let column = layout.fruitColumn(forX: x),
+              abs(x - layout.fruitCenters[column].x) <= layout.fruitLampWidth * GameConstants.fruitHitZoneFraction else { return }
         triggerFruitHit(index: column)
         combo.hit(type: "fruit")
         showComboText = combo.isActive

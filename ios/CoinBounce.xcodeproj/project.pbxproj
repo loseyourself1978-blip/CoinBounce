@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */; };
+		C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BB9432736E34B07E750DAC /* HelpView.swift */; };
 		C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075D82C2DCA77FB779AC10E /* RewardCards.swift */; };
 		C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C09E74094A4667BE570DF287 /* RewardCardTests.swift */; };
 		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
@@ -65,6 +67,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionParallax.swift; sourceTree = "<group>"; };
+		C0BB9432736E34B07E750DAC /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
 		C09E74094A4667BE570DF287 /* RewardCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCardTests.swift; sourceTree = "<group>"; };
 		C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleEffectsTests.swift; sourceTree = "<group>"; };
@@ -191,6 +195,8 @@
 				C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */,
 				C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */,
 				C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */,
+				C0BB9432736E34B07E750DAC /* HelpView.swift */,
+				C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -398,6 +404,8 @@
 				C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */,
 				C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */,
 				C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */,
+				C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */,
+				C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

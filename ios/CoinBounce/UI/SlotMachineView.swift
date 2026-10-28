@@ -87,6 +87,16 @@ struct SlotMachineFrame: View {
                                 ),
                                 lineWidth: 4
                             )
+                        // 立体倒角：外沿上亮下暗、内沿一圈内阴影，外框看起来是凸起的金属框、转轴窗口凹进去
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(LinearGradient(colors: [Color.white.opacity(0.7), .clear, Color.black.opacity(0.6)],
+                                                   startPoint: .top, endPoint: .bottom), lineWidth: 1.5)
+                            .padding(1)
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.black.opacity(0.75), lineWidth: 6)
+                            .blur(radius: 4)
+                            .padding(7)
+                            .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 7))
                         
                         // 闪烁彩灯：沿上下边框排列，不超出外框
                         VStack {
