@@ -9,6 +9,7 @@ struct CoinPusherView: View {
     @ObservedObject private var ads = AdsManager.shared
     @ObservedObject private var parallax = MotionParallax.shared
     @State private var arrowBounce = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showNoCoinsHint = false
     @State private var showSettings = false
     @State private var showHelp = false
@@ -85,7 +86,10 @@ struct CoinPusherView: View {
 
                 // 3D 推币台一直延伸到屏幕底部，投币按钮叠在台面前沿上（与参考布局一致）
                 PusherSceneView(pusher: pusher3D, coinDiameter: layout.coinRadius * 2,
-                                handoffY: layout.bedEntryY - layout.pusherView.minY)
+                                handoffY: layout.bedEntryY - layout.pusherView.minY,
+                                fieldLeft: layout.fieldMinX - layout.coinRadius - layout.pusherView.minX,
+                                fieldRight: layout.fieldMaxX + layout.coinRadius - layout.pusherView.minX,
+                                frontY: layout.dropButton.minY - layout.pusherView.minY)
                     .place(in: layout.pusherView)
 
                 // ── 投币按钮 ──
@@ -157,7 +161,7 @@ struct CoinPusherView: View {
     // MARK: - 动画控制
     private func startAnimations() {
         // 箭头跳动
-        withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+        withAnimation(.easeInOut(duration: reduceMotion ? 0.9 : 0.5).repeatForever(autoreverses: true)) {
             arrowBounce = true
         }
 
@@ -183,6 +187,10 @@ struct CoinPusherView: View {
         if ProcessInfo.processInfo.arguments.contains("-debugAutoSpin") {
             Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in gameState.spinSlot() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { gameState.spinSlot() }
+        }
+        // -debugResetTutorial：重新显示首次进入的投币引导箭头
+        if ProcessInfo.processInfo.arguments.contains("-debugResetTutorial") {
+            gameState.resetTutorial()
         }
         if ProcessInfo.processInfo.arguments.contains("-debugShowHelp") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showHelp = true }
@@ -536,23 +544,20 @@ struct CoinPusherView: View {
     // MARK: - 投币按钮
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat) -> some View {
-        // 按钮略偏下，引导箭头和提示放在按钮上方、本区域之内，不被推币台盖住
+        // 按钮贴在屏幕最下方（安全区之内，底边留 6 点），引导箭头和提示在按钮上方
         let buttonSize = min(w * 0.2, h * 0.88)
-        let buttonY = h * 0.02
+        let buttonY = h / 2 - 6 - buttonSize * 0.46
 
         ZStack {
             // 投币按钮（居中，贴近参考App）
             ZStack {
                 // 新手引导箭头（严格按状态位控制）
+                // 首次进入：金色下指箭头闪动，点过投币按钮后永久消失（减少动态效果时只淡入淡出、不上下跳）
                 if gameState.showTutorialArrow {
-                    VStack(spacing: 2) {
-                        Image(systemName: "chevron.down")
-                        Image(systemName: "chevron.down")
-                    }
-                    .font(.system(size: buttonSize * 0.18, weight: .black))
-                    .foregroundStyle(LinearGradient(colors: [.yellow, .white], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: .yellow.opacity(0.8), radius: 8)
-                    .offset(y: buttonY - buttonSize * 0.7 + (arrowBounce ? 5 : 0))
+                    TutorialArrow(size: buttonSize * 0.55, pulse: arrowBounce)
+                        .offset(y: buttonY - buttonSize * 1.05 + (arrowBounce && !reduceMotion ? 8 : 0))
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
 
                 // 六边形投币按钮（对齐参考App）
@@ -825,4 +830,36 @@ extension View {
 // MARK: - 预览
 #Preview {
     CoinPusherView()
+}
+
+/// 新手引导：金色下指箭头（原创矢量图形），pulse 时变亮、发光增强，配合外部的上下跳动形成闪动
+struct TutorialArrow: View {
+    let size: CGFloat
+    let pulse: Bool
+
+    var body: some View {
+        ArrowShape()
+            .fill(LinearGradient(colors: [Color(red: 1, green: 0.93, blue: 0.55), Color(red: 0.95, green: 0.68, blue: 0.1)],
+                                 startPoint: .top, endPoint: .bottom))
+            .overlay(ArrowShape().stroke(Color(red: 0.55, green: 0.32, blue: 0.02), lineWidth: 2))
+            .frame(width: size, height: size * 1.15)
+            .shadow(color: Color(red: 1, green: 0.8, blue: 0.2).opacity(pulse ? 0.95 : 0.3), radius: pulse ? 12 : 4)
+            .opacity(pulse ? 1 : 0.45)
+    }
+
+    struct ArrowShape: Shape {
+        func path(in r: CGRect) -> Path {
+            var p = Path()
+            let shaftW = r.width * 0.42, headH = r.height * 0.48
+            p.move(to: CGPoint(x: r.midX - shaftW / 2, y: r.minY))
+            p.addLine(to: CGPoint(x: r.midX + shaftW / 2, y: r.minY))
+            p.addLine(to: CGPoint(x: r.midX + shaftW / 2, y: r.maxY - headH))
+            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY - headH))
+            p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+            p.addLine(to: CGPoint(x: r.minX, y: r.maxY - headH))
+            p.addLine(to: CGPoint(x: r.midX - shaftW / 2, y: r.maxY - headH))
+            p.closeSubpath()
+            return p
+        }
+    }
 }

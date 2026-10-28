@@ -367,6 +367,12 @@ class GameState: ObservableObject {
     // MARK: - 行为接口
     var canDropCoin: Bool { availableCoins > 0 }
 
+    /// 重新显示首次投币引导（存档里记为未投过币）
+    func resetTutorial() {
+        hasDroppedFirstCoin = false
+        showTutorialArrow = true
+    }
+
     func dropCoin(atX explicitX: CGFloat? = nil) {
         guard canDropCoin else { return }
         availableCoins -= 1
