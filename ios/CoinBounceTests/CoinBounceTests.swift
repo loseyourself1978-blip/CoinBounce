@@ -331,3 +331,31 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertTrue(state.fruitsLit[5], "Iteration 9: 索引 5 的水果灯应能被正常点亮")
     }
 }
+
+// MARK: - v10.8 首次投币引导箭头
+extension CoinBounceTests {
+    /// 新存档显示箭头 → 点投币后隐藏，并写入存档（重启后不再出现）→ 重置存档后重新出现
+    func test_tutorialArrow_hiddenAfterFirstTap_persistsAcrossLaunch() {
+        state.applySave(.fresh)
+        XCTAssertTrue(state.showTutorialArrow, "首次进入显示箭头")
+        state.dropCoin()
+        XCTAssertFalse(state.showTutorialArrow, "点过投币后消失")
+        state.saveStore.save(state.currentSaveData)
+        let reloaded = try? XCTUnwrap(state.saveStore.load())
+        XCTAssertEqual(reloaded?.hasDroppedFirstCoin, true)
+        state.applySave(reloaded ?? .fresh)
+        XCTAssertFalse(state.showTutorialArrow, "下次启动不再显示")
+        state.saveStore.clear()
+        state.applySave(state.saveStore.load() ?? .fresh)
+        XCTAssertTrue(state.showTutorialArrow, "存档重置后重新显示")
+        state.pendingDrops.removeAll()
+    }
+
+    func test_resetTutorial_showsArrowAgain() {
+        state.dropCoin()
+        state.resetTutorial()
+        XCTAssertTrue(state.showTutorialArrow)
+        XCTAssertFalse(state.hasDroppedFirstCoin)
+        state.pendingDrops.removeAll()
+    }
+}

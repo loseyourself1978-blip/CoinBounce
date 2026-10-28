@@ -92,3 +92,56 @@ extension Pusher3DTests {
         }
     }
 }
+
+// MARK: - v10.8 落币区域与上方下落区同宽
+extension Pusher3DTests {
+    /// 交接线上 3D 台面左右两端的屏幕位置 = 2D 下落区左右边缘；台面前沿处透明墙仍在同两条竖线上
+    private func checkEdgeAlignment(_ layout: GameLayout, name: String, file: StaticString = #file, line: UInt = #line) {
+        let pusher = PusherScene3D()
+        let size = layout.pusherView.size
+        let view = SCNView(frame: CGRect(origin: .zero, size: size))
+        view.scene = pusher.scene
+        view.pointOfView = pusher.cameraNode
+        let handoffY = layout.bedEntryY - layout.pusherView.minY
+        let left = layout.fieldMinX - layout.coinRadius, right = layout.fieldMaxX + layout.coinRadius
+        let frontY = layout.dropButton.minY - layout.pusherView.minY
+        pusher.fit(view: view, viewSize: size, handoffY: handoffY, fieldLeft: left, fieldRight: right, frontY: frontY,
+                   coinDiameter: layout.coinRadius * 2)
+        // 台面前沿（金币掉落处）在投币按钮上方，完整可见
+        let frontEdge = view.projectPoint(SCNVector3(0, 0, pusher.config.deckDepth / 2))
+        print("FRONT_EDGE \(name) \(frontEdge.y) vs \(frontY)")
+        XCTAssertEqual(CGFloat(frontEdge.y), frontY, accuracy: 3, "\(name) 前沿位置", file: file, line: line)
+        let edges = pusher.handoffEdgePoints
+        let l = view.projectPoint(edges.left), r = view.projectPoint(edges.right)
+        print("EDGE_ALIGN \(name) 2D \(left)…\(right)  3D \(l.x)…\(r.x)  y \(l.y) vs \(handoffY)")
+        XCTAssertEqual(CGFloat(l.x), left, accuracy: 3, "\(name) 左边缘", file: file, line: line)
+        XCTAssertEqual(CGFloat(r.x), right, accuracy: 3, "\(name) 右边缘", file: file, line: line)
+        XCTAssertEqual(CGFloat(l.y), handoffY, accuracy: 3, "\(name) 交接线高度", file: file, line: line)
+        // 台面前沿（金币从这里掉落）处：墙的内侧面也投影在同两条竖线附近
+        let frontZ = pusher.config.deckDepth / 2
+        let half = pusher.playHalfWidth(frontZ)
+        let fl = view.projectPoint(SCNVector3(-half, pusher.config.pusherHeight * 0.5, frontZ))
+        let fr = view.projectPoint(SCNVector3(half, pusher.config.pusherHeight * 0.5, frontZ))
+        print("EDGE_ALIGN_FRONT \(name) \(fl.x)…\(fr.x)")
+        XCTAssertEqual(CGFloat(fl.x), left, accuracy: 3, "\(name) 前沿左边缘", file: file, line: line)
+        XCTAssertEqual(CGFloat(fr.x), right, accuracy: 3, "\(name) 前沿右边缘", file: file, line: line)
+        XCTAssertEqual(pusher.sideWalls.count, 2)
+    }
+
+    func test_landingEdges_matchDropField_iPhone17() {
+        checkEdgeAlignment(GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)), name: "iPhone17")
+    }
+
+    func test_landingEdges_matchDropField_iPhoneSE() {
+        checkEdgeAlignment(GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)), name: "iPhoneSE")
+    }
+
+    /// 两侧不再有可见侧板（只有透明碰撞墙和台面上的细金边）
+    func test_noVisibleSideCovers() {
+        let pusher = PusherScene3D()
+        for wall in pusher.sideWalls {
+            XCTAssertEqual(wall.geometry?.firstMaterial?.colorBufferWriteMask, [], "碰撞墙不可见")
+            XCTAssertNotNil(wall.physicsBody)
+        }
+    }
+}

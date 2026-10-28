@@ -16,8 +16,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var pusherDepth: Float = 5
         var pusherStroke: Float = GameConstants.pusherStroke
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
-        var maxCoins = 150
-        var prefillCoins = 130
+        var maxCoins = 190
+        var prefillCoins = 165
     }
 
     let scene = SCNScene()
@@ -87,16 +87,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let camera = SCNCamera()
         // 按水平视角取景，保证整个台面宽度都在画面内；斜上方俯视，看得到台面纵深和金币厚度
         camera.projectionDirection = .horizontal
-        camera.fieldOfView = 42   // 台面尽量撑满屏宽，同时两侧下方的侧板完整显示
+        camera.fieldOfView = 24
         camera.zNear = 0.1
         camera.zFar = 100
         // 屏幕空间环境光遮蔽：金币堆叠处、推板下方自然变暗，增强立体感
-        camera.screenSpaceAmbientOcclusionIntensity = 0.9
+        camera.screenSpaceAmbientOcclusionIntensity = 1.3
         camera.screenSpaceAmbientOcclusionRadius = 0.25
         let cameraNode = self.cameraNode
         cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 12.0, 12.0)
-        cameraNode.look(at: SCNVector3(0, -1.3, 0.7))   // 视线略低，台面前沿和接币盘填满推币台区域下部
+        // 相机拉远、视角收窄：透视变形小，台面前后宽度接近，像参考那样从正前上方看整台；
+        // 视角和俯角在视图尺寸确定后由 fitCamera 精确求解
+        cameraNode.position = PusherScene3D.cameraPosition
+        cameraNode.look(at: SCNVector3(0, -1.3, 0.7))
         scene.background.contents = PusherScene3D.backgroundImage()
         scene.rootNode.addChildNode(cameraNode)
 
@@ -132,7 +134,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         coinMaterial.normal.wrapS = .repeat
         coinMaterial.normal.contentsTransform = SCNMatrix4MakeScale(24, 1, 1)
         coinMaterial.metalness.contents = 1.0
-        coinMaterial.roughness.contents = 0.25
+        coinMaterial.roughness.contents = 0.32
+        // 参考里的金币偏暖、偏深（古铜金），高光是缎面而不是镜面：整体染暖、粗糙度略高
+        coinMaterial.multiply.contents = PusherScene3D.coinTint
         // 正反面：原创星形图案 + 浮雕法线贴图（星形和内圈凸起、外缘倒角），金属反射环境光
         let face = SCNMaterial()
         face.lightingModel = .physicallyBased
@@ -140,7 +144,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         face.normal.contents = PusherScene3D.coinFaceNormalImage()
         face.normal.intensity = 1.0
         face.metalness.contents = 0.95
-        face.roughness.contents = 0.22
+        face.roughness.contents = 0.32
+        face.multiply.contents = PusherScene3D.coinTint
         coinGeometry.materials = [coinMaterial, face, face]   // 侧面、顶面、底面
 
         // 原创程序纹理：台面菱格绒布、侧板漆面、推板花纹，配色与上半部的紫红 / 金 / 青绿统一
@@ -161,14 +166,6 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         neonTeal.emission.contents = UIColor(red: 0.1, green: 0.95, blue: 0.9, alpha: 1)
         let neonGold = material(UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 1))
         neonGold.emission.contents = UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 1)
-        let bulbA = material(UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 1))
-        let bulbB = material(UIColor(red: 0.1, green: 0.9, blue: 0.85, alpha: 1))
-        bulbA.emission.contents = UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 1)
-        bulbB.emission.contents = UIColor(red: 0.1, green: 0.95, blue: 0.9, alpha: 1)
-        bulbMaterials = [bulbA, bulbB]
-        let blinker = SCNNode()
-        blinker.runAction(.repeatForever(.sequence([.wait(duration: 0.45), .run { [weak self] _ in self?.toggleBulbs() }])))
-        scene.rootNode.addChildNode(blinker)
 
         // 下层台面
         let floor = box(c.deckWidth, 0.4, c.deckDepth, felt)
@@ -209,29 +206,22 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         staticBody(back, friction: 0.2)
         scene.rootNode.addChildNode(back)
 
-        // 左右挡板（透明碰撞 + 可见边框）
+        // 左右边界：不再有可见侧板。透明碰撞墙 + 台面上一条细金边，相机校准后沿屏幕左右边缘摆放（fitCamera），
+        // 使推币区域在屏幕上的宽度处处等于上方下落区宽度
+        let invisible = SCNMaterial()
+        invisible.colorBufferWriteMask = []
+        invisible.writesToDepthBuffer = false
         for side: Float in [-1, 1] {
-            let wall = box(0.3, 2.4, c.deckDepth + c.pusherDepth + 2, wood)
-            wall.position = SCNVector3(side * (c.deckWidth / 2 + 0.15), 1.0, -c.pusherDepth / 2)
-            staticBody(wall, friction: 0.1)
+            let wall = box(0.3, 2.4, 1, invisible)
+            wall.castsShadow = false
+            wall.name = "sideWall"
+            let rail = box(0.1, 0.1, 1, gold)
+            rail.name = "sideRail"
+            wall.addChildNode(rail)
             scene.rootNode.addChildNode(wall)
-            // 侧板顶部金色压条 + 一排灯泡（交替闪烁）
-            let trim = box(0.42, 0.12, c.deckDepth + c.pusherDepth + 2, gold)
-            trim.position = SCNVector3(side * (c.deckWidth / 2 + 0.15), 2.26, -c.pusherDepth / 2)
-            scene.rootNode.addChildNode(trim)
-            // 低面数灯泡；两组材质交替切换发光颜色来闪烁（不改透明度，避免透明渲染开销）
-            for k in 0..<6 {
-                let sphere = SCNSphere(radius: 0.11)
-                sphere.segmentCount = 8
-                sphere.materials = [k.isMultiple(of: 2) ? bulbA : bulbB]
-                let bulb = SCNNode(geometry: sphere)
-                bulb.position = SCNVector3(side * (c.deckWidth / 2 + 0.15), 2.38, c.deckDepth / 2 - 0.5 - Float(k) * 1.7)
-                scene.rootNode.addChildNode(bulb)
-            }
-            // 台面两侧霓虹灯带
-            let strip = box(0.06, 0.05, c.deckDepth, neonTeal)
-            strip.position = SCNVector3(side * (c.deckWidth / 2 - 0.05), 0.03, 0)
-            scene.rootNode.addChildNode(strip)
+            sideWalls.append(wall)
+            placeSideWall(wall, side: side, back: SCNVector3(side * (c.deckWidth / 2 + 0.15), 0, scraperFrontZ - c.pusherDepth),
+                          front: SCNVector3(side * (c.deckWidth / 2 + 0.15), 0, c.deckDepth / 2 + 0.6))
         }
 
         // 前沿竖直截面：台面前沿下方的立面（深色渐变 + 金色边条 + 顶部发光缝），让玩家看清金币从这里掉落
@@ -241,11 +231,6 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let dropFace = box(c.deckWidth + 0.6, 2.7, 0.12, faceMat)
         dropFace.position = SCNVector3(0, -1.75, c.deckDepth / 2 - 0.02)
         scene.rootNode.addChildNode(dropFace)
-        for side: Float in [-1, 1] {
-            let rail = box(0.18, 2.9, 0.22, gold)
-            rail.position = SCNVector3(side * (c.deckWidth / 2 + 0.3), -1.75, c.deckDepth / 2 + 0.05)
-            scene.rootNode.addChildNode(rail)
-        }
 
         // 前沿金边、下方接币盘（只做视觉）
         let lip = box(c.deckWidth + 0.6, 0.35, 0.35, gold)
@@ -265,7 +250,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             scene.rootNode.addChildNode(rim)
         }
 
-        // 两侧引导斜坡（后部角落）和装饰炮管
+        // 两侧引导斜坡（后部角落）
         for side: Float in [-1, 1] {
             // 引导斜坡：在推板上方（不与推板相交），外侧高、内侧低，边缘落下的金币滑到推板顶面
             let ramp = box(PusherScene3D.rampWidth, PusherScene3D.rampThickness, PusherScene3D.rampLength, wood)
@@ -276,16 +261,6 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             scene.rootNode.addChildNode(ramp)
             rampNodes.append(ramp)
 
-            let barrel = SCNNode(geometry: SCNCylinder(radius: 0.35, height: 1.6))
-            barrel.geometry?.materials = [material(UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1), metal: 0.7)]
-            barrel.eulerAngles = SCNVector3(0, 0, Float.pi / 2 + side * 0.25)
-            barrel.position = SCNVector3(side * (c.deckWidth / 2 + 0.3), 1.6, -c.deckDepth / 2 + 2.0)
-            scene.rootNode.addChildNode(barrel)
-            let ring = SCNNode(geometry: SCNTorus(ringRadius: 0.36, pipeRadius: 0.07))
-            ring.geometry?.materials = [gold]
-            ring.eulerAngles = barrel.eulerAngles
-            ring.position = SCNVector3(side * (c.deckWidth / 2 - 0.45), 1.6 - side * 0.0, -c.deckDepth / 2 + 2.0)
-            scene.rootNode.addChildNode(ring)
         }
 
         prefill()
@@ -311,17 +286,6 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         body.friction = friction
         body.restitution = 0.05
         node.physicsBody = body
-    }
-
-    // MARK: 灯泡闪烁
-    private var bulbMaterials: [SCNMaterial] = []
-    private var bulbPhase = false
-    private func toggleBulbs() {
-        bulbPhase.toggle()
-        let gold = UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 1), teal = UIColor(red: 0.1, green: 0.95, blue: 0.9, alpha: 1)
-        guard bulbMaterials.count == 2 else { return }
-        bulbMaterials[0].emission.contents = bulbPhase ? teal : gold
-        bulbMaterials[1].emission.contents = bulbPhase ? gold : teal
     }
 
     // MARK: 卡牌效果
@@ -387,8 +351,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             var z = c.deckDepth / 2 - c.coinRadius - 0.05 - Float(layer) * 0.6
             let frontLimit = -c.deckDepth / 2 + c.pusherStroke + 1.3
             while z > frontLimit && placed < c.prefillCoins {
-                var x = -c.deckWidth / 2 + c.coinRadius + (row.isMultiple(of: 2) ? 0.05 : d / 2)
-                while x < c.deckWidth / 2 - c.coinRadius && placed < c.prefillCoins {
+                let half = min(c.deckWidth / 2, playHalfWidth(z)) - 0.05
+                var x = -half + c.coinRadius + (row.isMultiple(of: 2) ? 0.05 : d / 2)
+                while x < half - c.coinRadius && placed < c.prefillCoins {
                     let y = c.coinThickness / 2 + Float(layer) * (c.coinThickness + 0.01) + 0.02
                     addCoin(at: SCNVector3(x + Float.random(in: -0.05...0.05), y, z), tilt: Float.random(in: -0.04...0.04))
                     placed += 1
@@ -423,6 +388,109 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     var pusherFrontZExtended: Float { pusherFrontZRetracted + config.pusherStroke }
     /// 交接平面：挡板前方，落在推板顶面上
     var handoffPlaneZ: Float { scraperFrontZ + config.coinRadius + 0.25 }
+
+    static let coinTint = UIColor(red: 1.0, green: 0.80, blue: 0.52, alpha: 1)
+    static let cameraPosition = SCNVector3(0, 15, 21)
+    private(set) var sideWalls: [SCNNode] = []
+    /// 最近一次 fitCamera 后，台面前沿在视图里的 y
+    private(set) var frontEdgeScreenY: CGFloat = 0
+    /// 纵深 z 处左右墙之间可用的半宽（墙沿屏幕边缘摆放，越靠前越窄）
+    private(set) var playHalfWidth: (Float) -> Float = { _ in 4 }
+    /// 交接线左右两端在 3D 中的位置（推板顶面、交接平面上，台面可用宽度的两端）
+    var handoffEdgePoints: (left: SCNVector3, right: SCNVector3) {
+        let y = config.pusherHeight, z = handoffPlaneZ, half = config.deckWidth / 2
+        return (SCNVector3(-half, y, z), SCNVector3(half, y, z))
+    }
+
+    /// 求解相机视角和俯角：交接线上台面左右两端正好投影到屏幕上的 fieldLeft / fieldRight（下落区左右边缘），
+    /// 交接点投影到 handoffY；然后把左右透明墙摆到「屏幕上始终在这两条竖线上」的位置
+    /// frontY：台面前沿（金币掉落处）在视图里的目标高度；给出时同时求相机仰角，让前沿正好落在投币按钮上方
+    func fitCamera(viewSize: CGSize, handoffY: CGFloat, fieldLeft: CGFloat, fieldRight: CGFloat, frontY: CGFloat? = nil) {
+        guard viewSize.width > 0, viewSize.height > 0, fieldRight > fieldLeft else { return }
+        let W = Float(viewSize.width), H = Float(viewSize.height)
+        let usable = Float(fieldRight - fieldLeft)
+        let target = SCNVector3(0, config.pusherHeight, handoffPlaneZ)
+
+        /// 给定相机位置，求俯角和焦距，使交接线两端对齐下落区边缘、交接点在 handoffY
+        func solve(_ P: SCNVector3) -> (pitch: Float, f: Float) {
+            let vy = target.y - P.y, vz = target.z - P.z
+            let dist = (vy * vy + vz * vz).squareRoot()
+            let alpha = atan2(-vy, -vz)           // 交接点在水平线以下的角度
+            var beta: Float = 0                   // 交接点在视线上方的角度
+            var f: Float = 1                      // 焦距（点）
+            for _ in 0..<30 {
+                f = usable * dist * cos(beta) / config.deckWidth
+                beta = atan((H / 2 - Float(handoffY)) / f)
+            }
+            return (alpha + beta, f)
+        }
+        /// 世界点在视图里的 y
+        func screenY(_ q: SCNVector3, P: SCNVector3, pitch: Float, f: Float) -> Float {
+            let dy = q.y - P.y, dz = q.z - P.z
+            let depth = -dz * cos(pitch) - dy * sin(pitch)
+            let up = dy * cos(pitch) - dz * sin(pitch)
+            return H / 2 - f * up / depth
+        }
+
+        var P = cameraNode.position
+        if let frontY {
+            // 相机绕交接点、在固定距离上调整仰角（二分）：仰角越低台面纵深越「压扁」，前沿越往上
+            let front = SCNVector3(0, 0, config.deckDepth / 2)
+            let base = PusherScene3D.cameraPosition
+            let dist = ((base.y - target.y) * (base.y - target.y) + (base.z - target.z) * (base.z - target.z)).squareRoot()
+            func position(_ e: Float) -> SCNVector3 { SCNVector3(0, target.y + dist * sin(e), target.z + dist * cos(e)) }
+            var lo: Float = 0.25, hi: Float = 1.35
+            for _ in 0..<40 {
+                let mid = (lo + hi) / 2
+                let p = position(mid)
+                let s = solve(p)
+                if screenY(front, P: p, pitch: s.pitch, f: s.f) > Float(frontY) { hi = mid } else { lo = mid }
+            }
+            P = position((lo + hi) / 2)
+        }
+        let (pitch, f) = solve(P)
+        frontEdgeScreenY = CGFloat(screenY(SCNVector3(0, 0, config.deckDepth / 2), P: P, pitch: pitch, f: f))
+        SCNTransaction.begin()
+        cameraNode.position = P
+        SCNTransaction.disableActions = true
+        cameraNode.eulerAngles = SCNVector3(-pitch, 0, 0)
+        cameraNode.camera?.projectionDirection = .horizontal
+        cameraNode.camera?.fieldOfView = CGFloat(2 * atan((W / 2) / f) * 180 / .pi)
+        SCNTransaction.commit()
+        SCNTransaction.flush()   // 立即生效，后面的投影 / 反投影（金币校准、测试）用的是新相机
+        // 屏幕横坐标 sx 在高度 h、纵深 z 处对应的世界 x（相机无偏航：x = (sx - W/2)·depth / f）
+        func worldX(_ sx: Float, h: Float, z: Float) -> Float {
+            let depth = -(z - P.z) * cos(pitch) - (h - P.y) * sin(pitch)
+            return (sx - W / 2) * depth / f
+        }
+        let h = config.pusherHeight * 0.5
+        let zBack = scraperFrontZ - config.pusherDepth, zFront = config.deckDepth / 2 + 0.6
+        let halfBack = worldX(Float(fieldRight), h: h, z: zBack), halfFront = worldX(Float(fieldRight), h: h, z: zFront)
+        playHalfWidth = { z in halfBack + (halfFront - halfBack) * (z - zBack) / (zFront - zBack) }
+        for (wall, side) in zip(sideWalls, [Float(-1), 1]) {
+            let sx = Float(side < 0 ? fieldLeft : fieldRight)
+            let back = SCNVector3(worldX(sx, h: h, z: zBack) + side * 0.15, 0, zBack)
+            let front = SCNVector3(worldX(sx, h: h, z: zFront) + side * 0.15, 0, zFront)
+            placeSideWall(wall, side: side, back: back, front: front)
+        }
+    }
+
+    /// 把透明墙（厚 0.3，内侧面在 back→front 连线向内 0.15 处）沿 back→front 摆放
+    private func placeSideWall(_ wall: SCNNode, side: Float, back: SCNVector3, front: SCNVector3) {
+        let dx = front.x - back.x, dz = front.z - back.z
+        let length = (dx * dx + dz * dz).squareRoot()
+        (wall.geometry as? SCNBox)?.length = CGFloat(length)
+        wall.position = SCNVector3((back.x + front.x) / 2, 1.0, (back.z + front.z) / 2)
+        wall.eulerAngles = SCNVector3(0, atan2(dx, dz), 0)
+        if let rail = wall.childNodes.first(where: { $0.name == "sideRail" }) {
+            (rail.geometry as? SCNBox)?.length = CGFloat(length)
+            rail.position = SCNVector3(-side * 0.1, -1.0 + 0.05, 0)   // 紧贴边界外侧，落在屏幕边缘的金色立柱下方
+        }
+        let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: wall.geometry!, options: nil))
+        body.friction = 0.1
+        body.restitution = 0.05
+        wall.physicsBody = body
+    }
 
     func rampCenter(side: Float) -> SCNVector3 {
         // 内侧下沿比推板顶面高 0.12，外侧更高
@@ -463,6 +531,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     /// 按视图尺寸和相机，把 3D 金币半径调到「交接点处屏幕直径 = 2D 金币直径」；尺寸变化时重新预铺
+    /// 视图尺寸确定后：先对齐相机，再按 2D 直径校准金币大小（交接平面随金币半径微移，所以再对齐一次）
+    func fit(view: SCNSceneRenderer, viewSize: CGSize, handoffY: CGFloat, fieldLeft: CGFloat, fieldRight: CGFloat,
+             frontY: CGFloat? = nil, coinDiameter: CGFloat) {
+        fitCamera(viewSize: viewSize, handoffY: handoffY, fieldLeft: fieldLeft, fieldRight: fieldRight, frontY: frontY)
+        calibrateCoinSize(view: view, viewSize: viewSize, handoffY: handoffY, targetDiameter: coinDiameter)
+        fitCamera(viewSize: viewSize, handoffY: handoffY, fieldLeft: fieldLeft, fieldRight: fieldRight, frontY: frontY)
+    }
+
     func calibrateCoinSize(view: SCNSceneRenderer, viewSize: CGSize, handoffY: CGFloat, targetDiameter: CGFloat) {
         guard viewSize.width > 0, targetDiameter > 0 else { return }
         let p = CGPoint(x: viewSize.width / 2, y: handoffY)
