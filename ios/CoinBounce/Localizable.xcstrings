@@ -45,6 +45,28 @@
         }
       }
     },
+    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row win coins; a full row is the JACKPOT.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币从 BONUS 滑块中间穿过会启动老虎机。中间一行连续 3 个以上相同符号赢金币，整行相同就是 JACKPOT。"
+          }
+        }
+      }
+    },
+    "A coin passing through the middle of a fruit lights it. Light all 7 fruits to pick a reward card, then the fruits reset.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币从水果灯中间穿过会点亮它。7 个水果全部点亮后可以选一张奖励卡，然后水果全部熄灭，开始新一轮。"
+          }
+        }
+      }
+    },
     "Ad Privacy Options": {
       "extractionState": "manual",
       "localizations": {
@@ -111,6 +133,39 @@
         }
       }
     },
+    "Coins are virtual and have no real-world value.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币是虚拟的，没有现实价值。"
+          }
+        }
+      }
+    },
+    "Coins crossing the battle hit the BOSS. Knock it out for 20 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过战斗区会攻击 BOSS，打倒它奖励 20 枚金币。"
+          }
+        }
+      }
+    },
+    "Coins fall from the slider at the top, bounce through the slot machine, the battle and the fruit row, then land on the pusher.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币从顶部滑块落下，弹跳着穿过老虎机、战斗区和水果灯排，最后落到推币台上。"
+          }
+        }
+      }
+    },
     "Coins slide off easier for 30s": {
       "extractionState": "manual",
       "localizations": {
@@ -129,6 +184,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "完成"
+          }
+        }
+      }
+    },
+    "Each coin pushed off the edge pays 1 coin.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每推落一枚金币奖励 1 枚。"
           }
         }
       }
@@ -177,6 +243,17 @@
         }
       }
     },
+    "Glowing coins are special: each one pushed off pays 10 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发光的是特殊金币：每推落一枚奖励 10 枚。"
+          }
+        }
+      }
+    },
     "HOT! x4": {
       "extractionState": "manual",
       "localizations": {
@@ -188,6 +265,17 @@
         }
       }
     },
+    "Help": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "帮助"
+          }
+        }
+      }
+    },
     "Help & Privacy": {
       "extractionState": "manual",
       "localizations": {
@@ -195,6 +283,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "帮助与隐私"
+          }
+        }
+      }
+    },
+    "How to Play": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "玩法说明"
           }
         }
       }
@@ -276,6 +375,17 @@
         }
       }
     },
+    "Out of coins? Watch a short ad for 50 coins, up to 5 times a day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币用完了？看一段短广告领 50 枚，每天最多 5 次。"
+          }
+        }
+      }
+    },
     "Privacy Policy": {
       "extractionState": "manual",
       "localizations": {
@@ -320,6 +430,17 @@
         }
       }
     },
+    "Rewards": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奖励规则"
+          }
+        }
+      }
+    },
     "Settings": {
       "extractionState": "manual",
       "localizations": {
@@ -360,6 +481,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "支持"
+          }
+        }
+      }
+    },
+    "Tap the $ button to drop a coin. Hold it to keep dropping.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击 $ 按钮投一枚金币，按住不放可以连续投币。"
+          }
+        }
+      }
+    },
+    "The pusher moves back and forth. Coins pushed off the front edge are yours.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推板前后往复，被推出前沿掉下去的金币都归你。"
           }
         }
       }

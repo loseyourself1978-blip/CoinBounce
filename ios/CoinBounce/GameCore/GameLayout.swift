@@ -57,7 +57,7 @@ struct GameLayout: Equatable {
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
     /// 按参考 App 逐帧测量的屏幕高度比例（扣除我们更紧凑的顶栏后换算）：
     /// 老虎机约占 27%（参考转轴窗口约占全屏 17%、连同 COIN 拱形轨道约 29%），战斗区约 9.5%，水果约 5.5%，BONUS 约 5.5%
-    static let heightRatios: [CGFloat] = [0.07, 0.055, 0.27, 0.095, 0.055, 0.055, 0.30, 0.10]
+    static let heightRatios: [CGFloat] = [0.07, 0.055, 0.27, 0.095, 0.055, 0.07, 0.285, 0.10]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(

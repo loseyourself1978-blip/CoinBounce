@@ -76,6 +76,18 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(missing, [], "以下界面文字没有翻译")
     }
 
+    /// 帮助页（玩法、奖励说明）每一条都有中文
+    func test_helpSheet_everyLine_hasChinese() throws {
+        let strings = try catalog("Localizable.xcstrings")
+        let text = try String(contentsOf: sourceDir.appendingPathComponent("UI/HelpView.swift"), encoding: .utf8)
+        let pattern = try NSRegularExpression(pattern: #"row\("[^"]+",\s*"([^"\n]+)"\)"#)
+        let keys = pattern.matches(in: text, range: NSRange(text.startIndex..., in: text)).map { (text as NSString).substring(with: $0.range(at: 1)) }
+        XCTAssertGreaterThanOrEqual(keys.count, 8, "玩法 + 奖励说明")
+        for key in keys + ["How to Play", "Rewards", "Help", "Done"] {
+            XCTAssertNotNil(value(strings[key], "zh-Hans"), "帮助页缺少中文：\(key)")
+        }
+    }
+
     func test_runtimeLookup_returnsChinese() throws {
         let path = try XCTUnwrap(Bundle.main.path(forResource: "zh-Hans", ofType: "lproj"))
         let zhBundle = try XCTUnwrap(Bundle(path: path))

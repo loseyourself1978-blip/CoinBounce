@@ -99,41 +99,57 @@ final class RewardCardTests: XCTestCase {
         XCTAssertEqual(state.queuedSpins, CardPool.freeSpinCount - 1, "另外两次排队，自动接着转")
     }
 
-    /// 用固定种子模拟：每枚金币均匀落在 7 列之一，按 fruitLightChance 点亮；一轮平均约 40 枚
-    func test_fruitRound_averagesAboutFortyCoins() {
+    /// 用固定种子模拟真实的落点：金币从往复的 COIN 滑块出口落下（x = 中心 + 行程·sin(相位)），
+    /// 经过老虎机格挡后横向散开（高斯分布），只有从水果灯中间穿过才点亮；统计一轮全亮平均要几枚
+    func test_fruitRound_realisticDrops_average() {
         var seed: UInt64 = 20261027
         func next() -> Double {
             seed = seed &* 6364136223846793005 &+ 1442695040888963407
             return Double(seed >> 11) / Double(1 << 53)
         }
-        state.randomUnit = next
+        func gaussian() -> Double {
+            let u = max(next(), 1e-12), v = next()
+            return (-2 * log(u)).squareRoot() * cos(2 * .pi * v)
+        }
+        let layout = state.layout
+        let spread = Double(layout.fieldMaxX - layout.fieldMinX) * 0.16
         let rounds = 400
         var total = 0
         for _ in 0..<rounds {
             state.fruitsLit = Array(repeating: false, count: 7)
             var coins = 0
-            while state.fruitsLit.contains(false) {
+            while state.fruitsLit.contains(false) && coins < 2000 {
                 coins += 1
-                let column = min(6, Int(next() * 7))
-                state.coinCrossedFruitRow(x: state.layout.fruitCenters[column].x)
+                let exit = Double(layout.centerX) + Double(layout.coinSliderTravel) * sin(next() * 2 * .pi)
+                let x = min(Double(layout.fieldMaxX), max(Double(layout.fieldMinX), exit + gaussian() * spread))
+                state.coinCrossedFruitRow(x: CGFloat(x))
             }
             total += coins
             state.showCardSelection = false
         }
         let average = Double(total) / Double(rounds)
-        XCTAssertEqual(average, 40, accuracy: 4, "一轮约 40 枚（实测 \(average)）")
+        XCTAssert((15...90).contains(average), "一轮平均 \(average) 枚，应在合理范围")
         print("FRUIT_ROUND_AVERAGE \(average)")
     }
 
-    func test_fruitLightChance() {
+    /// 规则：从水果灯中间穿过才点亮（没有随机），擦边不亮
+    func test_fruitLights_onlyWhenCrossingMiddle() {
         state.fruitsLit = Array(repeating: false, count: 7)
-        let x = state.layout.fruitCenters[2].x
-        state.randomUnit = { 0.99 }
-        state.coinCrossedFruitRow(x: x)
-        XCTAssertFalse(state.fruitsLit[2], "概率没中不点亮")
-        state.randomUnit = { 0 }
-        state.coinCrossedFruitRow(x: x)
-        XCTAssertTrue(state.fruitsLit[2])
+        let center = state.layout.fruitCenters[2].x
+        let w = state.layout.fruitLampWidth
+        state.coinCrossedFruitRow(x: center + w * 0.45)
+        XCTAssertFalse(state.fruitsLit[2], "擦边不点亮")
+        state.coinCrossedFruitRow(x: center + w * (GameConstants.fruitHitZoneFraction - 0.05))
+        XCTAssertTrue(state.fruitsLit[2], "从中间穿过必定点亮")
+        XCTAssertEqual(state.fruitsLit.filter { $0 }.count, 1, "只点亮这一盏")
+    }
+
+    /// 整排全亮后，选完卡全部熄灭
+    func test_allFruitsLit_clearAfterPick() {
+        offer([.coins100, .fastPusher, .freeSpins])
+        state.pickCard(.coins100)
+        state.finishCardPick()
+        XCTAssertFalse(state.fruitsLit.contains(true), "选完卡后清零熄灭")
     }
 
     func test_pick_specialCoins_nextDropsAreSpecial() {

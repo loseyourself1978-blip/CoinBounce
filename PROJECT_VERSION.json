@@ -1,8 +1,8 @@
 {
   "product": "CoinBounce",
-  "version": "10.6.0",
+  "version": "10.7.0",
   "spec_version": "8.0.0",
   "ui_design_system": "4.0",
-  "updated_at": "2026-10-26",
+  "updated_at": "2026-10-28",
   "notes": "Single source of truth for app+docs version linkage. Increment version on every accepted iteration; keep spec_version aligned with ProductSpec_v2.md."
 }

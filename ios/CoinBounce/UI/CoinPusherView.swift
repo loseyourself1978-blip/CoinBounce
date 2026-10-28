@@ -7,9 +7,11 @@ import SpriteKit
 struct CoinPusherView: View {
     @StateObject private var gameState = GameState.shared
     @ObservedObject private var ads = AdsManager.shared
+    @ObservedObject private var parallax = MotionParallax.shared
     @State private var arrowBounce = false
     @State private var showNoCoinsHint = false
     @State private var showSettings = false
+    @State private var showHelp = false
     /// 下落区物理场景（SpriteKit），整屏透明覆盖在各区域之上
     @State private var dropScene = DropFieldScene(gameState: GameState.shared)
     /// 3D 推币台（SceneKit）
@@ -182,6 +184,9 @@ struct CoinPusherView: View {
             Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in gameState.spinSlot() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { gameState.spinSlot() }
         }
+        if ProcessInfo.processInfo.arguments.contains("-debugShowHelp") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showHelp = true }
+        }
         if ProcessInfo.processInfo.arguments.contains("-debugShowSettings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { showSettings = true }
         }
@@ -243,9 +248,16 @@ struct CoinPusherView: View {
                 .padding(.top, 6)
         }
         .overlay(alignment: .topTrailing) {
-            SettingsButton { showSettings = true }
-                .padding(.trailing, 10)
-                .padding(.top, 4)
+            // 帮助在设置左边
+            HStack(spacing: 8) {
+                HelpButton { showHelp = true }
+                SettingsButton { showSettings = true }
+            }
+            .padding(.trailing, 10)
+            .padding(.top, 4)
+        }
+        .sheet(isPresented: $showHelp) {
+            HelpView()
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
@@ -339,8 +351,12 @@ struct CoinPusherView: View {
                 .frame(width: max(0, w - 20))
                 .clipped()
                 .offset(y: -h * 0.1)
+                // 视差：远处树林随手机倾斜反向移动
+                .offset(x: -parallax.offset.width * 1.5, y: -parallax.offset.height)
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            // 凹陷感：内阴影
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.7), lineWidth: 5).blur(radius: 3).clipShape(RoundedRectangle(cornerRadius: 8)))
             .padding(10)
 
             // 左侧勇士
@@ -748,47 +764,53 @@ struct LocalCoinCanvasLayer: View {
 struct HollowBonusSliderTarget: View {
     let width: CGFloat
     let maxHeight: CGFloat
-    
+
+    /// 盾牌外形
+    private func shield(_ w: CGFloat, _ h: CGFloat) -> Path {
+        Path { p in
+            p.move(to: CGPoint(x: 0, y: h * 0.2))
+            p.addLine(to: CGPoint(x: w / 2, y: 0))
+            p.addLine(to: CGPoint(x: w, y: h * 0.2))
+            p.addLine(to: CGPoint(x: w, y: h * 0.8))
+            p.addLine(to: CGPoint(x: w / 2, y: h))
+            p.addLine(to: CGPoint(x: 0, y: h * 0.8))
+            p.closeSubpath()
+        }
+    }
+
     var body: some View {
-        // 宽度 = layout.bonusSliderWidth，与物理命中范围一致
-        let exactWidth = width
-        let h = min(exactWidth * 0.45, maxHeight)
-        
-        ZStack {
-            // 黑底金边盾牌 (参考图)
-            Path { p in
-                p.move(to: CGPoint(x: 0, y: h * 0.2))
-                p.addLine(to: CGPoint(x: exactWidth/2, y: 0))
-                p.addLine(to: CGPoint(x: exactWidth, y: h * 0.2))
-                p.addLine(to: CGPoint(x: exactWidth, y: h * 0.8))
-                p.addLine(to: CGPoint(x: exactWidth/2, y: h))
-                p.addLine(to: CGPoint(x: 0, y: h * 0.8))
-                p.closeSubpath()
-            }
-            .fill(Color(red: 0.1, green: 0.1, blue: 0.1))
-            .overlay(
-                Path { p in
-                    p.move(to: CGPoint(x: 0, y: h * 0.2))
-                    p.addLine(to: CGPoint(x: exactWidth/2, y: 0))
-                    p.addLine(to: CGPoint(x: exactWidth, y: h * 0.2))
-                    p.addLine(to: CGPoint(x: exactWidth, y: h * 0.8))
-                    p.addLine(to: CGPoint(x: exactWidth/2, y: h))
-                    p.addLine(to: CGPoint(x: 0, y: h * 0.8))
-                    p.closeSubpath()
-                }
-                .stroke(Color.yellow, lineWidth: 2)
-            )
-            
-            HStack(spacing: 1) {
-                ArtCoin(size: h * 0.5)
+        // 宽度 = layout.bonusSliderWidth，与物理命中范围一致；更高、有厚度的立体铭牌
+        let w = width
+        let depth = max(3, maxHeight * 0.1)
+        let h = min(w * 0.72, maxHeight - depth)
+
+        ZStack(alignment: .top) {
+            // 侧面（厚度）：向下偏移的暗金色层
+            shield(w, h)
+                .fill(LinearGradient(colors: [ArtPalette.goldDeep, Color(red: 0.35, green: 0.2, blue: 0.02)], startPoint: .top, endPoint: .bottom))
+                .offset(y: depth)
+                .shadow(color: .black.opacity(0.7), radius: 4, x: 0, y: 4)
+            // 正面：黑金渐变 + 金色倒角描边 + 顶部高光
+            shield(w, h)
+                .fill(LinearGradient(colors: [Color(red: 0.22, green: 0.18, blue: 0.14), Color(red: 0.05, green: 0.04, blue: 0.03)], startPoint: .top, endPoint: .bottom))
+                .overlay(shield(w, h).stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: 2.5))
+                .overlay(
+                    shield(w, h)
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.35), .clear], startPoint: .top, endPoint: .center))
+                        .padding(3)
+                )
+            VStack(spacing: 0) {
+                ArtCoin(size: h * 0.36)
                 Text("BONUS")
-                    .font(.system(size: min(exactWidth * 0.2, h * 0.4), weight: .black))
-                    .foregroundColor(.yellow)
+                    .font(.system(size: min(w * 0.22, h * 0.3), weight: .black))
+                    .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
+            .frame(width: w, height: h)
         }
-        .frame(width: exactWidth, height: h)
+        .frame(width: w, height: h + depth, alignment: .top)
     }
 }
 
