@@ -71,25 +71,18 @@ extension Pusher3DTests {
         XCTAssertGreaterThan(pusher.handoffPlaneZ - pusher.config.coinRadius, pusher.scraperFrontZ, "金币落在挡板前方")
     }
 
-    /// 斜坡在推板上方（不插进推板），外侧高、内侧低
-    func test_ramps_abovePusher_highOutside() {
+    /// v11.1 斜坡：实心楔形块落在台面上，紧挨推板两侧（不与推板重叠），顶面外侧高、内侧低，内侧顶边高于推板顶面
+    func test_ramps_beside_pusher_highOutside() {
         let pusher = PusherScene3D()
         XCTAssertEqual(pusher.rampNodes.count, 2)
         for (node, side) in zip(pusher.rampNodes, [Float(-1), 1]) {
             let (lo, hi) = node.boundingBox
-            var inner: Float = .infinity, outer: Float = -.infinity
-            var minY: Float = .infinity
-            for x in [lo.x, hi.x] { for y in [lo.y, hi.y] { for z in [lo.z, hi.z] {
-                let p = node.convertPosition(SCNVector3(x, y, z), to: nil)
-                minY = min(minY, p.y)
-                let mid = (abs(lo.x) + abs(hi.x)) / 2
-                if abs(x) > mid { outer = max(outer, p.y) } else { inner = min(inner, p.y) }
-            } } }
-            XCTAssertGreaterThan(minY, pusher.config.pusherHeight, "斜坡整体在推板顶面上方")
-            XCTAssertGreaterThan(outer, inner + 0.3, "外侧高、内侧低")
+            XCTAssertGreaterThanOrEqual(min(abs(lo.x), abs(hi.x)), pusher.config.pusherWidth / 2, "斜坡在推板两侧，不压住推板")
+            XCTAssertGreaterThanOrEqual(lo.y, -0.01, "斜坡落在台面上，不悬空")
             let edges = pusher.rampEdgeHeights(side: side)
-            XCTAssertGreaterThan(edges.inner, pusher.config.pusherHeight)
-            XCTAssertGreaterThan(edges.outer, edges.inner)
+            XCTAssertGreaterThan(edges.inner, pusher.config.pusherHeight, "内侧顶边高于推板顶面，金币滑到推板上")
+            XCTAssertGreaterThan(edges.outer, edges.inner + 0.5, "外侧高、内侧低")
+            XCTAssertNotNil(node.physicsBody, "有碰撞体")
         }
     }
 }
@@ -218,7 +211,7 @@ extension Pusher3DTests {
         for (node, start) in [(left, startL), (right, startR)] {
             guard let node, let start else { return XCTFail("没有生成金币") }
             let p = node.presentation.position
-            print("RAMP_COIN start=\(start.x),\(start.y) end=\(p.x),\(p.y),\(p.z)")
+            print("RAMP_COIN start=\(start.x),\(start.y),\(start.z) end=\(p.x),\(p.y),\(p.z)")
             XCTAssertNotNil(pusher.rampTopHeight(atX: start.x, z: start.z), "边缘金币生成在斜坡上方")
             XCTAssertLessThan(abs(p.x), abs(start.x) - 0.2, "沿斜坡向中间滑动")
             XCTAssertLessThan(abs(p.x), innerEdge + pusher.config.coinRadius + 0.1, "滑下斜坡，没有停在斜坡上或穿进去")

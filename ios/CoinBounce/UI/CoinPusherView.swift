@@ -80,9 +80,9 @@ struct CoinPusherView: View {
                 // ── 推币台 ──
                 // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
                 CabinetPillar()
-                    .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: GameLayout.margin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
+                    .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
                 CabinetPillar()
-                    .place(in: CGRect(x: sw - GameLayout.margin, y: layout.sliderTrack.minY, width: GameLayout.margin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
+                    .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
 
                 // 3D 推币台一直延伸到屏幕底部，投币按钮叠在台面前沿上（与参考布局一致）
                 PusherSceneView(pusher: pusher3D, coinDiameter: layout.coinRadius * 2,
@@ -483,7 +483,7 @@ struct CoinPusherView: View {
     @ViewBuilder
     func fruitCollectionBar(layout: GameLayout) -> some View {
         let bar = layout.fruitBar
-        let iconSize = min(layout.fruitLampWidth * 0.8, bar.height * 0.6)
+        let iconSize = min(layout.fruitLampWidth * 0.78, bar.height * 0.7)
 
         ZStack(alignment: .topLeading) {
             // 深色背景
@@ -501,17 +501,16 @@ struct CoinPusherView: View {
             // 7个水果灯 — 中心与物理判定 layout.fruitCenters 相同
             ForEach(0..<7, id: \.self) { index in
                 ZStack {
-                    // 外圈
-                    Circle()
-                        .fill(Color.black)
-                        .frame(width: iconSize * 1.15, height: iconSize * 1.15)
-
-                    // 内圈 (点亮/暗灭)
-                    Circle()
+                    // v11.1 按参考：圆角方形水果牌，钢蓝色金属边框，深色底；点亮时底色变金
+                    RoundedRectangle(cornerRadius: iconSize * 0.18)
+                        .fill(LinearGradient(colors: [Color(red: 0.55, green: 0.70, blue: 0.80), Color(red: 0.25, green: 0.36, blue: 0.45)],
+                                             startPoint: .top, endPoint: .bottom))
+                        .frame(width: iconSize * 1.2, height: iconSize * 1.2)
+                    RoundedRectangle(cornerRadius: iconSize * 0.14)
                         .fill(gameState.fruitsLit[index] ?
-                              LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom) :
-                              LinearGradient(colors: [Color.gray.opacity(0.3), Color.black.opacity(0.5)], startPoint: .top, endPoint: .bottom))
-                        .frame(width: iconSize, height: iconSize)
+                              LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.4), Color(red: 0.9, green: 0.55, blue: 0.1)], startPoint: .top, endPoint: .bottom) :
+                              LinearGradient(colors: [Color(red: 0.16, green: 0.20, blue: 0.24), Color(red: 0.08, green: 0.10, blue: 0.12)], startPoint: .top, endPoint: .bottom))
+                        .frame(width: iconSize * 1.02, height: iconSize * 1.02)
 
                     // 水果（矢量绘制）
                     FruitIcon(index: index, size: iconSize * 0.78)
@@ -560,10 +559,16 @@ struct CoinPusherView: View {
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat) -> some View {
         // 按钮贴在屏幕最下方（安全区之内，底边留 6 点），引导箭头和提示在按钮上方
-        let buttonSize = min(w * 0.2, h * 0.88)
-        let buttonY = h / 2 - 6 - buttonSize * 0.46
+        // 参考：六边形按钮约 16% 屏宽，贴在底部金色面板中间
+        let buttonSize = min(w * 0.16, h * 0.98)
+        let buttonY = h / 2 - 4 - buttonSize * 0.46
 
         ZStack {
+            // 底部金色面板（参考取色 #fcc54f，深色外框 #14100a）：从台面前沿一直到屏幕底部，台面掉下的金币落到面板后面
+            BottomGoldPanel()
+                .frame(width: w, height: h + 60)
+                .offset(y: 30)
+                .allowsHitTesting(false)
             // 投币按钮（居中，贴近参考App）
             ZStack {
                 // 新手引导箭头（严格按状态位控制）
@@ -579,9 +584,10 @@ struct CoinPusherView: View {
                 Hexagon()
                     .fill(
                         LinearGradient(
+                            // 参考：浅金外圈 + 深古铜内心
                             colors: [
-                                Color(red: 0.95, green: 0.78, blue: 0.10),
-                                Color(red: 0.65, green: 0.45, blue: 0.05)
+                                Color(red: 1.0, green: 0.88, blue: 0.55),
+                                Color(red: 0.72, green: 0.52, blue: 0.18)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -596,8 +602,9 @@ struct CoinPusherView: View {
                     .offset(y: buttonY)
 
                 Hexagon()
-                    .fill(Color.black.opacity(0.25))
-                    .frame(width: buttonSize * 0.72, height: buttonSize * 0.66)
+                    .fill(LinearGradient(colors: [Color(red: 0.36, green: 0.26, blue: 0.10), Color(red: 0.18, green: 0.12, blue: 0.05)],
+                                         startPoint: .top, endPoint: .bottom))
+                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.68)
                     .overlay(
                         Text("$")
                             .font(.system(size: buttonSize * 0.28, weight: .black, design: .rounded))
@@ -875,6 +882,30 @@ struct TutorialArrow: View {
             p.addLine(to: CGPoint(x: r.midX - shaftW / 2, y: r.maxY - headH))
             p.closeSubpath()
             return p
+        }
+    }
+}
+
+/// 底部金色面板：深色外框 + 金色内板 + 细微横纹（原创绘制，配色按参考取色）
+struct BottomGoldPanel: View {
+    var body: some View {
+        ZStack {
+            Rectangle().fill(Color(red: 0.08, green: 0.06, blue: 0.04))
+            RoundedRectangle(cornerRadius: 6)
+                .fill(LinearGradient(colors: [Color(red: 0.99, green: 0.84, blue: 0.45), Color(red: 0.93, green: 0.70, blue: 0.27),
+                                              Color(red: 0.80, green: 0.55, blue: 0.18)],
+                                     startPoint: .top, endPoint: .bottom))
+                .overlay(
+                    VStack(spacing: 5) {
+                        ForEach(0..<12, id: \.self) { _ in
+                            Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
+                        }
+                    }
+                    .clipped()
+                )
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.55, green: 0.36, blue: 0.10), lineWidth: 2))
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
         }
     }
 }

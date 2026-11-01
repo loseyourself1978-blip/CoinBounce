@@ -8,12 +8,16 @@ import UIKit
 final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     struct Config {
-        var coinRadius: Float = 0.5
-        var coinThickness: Float = 0.09   // 薄币：约为半径的 18%（校准半径时按比例更新）
+        var coinRadius: Float = 0.37       // iPhone 上校准后约 0.37（台面宽 8 对应下落区 80% 屏宽、金币 7.4% 屏宽）
+        var coinThickness: Float = 0.37 * PusherScene3D.coinThicknessRatio
         var deckWidth: Float = 8
         var deckDepth: Float = 7          // 下层台面：z 从 -deckDepth/2 到 +deckDepth/2
         var pusherHeight: Float = 0.7
         var pusherDepth: Float = 5
+        /// v11.1 按参考：推板只占中间约 34% 屏宽（台面宽 8 对应下落区 80% 屏宽 → 3.4，留一点余量取 3.6），
+        /// 两侧是大斜坡；推板前方的接币盘（金币堆所在）约 54% 屏宽 → 5.4
+        var pusherWidth: Float = 3.6
+        var trayWidth: Float = 5.4
         var pusherStroke: Float = GameConstants.pusherStroke
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
         var maxCoins = 400
@@ -155,13 +159,25 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
         // 原创程序纹理：台面菱格绒布、侧板漆面、推板花纹，配色与上半部的紫红 / 金 / 青绿统一
         let felt = material(UIColor.white)
-        felt.diffuse.contents = PusherScene3D.feltImage()
+        felt.diffuse.contents = PusherScene3D.feltImage(base: PusherScene3D.greenFelt)
         felt.diffuse.wrapS = .repeat; felt.diffuse.wrapT = .repeat
         felt.diffuse.contentsTransform = SCNMatrix4MakeScale(3, 3, 1)
         felt.roughness.contents = 0.85
-        let wood = material(UIColor(red: 0.55, green: 0.09, blue: 0.32, alpha: 1), metal: 0.35)   // 紫红漆面侧板
-        wood.roughness.contents = 0.25
-        // 推板：暗紫色金属 + 金色花纹，金属度高、略粗糙，读起来像金属
+        let wood = material(UIColor(red: 0.68, green: 0.51, blue: 0.28, alpha: 1), metal: 0.2)   // 原木色边框（参考取色 #ae8247）
+        wood.roughness.contents = 0.45
+        // 斜坡：与台面同色的绿色绒布（参考取色 #388629）
+        let slopeFelt = material(UIColor.white)
+        slopeFelt.diffuse.contents = PusherScene3D.feltImage(base: PusherScene3D.greenFelt.withBrightness(0.85))
+        slopeFelt.diffuse.wrapS = .repeat; slopeFelt.diffuse.wrapT = .repeat
+        slopeFelt.diffuse.contentsTransform = SCNMatrix4MakeScale(2, 2, 1)
+        slopeFelt.roughness.contents = 0.85
+        // 后挡板、后墙：深红绒布（参考取色 #881809）
+        let backFelt = material(UIColor.white)
+        backFelt.diffuse.contents = PusherScene3D.feltImage(base: PusherScene3D.redFelt)
+        backFelt.diffuse.wrapS = .repeat; backFelt.diffuse.wrapT = .repeat
+        backFelt.diffuse.contentsTransform = SCNMatrix4MakeScale(3, 1, 1)
+        backFelt.roughness.contents = 0.85
+        // 推板：暗黄铜金属块（参考取色正面 #755c23、顶面 #382c0e）+ 金色花纹
         let red = material(UIColor.white, metal: 0.8)
         red.diffuse.contents = PusherScene3D.pusherImage()
         red.roughness.contents = 0.3
@@ -179,7 +195,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         scene.rootNode.addChildNode(floor)
 
         // 推板（运动学）：从台面后部伸出，前后往复
-        let pusherNode = box(c.deckWidth - 0.05, c.pusherHeight, c.pusherDepth, red)
+        let pusherNode = box(c.pusherWidth, c.pusherHeight, c.pusherDepth, red)
         let restZ = pusherRestZ
         pusherNode.position = SCNVector3(0, c.pusherHeight / 2, restZ)
         let body = SCNPhysicsBody(type: .kinematic, shape: SCNPhysicsShape(node: pusherNode, options: nil))
@@ -191,13 +207,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         forward.timingMode = .easeInEaseOut
         pusherNode.runAction(.repeatForever(.sequence([forward, forward.reversed()])), forKey: "push")
         // 推板前沿发光边
-        let edge = box(c.deckWidth - 0.1, 0.08, 0.08, neonGold)
+        let edge = box(c.pusherWidth - 0.05, 0.08, 0.08, neonGold)
         edge.position = SCNVector3(0, c.pusherHeight / 2 + 0.01, c.pusherDepth / 2 - 0.02)
         pusherNode.addChildNode(edge)
 
         // 后挡板（刮板）：前表面正好在推板收回到底时的前沿位置，底边贴着推板顶面。
         // 推板每次完全缩回到挡板后面，顶面上的金币全部被刮下、掉到下层台面
-        let scraper = box(c.deckWidth, PusherScene3D.scraperHeight, 0.3, red)
+        let scraper = box(c.deckWidth, PusherScene3D.scraperHeight, 0.3, backFelt)
         scraper.position = SCNVector3(0, scraperBottomY + PusherScene3D.scraperHeight / 2, scraperFrontZ - 0.15)
         let scraperEdge = box(c.deckWidth, 0.08, 0.08, gold)
         scraperEdge.position = SCNVector3(0, scraperBottomY + 0.04, scraperFrontZ + 0.02)
@@ -206,7 +222,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         scene.rootNode.addChildNode(scraper)
 
         // 后墙（装饰 + 防止金币掉到推板后面）
-        let back = box(c.deckWidth, 3, 0.3, red)
+        let back = box(c.deckWidth, 3, 0.3, backFelt)
         back.position = SCNVector3(0, 1.5, restZ - c.pusherDepth / 2 - 0.2)
         staticBody(back, friction: 0.2)
         scene.rootNode.addChildNode(back)
@@ -255,27 +271,44 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             scene.rootNode.addChildNode(rim)
         }
 
-        // 两侧引导斜坡（后部角落）：实心楔形块，背面贴住后挡板、底面贴着推板顶面（和挡板一样只留 0.01 的缝），
-        // 顶面外侧高、内侧低。看起来是固定在挡板上的，不再悬空；边缘落下的金币落在斜面上滚到推板顶面
-        let rampTrim = material(UIColor(red: 0.95, green: 0.72, blue: 0.25, alpha: 1), metal: 0.85)
+        // 两侧大斜坡（参考布局）：从机柜两侧一直斜到推板两边，实心楔形块落在台面上、背面伸到后挡板下，
+        // 顶面外侧高、内侧低（内侧只比推板顶面高一点）。下落区两侧落下的金币落在斜面上，滑到推板顶面或推板前方
+        let rampTrim = wood
         for side: Float in [-1, 1] {
             let ramp = SCNNode(geometry: rampWedgeGeometry(side: side))
-            ramp.geometry?.materials = [wood]
-            ramp.position = SCNVector3(0, 0, scraperFrontZ + PusherScene3D.rampLength / 2)
+            ramp.geometry?.materials = [slopeFelt]
+            ramp.position = SCNVector3(0, 0, (scraperFrontZ - 0.3 + slopeFrontZ) / 2)
             let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: ramp.geometry!, options: [.type: SCNPhysicsShape.ShapeType.convexHull]))
             body.friction = 0.12
             body.restitution = 0.05
             ramp.physicsBody = body
             ramp.name = "ramp"
             ramp.castsShadow = true
-            // 斜面内侧下沿一条金边，读得出斜坡的走向
+            // 斜面内侧一条木色压边，读得出斜坡的走向
             let edges = rampEdgeHeights(side: side)
-            let lip = box(0.06, 0.06, PusherScene3D.rampLength, rampTrim)
-            lip.position = SCNVector3(side * (config.deckWidth / 2 - PusherScene3D.rampWidth), edges.inner, 0)
+            let lip = box(0.08, 0.08, slopeFrontZ - scraperFrontZ + 0.3, rampTrim)
+            lip.position = SCNVector3(side * rampInnerX, edges.inner, 0)
             ramp.addChildNode(lip)
             scene.rootNode.addChildNode(ramp)
             rampNodes.append(ramp)
 
+            // 斜坡前方、接币盘两侧的彩色侧柜（参考左粉右黄），内侧面就是接币盘的侧壁；
+            // 顶面也是外高内低的斜面，从斜坡前端滑下来的金币会滑进接币盘，不会停在侧柜上
+            let cabinet = SCNNode(geometry: trayCabinetGeometry(side: side))
+            let panel = material(UIColor.white, metal: 0.3)
+            panel.diffuse.contents = PusherScene3D.sidePanelImage(left: side < 0)
+            panel.roughness.contents = 0.35
+            // 挤出形状的材质顺序：前端面、后端面、侧面（含顶部斜面）——前端面是彩色面板，顶面延续斜坡的绿绒布
+            cabinet.geometry?.materials = [panel, slopeFelt, slopeFelt]
+            cabinet.position = SCNVector3(0, 0, (slopeFrontZ + c.deckDepth / 2 + 0.4) / 2)
+            let cabinetBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: cabinet.geometry!, options: [.type: SCNPhysicsShape.ShapeType.convexHull]))
+            cabinetBody.friction = 0.1
+            cabinet.physicsBody = cabinetBody
+            cabinet.name = "trayCabinet"
+            scene.rootNode.addChildNode(cabinet)
+            let rim = box(0.14, 0.14, c.deckDepth / 2 + 0.4 - slopeFrontZ, rampTrim)
+            rim.position = SCNVector3(side * (c.trayWidth / 2 + 0.07), PusherScene3D.cabinetInnerHeight + 0.02, cabinet.position.z)
+            scene.rootNode.addChildNode(rim)
         }
 
         prefill()
@@ -376,7 +409,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             // 上层只铺前半部分，形成前高后低、自然叠放的金币堆
             let limit = layer == 0 ? backLimit : backLimit + (c.deckDepth / 2 - backLimit) * 0.35
             while z > limit && placed < c.prefillCoins {
-                let half = min(c.deckWidth / 2, playHalfWidth(z)) - 0.05
+                let half = min(z < slopeFrontZ ? rampInnerX : c.trayWidth / 2, playHalfWidth(z)) - 0.05
                 var x = -half + c.coinRadius + (row.isMultiple(of: 2) ? 0.05 : d / 2)
                 while x < half - c.coinRadius && placed < c.prefillCoins {
                     let y = c.coinThickness / 2 + Float(layer) * (c.coinThickness + 0.01) + 0.02
@@ -396,9 +429,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     // MARK: 关键几何（测试也用）
     static let scraperHeight: Float = 2.6
-    static let rampWidth: Float = 1.3
-    static let rampLength: Float = 2.2
-    static let rampAngle: Float = 0.38          // 约 22°，外侧高、内侧低
+    /// 斜坡宽度：台面半宽 4 − 斜坡内侧 1.85
+    static let rampWidth: Float = 2.15
+    static let rampAngle: Float = 0.38          // 约 22°，外侧高、内侧低（外侧比内侧高约 0.86）
     private(set) var rampNodes: [SCNNode] = []
 
     /// 后挡板前表面 = 下层台面后缘
@@ -518,13 +551,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         wall.physicsBody = body
     }
 
-    /// 斜坡楔形块的截面（x-y 平面）：底边在推板顶面上方 0.01，顶面从内侧 rampInnerRise 升到外侧
+    /// 斜坡内侧边（推板两侧外 0.05）
+    var rampInnerX: Float { config.pusherWidth / 2 + 0.05 }
+    /// 斜坡前端：推板推到最远处再往前 1.3（中间留出与推板同宽的通道），之后是更宽的接币盘。
+    /// 低机位下边缘金币沿视线出现的位置比交接平面靠前，斜坡要伸到这里才能接住它们
+    var slopeFrontZ: Float { pusherFrontZExtended + 1.3 }
+
+    /// 斜坡楔形块的截面（x-y 平面）：底面落在台面上，内侧立面挨着推板侧面，顶面从内侧升到外侧
     private func rampProfile(side: Float) -> [CGPoint] {
-        let bottom = scraperBottomY
         let edges = rampEdgeHeights(side: side)
         let outerX = side * config.deckWidth / 2
-        let innerX = side * (config.deckWidth / 2 - PusherScene3D.rampWidth)
-        return [CGPoint(x: CGFloat(innerX), y: CGFloat(bottom)), CGPoint(x: CGFloat(outerX), y: CGFloat(bottom)),
+        let innerX = side * rampInnerX
+        return [CGPoint(x: CGFloat(innerX), y: 0), CGPoint(x: CGFloat(outerX), y: 0),
                 CGPoint(x: CGFloat(outerX), y: CGFloat(edges.outer)), CGPoint(x: CGFloat(innerX), y: CGFloat(edges.inner))]
     }
 
@@ -533,7 +571,23 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         for (i, p) in rampProfile(side: side).enumerated() { i == 0 ? path.move(to: p) : path.addLine(to: p) }
         path.close()
         path.flatness = 0.001
-        let shape = SCNShape(path: path, extrusionDepth: CGFloat(PusherScene3D.rampLength))
+        let shape = SCNShape(path: path, extrusionDepth: CGFloat(slopeFrontZ - scraperFrontZ + 0.3))
+        shape.chamferRadius = 0.03
+        return shape
+    }
+
+    /// 接币盘侧柜：内侧（接币盘侧壁）高 0.95，顶面向外升高
+    static let cabinetInnerHeight: Float = 0.95
+    private func trayCabinetGeometry(side: Float) -> SCNGeometry {
+        let innerX = side * config.trayWidth / 2, outerX = side * (config.deckWidth / 2 + 0.6)
+        let outerTop = PusherScene3D.cabinetInnerHeight + tan(PusherScene3D.rampAngle) * abs(outerX - innerX)
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: CGFloat(innerX), y: 0))
+        path.addLine(to: CGPoint(x: CGFloat(outerX), y: 0))
+        path.addLine(to: CGPoint(x: CGFloat(outerX), y: CGFloat(outerTop)))
+        path.addLine(to: CGPoint(x: CGFloat(innerX), y: CGFloat(PusherScene3D.cabinetInnerHeight)))
+        path.close()
+        let shape = SCNShape(path: path, extrusionDepth: CGFloat(config.deckDepth / 2 + 0.4 - slopeFrontZ))
         shape.chamferRadius = 0.03
         return shape
     }
@@ -542,16 +596,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 斜面顶面内侧、外侧的高度（内侧只比推板顶面高一点，金币顺势滑到推板上）
     func rampEdgeHeights(side: Float) -> (inner: Float, outer: Float) {
         let inner = scraperBottomY + PusherScene3D.rampInnerRise
-        return (inner, inner + tan(PusherScene3D.rampAngle) * PusherScene3D.rampWidth)
+        return (inner, inner + tan(PusherScene3D.rampAngle) * (config.deckWidth / 2 - rampInnerX))
     }
 
     /// 斜面顶面在横坐标 x 处的高度；不在斜坡范围内返回 nil
     func rampTopHeight(atX x: Float, z: Float) -> Float? {
-        guard z >= scraperFrontZ, z <= scraperFrontZ + PusherScene3D.rampLength else { return nil }
-        let innerAbs = config.deckWidth / 2 - PusherScene3D.rampWidth
-        guard abs(x) > innerAbs else { return nil }
+        guard z >= scraperFrontZ, z <= slopeFrontZ, abs(x) > rampInnerX else { return nil }
         let e = rampEdgeHeights(side: x < 0 ? -1 : 1)
-        return e.inner + (abs(x) - innerAbs) / PusherScene3D.rampWidth * (e.outer - e.inner)
+        return e.inner + (abs(x) - rampInnerX) / (config.deckWidth / 2 - rampInnerX) * (e.outer - e.inner)
     }
 
     // MARK: 金币尺寸校准（2D → 3D 交接时屏幕上大小一致）
@@ -627,12 +679,16 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let t = (h - near.y) / dy
             return SCNVector3(near.x + (far.x - near.x) * t, h, near.z + (far.z - near.z) * t)
         }
+        // 从交接平面（推板顶面高度）沿视线往上走，找到第一个高出推板顶面 / 斜坡顶面一点的位置：
+        // 金币总是出现在斜坡表面之上，而不是嵌在斜坡里或越过斜坡落到前面
         let c = config
-        var h = c.pusherHeight + c.coinRadius * 0.6 + 0.15
+        let clearance = c.coinRadius * 0.6 + 0.1
+        var h = c.pusherHeight + clearance
         var q = point(atHeight: h)
-        for _ in 0..<3 {
-            guard let top = rampTopHeight(atX: q.x, z: q.z), top + c.coinRadius * 0.6 + 0.1 > h else { break }
-            h = top + c.coinRadius * 0.6 + 0.1
+        for _ in 0..<200 {
+            let floor = rampTopHeight(atX: q.x, z: q.z) ?? (q.z < slopeFrontZ ? c.pusherHeight : 0)
+            if q.y >= floor + clearance { break }
+            h += 0.02
             q = point(atHeight: h)
         }
         let limit = c.deckWidth / 2 - c.coinRadius - 0.05
@@ -748,19 +804,40 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     /// 台面：青绿菱格绒布
-    static func feltImage() -> UIImage {
+    static let greenFelt = UIColor(red: 0.22, green: 0.53, blue: 0.16, alpha: 1)   // 参考取色 #388629
+    static let redFelt = UIColor(red: 0.53, green: 0.09, blue: 0.04, alpha: 1)     // 参考取色 #881809
+
+    /// 接币盘两侧的彩色侧柜面板（原创渐变 + 斜纹）：左粉紫、右金黄
+    static func sidePanelImage(left: Bool) -> UIImage {
         UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { ctx in
             let cg = ctx.cgContext
-            UIColor(red: 0.04, green: 0.36, blue: 0.33, alpha: 1).setFill()
+            let colors = (left
+                ? [UIColor(red: 0.95, green: 0.35, blue: 0.65, alpha: 1).cgColor, UIColor(red: 0.45, green: 0.2, blue: 0.75, alpha: 1).cgColor]
+                : [UIColor(red: 1.0, green: 0.85, blue: 0.3, alpha: 1).cgColor, UIColor(red: 0.9, green: 0.55, blue: 0.1, alpha: 1).cgColor]) as CFArray
+            let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])!
+            cg.drawLinearGradient(g, start: .zero, end: CGPoint(x: 128, y: 128), options: [])
+            cg.setStrokeColor(UIColor.white.withAlphaComponent(0.15).cgColor)
+            cg.setLineWidth(6)
+            for k in stride(from: -128, through: 256, by: 28) {
+                cg.move(to: CGPoint(x: k, y: 0)); cg.addLine(to: CGPoint(x: k + 128, y: 128))
+            }
+            cg.strokePath()
+        }
+    }
+
+    static func feltImage(base: UIColor = greenFelt) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128)).image { ctx in
+            let cg = ctx.cgContext
+            base.setFill()
             cg.fill(CGRect(x: 0, y: 0, width: 128, height: 128))
-            cg.setStrokeColor(UIColor(red: 0.12, green: 0.55, blue: 0.5, alpha: 0.7).cgColor)
+            cg.setStrokeColor(base.withBrightness(1.25).withAlphaComponent(0.6).cgColor)
             cg.setLineWidth(2)
             for k in stride(from: -128, through: 256, by: 32) {
                 cg.move(to: CGPoint(x: k, y: 0)); cg.addLine(to: CGPoint(x: k + 128, y: 128))
                 cg.move(to: CGPoint(x: k + 128, y: 0)); cg.addLine(to: CGPoint(x: k, y: 128))
             }
             cg.strokePath()
-            UIColor(red: 0.95, green: 0.75, blue: 0.3, alpha: 0.5).setFill()
+            UIColor(red: 0.95, green: 0.75, blue: 0.3, alpha: 0.35).setFill()
             for x in stride(from: 0, through: 128, by: 32) {
                 for y in stride(from: 0, through: 128, by: 32) { cg.fillEllipse(in: CGRect(x: x - 2, y: y - 2, width: 4, height: 4)) }
             }
@@ -771,8 +848,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     static func pusherImage() -> UIImage {
         UIGraphicsImageRenderer(size: CGSize(width: 256, height: 128)).image { ctx in
             let cg = ctx.cgContext
-            let colors = [UIColor(red: 0.30, green: 0.10, blue: 0.40, alpha: 1).cgColor,
-                          UIColor(red: 0.14, green: 0.04, blue: 0.20, alpha: 1).cgColor] as CFArray
+            let colors = [UIColor(red: 0.46, green: 0.36, blue: 0.14, alpha: 1).cgColor,
+                          UIColor(red: 0.22, green: 0.17, blue: 0.06, alpha: 1).cgColor] as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])!
             cg.drawLinearGradient(g, start: .zero, end: CGPoint(x: 0, y: 128), options: [])
             cg.setStrokeColor(UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 0.9).cgColor)
@@ -881,5 +958,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.45, 1])!
             ctx.cgContext.drawLinearGradient(g, start: .zero, end: CGPoint(x: 0, y: 256), options: [])
         }
+    }
+}
+
+extension UIColor {
+    /// 按倍数调整亮度（HSB）
+    func withBrightness(_ factor: CGFloat) -> UIColor {
+        var h: CGFloat = 0, sat: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        getHue(&h, saturation: &sat, brightness: &b, alpha: &a)
+        return UIColor(hue: h, saturation: sat, brightness: min(1, b * factor), alpha: a)
     }
 }

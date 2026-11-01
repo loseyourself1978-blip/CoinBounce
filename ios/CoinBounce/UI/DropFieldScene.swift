@@ -65,9 +65,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         for p in newLayout.slotObstacles {
             addObstacle(at: p, radius: newLayout.slotObstacleRadius)
         }
-        for p in newLayout.slotPins {
-            addObstacle(at: p, radius: newLayout.slotPinRadius)
-        }
+        // v11.1：转轴之间的金色铆钉只做装饰（老虎机按参考变窄、金币加大后，钉子和符号之间放不下一枚金币，会卡住）
         for p in newLayout.fruitPins {
             addObstacle(at: p, radius: newLayout.fruitPinRadius)
         }

@@ -615,15 +615,22 @@ struct CabinetPillar: View {
             let count = max(4, Int(geo.size.height / 34))
             ZStack {
                 // 圆柱高光：两侧暗、中间亮
-                LinearGradient(colors: [ArtPalette.goldDeep, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep],
+                // v11.1 按参考：红褐木纹立柱（取色 #ad4c50 / #4b1f05），中间一条金色嵌条，琥珀色灯泡
+                LinearGradient(colors: [Color(red: 0.29, green: 0.12, blue: 0.03), Color(red: 0.68, green: 0.30, blue: 0.31),
+                                        Color(red: 0.55, green: 0.22, blue: 0.18), Color(red: 0.29, green: 0.12, blue: 0.03)],
                                startPoint: .leading, endPoint: .trailing)
+                    .overlay(Rectangle().fill(ArtPalette.gold.opacity(0.85)).frame(width: max(1.5, w * 0.06)))
                     .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
                 VStack(spacing: 0) {
                     ForEach(0..<count, id: \.self) { i in
                         Circle()
-                            .fill((i % 2 == 0) == phase ? Color(red: 1, green: 0.95, blue: 0.7) : ArtPalette.magenta)
-                            .shadow(color: ArtPalette.gold.opacity(0.9), radius: w * 0.35)
-                            .frame(width: w * 0.6, height: w * 0.6)
+                            .fill(RadialGradient(colors: (i % 2 == 0) == phase
+                                                 ? [Color(red: 1, green: 0.95, blue: 0.7), Color(red: 1, green: 0.62, blue: 0.2)]
+                                                 : [Color(red: 0.85, green: 0.45, blue: 0.2), Color(red: 0.45, green: 0.18, blue: 0.08)],
+                                                 center: .center, startRadius: 0, endRadius: w * 0.3))
+                            .overlay(Circle().stroke(Color(red: 0.35, green: 0.2, blue: 0.1), lineWidth: 1))
+                            .shadow(color: Color(red: 1, green: 0.6, blue: 0.2).opacity((i % 2 == 0) == phase ? 0.9 : 0.2), radius: w * 0.3)
+                            .frame(width: w * 0.42, height: w * 0.42)
                             .frame(maxHeight: .infinity)
                     }
                 }

@@ -60,15 +60,12 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
+    /// v11.1：铆钉只做装饰（不参与碰撞），只检查位置在转轴区内
     func test_slotPins_insideReelsAndLeaveRoomForCoins() {
         for (name, l) in screens {
             XCTAssertEqual(l.slotPins.count, 16, "4 列间隔 × 4 条行界")
             for p in l.slotPins {
                 XCTAssertTrue(l.slotReels.insetBy(dx: -1, dy: -1).contains(p), "\(name) 格挡钉在转轴区内")
-                for o in l.slotObstacles {
-                    let gap = hypot(p.x - o.x, p.y - o.y) - l.slotPinRadius - l.slotObstacleRadius
-                    XCTAssertGreaterThan(gap, l.coinRadius * 2, "\(name) 钉子和符号之间能通过一枚金币")
-                }
             }
         }
     }
@@ -76,9 +73,20 @@ final class GameLayoutTests: XCTestCase {
     func test_layout_matchesReferenceProportions() {
         let l = screens[1].layout
         let usable = l.size.height - l.safeArea.top - l.safeArea.bottom
-        XCTAssertEqual(l.slotMachine.height / usable, 0.27, accuracy: 0.001, "老虎机约占 27%")
-        XCTAssertGreaterThan(l.slotMachine.height, l.dropField.height * 2.5, "老虎机明显高于战斗区")
+        XCTAssertEqual(l.slotMachine.height / usable, 0.2095, accuracy: 0.001, "老虎机占安全区 20.95%")
+        XCTAssertGreaterThan(l.slotMachine.height, l.dropField.height * 1.8, "老虎机明显高于战斗区")
         XCTAssertEqual(l.pusherView.maxY, l.size.height, "推币台延伸到屏幕底部，投币按钮叠在上面")
+        // v11.1：各区域在 iPhone 17 整屏上的位置与参考 App 实测一致（误差 1% 屏高以内）
+        do {
+            let l = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
+            let H = l.size.height
+            XCTAssertEqual(l.slotMachine.minY / H, 0.30, accuracy: 0.01, "老虎机顶部 ≈ 30%")
+            XCTAssertEqual(l.slotMachine.maxY / H, 0.485, accuracy: 0.01, "老虎机底部 ≈ 48.5%")
+            XCTAssertEqual(l.fruitBar.minY / H, 0.575, accuracy: 0.01, "水果排顶部 ≈ 57.5%")
+            XCTAssertEqual(l.bonusLane.maxY / H, 0.69, accuracy: 0.01, "BONUS 底部 ≈ 69%")
+            XCTAssertEqual(l.dropButton.minY / H, 0.895, accuracy: 0.01, "台面前沿 / 按钮区 ≈ 89.5%")
+            XCTAssertEqual(l.sideMargin / l.size.width, 0.10, accuracy: 0.005, "两侧立柱各 10% 屏宽")
+        }
         XCTAssertTrue(l.pusherView.contains(CGPoint(x: l.dropButton.midX, y: l.dropButton.midY)))
     }
 

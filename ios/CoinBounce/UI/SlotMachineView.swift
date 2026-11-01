@@ -281,18 +281,18 @@ struct SymbolBackground: View {
     }
     
     var body: some View {
+        // v11.1 按参考：深紫底（取色 #240b3b），符号颜色只作为中心的霓虹光晕
         LinearGradient(
-            colors: gradientColors,
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+            colors: [Color(red: 0.20, green: 0.07, blue: 0.32), Color(red: 0.09, green: 0.03, blue: 0.16)],
+            startPoint: .top,
+            endPoint: .bottom
         )
         .overlay(
-            // 内部光晕效果
             RadialGradient(
-                colors: [Color.white.opacity(0.2), Color.clear],
+                colors: [gradientColors[0].opacity(0.45), Color.clear],
                 center: .center,
                 startRadius: 0,
-                endRadius: size * 0.4
+                endRadius: size * 0.55
             )
         )
     }
