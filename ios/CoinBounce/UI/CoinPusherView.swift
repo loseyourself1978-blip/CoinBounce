@@ -205,6 +205,21 @@ struct CoinPusherView: View {
                 gameState.requestFreeCoins()
             }
         }
+        // 验证用：-autoplay 每 0.4 秒自动投一枚（落点随 COIN 滑块往复扫过），并每秒打印推币台统计
+        if ProcessInfo.processInfo.arguments.contains("-autoplay") || ProcessInfo.processInfo.arguments.contains("-debugPhysicsLog") {
+            pusher3D.logsPhysicsStats = true
+        }
+        if ProcessInfo.processInfo.arguments.contains("-autoplay") {
+            Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
+                if !gameState.canDropCoin { gameState.availableCoins += 100 }
+                // 水果全亮弹出选卡时自动选第一张，录屏不被遮住
+                if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
+                    gameState.pickCard(card.kind)
+                    gameState.finishCardPick()
+                }
+                gameState.dropCoin()
+            }
+        }
         // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
         let autoDrop = UserDefaults.standard.integer(forKey: "debugAutoDrop")
         for i in 0..<autoDrop {

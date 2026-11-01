@@ -247,14 +247,16 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
             // 特殊金币：白金色，更亮
             let colors = (special
                 ? [UIColor.white.cgColor, UIColor(red: 1, green: 0.97, blue: 0.75, alpha: 1).cgColor, UIColor(red: 0.95, green: 0.75, blue: 0.3, alpha: 1).cgColor]
-                : [UIColor(red: 1, green: 0.95, blue: 0.65, alpha: 1).cgColor,
-                   UIColor(red: 1, green: 0.8, blue: 0.2, alpha: 1).cgColor,
-                   UIColor(red: 0.8, green: 0.5, blue: 0.05, alpha: 1).cgColor]) as CFArray
+                // 与 3D 金币同色：同样的金色渐变乘以古铜色调（PusherScene3D.coinTint）
+                : [UIColor(red: 1, green: 0.76, blue: 0.34, alpha: 1).cgColor,
+                   UIColor(red: 1, green: 0.64, blue: 0.10, alpha: 1).cgColor,
+                   UIColor(red: 0.8, green: 0.40, blue: 0.03, alpha: 1).cgColor]) as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.6, 1])!
             // 金币厚度：先画深色边缘（底部露出），再画略小、略偏上的币面
             cg.setFillColor(UIColor(red: 0.55, green: 0.33, blue: 0.03, alpha: 1).cgColor)
             cg.fillEllipse(in: rect)
-            let faceRect = CGRect(x: diameter * 0.02, y: 0, width: diameter * 0.96, height: diameter * 0.92)
+            // 边缘厚度保持 v10.8 的绝对值（直径加大 30%，厚度不变）
+            let faceRect = CGRect(x: diameter * 0.02, y: 0, width: diameter * 0.96, height: diameter * (1 - 0.08 / 1.3))
             cg.addEllipse(in: faceRect)
             cg.clip()
             cg.drawRadialGradient(g, startCenter: CGPoint(x: diameter * 0.35, y: diameter * 0.3), startRadius: 0,

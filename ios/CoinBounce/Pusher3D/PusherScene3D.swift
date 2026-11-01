@@ -16,8 +16,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var pusherDepth: Float = 5
         var pusherStroke: Float = GameConstants.pusherStroke
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
-        var maxCoins = 190
-        var prefillCoins = 165
+        var maxCoins = 400
+        var prefillCoins = 150
     }
 
     let scene = SCNScene()
@@ -25,6 +25,11 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 相机节点（测试里用它做投影计算）
     let cameraNode = SCNNode()
     private(set) var droppedCount = 0          // 掉出前沿的金币数（计分）
+    private(set) var rejectedCount = 0         // 达到上限、没能加入台面的金币数（应始终为 0）
+    /// 调试：每秒在控制台打印推板上 / 台面上 / 已掉落的金币数和帧率（-autoplay 或 -debugPhysicsLog）
+    var logsPhysicsStats = false
+    private var logWindowStart: TimeInterval = 0
+    private var logFrames = 0
     /// 有金币从前沿掉落；参数为是否特殊金币（主线程回调）
     var onCoinDropped: ((_ isSpecial: Bool) -> Void)?
     /// 特殊金币：白金色、自发光
@@ -250,14 +255,24 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             scene.rootNode.addChildNode(rim)
         }
 
-        // 两侧引导斜坡（后部角落）
+        // 两侧引导斜坡（后部角落）：实心楔形块，背面贴住后挡板、底面贴着推板顶面（和挡板一样只留 0.01 的缝），
+        // 顶面外侧高、内侧低。看起来是固定在挡板上的，不再悬空；边缘落下的金币落在斜面上滚到推板顶面
+        let rampTrim = material(UIColor(red: 0.95, green: 0.72, blue: 0.25, alpha: 1), metal: 0.85)
         for side: Float in [-1, 1] {
-            // 引导斜坡：在推板上方（不与推板相交），外侧高、内侧低，边缘落下的金币滑到推板顶面
-            let ramp = box(PusherScene3D.rampWidth, PusherScene3D.rampThickness, PusherScene3D.rampLength, wood)
-            ramp.position = rampCenter(side: side)
-            ramp.eulerAngles = SCNVector3(0, 0, side * PusherScene3D.rampAngle)
-            staticBody(ramp, friction: 0.12)
+            let ramp = SCNNode(geometry: rampWedgeGeometry(side: side))
+            ramp.geometry?.materials = [wood]
+            ramp.position = SCNVector3(0, 0, scraperFrontZ + PusherScene3D.rampLength / 2)
+            let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: ramp.geometry!, options: [.type: SCNPhysicsShape.ShapeType.convexHull]))
+            body.friction = 0.12
+            body.restitution = 0.05
+            ramp.physicsBody = body
             ramp.name = "ramp"
+            ramp.castsShadow = true
+            // 斜面内侧下沿一条金边，读得出斜坡的走向
+            let edges = rampEdgeHeights(side: side)
+            let lip = box(0.06, 0.06, PusherScene3D.rampLength, rampTrim)
+            lip.position = SCNVector3(side * (config.deckWidth / 2 - PusherScene3D.rampWidth), edges.inner, 0)
+            ramp.addChildNode(lip)
             scene.rootNode.addChildNode(ramp)
             rampNodes.append(ramp)
 
@@ -305,9 +320,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         pusher.runAction(.sequence([home, .repeatForever(.sequence([forward, forward.reversed()]))]), forKey: "push")
     }
 
+    /// 「轻松掉落」的向前重力分量：必须小于静摩擦能抵抗的大小（金币×台面摩擦 ≈ 0.42×0.32，乘以竖直重力 21.6 ≈ 2.9），
+    /// 只让被推动的金币更容易掉，不会让整堆金币自己滑下去（v10.x 用 3.2，选到这张卡时整台金币全部滑落）
+    static let easyDropForwardGravity: Float = 1.2
+    static var verticalGravity: Float { 9.8 * 2.2 }
+
     /// 卡牌「轻松掉落」：台面向前微倾（重力加一点向前分量），前沿灯带闪烁
     func setEasyDrop(_ on: Bool) {
-        scene.physicsWorld.gravity = on ? SCNVector3(baseGravity.x, baseGravity.y, 3.2) : baseGravity
+        scene.physicsWorld.gravity = on ? SCNVector3(baseGravity.x, baseGravity.y, PusherScene3D.easyDropForwardGravity) : baseGravity
         easyDropGlow?.removeAllActions()
         if on {
             easyDropGlow?.runAction(.repeatForever(.sequence([.fadeOpacity(to: 0.2, duration: 0.25), .fadeOpacity(to: 1, duration: 0.25)])))
@@ -319,7 +339,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     // MARK: 金币
     @discardableResult
     func addCoin(at position: SCNVector3, tilt: Float = 0, velocity: SCNVector3 = SCNVector3Zero, special: Bool = false) -> SCNNode? {
-        guard coins.count < config.maxCoins else { return nil }
+        guard coins.count < config.maxCoins else { rejectedCount += 1; return nil }
         let node = SCNNode(geometry: special ? specialGeometry : coinGeometry)
         if special { node.name = PusherScene3D.specialName }
         node.position = position
@@ -333,6 +353,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         body.damping = 0.15
         body.angularDamping = 0.35
         body.allowsResting = true
+        body.continuousCollisionDetectionThreshold = CGFloat(config.coinThickness)   // 薄币高速下落时不穿过推板 / 斜坡
         body.velocity = velocity
         node.physicsBody = body
         scene.rootNode.addChildNode(node)
@@ -342,15 +363,19 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     /// 开局预铺：下层台面铺 2～3 层，推板顶面放一层
     private func prefill() {
+        // 金币堆从台面前沿一直铺到推板推到最远时的前沿（不留空带），推板每次推出都会顶到金币堆
         let c = config
         let d = c.coinRadius * 2.02
+        let backLimit = pusherFrontZExtended + c.coinRadius + 0.02
         var placed = 0
         var layer = 0
         while placed < c.prefillCoins && layer < 3 {
             var row = 0
-            var z = c.deckDepth / 2 - c.coinRadius - 0.05 - Float(layer) * 0.6
-            let frontLimit = -c.deckDepth / 2 + c.pusherStroke + 1.3
-            while z > frontLimit && placed < c.prefillCoins {
+            // 第一排像真机一样探出前沿约 45%（重心仍在台面上），轻轻一推就会掉
+            var z = c.deckDepth / 2 - c.coinRadius * (layer == 0 ? 0.55 : 1.0) - Float(layer) * d * 0.5
+            // 上层只铺前半部分，形成前高后低、自然叠放的金币堆
+            let limit = layer == 0 ? backLimit : backLimit + (c.deckDepth / 2 - backLimit) * 0.35
+            while z > limit && placed < c.prefillCoins {
                 let half = min(c.deckWidth / 2, playHalfWidth(z)) - 0.05
                 var x = -half + c.coinRadius + (row.isMultiple(of: 2) ? 0.05 : d / 2)
                 while x < half - c.coinRadius && placed < c.prefillCoins {
@@ -372,7 +397,6 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     // MARK: 关键几何（测试也用）
     static let scraperHeight: Float = 2.6
     static let rampWidth: Float = 1.3
-    static let rampThickness: Float = 0.12
     static let rampLength: Float = 2.2
     static let rampAngle: Float = 0.38          // 约 22°，外侧高、内侧低
     private(set) var rampNodes: [SCNNode] = []
@@ -389,6 +413,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 交接平面：挡板前方，落在推板顶面上
     var handoffPlaneZ: Float { scraperFrontZ + config.coinRadius + 0.25 }
 
+    /// v11：直径比 v10.8 大 30%、厚度不变，厚度 / 半径 = 0.18 / 1.3
+    static let coinThicknessRatio: Float = 0.18 / 1.3
     static let coinTint = UIColor(red: 1.0, green: 0.80, blue: 0.52, alpha: 1)
     static let cameraPosition = SCNVector3(0, 15, 21)
     private(set) var sideWalls: [SCNNode] = []
@@ -492,20 +518,40 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         wall.physicsBody = body
     }
 
-    func rampCenter(side: Float) -> SCNVector3 {
-        // 内侧下沿比推板顶面高 0.12，外侧更高
-        let halfW = PusherScene3D.rampWidth / 2
-        let innerTop = config.pusherHeight + 0.12 + PusherScene3D.rampThickness / 2
-        let y = innerTop + sin(PusherScene3D.rampAngle) * halfW
-        return SCNVector3(side * (config.deckWidth / 2 - halfW), y, scraperFrontZ + PusherScene3D.rampLength / 2)
+    /// 斜坡楔形块的截面（x-y 平面）：底边在推板顶面上方 0.01，顶面从内侧 rampInnerRise 升到外侧
+    private func rampProfile(side: Float) -> [CGPoint] {
+        let bottom = scraperBottomY
+        let edges = rampEdgeHeights(side: side)
+        let outerX = side * config.deckWidth / 2
+        let innerX = side * (config.deckWidth / 2 - PusherScene3D.rampWidth)
+        return [CGPoint(x: CGFloat(innerX), y: CGFloat(bottom)), CGPoint(x: CGFloat(outerX), y: CGFloat(bottom)),
+                CGPoint(x: CGFloat(outerX), y: CGFloat(edges.outer)), CGPoint(x: CGFloat(innerX), y: CGFloat(edges.inner))]
     }
 
-    /// 斜坡底面内侧、外侧边缘的高度
+    private func rampWedgeGeometry(side: Float) -> SCNGeometry {
+        let path = UIBezierPath()
+        for (i, p) in rampProfile(side: side).enumerated() { i == 0 ? path.move(to: p) : path.addLine(to: p) }
+        path.close()
+        path.flatness = 0.001
+        let shape = SCNShape(path: path, extrusionDepth: CGFloat(PusherScene3D.rampLength))
+        shape.chamferRadius = 0.03
+        return shape
+    }
+
+    static let rampInnerRise: Float = 0.06
+    /// 斜面顶面内侧、外侧的高度（内侧只比推板顶面高一点，金币顺势滑到推板上）
     func rampEdgeHeights(side: Float) -> (inner: Float, outer: Float) {
-        let c = rampCenter(side: side)
-        let dy = sin(PusherScene3D.rampAngle) * PusherScene3D.rampWidth / 2
-        let bottom = c.y - PusherScene3D.rampThickness / 2 / cos(PusherScene3D.rampAngle)
-        return (bottom - dy, bottom + dy)
+        let inner = scraperBottomY + PusherScene3D.rampInnerRise
+        return (inner, inner + tan(PusherScene3D.rampAngle) * PusherScene3D.rampWidth)
+    }
+
+    /// 斜面顶面在横坐标 x 处的高度；不在斜坡范围内返回 nil
+    func rampTopHeight(atX x: Float, z: Float) -> Float? {
+        guard z >= scraperFrontZ, z <= scraperFrontZ + PusherScene3D.rampLength else { return nil }
+        let innerAbs = config.deckWidth / 2 - PusherScene3D.rampWidth
+        guard abs(x) > innerAbs else { return nil }
+        let e = rampEdgeHeights(side: x < 0 ? -1 : 1)
+        return e.inner + (abs(x) - innerAbs) / PusherScene3D.rampWidth * (e.outer - e.inner)
     }
 
     // MARK: 金币尺寸校准（2D → 3D 交接时屏幕上大小一致）
@@ -548,7 +594,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let radius = Float(targetDiameter / 2) * worldPerPoint
         guard radius > 0.05, abs(radius - config.coinRadius) / config.coinRadius > 0.01 else { return }
         config.coinRadius = radius
-        config.coinThickness = radius * 0.18
+        config.coinThickness = radius * PusherScene3D.coinThicknessRatio
         coinGeometry.height = CGFloat(config.coinThickness)
         specialGeometry.height = CGFloat(config.coinThickness)
         coinGeometry.radius = CGFloat(radius)
@@ -560,17 +606,38 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
 
     /// 从 2D 下落区交接：金币出现在与 2D 金币相同的屏幕位置（view 坐标），带向下的速度，保证衔接连续
     func dropCoin(atViewPoint p: CGPoint, special: Bool = false) {
-        guard let view, view.bounds.width > 0, var world = worldPointOnHandoffPlane(p, in: view) else {
+        guard let view, view.bounds.width > 0, let world = spawnPoint(forViewPoint: p, in: view) else {
             dropCoin(xFraction: Float(p.x / max(1, view?.bounds.width ?? 1)) * 2 - 1, special: special)
             return
         }
-        let c = config
-        world.x = max(-(c.deckWidth / 2 - c.coinRadius - 0.1), min(c.deckWidth / 2 - c.coinRadius - 0.1, world.x))
-        world.y = max(c.pusherHeight + c.coinRadius + 0.3, world.y)
-        // 平着落下（不旋转），带向下速度；落到台面碰撞后才翻滚
+        // 平着落下（不旋转），带向下速度；落到推板顶面或斜坡上，碰撞后才翻滚
         addCoin(at: world, tilt: Float.random(in: -0.08...0.08),
-                velocity: SCNVector3(Float.random(in: -0.3...0.3), -6, Float.random(in: 0.3...1.0)),
+                velocity: SCNVector3(Float.random(in: -0.3...0.3), -4, Float.random(in: 0.1...0.5)),
                 special: special)
+    }
+
+    /// 交接点：沿屏幕点 p 的视线，取推板顶面（或斜坡顶面）上方一点的位置。
+    /// 在同一条视线上，所以 3D 金币出现的屏幕位置和 2D 金币完全相同，不会跳动
+    func spawnPoint(forViewPoint p: CGPoint, in view: SCNSceneRenderer) -> SCNVector3? {
+        let near = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
+        let far = view.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
+        let dy = far.y - near.y
+        guard dy < -1e-4 else { return nil }
+        func point(atHeight h: Float) -> SCNVector3 {
+            let t = (h - near.y) / dy
+            return SCNVector3(near.x + (far.x - near.x) * t, h, near.z + (far.z - near.z) * t)
+        }
+        let c = config
+        var h = c.pusherHeight + c.coinRadius * 0.6 + 0.15
+        var q = point(atHeight: h)
+        for _ in 0..<3 {
+            guard let top = rampTopHeight(atX: q.x, z: q.z), top + c.coinRadius * 0.6 + 0.1 > h else { break }
+            h = top + c.coinRadius * 0.6 + 0.1
+            q = point(atHeight: h)
+        }
+        let limit = c.deckWidth / 2 - c.coinRadius - 0.05
+        q.x = max(-limit, min(limit, q.x))
+        return q
     }
 
     /// 从上方投下一枚金币，落到推板顶面（上层台面）。xFraction ∈ [-1, 1]
@@ -584,7 +651,29 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     // MARK: 每帧：回收掉出前沿的金币 + 统计
+    /// 金币分布：在推板顶面上 / 在下层台面上（含斜坡）
+    var coinDistribution: (onPusher: Int, onTable: Int) {
+        let pusherFront = (pusher?.presentation.position.z ?? pusherRestZ) + config.pusherDepth / 2
+        var onPusher = 0, onTable = 0
+        for node in coins {
+            let p = node.presentation.position
+            if p.y > config.pusherHeight - 0.05 && p.z < pusherFront { onPusher += 1 } else if p.y > -0.5 { onTable += 1 }
+        }
+        return (onPusher, onTable)
+    }
+
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        if logsPhysicsStats {
+            logFrames += 1
+            if logWindowStart == 0 { logWindowStart = time }
+            if time - logWindowStart >= 1 {
+                let d = coinDistribution
+                NSLog("PUSHER_STATS fps=%.1f onPusher=%d onTable=%d fallen=%d total=%d rejected=%d",
+                      Double(logFrames) / (time - logWindowStart), d.onPusher, d.onTable, droppedCount, coins.count, rejectedCount)
+                logFrames = 0
+                logWindowStart = time
+            }
+        }
         frameCount += 1
         if windowStart == 0 { windowStart = time }
         if time - windowStart >= 2 {
@@ -615,6 +704,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     var coinCount: Int { coins.count }
+
+    /// 每枚金币的当前位置（测试用，键为节点对象标识）
+    var coinPositions: [ObjectIdentifier: SCNVector3] {
+        Dictionary(uniqueKeysWithValues: coins.map { (ObjectIdentifier($0), $0.presentation.position) })
+    }
+
+    /// 测试用：在屏幕点上投一枚，返回 3D 金币节点
+    @discardableResult
+    func dropTestCoin(atViewPoint p: CGPoint) -> SCNNode? {
+        guard let view, let world = spawnPoint(forViewPoint: p, in: view) else { return nil }
+        return addCoin(at: world, velocity: SCNVector3(0, -4, 0.2))
+    }
 
     // MARK: 贴图（代码生成）
     static func coinFaceImage(size: CGFloat = 256) -> UIImage {

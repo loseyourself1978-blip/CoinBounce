@@ -50,6 +50,7 @@ struct GameLayout: Equatable {
     let fallScale: CGFloat
 
     static let margin: CGFloat = 10
+    static let coinDiameterFraction: CGFloat = 0.078
     /// v9.5 物理的下落高度（-360 → 20）和推币床长度
     static let legacyFallHeight: CGFloat = 380
 
@@ -97,8 +98,8 @@ struct GameLayout: Equatable {
         let slotInner = slotMachine.insetBy(dx: 10, dy: 8)
         slotReels = slotInner
 
-        // 金币直径约为屏宽的 6%（参考 App 下落中金币约 6% 屏宽），随屏幕宽度缩放
-        coinRadius = (contentW * 0.06 / 2).rounded()
+        // 金币直径为内容宽度的 7.8%（v10.8 的 6% 加大 30%，下落和台面上的金币同样大小），随屏幕宽度缩放
+        coinRadius = (contentW * GameLayout.coinDiameterFraction / 2).rounded()
         coinSpawnY = sliderTrack.midY
         coinSliderWidth = max(44, contentW * 0.14)
         // 参考 App 的 COIN 滑块只在中间约 ±17% 屏宽内往复
@@ -110,7 +111,7 @@ struct GameLayout: Equatable {
         let reelSpacing: CGFloat = 4
         let cellW = (slotReels.width - reelSpacing * 4) / 5
         let cellH = slotReels.height / 3
-        slotObstacleRadius = max(6, min(cellW, cellH) * 0.25)   // 留出与格挡钉之间至少一枚金币的空隙
+        slotObstacleRadius = max(6, min(cellW, cellH) * 0.16)   // 留出与格挡钉之间至少一枚金币的空隙（v11 金币加大 30%）
         var obstacles: [CGPoint] = []
         for row in 0..<3 {
             for col in 0..<5 {
