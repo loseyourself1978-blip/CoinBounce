@@ -297,7 +297,9 @@ extension Pusher3DTests {
         let panelTop = rig.layout.dropButton.minY - rig.layout.pusherView.minY
         var occlusionProblems: [String] = []
         var checks = 0
-        var startLayers: Float = 0
+        // 层数按时间窗口平均（单个瞬间可能刚好有一枚被挤上去或刚掉下去）：开局取第 2–5 秒，结束取最后 10 秒，每秒采样一次
+        var startSamples: [Float] = [], endSamples: [Float] = []
+        var elapsed = 0
         let timers = [
             Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
                 rig.state.availableCoins = 1000
@@ -310,16 +312,23 @@ extension Pusher3DTests {
                 occlusionProblems += report.problems
             }
         ]
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { startLayers = rig.pusher.pileLayers().p90 }
+        let sampler = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            elapsed += 1
+            let p90 = rig.pusher.pileLayers().p90
+            if (2...5).contains(elapsed) { startSamples.append(p90) }
+            if elapsed > 50 { endSamples.append(p90) }
+        }
         run(seconds: 60)
         timers.forEach { $0.invalidate() }
+        sampler.invalidate()
+        let startLayers = startSamples.reduce(0, +) / Float(max(1, startSamples.count))
 
         let samples = rig.pusher.handoffSamples
         let maxJump = samples.map(\.jump).max() ?? .infinity
         let maxErr = samples.map(\.diameterError).max() ?? .infinity
         let falls = rig.state.fallTimes
         let fallAvg = falls.isEmpty ? 0 : falls.reduce(0, +) / Double(falls.count)
-        let endLayers = rig.pusher.pileLayers().p90
+        let endLayers = endSamples.reduce(0, +) / Float(max(1, endSamples.count))
         print("VISUAL_GATES handoffs=\(samples.count) maxJump=\(maxJump) maxDiamErr=\(maxErr) removed=\(rig.pusher.removalReasons) life=\(rig.pusher.lifecycleCounts) occlusionChecks=\(checks) occlusionProblems=\(occlusionProblems.count) \(occlusionProblems.prefix(3)) layersStart=\(startLayers) layersEnd=\(endLayers) fallAvg=\(fallAvg) n=\(falls.count)")
 
         XCTAssertGreaterThan(samples.count, 60, "60 秒内大部分金币都交接到了 3D")
@@ -331,6 +340,7 @@ extension Pusher3DTests {
         XCTAssertGreaterThan(rig.pusher.removalReasons["fellIntoTray"] ?? 0, 10, "前沿持续有金币掉落")
         XCTAssertNil(rig.pusher.lifecycleCounts["lostBehindWall"], "没有金币跑到挡板后面")
         XCTAssertNil(rig.pusher.lifecycleCounts["lostSide"], "没有金币从两侧跑出去")
+        XCTAssertNil(rig.pusher.lifecycleCounts["rescuedFromFloor"], "没有金币被挤进台面")
         XCTAssertGreaterThan(rig.pusher.lifecycleCounts["onPusher"] ?? 0, 0, "有金币落在推板上")
         XCTAssertGreaterThan(rig.pusher.lifecycleCounts["scraped"] ?? 0, 0, "推板上的金币被挡板刮下")
         XCTAssertGreaterThan(rig.pusher.lifecycleCounts["onRamp"] ?? 0, 0, "有金币落在斜坡上")

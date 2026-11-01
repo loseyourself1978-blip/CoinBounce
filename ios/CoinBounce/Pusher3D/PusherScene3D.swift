@@ -91,7 +91,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     private func buildScene() {
         let c = config
         scene.physicsWorld.gravity = baseGravity   // 单位较小，加大重力让下落手感接近真实
-        scene.physicsWorld.timeStep = 1.0 / 120.0
+        scene.physicsWorld.timeStep = 1.0 / 180.0   // 更细的步长：薄金币被推板挤压时不容易被压进台面
 
         // 相机：斜上方透视
         let camera = SCNCamera()
@@ -197,9 +197,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         scene.rootNode.addChildNode(floor)
 
         // 推板（运动学）：从台面后部伸出，前后往复
-        let pusherNode = box(c.pusherWidth, c.pusherHeight, c.pusherDepth, red)
+        // 推板下沿伸进台面 0.2（台面是静态体，运动学推板与它重叠没关系）：推板和台面之间没有缝，薄金币不会被压到推板下面
+        let pusherNode = box(c.pusherWidth, c.pusherHeight + PusherScene3D.pusherSink, c.pusherDepth, red)
         let restZ = pusherRestZ
-        pusherNode.position = SCNVector3(0, c.pusherHeight / 2, restZ)
+        pusherNode.position = SCNVector3(0, (c.pusherHeight - PusherScene3D.pusherSink) / 2, restZ)
         let body = SCNPhysicsBody(type: .kinematic, shape: SCNPhysicsShape(node: pusherNode, options: nil))
         body.friction = 0.6
         pusherNode.physicsBody = body
@@ -210,7 +211,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         pusherNode.runAction(.repeatForever(.sequence([forward, forward.reversed()])), forKey: "push")
         // 推板前沿发光边
         let edge = box(c.pusherWidth - 0.05, 0.08, 0.08, neonGold)
-        edge.position = SCNVector3(0, c.pusherHeight / 2 + 0.01, c.pusherDepth / 2 - 0.02)
+        edge.position = SCNVector3(0, (c.pusherHeight + PusherScene3D.pusherSink) / 2 + 0.01, c.pusherDepth / 2 - 0.02)
         pusherNode.addChildNode(edge)
 
         // 后挡板（刮板）：前表面正好在推板收回到底时的前沿位置，底边贴着推板顶面。
@@ -360,8 +361,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     // MARK: 卡牌效果
 
     private weak var easyDropGlow: SCNNode?
-    /// 台面极轻微向前倾（重力加 0.25 的向前分量，远小于静摩擦能抵抗的约 2.6）：金币自己不会滑，但被推时更容易整体前移
-    static let tableForwardTilt: Float = 0.25
+    /// 台面极轻微向前倾（重力加 0.5 的向前分量，远小于静摩擦能抵抗的约 2.6）：金币自己不会滑，但被推时更容易整体前移
+    static let tableForwardTilt: Float = 0.5
+    static let pusherSink: Float = 0.2
     private var baseGravity = SCNVector3(0, -9.8 * 2.2, PusherScene3D.tableForwardTilt)
 
     /// 推板速度倍率（卡牌「推板加速」）
@@ -372,7 +374,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         forward.timingMode = .easeInEaseOut
         // 先回到起点再开始新的往复，避免位置漂移
         let restZ = pusherRestZ
-        let home = SCNAction.move(to: SCNVector3(0, c.pusherHeight / 2, restZ), duration: 0.15)
+        let home = SCNAction.move(to: SCNVector3(0, (c.pusherHeight - PusherScene3D.pusherSink) / 2, restZ), duration: 0.15)
         pusher.runAction(.sequence([home, .repeatForever(.sequence([forward, forward.reversed()]))]), forKey: "push")
     }
 
@@ -819,6 +821,16 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         coins.removeAll { node in
             let p = node.presentation.position
             let id = ObjectIdentifier(node)
+            // 保险：金币被推板挤进台面里（看不见）时，立刻放回表面上（每次都记日志，正常应极少发生）
+            if p.y < -0.02, p.z < config.deckDepth / 2 - 0.2, abs(p.x) < config.deckWidth / 2 {
+                let surface = surfaceHeight(atX: p.x, z: p.z)
+                node.position = SCNVector3(p.x, surface + config.coinThickness, p.z)
+                node.physicsBody?.velocity = SCNVector3Zero
+                node.physicsBody?.angularVelocity = SCNVector4Zero
+                node.physicsBody?.resetTransform()
+                logEvent("rescuedFromFloor", id: id, detail: "\(p.x),\(p.y),\(p.z)")
+                return false
+            }
             if trackNow || p.y < PusherScene3D.removeBelowY { updateTrack(id, position: p, time: time) }
             // 只有落进前沿下方接币槽的金币才移除（计分）；其他任何位置都不移除
             if p.y < PusherScene3D.removeBelowY {
@@ -936,15 +948,16 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         guard isFitted, let view, let q = handoffPoint(forViewPoint: p, in: view) else { return false }
         guard q.z > scraperFrontZ + config.coinRadius * 0.5 else { return false }   // 还在挡板后面（屏幕上看是挡板），继续 2D 下落
         let clearance = config.coinRadius + 0.08
-        if q.y <= surfaceHeight(atX: q.x, z: q.z) + clearance { return true }
+        // 推板在整个行程里随时可能移到金币下面，所以按推板推到最远时的顶面判断（不会出现推板「插进」刚交接的金币）
+        if q.y <= surfaceHeight(atX: q.x, z: q.z, pusherFront: pusherFrontZExtended) + clearance { return true }
         guard let next = handoffPoint(forViewPoint: CGPoint(x: p.x, y: p.y + PusherScene3D.handoffLookAheadPoints), in: view) else { return false }
-        return next.y <= surfaceHeight(atX: next.x, z: next.z) + clearance
+        return next.y <= surfaceHeight(atX: next.x, z: next.z, pusherFront: pusherFrontZExtended) + clearance
     }
 
     /// (x, z) 处最上面的表面高度：斜坡、推板顶面或台面
-    func surfaceHeight(atX x: Float, z: Float) -> Float {
+    func surfaceHeight(atX x: Float, z: Float, pusherFront fixedFront: Float? = nil) -> Float {
         if let top = rampTopHeight(atX: x, z: z) { return top }
-        let pusherFront = (pusher?.presentation.position.z ?? pusherRestZ) + config.pusherDepth / 2
+        let pusherFront = fixedFront ?? (pusher?.presentation.position.z ?? pusherRestZ) + config.pusherDepth / 2
         if abs(x) < config.pusherWidth / 2, z < pusherFront { return config.pusherHeight }
         return 0
     }

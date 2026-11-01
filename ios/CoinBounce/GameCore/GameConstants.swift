@@ -60,8 +60,8 @@ struct GameConstants {
     static let coinSliderPeriod: Double = 4.0
     static let bonusSliderPeriod: Double = 4.6
     static let pusherPeriod: Double = 3.0           // 3D 推板往复周期（秒），参考约 3 秒（v10.5 为 1.8）
-    static let deckFriction: CGFloat = 0.3          // 3D 台面摩擦（v11.2：金币与台面 0.4×0.3 = 0.12）
-    static let pusherCoinFriction: CGFloat = 0.4          // 3D 金币摩擦（金币之间 0.4×0.4 = 0.16：薄金币被挤上去后会滑下来，金币堆保持参考的 1–2 层）
+    static let deckFriction: CGFloat = 0.4          // 3D 台面摩擦（v11.2：金币与台面 0.3×0.4 = 0.12）
+    static let pusherCoinFriction: CGFloat = 0.3          // 3D 金币摩擦（金币之间 0.3×0.3 = 0.09：薄金币被挤到两枚之上会滑下来，金币堆保持参考的 2 层）
     static let battleAttackCooldown: TimeInterval = 0.25
 
     // 中奖金币雨（纯视觉，不计分）
