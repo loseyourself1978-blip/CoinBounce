@@ -42,7 +42,7 @@ final class BattleEffectsTests: XCTestCase {
 
     func test_specialFlag_passesToPusher() {
         var flags: [Bool] = []
-        state.onCoinToPusher = { _, special in flags.append(special) }
+        state.onCoinToPusher = { _, _, special in flags.append(special) }
         state.coinReachedPusher(x: state.layout.centerX, isSpecial: true)
         state.coinReachedPusher(x: state.layout.centerX)
         XCTAssertEqual(flags, [true, false])

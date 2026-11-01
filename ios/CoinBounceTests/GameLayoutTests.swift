@@ -84,7 +84,8 @@ final class GameLayoutTests: XCTestCase {
             XCTAssertEqual(l.slotMachine.maxY / H, 0.485, accuracy: 0.01, "老虎机底部 ≈ 48.5%")
             XCTAssertEqual(l.fruitBar.minY / H, 0.575, accuracy: 0.01, "水果排顶部 ≈ 57.5%")
             XCTAssertEqual(l.bonusLane.maxY / H, 0.69, accuracy: 0.01, "BONUS 底部 ≈ 69%")
-            XCTAssertEqual(l.dropButton.minY / H, 0.895, accuracy: 0.01, "台面前沿 / 按钮区 ≈ 89.5%")
+            XCTAssertEqual(l.dropButton.minY / H, 0.905, accuracy: 0.01, "底部面板 ≈ 90.5%")
+            XCTAssertEqual(l.pusherFrontY / H, 0.855, accuracy: 0.01, "台面前沿 ≈ 85.5%（参考 85–86%）")
             XCTAssertEqual(l.sideMargin / l.size.width, 0.10, accuracy: 0.005, "两侧立柱各 10% 屏宽")
         }
         XCTAssertTrue(l.pusherView.contains(CGPoint(x: l.dropButton.midX, y: l.dropButton.midY)))
@@ -247,7 +248,7 @@ final class GameLayoutTests: XCTestCase {
         let l = screens[1].layout
         state.updateLayout(l)
         var received: [CGPoint] = []
-        state.onCoinToPusher = { point, _ in received.append(point) }
+        state.onCoinToPusher = { point, _, _ in received.append(point) }
         defer { state.onCoinToPusher = nil }
         state.coinReachedPusher(x: l.centerX)
         state.coinReachedPusher(x: l.fieldMaxX + 100)

@@ -177,7 +177,12 @@ class GameState: ObservableObject {
     private(set) var bedDropCount = 0
     /// 下落区的金币到达推币台时调用：参数为横向位置（-1 左 … 1 右），由 3D 推币台生成金币
     /// 参数：金币在推币台视图内的位置（推币台区域左上角为原点）、是否特殊金币
-    var onCoinToPusher: ((_ pointInPusher: CGPoint, _ isSpecial: Bool) -> Void)?
+    /// 下落金币交给 3D 推币台：推币台视图内的屏幕位置、屏幕速度（点/秒，向下为正）、是否特殊金币
+    var onCoinToPusher: ((_ pointInPusher: CGPoint, _ screenVelocity: CGVector, _ isSpecial: Bool) -> Void)?
+    /// 推币台判断这个屏幕位置的下落金币是否该交接了（3D 金币已经贴近表面）；没有推币台时按交接线判断
+    var handoffReady: ((_ pointInPusher: CGPoint) -> Bool)?
+    /// 每枚下落金币从投币口到交接的时长（秒），用于和参考 App 对比（验收日志和测试）
+    var fallTimes: [TimeInterval] = []
     /// 等待下落区生成的中奖金币雨（纯视觉）
     var pendingCoinRain = 0
     /// 生成特殊金币用的随机数（测试里可替换）
@@ -429,11 +434,19 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.baffleHit)
     }
 
-    /// 金币越过下落区底部，交给 3D 推币台：传入它在推币台视图里的屏幕位置，3D 金币在同一位置出现
-    func coinReachedPusher(x: CGFloat, isSpecial: Bool = false) {
+    /// 下落金币是否该交给 3D 推币台
+    func isReadyForHandoff(x: CGFloat, y: CGFloat) -> Bool {
+        guard y >= layout.pusherView.minY else { return false }
+        if y >= layout.dropButton.minY { return true }   // 保险：到底部面板之前一定交接
+        guard let ready = handoffReady else { return y >= layout.bedEntryY }
+        return ready(CGPoint(x: x - layout.pusherView.minX, y: y - layout.pusherView.minY))
+    }
+
+    /// 下落金币交给 3D 推币台：传入它当前的屏幕位置和速度，3D 金币在同一位置、同样大小出现并接着下落
+    func coinReachedPusher(x: CGFloat, y: CGFloat? = nil, velocity: CGVector = .zero, isSpecial: Bool = false) {
         let clampedX = min(max(x, layout.fieldMinX), layout.fieldMaxX)
-        let point = CGPoint(x: clampedX - layout.pusherView.minX, y: layout.bedEntryY - layout.pusherView.minY)
-        onCoinToPusher?(point, isSpecial)
+        let point = CGPoint(x: clampedX - layout.pusherView.minX, y: (y ?? layout.bedEntryY) - layout.pusherView.minY)
+        onCoinToPusher?(point, velocity, isSpecial)
     }
 
     /// 3D 推币台上有金币从前沿掉落：计分（特殊金币奖励更多）

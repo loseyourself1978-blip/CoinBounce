@@ -21,6 +21,9 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     private var edgeTexture: SKTexture!
     private var specialTexture: SKTexture!
     private var lastUpdate: TimeInterval = 0
+    /// 每枚金币从投币口到交接的下落时长（秒），用于和参考 App 对比
+    private(set) var lastFallTimes: [TimeInterval] = []
+    private var spriteVersion = -1
 
     /// 每枚金币的状态
     private final class CoinInfo {
@@ -32,6 +35,8 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         /// 中奖金币雨：纯视觉，不触发任何事件
         var isDecorative = false
         var lastObstacleHit: TimeInterval = 0
+        /// 上一帧的屏幕位置：帧率低时一帧会走几十个点，交接点要在上一帧和这一帧之间精确找
+        var previous: CGPoint?
     }
 
     init(gameState: GameState) {
@@ -55,6 +60,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         faceTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: false))
         edgeTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: true))
         specialTexture = SKTexture(image: DropFieldScene.coinImage(diameter: r * 2, edge: false, special: true))
+        spriteVersion = -1
         // 重力：从投币口到推币台自由下落约 1 秒（加上空气阻力和弹跳，实际约 1.3～1.6 秒），与屏幕高度成比例
         let fall = newLayout.bedEntryY - newLayout.coinSpawnY
         let t = GameConstants.dropFallSeconds
@@ -101,6 +107,13 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
     // MARK: 生成金币
     private func spawn(_ request: Active2DCoin, decorative: Bool = false) {
         let r = layout.coinRadius
+        // 有 3D 场景渲染的金币精灵就用它（同一个金币模型、同样的灯光和角度，交接前后看起来一样）
+        let store = CoinSpriteStore.shared
+        if store.version != spriteVersion, let normal = store.normal {
+            spriteVersion = store.version
+            faceTexture = SKTexture(image: normal)
+            if let special = store.special { specialTexture = SKTexture(image: special) }
+        }
         let node = SKSpriteNode(texture: request.isSpecial ? specialTexture : faceTexture, size: CGSize(width: r * 2, height: r * 2))
         // 投影：右下方的半透明暗影，让金币浮在机柜前方，有纵深感
         let shadow = SKShapeNode(ellipseOf: CGSize(width: r * 2, height: r * 1.7))
@@ -108,6 +121,7 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
         shadow.strokeColor = .clear
         shadow.position = CGPoint(x: r * 0.25, y: -r * 0.35)
         shadow.zPosition = -2
+        shadow.name = "shadow"
         node.addChild(shadow)
         if request.isSpecial {
             // 特殊金币：外圈光晕
@@ -192,11 +206,31 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
                 info.crossedBonus = true
                 state.coinCrossedBonusLane(x: x)
             }
-            if y >= layout.bedEntryY {
+            defer { info.previous = CGPoint(x: x, y: y) }
+            // 进入推币台视图后去掉 2D 投影（3D 金币有自己的真实阴影），交接前后外观一致
+            if y >= layout.pusherView.minY, let shadow = node.childNode(withName: "shadow"), shadow.alpha > 0 { shadow.alpha = 0 }
+            if state.isReadyForHandoff(x: x, y: y) {
+                // 在上一帧位置和这一帧位置之间二分，找到最早该交接的那一点（不让 3D 金币生成在表面以下）
+                var point = CGPoint(x: x, y: y)
+                if let prev = info.previous, state.isReadyForHandoff(x: prev.x, y: prev.y) {
+                    // 上一帧的位置现在就已经该交接（推板这一帧移到了它下面，或这一帧卡顿走了很远）：在上一帧显示的位置交接
+                    point = prev
+                } else if let prev = info.previous {
+                    var lo: CGFloat = 0, hi: CGFloat = 1
+                    for _ in 0..<12 {
+                        let m = (lo + hi) / 2
+                        if state.isReadyForHandoff(x: prev.x + (x - prev.x) * m, y: prev.y + (y - prev.y) * m) { hi = m } else { lo = m }
+                    }
+                    point = CGPoint(x: prev.x + (x - prev.x) * hi, y: prev.y + (y - prev.y) * hi)
+                }
                 #if DEBUG
-                NSLog("[Drop] fall %.2fs", lastUpdate - info.spawnTime)
+                NSLog("[Drop] fall %.2fs from %.0f,%.0f to %.0f,%.0f handoff %.0f,%.0f", lastUpdate - info.spawnTime,
+                      info.previous?.x ?? -1, info.previous?.y ?? -1, x, y, point.x, point.y)
                 #endif
-                state.coinReachedPusher(x: x, isSpecial: info.isSpecial)
+                lastFallTimes.append(lastUpdate - info.spawnTime)
+                state.fallTimes.append(lastUpdate - info.spawnTime)
+                let v = node.physicsBody?.velocity ?? .zero
+                state.coinReachedPusher(x: point.x, y: point.y, velocity: CGVector(dx: v.dx, dy: -v.dy), isSpecial: info.isSpecial)
                 node.removeFromParent()
             } else if y > size.height + 50 || x < -50 || x > size.width + 50 {
                 node.removeFromParent()
