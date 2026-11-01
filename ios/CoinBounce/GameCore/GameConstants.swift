@@ -44,9 +44,15 @@ struct GameConstants {
     static let fruitHitZoneFraction: CGFloat = 0.35
 
     // 手感（v10.4 整体调快）
-    static let dropFallSeconds: Double = 0.6       // 下落区自由落体时长（v10.5 为 0.77）；加上格挡弹跳，实际约 1.4～1.8 秒，参考约 1.4 秒
+    static let dropFallSeconds: Double = 0.92      // 下落区自由落体时长；加上格挡弹跳后从投币口到推币台约 1.75 秒（见 referenceFallSeconds）
+    /// 参考 App 实测：金币从 COIN 滑块落到推币台约 1.75 秒（2.mp4 第 8.1–9.6 秒逐帧跟踪：投币口→老虎机顶约 0.25 秒，
+    /// 老虎机顶→水果排 1.2 秒，水果排→推板约 0.3 秒）。我们的平均下落时长必须在它的 ±10% 以内
+    static let referenceFallSeconds: Double = 1.75
+    /// 参考 App 实测：接币盘里的金币堆大多 1–2 层，叠得最高的两枚一摞（2.mp4 第 12 秒接币盘特写）。
+    /// 我们接币盘区域金币堆的 90 百分位层数要等于它（四舍五入）
+    static let referencePileLayers: Float = 2
     static let dropLinearDamping: CGFloat = 0.3     // 下落空气阻力（v10.5 为 0.32）
-    static let pusherStroke: Float = 2.2            // 3D 推板行程：每次从挡板后完全收回再推出 2.2（v10.6 为 1.8）
+    static let pusherStroke: Float = 2.8            // 3D 推板行程：每次从挡板后完全收回再推出 2.8，推得更深，金币堆整体前移、前沿持续掉币
 
     // 滑块（按参考 App 测量）：COIN 约 ±17% 屏宽、周期约 4 秒；BONUS 约 ±16% 屏宽、周期约 4.6 秒
     static let coinSliderTravelFraction: CGFloat = 0.17
@@ -54,8 +60,8 @@ struct GameConstants {
     static let coinSliderPeriod: Double = 4.0
     static let bonusSliderPeriod: Double = 4.6
     static let pusherPeriod: Double = 3.0           // 3D 推板往复周期（秒），参考约 3 秒（v10.5 为 1.8）
-    static let deckFriction: CGFloat = 0.2          // 3D 下层台面摩擦（v11：金币之间摩擦大于金币与台面，整堆被推着往前走而不是互相叠上去）
-    static let pusherCoinFriction: CGFloat = 0.6          // 3D 金币摩擦（金币之间 0.6×0.6，金币与台面 0.6×0.2）
+    static let deckFriction: CGFloat = 0.3          // 3D 台面摩擦（v11.2：金币与台面 0.4×0.3 = 0.12）
+    static let pusherCoinFriction: CGFloat = 0.4          // 3D 金币摩擦（金币之间 0.4×0.4 = 0.16：薄金币被挤上去后会滑下来，金币堆保持参考的 1–2 层）
     static let battleAttackCooldown: TimeInterval = 0.25
 
     // 中奖金币雨（纯视觉，不计分）

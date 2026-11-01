@@ -63,8 +63,11 @@ struct GameLayout: Equatable {
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
     /// v11.1 按参考 App 逐帧测量（参考录屏 874 点高，与 iPhone 17 相同）换算成安全区内比例，使各区域的屏幕位置与参考一致：
     /// 顶栏到 19.5%、COIN 轨道 19.5–30%、老虎机 30–48.5%、战斗区 48.5–57.5%、水果 57.5–64.5%、BONUS 64.5–69%、
-    /// 推币台 69–89.5%（台面前沿在 89.5%，参考约 90%）、投币按钮区 89.5% 到底部安全区（iPhone 17 上与参考的偏差 < 1% 屏高）
-    static let heightRatios: [CGFloat] = [0.139, 0.118, 0.2095, 0.103, 0.077, 0.049, 0.230, 0.0745]
+    /// 推币台 69–90.5%（台面前沿约 85.5%，前沿到 90.5% 之间是看得见的掉落和接币槽）、底部金色面板 90.5% 起，
+    /// 投币按钮整个在面板里（不挡住掉落的金币）。iPhone 17 上与参考的偏差 < 1.5% 屏高
+    static let heightRatios: [CGFloat] = [0.139, 0.118, 0.2095, 0.103, 0.077, 0.049, 0.2417, 0.0628]
+    /// 台面前沿在推币台区域（视图顶部 → 底部面板）中的位置比例：iPhone 17 上约 85.5% 屏高（参考接币盘前沿约 85–86%）
+    static let pusherFrontFraction: CGFloat = 0.766
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -159,6 +162,8 @@ struct GameLayout: Equatable {
     }
 
     var centerX: CGFloat { (fieldMinX + fieldMaxX) / 2 }
+    /// 台面前沿（金币掉落处）的屏幕 y：前沿到底部面板之间留出看得见的掉落空间
+    var pusherFrontY: CGFloat { pusherView.minY + (dropButton.minY - pusherView.minY) * GameLayout.pusherFrontFraction }
 
     /// 自上而下的全部区域，用于检查是否越界、重叠
     var regions: [(name: String, frame: CGRect)] {
