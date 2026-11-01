@@ -8,6 +8,8 @@ import SwiftUI
 struct GameLayout: Equatable {
     let size: CGSize
     let safeArea: EdgeInsets
+    /// 左右机柜立柱宽度
+    let sideMargin: CGFloat
 
     // MARK: 区域（自上而下，互不重叠）
     let jackpot: CGRect
@@ -50,15 +52,19 @@ struct GameLayout: Equatable {
     let fallScale: CGFloat
 
     static let margin: CGFloat = 10
-    static let coinDiameterFraction: CGFloat = 0.078
+    /// v11.1：机柜两侧木质立柱（带灯泡）各占屏宽 10%，下落区、老虎机、水果排都在立柱之间（参考 App 实测 10%～90%）
+    static let sideMarginFraction: CGFloat = 0.10
+    /// 金币直径占屏宽的比例（v11.0 的内容宽度 7.8% 换算到整屏宽，约 7.4%；下落和台面上同样大小）
+    static let coinDiameterFraction: CGFloat = 0.074
     /// v9.5 物理的下落高度（-360 → 20）和推币床长度
     static let legacyFallHeight: CGFloat = 380
 
     /// 各区域占安全区内高度的比例，合计 1
     /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
-    /// 按参考 App 逐帧测量的屏幕高度比例（扣除我们更紧凑的顶栏后换算）：
-    /// 老虎机约占 27%（参考转轴窗口约占全屏 17%、连同 COIN 拱形轨道约 29%），战斗区约 9.5%，水果约 5.5%，BONUS 约 5.5%
-    static let heightRatios: [CGFloat] = [0.07, 0.055, 0.27, 0.095, 0.055, 0.07, 0.285, 0.10]
+    /// v11.1 按参考 App 逐帧测量（参考录屏 874 点高，与 iPhone 17 相同）换算成安全区内比例，使各区域的屏幕位置与参考一致：
+    /// 顶栏到 19.5%、COIN 轨道 19.5–30%、老虎机 30–48.5%、战斗区 48.5–57.5%、水果 57.5–64.5%、BONUS 64.5–69%、
+    /// 推币台 69–89.5%（台面前沿在 89.5%，参考约 90%）、投币按钮区 89.5% 到底部安全区（iPhone 17 上与参考的偏差 < 1% 屏高）
+    static let heightRatios: [CGFloat] = [0.139, 0.118, 0.2095, 0.103, 0.077, 0.049, 0.230, 0.0745]
 
     /// iPhone 16/17 级别竖屏，GameState 在视图传入真实布局前使用
     static let reference = GameLayout(
@@ -70,7 +76,8 @@ struct GameLayout: Equatable {
         self.size = size
         self.safeArea = safeArea
 
-        let m = GameLayout.margin
+        let m = max(GameLayout.margin, (size.width * GameLayout.sideMarginFraction).rounded())
+        sideMargin = m
         let left = safeArea.leading + m
         let right = size.width - safeArea.trailing - m
         let contentW = max(0, right - left)
@@ -99,7 +106,7 @@ struct GameLayout: Equatable {
         slotReels = slotInner
 
         // 金币直径为内容宽度的 7.8%（v10.8 的 6% 加大 30%，下落和台面上的金币同样大小），随屏幕宽度缩放
-        coinRadius = (contentW * GameLayout.coinDiameterFraction / 2).rounded()
+        coinRadius = (size.width * GameLayout.coinDiameterFraction / 2).rounded()
         coinSpawnY = sliderTrack.midY
         coinSliderWidth = max(44, contentW * 0.14)
         // 参考 App 的 COIN 滑块只在中间约 ±17% 屏宽内往复
