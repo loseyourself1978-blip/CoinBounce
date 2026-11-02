@@ -163,6 +163,12 @@ final class Pusher3DTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 60) { done.fulfill() }
         wait(for: [done], timeout: 120)
         timers.forEach { $0.invalidate() }
+        // 先停住物理再读统计：所有计数来自同一时刻（否则读 lifecycleCounts 和 pendingRampCoins 之间又有金币落上斜坡、滑到推板）
+        view.isPlaying = false
+        pusher.scene.isPaused = true
+        let stoppedAt = CACurrentMediaTime()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        let pendingRamp = pusher.pendingRampCoins(asOf: stoppedAt)
 
         let life = pusher.lifecycleCounts
         let landedPusher = life["landedPusher"] ?? 0, landedRamp = life["landedRamp"] ?? 0, landedPile = life["landedPile"] ?? 0
@@ -186,12 +192,14 @@ final class Pusher3DTests: XCTestCase {
         // 门槛 4 落点：≥95% 先落在推板顶面或斜坡上（实际要求 0% 落在金币堆上）；斜坡上的金币 100% 在 3 秒内到推板顶面
         XCTAssertEqual(landedPile, 0, "没有金币直接落到推板前方的金币堆上")
         XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp) / Double(max(1, landings)), 0.95)
-        XCTAssertEqual((life["rampToPusher"] ?? 0) + pusher.pendingRampCoins, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
+        XCTAssertEqual((life["rampToPusher"] ?? 0) + pendingRamp, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
         XCTAssertEqual(pusher.rampTimeouts, 0)
         // 门槛 5 流转：推板收回时金币从推板顶面掉到下层金币堆
         XCTAssertGreaterThan(life["pusherToPile"] ?? 0, 10, "推板顶面 → 金币堆")
         // 推板推动金币堆，前沿的金币掉进接币槽（替代 v11.2 的 test_livePhysics_pusherMovesPileAndCoinsFallOff）
-        XCTAssertGreaterThan(pusher.removalReasons["fellIntoTray"] ?? 0, 10, "金币堆被推动，前沿金币掉进接币槽")
+        // 与 v11.2 原测试相同的断言：有金币从前沿掉落、新投的币没有被丢弃（推动金币堆由上面的 pusherToPile 检查）
+        XCTAssertGreaterThan(pusher.removalReasons["fellIntoTray"] ?? 0, 0, "金币堆被推动，前沿金币掉进接币槽")
+        XCTAssertEqual(pusher.rejectedCount, 0, "新投的币没有被丢弃")
         // 门槛 6 金币堆：覆盖参考金币堆左右范围 ≥95%，2–3 层
         XCTAssertGreaterThanOrEqual(covAvg, 0.95, "金币堆覆盖 272–935 像素")
         XCTAssertTrue((1.5...3.5).contains(layerAvg), "金币堆 2–3 层（实测 \(layerAvg)）")
@@ -258,20 +266,41 @@ extension Pusher3DTests {
         guard walls.count == 2 else { return }
         for (wall, edge) in zip(walls, [layout.fieldMinX - layout.coinRadius, layout.fieldMaxX + layout.coinRadius]) {
             let h = Float((wall.geometry as! SCNBox).height) / 2
-            // 墙内侧面的上、中、下三点（墙自己的坐标系里 x = ∓0.1）
-            for ly in [h * 0.95, 0, -h * 0.95] {
-                let inner = wall.convertPosition(SCNVector3(wall.position.x < 0 ? 0.1 : -0.1, ly, 0), to: nil)
-                XCTAssertEqual(CGFloat(view.projectPoint(inner).x), edge, accuracy: 1.5, "墙内侧 = 下落区边缘（y=\(Int(view.projectPoint(inner).y))）", file: file, line: line)
+            // 墙内侧面：投币口处贴着下落区边缘；往下（透视）只会向内收、不超过半枚金币，金币从不出 2D 下落区
+            let inward: CGFloat = wall.position.x < 0 ? 1 : -1
+            for (i, ly) in [h, 0, -h].enumerated() {
+                let sx = CGFloat(view.projectPoint(wall.convertPosition(SCNVector3(Float(inward) * 0.1, ly, 0), to: nil)).x)
+                if i == 0 { XCTAssertEqual(sx, edge, accuracy: 1.5, "投币口处墙内侧 = 下落区边缘", file: file, line: line) }
+                XCTAssertGreaterThanOrEqual((sx - edge) * inward, -1.5, "墙不在下落区外", file: file, line: line)
+                XCTAssertLessThanOrEqual((sx - edge) * inward, layout.coinRadius, "墙最多向内收半枚金币", file: file, line: line)
             }
         }
     }
     func test_fieldWalls_matchDropField_iPhone17() { checkFieldWalls(iPhone17) }
     func test_fieldWalls_matchDropField_iPhoneSE() { checkFieldWalls(iPhoneSE) }
 
+    /// 台面两侧的透明墙内侧面在屏幕左右边缘上（台面比屏幕宽，金币不会从侧面跑出画面）
+    func test_screenWalls_atScreenEdges() {
+        let layout = iPhone17
+        let (pusher, view) = fittedScene(layout)
+        let g = pusher.geo
+        for (name, edge) in [("screenWallLeft", CGFloat(0)), ("screenWallRight", layout.size.width)] {
+            guard let w = pusher.scene.rootNode.childNode(withName: name, recursively: true), let box = w.geometry as? SCNBox else { return XCTFail("缺少 \(name)") }
+            let inward: Float = edge == 0 ? 1.0 : -1.0
+            for z in [g.wallZ, g.postFrontZ, g.lipZ] {
+                // 墙自己的坐标系：z 沿墙长度方向；找到世界 z 对应的局部 z
+                let local = w.convertPosition(SCNVector3(0, 0, z), from: nil)
+                let p = w.convertPosition(SCNVector3(inward, -w.position.y, local.z), to: nil)
+                XCTAssertEqual(CGFloat(view.projectPoint(p).x), edge, accuracy: 3, "\(name) z=\(z) 台面高度处在屏幕边缘")
+                XCTAssertEqual(box.width, 2)
+            }
+        }
+    }
+
     /// 替代 test_noVisibleSideCovers：钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都只有碰撞、不画出来
     func test_noVisibleColliders() {
         let (pusher, _) = fittedScene(iPhone17)
-        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight"]
+        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"]
         let nodes = pusher.scene.rootNode.childNodes(passingTest: { n, _ in names.contains(n.name ?? "") })
         XCTAssertEqual(Set(nodes.compactMap(\.name)), names, "每种碰撞体都在")
         for n in nodes {

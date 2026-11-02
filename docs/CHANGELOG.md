@@ -299,7 +299,7 @@
 
 ## v11.3.1 (2026-11-02) — 补回 v11.3 删除的测试
 
-v11.3 去掉 2D→3D 交接时删了 14 个测试、加了 6 个（127 → 119）。仍然存在的行为全部在新的「一枚 3D 金币走完全程」路径上补回检查（119 → 128）：
+v11.3 去掉 2D→3D 交接时删了 14 个测试、加了 6 个（127 → 119）。仍然存在的行为全部在新的「一枚 3D 金币走完全程」路径上补回检查，并新增 1 个（119 → 128）：
 
 | v11.2 删除的测试 | 原因 | v11.3 / v11.3.1 替代 |
 |---|---|---|
@@ -307,17 +307,24 @@ v11.3 去掉 2D→3D 交接时删了 14 个测试、加了 6 个（127 → 119�
 | test_prefill_placesAboutHundredCoins | 金币变大，参考金币堆 2 层 | test_prefill_fillsPileTwoLayers（v11.3） |
 | test_dropCoin_addsCoinAbovePusherShelf | 金币不再在推板上方生成 | test_dropCoin_spawnsOneFallingCoinAtSlotExit |
 | test_handoffCoinDiameter_iPhone17 / SE | 没有交接点了 | test_fallingCoinDiameter_constant_iPhone17 / SE（投币口到 BONUS 线屏幕直径不变、≈ 2D 金币） |
-| test_landingEdges_matchDropField_iPhone17 / SE | 没有交接线 | test_fieldWalls_matchDropField_iPhone17 / SE（下落平面侧墙上中下三点贴 2D 下落区边缘） |
+| test_landingEdges_matchDropField_iPhone17 / SE | 没有交接线 | test_fieldWalls_matchDropField_iPhone17 / SE（下落平面侧墙在投币口处贴 2D 下落区边缘，往下不出下落区、最多内收半枚金币） |
 | test_noVisibleSideCovers | 旧 `sideWalls` 已删 | test_noVisibleColliders（钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都不可见且有碰撞体） |
 | test_ramps_beside_pusher_highOutside | 斜坡改为推板上方的薄板 | test_ramps_aboveSidesOfPusher（v11.3）+ test_ramps_exactlyOnePerSide |
 | test_visualGates_rampsCountAndPositions | 同上 | test_ramps_exactlyOnePerSide + test_gate1_structure_*（斜坡屏幕位置） |
 | test_pusherRetractsFully_coinsScrapedOff | 旧挡板已删，改为后墙 | test_pusherRetract_backWallScrapesTop |
-| test_livePhysics_pusherMovesPileAndCoinsFallOff | 旧交接接口已删 | test_gates_live60s_iPhone17 新增断言：掉进接币槽 > 10 枚 |
+| test_livePhysics_pusherMovesPileAndCoinsFallOff | 旧交接接口已删 | test_gates_live60s_iPhone17 新增与原测试相同的断言：有金币掉进接币槽、新投的币没有被丢弃（推动金币堆由门槛 5 检查） |
 | test_livePhysics_edgeCoinsSlideOffRamps | 同上 | test_gates_live60s_iPhone17 门槛 4（斜坡金币 100% 滑到推板） |
 | test_visualGates_live60s | 被新门槛整体替代 | test_gates_live60s_iPhone17 |
 
-新测试发现并修掉两个问题：
+新测试发现并修掉的问题：
 - 重建机器时 `rampNodes` 没清空（留着 2 个已移除的旧斜坡）；
-- 下落区两侧的墙在世界坐标里是竖直的，透视下屏幕上底部向内偏约 6 点。现在墙沿屏幕边缘倾斜。
+- 门槛 4 的「斜坡 → 推板」计数把先落在推板上、后来碰到斜坡的金币也算进「还在斜坡上」，偶尔多 1 枚导致误报；改为只跟踪第一次落在斜坡上的金币。
+
+60 秒真实窗口门槛在 v11.3 上并不稳定（同一份代码连续运行，约一半失败），逐项查清：
+- **连续性误报**：帧间隔用的是墙钟，而每帧开头采样到的位置是上一帧物理的结果，负载高时两者错开一帧（一次运行 13 处「跳变」）。改为用产生当前位置的那次物理推进的场景时间，此后 22 次运行 0 处；允许跳变的阈值没有放宽。
+- **金币从侧面跑出画面**（真实问题）：台面比屏幕宽（到 x ±6.5，前沿处屏幕边缘约 ±5.2），被推板挤出金币堆侧墙的金币沿台面滑出画面。台面两侧沿屏幕边缘加透明墙（厚 2、整个在画面外），从后背板到前沿前方；斜坡前沿的透明挡边加高到高出斜面 0.9。新增 test_screenWalls_atScreenEdges。
+- **斜坡计数误报**：测试先读计数、过一会儿再算「还在斜坡上」的金币，中间物理还在跑，±1–2 枚。改为先停住物理、所有读数取同一时刻。诊断日志确认每一枚落上斜坡的金币都滑到了推板。
+
+试过让下落区侧墙沿屏幕边缘倾斜（透视下竖直墙在 BONUS 线处向内收约 6 点），结果边上的金币落到斜坡外端以外、跑出画面（遮挡门槛报 offscreen），已撤回；测试改为检查墙不出 2D 下落区、内收不超过半枚金币（SE 上实测约 10 点）。
 
 共 128 个测试全部通过。

@@ -450,11 +450,12 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             machineRoot.addChildNode(ramp)
             rampNodes.append(ramp)
             // 斜坡前沿的挡边（看不见，高出斜面 0.3）：金币只能顺着斜坡滑到推板上，不会从斜坡前沿滚落到台阶上
-            let guardBox = SCNBox(width: CGFloat(length), height: 0.6, length: 0.12, chamferRadius: 0)
+            // 挡边高出斜面 0.9：弹起的金币也翻不过去（翻过去会落到台阶上，再从台面侧边滑出画面）
+            let guardBox = SCNBox(width: CGFloat(length), height: 1.2, length: 0.12, chamferRadius: 0)
             guardBox.materials = [materials["invisible"]!]
             let guardNode = SCNNode(geometry: guardBox)
             guardNode.name = "rampGuard"
-            guardNode.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 + 0.2, g.rampFrontZ + 0.06)
+            guardNode.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 + 0.5, g.rampFrontZ + 0.06)
             guardNode.eulerAngles = ramp.eulerAngles
             let gb = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: guardBox, options: nil))
             gb.categoryBitMask = PusherScene3D.catMachine
@@ -506,6 +507,24 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let dx = x1 - x0, dz = z1 - z0
             let w = node(side < 0 ? "pileWallLeft" : "pileWallRight", box: 0.3, 3, (dx * dx + dz * dz).squareRoot(),
                          at: SCNVector3((x0 + x1) / 2, 1.5, (z0 + z1) / 2), "invisible", friction: 0.1)
+            w.eulerAngles = SCNVector3(0, atan2(dx, dz), 0)
+            w.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: w.geometry!, options: nil))
+            w.physicsBody?.categoryBitMask = PusherScene3D.catMachine
+            w.castsShadow = false
+        }
+        // 屏幕左右边缘（透明碰撞墙，沿屏幕竖线投到台面上）：从后背板到前沿前方。台面比屏幕宽，
+        // 翻到金币堆侧墙外（台阶上、角落里）的金币也只会沿台面滑到前沿掉进接币槽，不会从侧面跑出画面
+        for side: Float in [-1, 1] {
+            let sxEdge: CGFloat = side < 0 ? 0 : g.viewSize.width
+            let a = g.hitY(sxEdge, g.sy(ReferenceBoxes.wallY), y: 0), b = g.hitY(sxEdge, g.viewSize.height, y: 0)
+            // 沿 a→b 的直线延长到后背板和前沿前方 3
+            let z0 = g.backPanelZ, z1 = lipZ + 3
+            let slope = (b.x - a.x) / (b.z - a.z)
+            // 墙厚 2（整个在画面外）：金币堆被推板挤压时也穿不过去
+            let x0 = a.x + slope * (z0 - a.z) + side * 1.0, x1 = a.x + slope * (z1 - a.z) + side * 1.0
+            let dx = x1 - x0, dz = z1 - z0
+            let w = node(side < 0 ? "screenWallLeft" : "screenWallRight", box: 2, 8, (dx * dx + dz * dz).squareRoot(),
+                         at: SCNVector3((x0 + x1) / 2, 0, (z0 + z1) / 2), "invisible", friction: 0.1)
             w.eulerAngles = SCNVector3(0, atan2(dx, dz), 0)
             w.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: w.geometry!, options: nil))
             w.physicsBody?.categoryBitMask = PusherScene3D.catMachine
@@ -628,16 +647,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         // 左右墙：投币口到 BONUS 线，沿屏幕上下落区的左右边缘
         for sxv in [layout.fieldMinX - layout.coinRadius, layout.fieldMaxX + layout.coinRadius] {
             let a = g.hitZ(sxv, layout.sliderTrack.minY, z: z), b = g.hitZ(sxv, layout.bonusLane.maxY, z: z)
-            // 屏幕上的竖直边缘投到下落平面上不是世界竖直线（透视），墙沿 a→b 倾斜，内侧面始终贴着屏幕边缘
-            let dx = b.x - a.x, dy = b.y - a.y
-            let len = (dx * dx + dy * dy).squareRoot()
+            // 墙是世界竖直的，内侧面在投币口处贴着屏幕上下落区的边缘；透视下越往下越向内收（BONUS 线处约 6 点），
+            // 金币不会落到斜坡外端以外（沿屏幕边缘倾斜的墙会让边上的金币落出斜坡、跑出画面）
+            let len = abs(a.y - b.y)
             let box = SCNBox(width: 0.2, height: CGFloat(len), length: CGFloat(config.coinRadius * 4), chamferRadius: 0)
             let n = SCNNode(geometry: box)
             n.geometry?.materials = [materials["invisible"]!]
-            let tilt = atan2(dx, -dy)
-            let out: Float = a.x > 0 ? 0.1 : -0.1
-            n.position = SCNVector3((a.x + b.x) / 2 + out * cos(tilt), (a.y + b.y) / 2 + out * sin(tilt), (a.z + b.z) / 2)
-            n.eulerAngles = SCNVector3(0, 0, tilt)
+            n.position = SCNVector3(a.x + (a.x > 0 ? 0.1 : -0.1), (a.y + b.y) / 2, (a.z + b.z) / 2)
             let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: box, options: nil))
             body.categoryBitMask = PusherScene3D.catPeg
             n.physicsBody = body
@@ -796,7 +812,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             frameCount = 0
             windowStart = time
         }
-        sampleScreen(renderer)
+        sampleScreen(renderer, time: lastSimulationTime > 0 ? lastSimulationTime : time)
         #if DEBUG
         if logsLifecycle, Int(time * 2) != lastDebugTick {
             lastDebugTick = Int(time * 2)
@@ -820,7 +836,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
     private var lastDebugTick = 0
 
+    /// 最近一次物理推进的时间：每帧开头采样时 presentation 是上一帧物理的结果，帧间隔要用它（不是本帧的时间）
+    private var lastSimulationTime: TimeInterval = 0
     func renderer(_ renderer: SCNSceneRenderer, didSimulatePhysicsAtTime time: TimeInterval) {
+        lastSimulationTime = time
         let g = geo
         let now = CACurrentMediaTime()
         var removed: [Bool] = []
@@ -874,6 +893,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var firstLandingTime: TimeInterval?
         var rampTime: TimeInterval?
         var pusherTime: TimeInterval?
+        var rampReachedPusher = false
         var standingSince: TimeInterval?
         var lastScreen: CGPoint?
         var lastDiameter: CGFloat?
@@ -891,9 +911,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     private(set) var rampSlideTimes: [Double] = []
     private(set) var pusherToPileTimes: [Double] = []
     /// 还在斜坡上、落上去不到 3 秒的金币（测试结束时还没滑到推板，不算失败）
-    var pendingRampCoins: Int {
-        let now = CACurrentMediaTime()
-        return tracks.values.filter { if let r = $0.rampTime, r.isFinite, $0.pusherTime == nil { return now - r < 3 } else { return false } }.count
+    var pendingRampCoins: Int { pendingRampCoins(asOf: CACurrentMediaTime()) }
+    /// asOf：物理停下的时刻（测试先停物理再读统计，避免读数之间又有金币落上斜坡或滑到推板）
+    func pendingRampCoins(asOf now: TimeInterval) -> Int {
+        tracks.values.filter { if let r = $0.rampTime, r.isFinite, !$0.rampReachedPusher { return now - r < 3 } else { return false } }.count
     }
     /// 斜坡上的金币 3 秒内没到推板顶面的次数（应为 0）
     private(set) var rampTimeouts = 0
@@ -955,9 +976,11 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
                      detail: "at \(p.x),\(p.y),\(p.z) pusherFront=\(pusherFrontZ)")
         }
         switch ph {
-        case .onRamp: if track.rampTime == nil { track.rampTime = now }
+        // 斜坡 → 推板只跟踪第一次落在斜坡上的金币（与 landedRamp 一一对应）
+        case .onRamp: if track.rampTime == nil, track.firstLanding == .onRamp { track.rampTime = now }
         case .onPusher:
-            if let r = track.rampTime, previous == .onRamp || previous == .airborne, track.pusherTime == nil {
+            if let r = track.rampTime, r.isFinite, !track.rampReachedPusher {
+                track.rampReachedPusher = true
                 rampSlideTimes.append(now - r); logEvent("rampToPusher")
             }
             if track.pusherTime == nil { track.pusherTime = now }
@@ -968,16 +991,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             }
         case .fallingFront: logEvent("fellFront")
         case .lostBehindWall: logEvent("lostBehindWall", detail: "\(p.x),\(p.y),\(p.z)")
-        case .lostSide: logEvent("lostSide", detail: "\(p.x),\(p.y),\(p.z)")
+        case .lostSide: logEvent("lostSide", detail: "\(p.x),\(p.y),\(p.z) first=\(track.firstLanding?.rawValue ?? "-") previous=\(previous.rawValue) prefilled=\(track.prefilled) age=\(now - track.born)")
         default: break
         }
-        if let r = track.rampTime, track.pusherTime == nil, now - r > 3, ph == .onRamp {
+        if let r = track.rampTime, !track.rampReachedPusher, now - r > 3, ph == .onRamp {
             rampTimeouts += 1; track.rampTime = .infinity
         }
     }
 
     /// 每帧：下落中的金币按屏幕投影位置触发事件、到 BONUS 线解除约束；所有金币做连续性检查（位置、大小）
-    private func sampleScreen(_ renderer: SCNSceneRenderer) {
+    /// time：产生当前 presentation 的那次物理推进的场景时间。连续性检查的帧间隔用它而不是墙钟：
+    /// 负载高时墙钟、本帧时间和物理实际推进的时间会错开一帧，造成误报
+    private func sampleScreen(_ renderer: SCNSceneRenderer, time: TimeInterval) {
         let r = config.coinRadius
         let right = SCNVector3(1, 0, 0)
         var releaseList: [(SCNNode, CoinTrack)] = []
@@ -997,7 +1022,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let v = node.physicsBody?.velocity ?? SCNVector3Zero
             // 世界速度换算成屏幕速度：按这枚金币自己的深度（越靠近相机，同样的速度在屏幕上走得越快）
             let speed = CGFloat((v.x * v.x + v.y * v.y + v.z * v.z).squareRoot() * geo.focal / max(0.1, geo.depth(p)))
-            let nowT = CACurrentMediaTime()
+            let nowT = time
             defer { track.lastSampleTime = nowT; track.lastSpeed = speed }
             if let last = track.lastScreen, let lastD = track.lastDiameter, let lastT = track.lastSampleTime {
                 // 两帧之间物理允许的屏幕位移：采样到的最大速度 × 帧间隔 × 2（帧内碰撞会让速度变化）+ 帧内重力加速 + 10 点。
@@ -1057,7 +1082,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let hits = view.hitTest(sp, options: [.searchMode: SCNHitTestSearchMode.all.rawValue, .ignoreHiddenNodes: true])
             for hit in hits {
                 let n = hit.node
-                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") { continue }   // 看不见的碰撞体不算遮挡
+                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") { continue }   // 看不见的碰撞体不算遮挡
                 let w = hit.worldCoordinates
                 let d = ((w.x - cam.x) * (w.x - cam.x) + (w.y - cam.y) * (w.y - cam.y) + (w.z - cam.z) * (w.z - cam.z)).squareRoot()
                 if d < dist - config.coinRadius - 0.05 {
