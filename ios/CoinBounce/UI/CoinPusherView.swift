@@ -45,9 +45,13 @@ struct CoinPusherView: View {
             ZStack(alignment: .topLeading) {
                 Color(red: 0.05, green: 0.04, blue: 0.02)
 
-                // ── Jackpot ──
+                // ── Jackpot（v11.4 按参考：从屏幕最顶端开始的大牌，下面一行是金币余额和帮助 / 设置）──
+                topBackdrop()
+                    .place(in: CGRect(x: 0, y: 0, width: sw, height: layout.sliderTrack.minY))
                 jackpotWithTransition(w: layout.jackpot.width, h: layout.jackpot.height)
                     .place(in: layout.jackpot)
+                topRow(layout: layout)
+                    .place(in: layout.topRow)
 
                 // ── 老虎机（SPIN 在转轴右侧）──
                 SlotMachineView(
@@ -99,8 +103,8 @@ struct CoinPusherView: View {
                     .allowsHitTesting(false)
 
                 // 画在 3D 金币之上的部件（参考里它们挡住金币）：投币口滑块、BONUS 牌
-                coinSlider(w: layout.coinSliderWidth, h: layout.sliderTrack.height * 0.8)
-                    .position(x: layout.coinSliderCenter(offset: gameState.coinSliderOffset).x, y: layout.sliderTrack.midY)
+                coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                    .position(layout.coinSliderCenter(offset: gameState.coinSliderOffset))
                     .allowsHitTesting(false)
                 bonusPlaque(layout: layout)
                 // 两侧炮管（参考 x 40–160 / 1050–1170、y 1690–1830 像素）
@@ -267,55 +271,63 @@ struct CoinPusherView: View {
 
     // MARK: - Jackpot + 过渡色组合
     @ViewBuilder
+    func topBackdrop() -> some View {
+            // v11.4 参考：JACKPOT 牌后面是暗色机柜顶，往下过渡到投币口的深红
+            LinearGradient(stops: [
+                .init(color: Color(red: 0.16, green: 0.10, blue: 0.08), location: 0.00),
+                .init(color: Color(red: 0.22, green: 0.17, blue: 0.15), location: 0.55),
+                .init(color: Color(red: 0.25, green: 0.06, blue: 0.05), location: 1.00)
+            ], startPoint: .top, endPoint: .bottom)
+    }
+
+    @ViewBuilder
     func jackpotWithTransition(w: CGFloat, h: CGFloat) -> some View {
         ZStack(alignment: .top) {
-            // 渐变背景 - 参考图: 顶部红色(0-15%) → 金棕色(15-60%) → 白色(60-100%)
-            LinearGradient(stops: [
-                .init(color: Color(red: 0.96, green: 0.22, blue: 0.21), location: 0.00),  // 红色 y=0-15%
-                .init(color: Color(red: 0.64, green: 0.57, blue: 0.45), location: 0.15),  // 过渡到金棕
-                .init(color: Color(red: 0.68, green: 0.57, blue: 0.45), location: 0.30),  // 金棕色
-                .init(color: Color(red: 0.83, green: 0.78, blue: 0.80), location: 0.60), // 浅色过渡
-                .init(color: Color(red: 0.95, green: 0.92, blue: 0.95), location: 0.80), // 接近白色
-                .init(color: Color(red: 0.98, green: 0.95, blue: 0.97), location: 1.00)   // 白色
-            ], startPoint: .top, endPoint: .bottom)
-
-            // Jackpot 标题框
-            JackpotMarquee(width: min(w * 0.46, h * 3.2), height: h * 0.82)
+            // Jackpot 标题框：参考大牌 50–1160 × 0–250 像素
+            JackpotMarquee(width: w, height: h)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // 标签和数字排成一行、放在牌子下部：灵动岛最低到约 60% 牌高（iPhone 17），文字不被挡住
             VStack(spacing: 0) {
-                Spacer()
-                Text("JACKPOT")
-                    .font(.system(size: max(8, h * 0.15), weight: .black, design: .rounded))
-                    .foregroundColor(ArtPalette.goldLight)
-                    .tracking(3)
-
-                Text("100000")
-                    .font(.system(size: max(24, h * 0.35), weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [
-                        Color(red: 0.95, green: 0.75, blue: 0.15),
-                        Color(red: 1.00, green: 0.98, blue: 0.65),
-                        Color(red: 0.90, green: 0.70, blue: 0.10)
-                    ], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: .orange.opacity(0.5), radius: 4)
-                Spacer()
+                Spacer(minLength: 0)
+                HStack(alignment: .firstTextBaseline, spacing: h * 0.1) {
+                    Text("JACKPOT")
+                        .font(.system(size: max(8, h * 0.13), weight: .black, design: .rounded))
+                        .foregroundColor(ArtPalette.goldLight)
+                        .tracking(2)
+                    Text("100000")
+                        .font(.system(size: max(18, h * 0.3), weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [
+                            Color(red: 0.95, green: 0.75, blue: 0.15),
+                            Color(red: 1.00, green: 0.98, blue: 0.65),
+                            Color(red: 0.90, green: 0.70, blue: 0.10)
+                        ], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: .orange.opacity(0.5), radius: 4)
+                }
+                .frame(height: h * 0.36)
+                .padding(.bottom, h * 0.04)
             }
         }
         .frame(height: h)
-        .overlay(alignment: .topLeading) {
-            CoinBalanceView(coins: gameState.availableCoins)
-                .padding(.leading, 10)
-                .padding(.top, 6)
-        }
-        .overlay(alignment: .topTrailing) {
+    }
+
+    /// 金币余额（参考 50–560 像素的长条）和帮助 / 设置按钮（右端对齐参考 1150 像素）
+    @ViewBuilder
+    func topRow(layout: GameLayout) -> some View {
+        let pill = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size)
+        let scale = pill.height / 30
+        HStack(spacing: 0) {
+            CoinBalanceView(coins: gameState.availableCoins, height: pill.height, width: pill.width)
+            Spacer(minLength: 0)
             // 帮助在设置左边
             HStack(spacing: 8) {
                 HelpButton { showHelp = true }
                 SettingsButton { showSettings = true }
             }
-            .padding(.trailing, 10)
-            .padding(.top, 4)
+            .scaleEffect(scale)
+            .frame(width: (60 + 8) * scale, height: 30 * scale)
         }
+        .frame(maxHeight: .infinity)
         .sheet(isPresented: $showHelp) {
             HelpView()
         }
@@ -334,19 +346,21 @@ struct CoinPusherView: View {
             // v11.2 按参考：拱形投币口——深红底，金色拱形灯管（顶边水平、两侧圆弧向下），沿拱形一圈灯泡；
             // COIN 滑块在拱形里的深色横槽上往复
             Color(red: 0.25, green: 0.06, blue: 0.05)
-            let archW = layout.fieldMaxX - layout.fieldMinX + layout.coinRadius * 2
-            ArchTrack(bulbCount: 22)
-                .frame(width: archW, height: h * 0.95)
-                .position(x: layout.centerX - layout.sliderTrack.minX, y: h * 0.52)
+            // 拱门：参考 246–920 像素宽，灯泡横条在 744 像素（拱顶在上一行按钮后面）
+            let archW = ReferenceBoxes.x(ReferenceBoxes.archFrame.width, layout.size)
+            let archBottom = ReferenceBoxes.y(ReferenceBoxes.archFrame.maxY, layout.size) - layout.sliderTrack.minY
+            ArchTrack(bulbCount: 28)
+                .frame(width: archW, height: archBottom)
+                .position(x: layout.centerX - layout.sliderTrack.minX, y: archBottom / 2)
             RoundedRectangle(cornerRadius: h * 0.1)
                 .fill(LinearGradient(colors: [Color(red: 0.05, green: 0.03, blue: 0.02), Color(red: 0.18, green: 0.1, blue: 0.05)],
                                      startPoint: .top, endPoint: .bottom))
-                .frame(width: archW * 0.82, height: h * 0.2)
-                .position(x: layout.centerX - layout.sliderTrack.minX, y: h / 2)
+                .frame(width: archW * 0.82, height: h * 0.12)
+                .position(x: layout.centerX - layout.sliderTrack.minX, y: layout.coinPlateY - layout.sliderTrack.minY)
 
             // COIN滑块 (金币出口)，与 dropCoin 的落点同一位置
-            coinSlider(w: layout.coinSliderWidth, h: h * 0.8)
-                .position(x: slider.x - layout.sliderTrack.minX, y: h / 2)
+            coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                .position(x: slider.x - layout.sliderTrack.minX, y: slider.y - layout.sliderTrack.minY)
         }
     }
 
@@ -728,26 +742,30 @@ extension CoinPusherView {
 // MARK: - 金币余额
 struct CoinBalanceView: View {
     let coins: Int
+    /// 整条高度、宽度（nil = 按内容）；默认与 v11.3 以前的小胶囊一样
+    var height: CGFloat = 24
+    var width: CGFloat? = nil
     @State private var bump = false
 
     var body: some View {
+        let icon = height * 0.75
         HStack(spacing: 4) {
             Circle()
                 .fill(LinearGradient(colors: [Color(red: 1.0, green: 0.9, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.1)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(Circle().stroke(Color(red: 0.5, green: 0.3, blue: 0.0), lineWidth: 1))
-                .overlay(ArtCoin(size: 18))
-                .frame(width: 18, height: 18)
+                .overlay(ArtCoin(size: icon))
+                .frame(width: icon, height: icon)
             // 余额滚动计数：数字变化时逐位滚动
             Text("\(coins)")
-                .font(.system(size: 15, weight: .black, design: .rounded))
+                .font(.system(size: height * 0.62, weight: .black, design: .rounded))
                 .monospacedDigit()
                 .foregroundColor(.white)
                 .contentTransition(.numericText())
                 .animation(.easeOut(duration: 0.35), value: coins)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
+        .padding(.horizontal, height / 3)
+        .frame(width: width, height: height, alignment: .leading)
         .background(Capsule().fill(Color.black.opacity(0.55)))
         .overlay(Capsule().stroke(Color.arcadeGold.opacity(0.8), lineWidth: 1))
         .scaleEffect(bump ? 1.12 : 1.0)
@@ -1032,6 +1050,8 @@ struct ArchTrack: View {
             p.addLine(to: CGPoint(x: r.maxX - radius, y: r.minY))
             p.addArc(center: CGPoint(x: r.maxX - radius, y: r.minY + radius), radius: radius, startAngle: .degrees(270), endAngle: .degrees(360), clockwise: false)
             p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+            // v11.4 参考：拱门下沿是一排灯泡的横条（封闭的框）
+            p.closeSubpath()
             return p
         }
     }

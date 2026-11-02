@@ -38,6 +38,21 @@ enum ReferenceBoxes {
     static let bonusBar = CGRect(x: 370, y: 1748, width: 490, height: 10)
     static let cannonLeft = CGRect(x: 40, y: 1690, width: 120, height: 140)
     static let cannonRight = CGRect(x: 1050, y: 1690, width: 120, height: 140)
+    // v11.4 上半部（参考隐藏状态栏、从屏幕最顶端画起）：JACKPOT 大牌、金币 / 按钮一行、投币口拱门、老虎机、战斗区、水果排
+    static let jackpotPanel = CGRect(x: 50, y: 0, width: 1110, height: 250)
+    static let topRowY: ClosedRange<CGFloat> = 330...460
+    static let balancePill = CGRect(x: 50, y: 345, width: 510, height: 110)
+    static let topButtonsMaxX: CGFloat = 1150
+    static let archFrame = CGRect(x: 246, y: 410, width: 674, height: 334)   // 灯泡横条在 744
+    static let coinPlate = CGSize(width: 170, height: 110)   // COIN 牌（随滑块左右往复），中心 y 585
+    static let coinPlateY: CGFloat = 585
+    static let coinExitY: CGFloat = 650                      // 金币从 COIN 牌下沿出来
+    static let slotCabinetX: ClosedRange<CGFloat> = 165...1045
+    static let slotReels = CGRect(x: 190, y: 820, width: 840, height: 430)
+    static let battle = CGRect(x: 165, y: 1300, width: 875, height: 220)
+    static let fruitRow = CGRect(x: 120, y: 1560, width: 970, height: 120)
+    /// 自上而下各区域的上下边（像素）：JACKPOT、金币 / 按钮一行、投币口、老虎机、战斗区、水果、BONUS、推币台、底部面板
+    static let bands: [ClosedRange<CGFloat>] = [0...250, 330...460, 460...787, 787...1280, 1280...1542, 1542...1691, 1691...1809, 1809...2370, 2370...2622]
     /// 参考：金币从投币口到第一次落在推板顶面 / 斜坡上约 1.75 秒
     static let fallSeconds: Double = 1.75
 
@@ -443,7 +458,11 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             ramp.name = side < 0 ? "rampLeft" : "rampRight"
             ramp.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 - 0.04, g.rampFrontZ - depth / 2)
             ramp.eulerAngles = SCNVector3(0, 0, atan2(dy, dx) + (side < 0 ? .pi : 0))
-            let rb = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: plate, options: nil))
+            // 碰撞体比看得见的薄板厚（顶面相同、向下加厚到 0.5）：快速落下的金币不会陷进斜面、被前沿铜边挡住
+            let solid = SCNBox(width: CGFloat(length), height: 0.5, length: CGFloat(depth), chamferRadius: 0)
+            let rampShape = SCNPhysicsShape(shapes: [SCNPhysicsShape(geometry: solid, options: nil)],
+                                            transforms: [NSValue(scnMatrix4: SCNMatrix4MakeTranslation(0, 0.04 - 0.25, 0))])
+            let rb = SCNPhysicsBody(type: .static, shape: rampShape)
             rb.friction = PusherScene3D.rampFriction
             rb.categoryBitMask = PusherScene3D.catMachine
             ramp.physicsBody = rb

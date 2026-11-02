@@ -13,6 +13,7 @@ struct GameLayout: Equatable {
 
     // MARK: 区域（自上而下，互不重叠）
     let jackpot: CGRect
+    let topRow: CGRect          // 金币余额（左）、帮助 / 设置（右）
     let slotMachine: CGRect
     let sliderTrack: CGRect     // COIN 滑块（金币出口）
     let dropField: CGRect       // 战斗区，下落金币在这里碰格挡
@@ -29,6 +30,7 @@ struct GameLayout: Equatable {
     // MARK: 物理关键位置
     let coinRadius: CGFloat
     let coinSpawnY: CGFloat
+    let coinPlateY: CGFloat            // COIN 牌中心 y（参考 585 像素）
     let coinSliderWidth: CGFloat
     let coinSliderTravel: CGFloat      // COIN 滑块偏离中心的最大距离
     let fieldMinX: CGFloat             // 下落金币的左右边界（金币中心）
@@ -59,13 +61,10 @@ struct GameLayout: Equatable {
     /// v9.5 物理的下落高度（-360 → 20）和推币床长度
     static let legacyFallHeight: CGFloat = 380
 
-    /// 各区域占安全区内高度的比例，合计 1
-    /// 顺序：顶栏、COIN 轨道（投币口在最顶端）、老虎机、战斗区、水果、BONUS、推币台、投币按钮
-    /// v11.1 按参考 App 逐帧测量（参考录屏 874 点高，与 iPhone 17 相同）换算成安全区内比例，使各区域的屏幕位置与参考一致：
-    /// 顶栏到 19.5%、COIN 轨道 19.5–30%、老虎机 30–48.5%、战斗区 48.5–57.5%、水果 57.5–64.5%、BONUS 64.5–69%、
-    /// 推币台 69–90.5%（台面前沿约 85.5%，前沿到 90.5% 之间是看得见的掉落和接币槽）、底部金色面板 90.5% 起，
-    /// 投币按钮整个在面板里（不挡住掉落的金币）。iPhone 17 上与参考的偏差 < 1.5% 屏高
-    static let heightRatios: [CGFloat] = [0.139, 0.118, 0.2095, 0.103, 0.077, 0.049, 0.2417, 0.0628]
+    /// v11.4：各区域按新参考录屏（60fps，1206×2622，隐藏状态栏）逐像素测量，用整屏比例（ReferenceBoxes.bands）：
+    /// JACKPOT 0–250 像素、金币 / 按钮一行 330–460、投币口 460–787、老虎机 787–1280（转轴 820–1250）、战斗区 1280–1542、
+    /// 水果 1542–1691、BONUS 1691–1809、推币台 1809–2370（台面前沿约 85.5%）、底部金色面板 2370 到底。
+    /// 不再按安全区换算：参考画面从屏幕最顶端开始（JACKPOT 牌在灵动岛后面），可点的一行在安全区内
     /// 台面前沿在推币台区域（视图顶部 → 底部面板）中的位置比例：iPhone 17 上约 85.5% 屏高（参考接币盘前沿约 85–86%）
     static let pusherFrontFraction: CGFloat = 0.766
 
@@ -87,31 +86,32 @@ struct GameLayout: Equatable {
         let centerX = (left + right) / 2
         let usableH = max(0, size.height - safeArea.top - safeArea.bottom)
 
-        var y = safeArea.top
-        var bands: [CGRect] = []
-        for ratio in GameLayout.heightRatios {
-            let h = usableH * ratio
-            bands.append(CGRect(x: 0, y: y, width: size.width, height: h))
-            y += h
+        _ = usableH
+        func px(_ x: CGFloat) -> CGFloat { ReferenceBoxes.x(x, size) }
+        let bands = ReferenceBoxes.bands.map { r in
+            CGRect(x: 0, y: ReferenceBoxes.y(r.lowerBound, size), width: size.width, height: ReferenceBoxes.y(r.upperBound - r.lowerBound, size))
         }
-        jackpot = bands[0]
-        sliderTrack = bands[1]
-        slotMachine = bands[2].insetBy(dx: m, dy: 0)
-        dropField = bands[3].insetBy(dx: m, dy: 0)
-        fruitBar = bands[4]
-        bonusLane = bands[5]
-        pusher = bands[6]
-        dropButton = bands[7]
-        pusherView = CGRect(x: 0, y: bands[6].minY, width: size.width, height: size.height - bands[6].minY)
+        jackpot = CGRect(x: px(ReferenceBoxes.jackpotPanel.minX), y: bands[0].minY, width: px(ReferenceBoxes.jackpotPanel.width), height: bands[0].height)
+        topRow = CGRect(x: px(ReferenceBoxes.balancePill.minX), y: bands[1].minY,
+                        width: px(ReferenceBoxes.topButtonsMaxX - ReferenceBoxes.balancePill.minX), height: bands[1].height)
+        sliderTrack = bands[2]
+        slotMachine = CGRect(x: px(ReferenceBoxes.slotCabinetX.lowerBound), y: bands[3].minY,
+                             width: px(ReferenceBoxes.slotCabinetX.upperBound - ReferenceBoxes.slotCabinetX.lowerBound), height: bands[3].height)
+        dropField = CGRect(x: px(ReferenceBoxes.battle.minX), y: bands[4].minY, width: px(ReferenceBoxes.battle.width), height: bands[4].height)
+        fruitBar = bands[5]
+        bonusLane = bands[6]
+        pusher = bands[7]
+        dropButton = bands[8]
+        pusherView = CGRect(x: 0, y: bands[7].minY, width: size.width, height: size.height - bands[7].minY)
 
-        // 老虎机：没有 SPIN 按钮（只由 BONUS 触发），5 列转轴均匀铺满外框宽度
-        let slotInner = slotMachine.insetBy(dx: 10, dy: 8)
-        slotReels = slotInner
+        // 老虎机：没有 SPIN 按钮（只由 BONUS 触发），5 列转轴按参考转轴窗口（190–1030 × 820–1250 像素）
+        slotReels = ReferenceBoxes.rect(ReferenceBoxes.slotReels, size)
 
         // 金币直径为内容宽度的 7.8%（v10.8 的 6% 加大 30%，下落和台面上的金币同样大小），随屏幕宽度缩放
         coinRadius = (size.width * GameLayout.coinDiameterFraction / 2).rounded()
-        coinSpawnY = sliderTrack.midY
-        coinSliderWidth = max(44, contentW * 0.14)
+        coinSpawnY = ReferenceBoxes.y(ReferenceBoxes.coinExitY, size)
+        coinPlateY = ReferenceBoxes.y(ReferenceBoxes.coinPlateY, size)
+        coinSliderWidth = px(ReferenceBoxes.coinPlate.width)
         // 参考 App 的 COIN 滑块只在中间约 ±17% 屏宽内往复
         coinSliderTravel = min(max(0, contentW / 2 - coinSliderWidth / 2), size.width * GameConstants.coinSliderTravelFraction)
         fieldMinX = left + coinRadius
@@ -143,14 +143,15 @@ struct GameLayout: Equatable {
 
         // 水果：7 等分内容宽度；判定宽度按 v9.5 比例（间距 40 对应 28 / 22）
         let lampW = contentW / 7
-        let fruitY = bands[4].midY
+        let fruitY = fruitBar.midY
         fruitLampWidth = lampW
         fruitCenters = (0..<7).map { CGPoint(x: left + lampW * (CGFloat($0) + 0.5), y: fruitY) }
         fruitHitHalfWidth = lampW * (28.0 / 40.0)
         fruitBaffleXs = (1..<7).map { left + lampW * CGFloat($0) }
         fruitBaffleHalfWidth = lampW * (22.0 / 40.0)
         fruitPinRadius = 4
-        fruitPins = fruitBaffleXs.map { CGPoint(x: $0, y: bands[4].minY + bands[4].height * 0.2) }
+        let pinY = fruitBar.minY + fruitBar.height * 0.2
+        fruitPins = fruitBaffleXs.map { CGPoint(x: $0, y: pinY) }
 
         bonusSliderWidth = fruitLampWidth
         // 参考 App 的 BONUS 滑块约 ±16% 屏宽
@@ -167,13 +168,13 @@ struct GameLayout: Equatable {
 
     /// 自上而下的全部区域，用于检查是否越界、重叠
     var regions: [(name: String, frame: CGRect)] {
-        [("jackpot", jackpot), ("sliderTrack", sliderTrack), ("slotMachine", slotMachine),
+        [("jackpot", jackpot), ("topRow", topRow), ("sliderTrack", sliderTrack), ("slotMachine", slotMachine),
          ("dropField", dropField), ("fruitBar", fruitBar), ("bonusLane", bonusLane),
          ("pusher", pusher), ("dropButton", dropButton)]
     }
 
     func coinSliderCenter(offset: CGFloat) -> CGPoint {
-        CGPoint(x: centerX + offset, y: sliderTrack.midY)
+        CGPoint(x: centerX + offset, y: coinPlateY)
     }
 
     func bonusSliderCenter(offset: CGFloat) -> CGPoint {

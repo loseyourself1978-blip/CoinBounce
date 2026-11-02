@@ -95,6 +95,32 @@ final class Pusher3DTests: XCTestCase {
         // 底部面板按参考框画（BottomGoldPanel 用 ReferenceBoxes.bottomFrame），3D 场景按同一条线判断「被面板挡住」
         XCTAssertEqual(pusher.panelTopY, py(ReferenceBoxes.bottomFrame.minY), accuracy: 0.5, "\(name) 底部面板上沿", file: file, line: line)
         XCTAssertEqual(layout.bonusLane.midY, py(ReferenceBoxes.bonusBar.midY), accuracy: tolY, "\(name) BONUS 轨道（金币解除约束的线）", file: file, line: line)
+        // v11.4 上半部 2D 部件：JACKPOT 大牌、金币 / 按钮一行、老虎机机柜和转轴窗口、战斗区、水果排（参考 60fps 帧测量）
+        func box2D(_ label: String, _ ours: CGRect, x: ClosedRange<CGFloat>?, y: ClosedRange<CGFloat>?) {
+            print("STRUCTURE \(name) \(label) ours x \(Int(ours.minX / size.width * 1206))–\(Int(ours.maxX / size.width * 1206)) y \(Int(ours.minY / size.height * 2622))–\(Int(ours.maxY / size.height * 2622)) ref x \(x.map { "\(Int($0.lowerBound))–\(Int($0.upperBound))" } ?? "-") y \(y.map { "\(Int($0.lowerBound))–\(Int($0.upperBound))" } ?? "-")")
+            if let x {
+                XCTAssertEqual(ours.minX, px(x.lowerBound), accuracy: tolX, "\(name) \(label) 左边", file: file, line: line)
+                XCTAssertEqual(ours.maxX, px(x.upperBound), accuracy: tolX, "\(name) \(label) 右边", file: file, line: line)
+            }
+            if let y {
+                XCTAssertEqual(ours.minY, py(y.lowerBound), accuracy: tolY, "\(name) \(label) 上边", file: file, line: line)
+                XCTAssertEqual(ours.maxY, py(y.upperBound), accuracy: tolY, "\(name) \(label) 下边", file: file, line: line)
+            }
+        }
+        box2D("jackpotPanel", layout.jackpot, x: 50...1160, y: 0...250)
+        box2D("topRow", layout.topRow, x: 50...1150, y: 330...460)
+        box2D("slotCabinet", layout.slotMachine, x: 165...1045, y: 787...1280)
+        box2D("slotReels", layout.slotReels, x: 190...1030, y: 820...1250)
+        box2D("battle", layout.dropField.insetBy(dx: 0, dy: 4), x: 165...1040, y: 1300...1520)   // 战斗区边框画在区域内 4 点
+        let fruitSpan = CGRect(x: layout.fruitCenters[0].x - layout.fruitLampWidth / 2, y: layout.fruitBar.minY, width: layout.fruitLampWidth * 7, height: layout.fruitBar.height)
+        box2D("fruitRow", fruitSpan, x: 120...1090, y: nil)
+        XCTAssertEqual(layout.fruitBar.midY, py(ReferenceBoxes.fruitRow.midY), accuracy: tolY, "\(name) 水果排中线", file: file, line: line)
+        // 投币口：金币出口在 COIN 牌（约 600 像素）和拱门灯泡横条（744）之间
+        XCTAssertTrue((py(590)...py(670)).contains(layout.coinSpawnY), "\(name) 投币口 y \(Int(layout.coinSpawnY / size.height * 2622)) 像素", file: file, line: line)
+        // 下落路径上的格挡：老虎机符号格都在参考转轴窗口内
+        let reels = ReferenceBoxes.rect(ReferenceBoxes.slotReels, size)
+        for p in layout.slotObstacles { XCTAssertTrue(reels.contains(p), "\(name) 符号格挡 \(p) 在参考转轴窗口内", file: file, line: line) }
+        for p in layout.fruitPins { XCTAssertTrue(layout.fruitBar.contains(p), file: file, line: line) }
     }
 
     func test_gate1_structure_iPhone17() { checkStructure(iPhone17, name: "iPhone17") }
