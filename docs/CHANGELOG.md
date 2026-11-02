@@ -296,3 +296,28 @@
   - 缩放带物理体的节点会把物理体拉回原位；
   - 阻尼超过 1 会清零速度；
   - 投币在主线程、物理在渲染线程，改为加锁排队生成。
+
+## v11.3.1 (2026-11-02) — 补回 v11.3 删除的测试
+
+v11.3 去掉 2D→3D 交接时删了 14 个测试、加了 6 个（127 → 119）。仍然存在的行为全部在新的「一枚 3D 金币走完全程」路径上补回检查（119 → 128）：
+
+| v11.2 删除的测试 | 原因 | v11.3 / v11.3.1 替代 |
+|---|---|---|
+| test_coinCount_neverExceedsCap | 旧 `dropCoin(xFraction:)` 接口已删 | test_coinCap_neverExceeded（v11.3） |
+| test_prefill_placesAboutHundredCoins | 金币变大，参考金币堆 2 层 | test_prefill_fillsPileTwoLayers（v11.3） |
+| test_dropCoin_addsCoinAbovePusherShelf | 金币不再在推板上方生成 | test_dropCoin_spawnsOneFallingCoinAtSlotExit |
+| test_handoffCoinDiameter_iPhone17 / SE | 没有交接点了 | test_fallingCoinDiameter_constant_iPhone17 / SE（投币口到 BONUS 线屏幕直径不变、≈ 2D 金币） |
+| test_landingEdges_matchDropField_iPhone17 / SE | 没有交接线 | test_fieldWalls_matchDropField_iPhone17 / SE（下落平面侧墙上中下三点贴 2D 下落区边缘） |
+| test_noVisibleSideCovers | 旧 `sideWalls` 已删 | test_noVisibleColliders（钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都不可见且有碰撞体） |
+| test_ramps_beside_pusher_highOutside | 斜坡改为推板上方的薄板 | test_ramps_aboveSidesOfPusher（v11.3）+ test_ramps_exactlyOnePerSide |
+| test_visualGates_rampsCountAndPositions | 同上 | test_ramps_exactlyOnePerSide + test_gate1_structure_*（斜坡屏幕位置） |
+| test_pusherRetractsFully_coinsScrapedOff | 旧挡板已删，改为后墙 | test_pusherRetract_backWallScrapesTop |
+| test_livePhysics_pusherMovesPileAndCoinsFallOff | 旧交接接口已删 | test_gates_live60s_iPhone17 新增断言：掉进接币槽 > 10 枚 |
+| test_livePhysics_edgeCoinsSlideOffRamps | 同上 | test_gates_live60s_iPhone17 门槛 4（斜坡金币 100% 滑到推板） |
+| test_visualGates_live60s | 被新门槛整体替代 | test_gates_live60s_iPhone17 |
+
+新测试发现并修掉两个问题：
+- 重建机器时 `rampNodes` 没清空（留着 2 个已移除的旧斜坡）；
+- 下落区两侧的墙在世界坐标里是竖直的，透视下屏幕上底部向内偏约 6 点。现在墙沿屏幕边缘倾斜。
+
+共 128 个测试全部通过。

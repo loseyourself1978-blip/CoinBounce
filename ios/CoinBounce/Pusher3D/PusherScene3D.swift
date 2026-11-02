@@ -400,6 +400,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let wallZ = g.wallZ, frontExt = g.pusherFrontExtendedZ, lipZ = g.lipZ
         let halfP = g.pusherHalfWidth
         let wide = abs(g.rampOuter.x) + 1.5
+        rampNodes.removeAll()
         // 下层台面：从后背板一直到波浪前沿（后背板后面不放东西）
         let floorBackZ = g.backPanelZ - 0.2
         _ = node("table", box: wide * 2, 2, lipZ - floorBackZ, at: SCNVector3(0, -1, (lipZ + floorBackZ) / 2), "felt",
@@ -627,11 +628,16 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         // 左右墙：投币口到 BONUS 线，沿屏幕上下落区的左右边缘
         for sxv in [layout.fieldMinX - layout.coinRadius, layout.fieldMaxX + layout.coinRadius] {
             let a = g.hitZ(sxv, layout.sliderTrack.minY, z: z), b = g.hitZ(sxv, layout.bonusLane.maxY, z: z)
-            let len = abs(a.y - b.y)
+            // 屏幕上的竖直边缘投到下落平面上不是世界竖直线（透视），墙沿 a→b 倾斜，内侧面始终贴着屏幕边缘
+            let dx = b.x - a.x, dy = b.y - a.y
+            let len = (dx * dx + dy * dy).squareRoot()
             let box = SCNBox(width: 0.2, height: CGFloat(len), length: CGFloat(config.coinRadius * 4), chamferRadius: 0)
             let n = SCNNode(geometry: box)
             n.geometry?.materials = [materials["invisible"]!]
-            n.position = SCNVector3(a.x + (a.x > 0 ? 0.1 : -0.1), (a.y + b.y) / 2, (a.z + b.z) / 2)
+            let tilt = atan2(dx, -dy)
+            let out: Float = a.x > 0 ? 0.1 : -0.1
+            n.position = SCNVector3((a.x + b.x) / 2 + out * cos(tilt), (a.y + b.y) / 2 + out * sin(tilt), (a.z + b.z) / 2)
+            n.eulerAngles = SCNVector3(0, 0, tilt)
             let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: box, options: nil))
             body.categoryBitMask = PusherScene3D.catPeg
             n.physicsBody = body
@@ -684,7 +690,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     }
 
     @discardableResult
-    private func makeFallingCoin(atScreen s: CGPoint, screenVelocity v: CGVector, special: Bool) -> SCNNode? {
+    func makeFallingCoin(atScreen s: CGPoint, screenVelocity v: CGVector, special: Bool) -> SCNNode? {
         let g = geo
         let p = g.hitZ(s.x, s.y, z: g.fallPlaneZ)
         let wpp = g.depth(p) / g.focal
