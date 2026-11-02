@@ -48,6 +48,10 @@ struct GameConstants {
     /// 参考 App 实测：金币从 COIN 滑块落到推币台约 1.75 秒（2.mp4 第 8.1–9.6 秒逐帧跟踪：投币口→老虎机顶约 0.25 秒，
     /// 老虎机顶→水果排 1.2 秒，水果排→推板约 0.3 秒）。我们的平均下落时长必须在它的 ±10% 以内
     static let referenceFallSeconds: Double = 1.75
+    /// 3D 下落金币在下落平面里的线性阻尼：和格挡弹跳一起，让投币口到推板顶面约 1.75 秒
+    static let fallLinearDamping: CGFloat = 0.6
+    /// 参考录屏（60fps）里玩家的投币频率：9 秒 15 枚，约每 0.6 秒一枚（-autoplay 和验收测试用）
+    static let referenceDropInterval: TimeInterval = 0.6
     /// 参考 App 实测：接币盘里的金币堆大多 1–2 层，叠得最高的两枚一摞（2.mp4 第 12 秒接币盘特写）。
     /// 我们接币盘区域金币堆的 90 百分位层数要等于它（四舍五入）
     static let referencePileLayers: Float = 2
@@ -59,7 +63,7 @@ struct GameConstants {
     static let bonusSliderTravelFraction: CGFloat = 0.16
     static let coinSliderPeriod: Double = 4.0
     static let bonusSliderPeriod: Double = 4.6
-    static let pusherPeriod: Double = 3.0           // 3D 推板往复周期（秒），参考约 3 秒（v10.5 为 1.8）
+    static let pusherPeriod: Double = 3.3           // 3D 推板往复周期（秒）：新参考录屏 60fps 逐帧跟踪推板前脸，约 3.3 秒
     static let deckFriction: CGFloat = 0.4          // 3D 台面摩擦（v11.2：金币与台面 0.3×0.4 = 0.12）
     static let pusherCoinFriction: CGFloat = 0.3          // 3D 金币摩擦（金币之间 0.3×0.3 = 0.09：薄金币被挤到两枚之上会滑下来，金币堆保持参考的 2 层）
     static let battleAttackCooldown: TimeInterval = 0.25

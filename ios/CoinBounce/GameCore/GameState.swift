@@ -183,6 +183,8 @@ class GameState: ObservableObject {
     var handoffReady: ((_ pointInPusher: CGPoint) -> Bool)?
     /// 每枚下落金币从投币口到交接的时长（秒），用于和参考 App 对比（验收日志和测试）
     var fallTimes: [TimeInterval] = []
+    /// 投币时由 3D 推币机接手（v11.3：金币从投币口开始就是 3D 金币）
+    var onDrop: ((Active2DCoin) -> Void)?
     /// 等待下落区生成的中奖金币雨（纯视觉）
     var pendingCoinRain = 0
     /// 生成特殊金币用的随机数（测试里可替换）
@@ -230,6 +232,7 @@ class GameState: ObservableObject {
     
     // V9.0: 为自动化测试提供的重置接口
     func resetForTesting() {
+        onDrop = nil          // 测试里投币进队列（App 宿主会把投币接到它自己的 3D 推币机上）
         layout = .reference
         offeredCards = []
         pickedCard = nil
@@ -404,7 +407,8 @@ class GameState: ObservableObject {
         } else {
             coin.isSpecial = randomUnit() < GameConstants.specialCoinChance
         }
-        pendingDrops.append(coin)
+        // v11.3：App 里由 3D 推币机直接生成下落金币；没有接上时（测试）放进队列
+        if let onDrop { onDrop(coin) } else { pendingDrops.append(coin) }
     }
 
     // MARK: - 下落区事件（DropFieldScene 调用）

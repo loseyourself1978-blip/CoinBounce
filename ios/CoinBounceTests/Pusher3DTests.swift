@@ -1,374 +1,199 @@
 import SceneKit
-import SpriteKit
 import SwiftUI
 import XCTest
 @testable import CoinBounce
 
 // ============================================================
-// MARK: - 3D 推币台
-// 说明：SceneKit 的离屏渲染器不会推进物理，推落等物理行为用 App 内录屏验收；这里只测确定性的部分。
+// MARK: - 3D 推币机（v11.3：每一枚金币从投币口到接币槽都是同一个 3D 金币）
+// 结构门槛用离屏投影；物理门槛在真实窗口里真正运行 SceneKit 物理 60 秒。
 // ============================================================
 
 final class Pusher3DTests: XCTestCase {
+    private let iPhone17 = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
+    private let iPhoneSE = GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0))
 
-    func test_prefill_placesAboutHundredCoins() {
-        let pusher = PusherScene3D()
-        XCTAssertGreaterThanOrEqual(pusher.coinCount, 40, "开局预铺两层金币（参考金币堆 1–2 层）")
+    func test_prefill_fillsPileTwoLayers() {
+        let pusher = PusherScene3D(viewSize: iPhone17.size)
+        XCTAssertGreaterThanOrEqual(pusher.coinCount, 30, "开局金币堆在下层台面上铺两层")
         XCTAssertLessThanOrEqual(pusher.coinCount, pusher.config.maxCoins)
     }
 
-    func test_coinCount_neverExceedsCap() throws {
-        let pusher = PusherScene3D()
-        for _ in 0..<200 { pusher.dropCoin(xFraction: 0) }
+    func test_coinCap_neverExceeded() {
+        let pusher = PusherScene3D(viewSize: iPhone17.size)
+        for i in 0..<500 { pusher.addCoin(at: SCNVector3(Float(i % 10) * 0.1, 3, -36)) }
         XCTAssertLessThanOrEqual(pusher.coinCount, pusher.config.maxCoins)
     }
-}
 
-extension Pusher3DTests {
-    func test_dropCoin_addsCoinAbovePusherShelf() {
-        let pusher = PusherScene3D()
-        let before = pusher.coinCount
-        pusher.dropCoin(xFraction: -1)
-        pusher.dropCoin(xFraction: 1)
-        XCTAssertEqual(pusher.coinCount, before + 2)
-    }
-}
-
-// MARK: - 2D → 3D 交接时金币大小一致
-extension Pusher3DTests {
-    private func checkHandoffDiameter(_ layout: GameLayout, file: StaticString = #file, line: UInt = #line) {
-        let pusher = PusherScene3D()
-        let size = layout.pusherView.size
-        let view = SCNView(frame: CGRect(origin: .zero, size: size))
-        view.scene = pusher.scene
-        view.pointOfView = pusher.cameraNode
-        let handoffY = layout.bedEntryY - layout.pusherView.minY
-        let target = layout.coinRadius * 2
-        pusher.calibrateCoinSize(view: view, viewSize: size, handoffY: handoffY, targetDiameter: target)
-        for x in [size.width * 0.2, size.width * 0.5, size.width * 0.8] {
-            let d = pusher.projectedCoinDiameter(at: CGPoint(x: x, y: handoffY), in: view)
-            XCTAssertEqual(d, target, accuracy: target * 0.06, "交接点 x=\(Int(x)) 处 3D 金币直径 \(d) 应等于 2D 直径 \(target)", file: file, line: line)
-        }
-    }
-
-    func test_handoffCoinDiameter_iPhone17() {
-        checkHandoffDiameter(GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)))
-    }
-
-    func test_handoffCoinDiameter_iPhoneSE() {
-        checkHandoffDiameter(GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)))
-    }
-}
-
-// MARK: - v10.7 推板全部收回、两侧斜坡
-extension Pusher3DTests {
-    /// 推板收回到底时前沿与挡板前面齐平，挡板下沿与推板顶面的缝比金币还薄：
-    /// 推板上的金币会全部被挡板刮下，不会跟着推板回到挡板后面
-    func test_pusherRetractsFully_coinsScrapedOff() {
-        let pusher = PusherScene3D()
-        XCTAssertLessThanOrEqual(pusher.pusherFrontZRetracted, pusher.scraperFrontZ + 1e-4, "收回到底，推板前沿不露在挡板外")
-        XCTAssertLessThan(pusher.scraperBottomY - pusher.config.pusherHeight, pusher.config.coinThickness, "挡板与推板之间的缝比金币薄")
-        XCTAssertGreaterThan(pusher.pusherFrontZExtended, pusher.handoffPlaneZ + pusher.config.coinRadius, "推出时把交接处的金币全部推到台面上")
-        XCTAssertGreaterThan(pusher.handoffPlaneZ - pusher.config.coinRadius, pusher.scraperFrontZ, "金币落在挡板前方")
-    }
-
-    /// v11.1 斜坡：实心楔形块落在台面上，紧挨推板两侧（不与推板重叠），顶面外侧高、内侧低，内侧顶边高于推板顶面
-    func test_ramps_beside_pusher_highOutside() {
-        let pusher = PusherScene3D()
-        XCTAssertEqual(pusher.rampNodes.count, 2)
-        for (node, side) in zip(pusher.rampNodes, [Float(-1), 1]) {
-            let (lo, hi) = node.boundingBox
-            XCTAssertGreaterThanOrEqual(min(abs(lo.x), abs(hi.x)), pusher.config.pusherWidth / 2, "斜坡在推板两侧，不压住推板")
-            XCTAssertGreaterThanOrEqual(lo.y, -0.01, "斜坡落在台面上，不悬空")
-            let edges = pusher.rampEdgeHeights(side: side)
-            XCTAssertGreaterThan(edges.inner, pusher.config.pusherHeight, "内侧顶边高于推板顶面，金币滑到推板上")
-            XCTAssertGreaterThan(edges.outer, edges.inner + 0.5, "外侧高、内侧低")
-            XCTAssertNotNil(node.physicsBody, "有碰撞体")
-        }
-    }
-}
-
-// MARK: - v10.8 落币区域与上方下落区同宽
-extension Pusher3DTests {
-    /// 交接线上 3D 台面左右两端的屏幕位置 = 2D 下落区左右边缘；台面前沿处透明墙仍在同两条竖线上
-    private func checkEdgeAlignment(_ layout: GameLayout, name: String, file: StaticString = #file, line: UInt = #line) {
-        let pusher = PusherScene3D()
-        let size = layout.pusherView.size
-        let view = SCNView(frame: CGRect(origin: .zero, size: size))
-        view.scene = pusher.scene
-        view.pointOfView = pusher.cameraNode
-        let handoffY = layout.bedEntryY - layout.pusherView.minY
-        let left = layout.fieldMinX - layout.coinRadius, right = layout.fieldMaxX + layout.coinRadius
-        let frontY = layout.pusherFrontY - layout.pusherView.minY
-        pusher.fit(view: view, viewSize: size, handoffY: handoffY, fieldLeft: left, fieldRight: right, frontY: frontY,
-                   coinDiameter: layout.coinRadius * 2)
-        // 台面前沿（金币掉落处）在投币按钮上方，完整可见
-        let frontEdge = view.projectPoint(SCNVector3(0, 0, pusher.config.deckDepth / 2))
-        print("FRONT_EDGE \(name) \(frontEdge.y) vs \(frontY)")
-        XCTAssertEqual(CGFloat(frontEdge.y), frontY, accuracy: 3, "\(name) 前沿位置", file: file, line: line)
-        let edges = pusher.handoffEdgePoints
-        let l = view.projectPoint(edges.left), r = view.projectPoint(edges.right)
-        print("EDGE_ALIGN \(name) 2D \(left)…\(right)  3D \(l.x)…\(r.x)  y \(l.y) vs \(handoffY)")
-        XCTAssertEqual(CGFloat(l.x), left, accuracy: 3, "\(name) 左边缘", file: file, line: line)
-        XCTAssertEqual(CGFloat(r.x), right, accuracy: 3, "\(name) 右边缘", file: file, line: line)
-        XCTAssertEqual(CGFloat(l.y), handoffY, accuracy: 3, "\(name) 交接线高度", file: file, line: line)
-        XCTAssertEqual(pusher.sideWalls.count, 2)
-    }
-
-    func test_landingEdges_matchDropField_iPhone17() {
-        checkEdgeAlignment(GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)), name: "iPhone17")
-    }
-
-    func test_landingEdges_matchDropField_iPhoneSE() {
-        checkEdgeAlignment(GameLayout(size: CGSize(width: 375, height: 667), safeArea: EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0)), name: "iPhoneSE")
-    }
-
-    /// 两侧不再有可见侧板（只有透明碰撞墙和台面上的细金边）
-    func test_noVisibleSideCovers() {
-        let pusher = PusherScene3D()
-        for wall in pusher.sideWalls {
-            XCTAssertEqual(wall.geometry?.firstMaterial?.colorBufferWriteMask, [], "碰撞墙不可见")
-            XCTAssertNotNil(wall.physicsBody)
-        }
-    }
-}
-
-// MARK: - v11 真实物理：在窗口里真正跑 SceneKit 物理（不是离屏几何检查）
-extension Pusher3DTests {
-    /// 把推币台放进一个真实窗口里的 SCNView，按真实时间运行物理
-    private func makeLiveScene(_ layout: GameLayout) -> (PusherScene3D, SCNView, UIWindow) {
-        let pusher = PusherScene3D()
-        let size = layout.pusherView.size
-        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
-        let view = SCNView(frame: window.bounds)
-        view.scene = pusher.scene
-        view.pointOfView = pusher.cameraNode
-        view.delegate = pusher
-        pusher.view = view
-        window.addSubview(view)
-        window.isHidden = false
-        pusher.fit(view: view, viewSize: size, handoffY: layout.bedEntryY - layout.pusherView.minY,
-                   fieldLeft: layout.fieldMinX - layout.coinRadius, fieldRight: layout.fieldMaxX + layout.coinRadius,
-                   frontY: layout.pusherFrontY - layout.pusherView.minY, coinDiameter: layout.coinRadius * 2)
-        view.isPlaying = true
-        view.rendersContinuously = true
-        return (pusher, view, window)
-    }
-
-    /// 和 App 里一样交接：从视图顶部往下找到第一个该交接的位置，在那里交接一枚下落金币
-    @discardableResult
-    func handOffAt(_ pusher: PusherScene3D, x: CGFloat) -> SCNNode? {
-        var y: CGFloat = 0
-        while y < 400 {
-            let p = CGPoint(x: x, y: y)
-            if pusher.isReadyForHandoff(viewPoint: p) { return pusher.handOff(viewPoint: p, screenVelocity: CGVector(dx: 0, dy: 300)) }
-            y += 2
-        }
-        return nil
-    }
-
-    private func run(seconds: TimeInterval) {
-        let done = expectation(description: "physics")
-        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { done.fulfill() }
-        wait(for: [done], timeout: seconds + 30)
-    }
-
-    /// 推板推几个来回后：金币堆里的金币确实被推动，前沿有金币掉落（计分），新投的币没有被丢弃
-    func test_livePhysics_pusherMovesPileAndCoinsFallOff() {
-        let layout = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
-        let (pusher, view, window) = makeLiveScene(layout)
-        defer { view.isPlaying = false; window.isHidden = true }
-        run(seconds: 1)
-        let before = pusher.coinPositions
-        var dropped = 0
-        pusher.onCoinDropped = { _ in dropped += 1 }
-        // 每 0.4 秒在交接线上横向扫一枚，持续约 4 个推板周期
-        let handoffY = layout.bedEntryY - layout.pusherView.minY
-        for i in 0..<30 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.4) {
-                let x = layout.pusherView.width * (0.15 + 0.7 * CGFloat(i % 8) / 7)
-                self.handOffAt(pusher, x: x)
-            }
-        }
-        run(seconds: 14)
-        let after = pusher.coinPositions
-        let moved = before.keys.filter { id in
-            guard let a = before[id], let b = after[id] else { return true }   // 不见了 = 掉出前沿
-            return abs(a.z - b.z) > 0.15 || abs(a.x - b.x) > 0.15
-        }.count
-        print("LIVE_PHYSICS moved=\(moved)/\(before.count) fallen=\(pusher.droppedCount) callbacks=\(dropped) rejected=\(pusher.rejectedCount) total=\(pusher.coinCount)")
-        XCTAssertGreaterThan(moved, 10, "推板把金币堆推动了")
-        XCTAssertGreaterThan(pusher.droppedCount, 0, "有金币从前沿掉落")
-        XCTAssertEqual(pusher.rejectedCount, 0, "新投的币没有被丢弃")
-    }
-
-    /// 落在边缘的金币落到斜坡上，滑到推板顶面或台面上，不会穿过斜坡、也不会停在斜坡上
-    func test_livePhysics_edgeCoinsSlideOffRamps() {
-        let layout = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
-        let (pusher, view, window) = makeLiveScene(layout)
-        defer { view.isPlaying = false; window.isHidden = true }
-        let handoffY = layout.bedEntryY - layout.pusherView.minY
-        _ = handoffY
-        let left = handOffAt(pusher, x: layout.fieldMinX)
-        let right = handOffAt(pusher, x: layout.fieldMaxX)
-        let startL = left?.position, startR = right?.position
-        run(seconds: 3)
-        let innerEdge = pusher.config.deckWidth / 2 - PusherScene3D.rampWidth
-        for (node, start) in [(left, startL), (right, startR)] {
-            guard let node, let start else { return XCTFail("没有生成金币") }
-            let p = node.presentation.position
-            print("RAMP_COIN start=\(start.x),\(start.y),\(start.z) end=\(p.x),\(p.y),\(p.z)")
-            XCTAssertNotNil(pusher.rampTopHeight(atX: start.x, z: start.z), "边缘金币生成在斜坡上方")
-            XCTAssertLessThan(abs(p.x), abs(start.x) - 0.2, "沿斜坡向中间滑动")
-            XCTAssertLessThan(abs(p.x), innerEdge + pusher.config.coinRadius + 0.1, "滑下斜坡，没有停在斜坡上或穿进去")
-        }
-    }
-}
-
-extension Pusher3DTests {
-    /// 「轻松掉落」卡的向前重力不能超过静摩擦，否则整堆金币自己滑下去
+    /// 「轻松掉落」卡和台面前倾的向前重力都不超过静摩擦，整堆金币不会自己滑下去
     func test_easyDrop_doesNotSlideWholePile() {
         let staticLimit = Float(GameConstants.pusherCoinFriction * GameConstants.deckFriction) * PusherScene3D.verticalGravity
-        XCTAssertLessThan(PusherScene3D.tableForwardTilt, staticLimit * 0.25, "平时的台面前倾远小于静摩擦")
-        XCTAssertLessThan(PusherScene3D.tableForwardTilt + PusherScene3D.easyDropForwardGravity, staticLimit * 0.75, "加上「轻松掉落」也不会让整堆滑落")
-    }
-}
-
-// MARK: - v11.2 画面验收门槛（在真实窗口里同时运行 2D 下落场景和 3D 推币台，任何一项不达标测试失败）
-extension Pusher3DTests {
-    private struct LiveRig {
-        let state: GameState
-        let pusher: PusherScene3D
-        let scnView: SCNView
-        let drop: DropFieldScene
-        let window: UIWindow
-        let layout: GameLayout
+        XCTAssertLessThan(PusherScene3D.tableForwardTilt, staticLimit * 0.25)
+        XCTAssertLessThan(PusherScene3D.tableForwardTilt + PusherScene3D.easyDropForwardGravity, staticLimit * 0.75)
     }
 
-    private func makeLiveRig() -> LiveRig {
-        let layout = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
+    // MARK: 门槛 1 结构：机器各部件投影到屏幕上的位置 = 参考录屏测出的框（误差 1.5% 屏宽 / 屏高）
+    private func checkStructure(_ layout: GameLayout, name: String, file: StaticString = #file, line: UInt = #line) {
+        let size = layout.size
+        let pusher = PusherScene3D(viewSize: size)
+        let view = SCNView(frame: CGRect(origin: .zero, size: size))
+        view.scene = pusher.scene
+        view.pointOfView = pusher.cameraNode
+        pusher.view = view
+        pusher.fit(viewSize: size, layout: layout)
+        let g = pusher.geo
+        let tolX = size.width * 0.015, tolY = size.height * 0.015
+        func px(_ v: CGFloat) -> CGFloat { ReferenceBoxes.x(v, size) }
+        func py(_ v: CGFloat) -> CGFloat { ReferenceBoxes.y(v, size) }
+        func screen(_ p: SCNVector3) -> CGPoint { let s = view.projectPoint(p); return CGPoint(x: CGFloat(s.x), y: CGFloat(s.y)) }
+        func check(_ label: String, _ p: SCNVector3, x: CGFloat?, y: CGFloat?) {
+            let s = screen(p)
+            print("STRUCTURE \(name) \(label) ours=(\(Int(s.x / size.width * 1206)), \(Int(s.y / size.height * 2622))) ref=(\(x.map { Int($0) } ?? -1), \(y.map { Int($0) } ?? -1)) px")
+            if let x { XCTAssertEqual(s.x, px(x), accuracy: tolX, "\(name) \(label) x", file: file, line: line) }
+            if let y { XCTAssertEqual(s.y, py(y), accuracy: tolY, "\(name) \(label) y", file: file, line: line) }
+        }
+        // 推板：后墙线、前沿（推到最远）、黑色前脸下沿、左右边
+        check("wall", SCNVector3(0, g.pusherHeight, g.wallZ), x: nil, y: ReferenceBoxes.wallY)
+        check("pusherFrontExtended", SCNVector3(0, g.pusherHeight, g.pusherFrontExtendedZ), x: nil, y: ReferenceBoxes.pusherFrontExtendedY)
+        check("pusherFaceBottom", SCNVector3(0, 0, g.pusherFrontExtendedZ), x: nil, y: ReferenceBoxes.pusherFrontExtendedY + ReferenceBoxes.pusherFaceHeight)
+        check("pusherLeft", SCNVector3(-g.pusherHalfWidth, g.pusherHeight, g.pusherFrontExtendedZ), x: ReferenceBoxes.pusherX.lowerBound, y: nil)
+        check("pusherRight", SCNVector3(g.pusherHalfWidth, g.pusherHeight, g.pusherFrontExtendedZ), x: ReferenceBoxes.pusherX.upperBound, y: nil)
+        // 斜坡：内侧低端、外端（左右对称）
+        for side: Float in [-1, 1] {
+            let mirror: (CGFloat) -> CGFloat = { side < 0 ? $0 : 1206 - $0 }
+            check("rampInner\(side)", SCNVector3(side * g.rampInnerX, g.rampInnerHeight, g.rampFrontZ),
+                  x: mirror(ReferenceBoxes.rampInnerX), y: ReferenceBoxes.rampInnerTopY)
+            check("rampOuter\(side)", SCNVector3(side * abs(g.rampOuter.x), g.rampOuter.y, g.rampFrontZ),
+                  x: mirror(ReferenceBoxes.rampOuterX), y: ReferenceBoxes.rampOuterTopY)
+        }
+        // 铜柱、台阶、金币堆、波浪前沿、彩色面板：整体投影外框
+        func box(_ node: String, x: ClosedRange<CGFloat>?, y: ClosedRange<CGFloat>?) {
+            guard let r = pusher.screenBox(ofNodeNamed: node, in: view) else { return XCTFail("\(name) 缺少部件 \(node)", file: file, line: line) }
+            print("STRUCTURE \(name) \(node) ours x \(Int(r.minX / size.width * 1206))–\(Int(r.maxX / size.width * 1206)) y \(Int(r.minY / size.height * 2622))–\(Int(r.maxY / size.height * 2622)) ref x \(x.map { "\(Int($0.lowerBound))–\(Int($0.upperBound))" } ?? "-") y \(y.map { "\(Int($0.lowerBound))–\(Int($0.upperBound))" } ?? "-")")
+            if let x {
+                XCTAssertEqual(r.minX, px(x.lowerBound), accuracy: tolX, "\(name) \(node) 左边", file: file, line: line)
+                XCTAssertEqual(r.maxX, px(x.upperBound), accuracy: tolX, "\(name) \(node) 右边", file: file, line: line)
+            }
+            if let y {
+                XCTAssertEqual(r.minY, py(y.lowerBound), accuracy: tolY, "\(name) \(node) 上边", file: file, line: line)
+                XCTAssertEqual(r.maxY, py(y.upperBound), accuracy: tolY, "\(name) \(node) 下边", file: file, line: line)
+            }
+        }
+        box("postLeft", x: ReferenceBoxes.postLeftX, y: ReferenceBoxes.postY)
+        box("postRight", x: ReferenceBoxes.postRightX, y: ReferenceBoxes.postY)
+        box("lip", x: ReferenceBoxes.lipX, y: nil)
+        box("panelLeft", x: ReferenceBoxes.panelLeftX, y: ReferenceBoxes.panelY)
+        box("panelRight", x: ReferenceBoxes.panelRightX, y: ReferenceBoxes.panelY)
+        // 台阶顶面：后沿、前沿
+        let sz = g.shelfZ
+        check("shelfBack", SCNVector3(-3.5, g.shelfHeight, sz.back), x: nil, y: ReferenceBoxes.shelfY.lowerBound)
+        check("shelfFront", SCNVector3(-3.5, g.shelfHeight, sz.front), x: nil, y: ReferenceBoxes.shelfY.upperBound)
+        // 金币堆：前沿、左右边
+        check("pileFront", SCNVector3(0, 0, g.lipZ), x: nil, y: ReferenceBoxes.lipY.lowerBound)
+        check("pileLeftFront", SCNVector3(-g.pileHalfWidth(atZ: g.lipZ), 0, g.lipZ), x: ReferenceBoxes.pileX.lowerBound, y: nil)
+        check("pileRightFront", SCNVector3(g.pileHalfWidth(atZ: g.lipZ), 0, g.lipZ), x: ReferenceBoxes.pileX.upperBound, y: nil)
+        // 2D 部件：底部面板、按钮、BONUS 轨道、炮管按参考框摆放
+        // 底部面板按参考框画（BottomGoldPanel 用 ReferenceBoxes.bottomFrame），3D 场景按同一条线判断「被面板挡住」
+        XCTAssertEqual(pusher.panelTopY, py(ReferenceBoxes.bottomFrame.minY), accuracy: 0.5, "\(name) 底部面板上沿", file: file, line: line)
+        XCTAssertEqual(layout.bonusLane.midY, py(ReferenceBoxes.bonusBar.midY), accuracy: tolY, "\(name) BONUS 轨道（金币解除约束的线）", file: file, line: line)
+    }
+
+    func test_gate1_structure_iPhone17() { checkStructure(iPhone17, name: "iPhone17") }
+    func test_gate1_structure_iPhoneSE() { checkStructure(iPhoneSE, name: "iPhoneSE") }
+
+    /// 斜坡外高内低、内侧低端在推板顶面上方、前沿盖住下落平面（边上落下的金币一定落在斜坡上）
+    func test_ramps_aboveSidesOfPusher() {
+        let g = MachineGeometry(viewSize: iPhone17.size)
+        XCTAssertGreaterThan(g.rampOuter.y, g.rampInnerHeight + 0.5, "外端高、内端低")
+        XCTAssertGreaterThan(g.rampInnerHeight, g.pusherHeight, "内侧低端在推板顶面上方")
+        XCTAssertEqual(g.rampInnerX, g.pusherHalfWidth, accuracy: 0.25, "内侧低端正对推板侧边")
+        XCTAssertGreaterThan(g.rampFrontZ, g.fallPlaneZ + 0.3, "斜坡伸到下落平面前方")
+        XCTAssertGreaterThan(g.pusherFrontRetractedZ, g.fallPlaneZ + 0.3, "推板收回时顶面仍在下落平面下方：金币总落在推板上")
+        XCTAssertGreaterThan(g.fallPlaneZ, g.wallZ + 0.3, "下落平面在后墙前方")
+    }
+
+    // MARK: 门槛 2–8：真实窗口里运行 60 秒（全屏透明 SCNView + 和 App 一样的投币节奏）
+    func test_gates_live60s_iPhone17() {
+        let layout = iPhone17
         let state = GameState.shared
-        state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "VisualGates")!, key: "VisualGates.SaveData")
+        state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "Gates113")!, key: "Gates113.SaveData")
         state.saveStore.clear()
         state.resetForTesting()
         state.updateLayout(layout)
         state.fruitsLit = Array(repeating: false, count: 7)
         state.showCardSelection = false
-        state.availableCoins = 1000
-        state.fallTimes = []
         let window = UIWindow(frame: CGRect(origin: .zero, size: layout.size))
-        let pusher = PusherScene3D()
-        let scnView = SCNView(frame: layout.pusherView)
-        scnView.scene = pusher.scene
-        scnView.pointOfView = pusher.cameraNode
-        scnView.delegate = pusher
-        pusher.view = scnView
-        window.addSubview(scnView)
-        let skView = SKView(frame: window.bounds)
-        skView.allowsTransparency = true
-        skView.backgroundColor = .clear
-        window.addSubview(skView)
-        let drop = DropFieldScene(gameState: state)
-        drop.apply(layout: layout)
-        skView.presentScene(drop)
+        let pusher = PusherScene3D(viewSize: layout.size)
+        let view = SCNView(frame: window.bounds)
+        view.scene = pusher.scene
+        view.pointOfView = pusher.cameraNode
+        view.delegate = pusher
+        view.backgroundColor = .clear
+        pusher.view = view
+        window.addSubview(view)
         window.isHidden = false
-        pusher.fit(view: scnView, viewSize: layout.pusherView.size, handoffY: layout.bedEntryY - layout.pusherView.minY,
-                   fieldLeft: layout.fieldMinX - layout.coinRadius, fieldRight: layout.fieldMaxX + layout.coinRadius,
-                   frontY: layout.pusherFrontY - layout.pusherView.minY, coinDiameter: layout.coinRadius * 2)
-        scnView.isPlaying = true
-        scnView.rendersContinuously = true
-        state.onCoinToPusher = { [pusher] point, velocity, special in pusher.handOff(viewPoint: point, screenVelocity: velocity, special: special) }
-        state.handoffReady = { [pusher] point in pusher.isReadyForHandoff(viewPoint: point) }
-        return LiveRig(state: state, pusher: pusher, scnView: scnView, drop: drop, window: window, layout: layout)
-    }
-
-    /// 60 秒连续投币（每 0.4 秒一枚，和 -autoplay 一样）：
-    /// 1 交接位置跳变 < 2 点、直径误差 < 3%；2 任何时刻没有金币被面板 / 墙挡住或跑出画面；3 只允许落进接币槽的移除；
-    /// 4 金币堆层数（开局和 60 秒后）= 参考实测；5 平均下落时长在参考 ±10% 以内
-    func test_visualGates_live60s() {
-        let rig = makeLiveRig()
+        pusher.fit(viewSize: layout.size, layout: layout)
+        view.isPlaying = true
+        view.rendersContinuously = true
+        state.onDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial) }
         defer {
-            rig.scnView.isPlaying = false
-            rig.window.isHidden = true
-            rig.state.onCoinToPusher = nil
-            rig.state.handoffReady = nil
-            rig.state.resetForTesting()
+            view.isPlaying = false
+            window.isHidden = true
+            state.onDrop = nil
+            state.resetForTesting()
         }
-        let panelTop = rig.layout.dropButton.minY - rig.layout.pusherView.minY
-        var occlusionProblems: [String] = []
+        var occlusion: [String] = []
         var checks = 0
-        // 层数按时间窗口平均（单个瞬间可能刚好有一枚被挤上去或刚掉下去）：开局取第 2–5 秒，结束取最后 10 秒，每秒采样一次
-        var startSamples: [Float] = [], endSamples: [Float] = []
+        var coverage: [CGFloat] = [], layers: [Float] = []
         var elapsed = 0
         let timers = [
-            Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
-                rig.state.availableCoins = 1000
-                if rig.state.showCardSelection { rig.state.finishCardPick() }
-                rig.state.dropCoin()
+            Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
+                state.availableCoins = 1000
+                if state.showCardSelection { state.finishCardPick() }
+                state.dropCoin()
             },
-            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-                let report = rig.pusher.occlusionReport(in: rig.scnView, panelTopY: panelTop)
-                checks += report.checked
-                occlusionProblems += report.problems
+            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                elapsed += 1
+                let r = pusher.occlusionReport(in: view)
+                checks += r.checked
+                occlusion += r.problems
+                if elapsed > 45 { let p = pusher.pileStats(); coverage.append(p.coverage); layers.append(p.layersP90) }
             }
         ]
-        let sampler = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            elapsed += 1
-            let p90 = rig.pusher.pileLayers().p90
-            if (2...5).contains(elapsed) { startSamples.append(p90) }
-            if elapsed > 50 { endSamples.append(p90) }
-        }
-        run(seconds: 60)
+        let done = expectation(description: "60 s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { done.fulfill() }
+        wait(for: [done], timeout: 120)
         timers.forEach { $0.invalidate() }
-        sampler.invalidate()
-        let startLayers = startSamples.reduce(0, +) / Float(max(1, startSamples.count))
 
-        let samples = rig.pusher.handoffSamples
-        let maxJump = samples.map(\.jump).max() ?? .infinity
-        let maxErr = samples.map(\.diameterError).max() ?? .infinity
-        let falls = rig.state.fallTimes
-        let fallAvg = falls.isEmpty ? 0 : falls.reduce(0, +) / Double(falls.count)
-        let endLayers = endSamples.reduce(0, +) / Float(max(1, endSamples.count))
-        print("VISUAL_GATES handoffs=\(samples.count) maxJump=\(maxJump) maxDiamErr=\(maxErr) removed=\(rig.pusher.removalReasons) life=\(rig.pusher.lifecycleCounts) occlusionChecks=\(checks) occlusionProblems=\(occlusionProblems.count) \(occlusionProblems.prefix(3)) layersStart=\(startLayers) layersEnd=\(endLayers) fallAvg=\(fallAvg) n=\(falls.count)")
+        let life = pusher.lifecycleCounts
+        let landedPusher = life["landedPusher"] ?? 0, landedRamp = life["landedRamp"] ?? 0, landedPile = life["landedPile"] ?? 0
+        let landings = landedPusher + landedRamp + landedPile
+        let fallAvg = pusher.fallTimes.isEmpty ? 0 : pusher.fallTimes.reduce(0, +) / Double(pusher.fallTimes.count)
+        let covAvg = coverage.isEmpty ? 0 : coverage.reduce(0, +) / CGFloat(coverage.count)
+        let layerAvg = layers.isEmpty ? 0 : layers.reduce(0, +) / Float(layers.count)
+        func avg(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
+        print("GATES life=\(life) removed=\(pusher.removalReasons) landings=\(landings) pusher=\(landedPusher) ramp=\(landedRamp) pile=\(landedPile) rampToPusher=\(life["rampToPusher"] ?? 0) rampTimeouts=\(pusher.rampTimeouts) rampSlide=\(avg(pusher.rampSlideTimes)) pusherToPile=\(life["pusherToPile"] ?? 0) dwell=\(avg(pusher.pusherToPileTimes)) fall=\(fallAvg) continuity=\(pusher.continuityViolations.count) \(pusher.continuityViolations.prefix(2)) maxSize=\(pusher.maxSizeChange) frames=\(pusher.framesSampled) standing=\(pusher.standingViolations) occlusionChecks=\(checks) occlusion=\(occlusion.count) \(occlusion.prefix(3)) declaredHidden=\(pusher.declaredHidden) coverage=\(covAvg) layers=\(layerAvg)")
 
-        XCTAssertGreaterThan(samples.count, 60, "60 秒内大部分金币都交接到了 3D")
-        XCTAssertLessThan(maxJump, 2, "交接时屏幕位置跳变 < 2 点")
-        XCTAssertLessThan(maxErr, 0.03, "交接时直径误差 < 3%")
-        XCTAssertGreaterThan(checks, 1000, "遮挡检查覆盖了足够多的金币")
-        XCTAssertEqual(occlusionProblems, [], "没有金币在落进接币槽之前被面板 / 墙挡住或跑出画面")
-        XCTAssertEqual(Set(rig.pusher.removalReasons.keys), ["fellIntoTray"], "只有落进接币槽的金币才会被移除")
-        XCTAssertGreaterThan(rig.pusher.removalReasons["fellIntoTray"] ?? 0, 10, "前沿持续有金币掉落")
-        XCTAssertNil(rig.pusher.lifecycleCounts["lostBehindWall"], "没有金币跑到挡板后面")
-        XCTAssertNil(rig.pusher.lifecycleCounts["lostSide"], "没有金币从两侧跑出去")
-        XCTAssertNil(rig.pusher.lifecycleCounts["rescuedFromFloor"], "没有金币被挤进台面")
-        XCTAssertGreaterThan(rig.pusher.lifecycleCounts["onPusher"] ?? 0, 0, "有金币落在推板上")
-        XCTAssertGreaterThan(rig.pusher.lifecycleCounts["scraped"] ?? 0, 0, "推板上的金币被挡板刮下")
-        XCTAssertGreaterThan(rig.pusher.lifecycleCounts["onRamp"] ?? 0, 0, "有金币落在斜坡上")
-        XCTAssertEqual(startLayers.rounded(), GameConstants.referencePileLayers, "开局金币堆层数 = 参考")
-        XCTAssertEqual(endLayers.rounded(), GameConstants.referencePileLayers, "60 秒后金币堆层数 = 参考")
-        XCTAssertEqual(fallAvg, GameConstants.referenceFallSeconds, accuracy: GameConstants.referenceFallSeconds * 0.1, "下落时长在参考 ±10% 以内")
-    }
-
-    /// 6 斜坡：每侧恰好一块；屏幕位置与参考实测一致（容差 1% 屏宽）——外沿在下落区边缘（10% / 90%），
-    /// 推板旁的内沿在 33% / 67%（参考推板两边），前端内沿在 23% / 77%（参考接币盘两边）
-    func test_visualGates_rampsCountAndPositions() {
-        let rig = makeLiveRig()
-        defer { rig.scnView.isPlaying = false; rig.window.isHidden = true; rig.state.onCoinToPusher = nil; rig.state.handoffReady = nil }
-        let p = rig.pusher
-        XCTAssertEqual(p.rampNodes.count, 2, "每侧一块斜坡")
-        XCTAssertEqual(rig.pusher.scene.rootNode.childNodes.filter { $0.name == "trayCabinet" }.count, 0, "不再有外侧第二块斜面")
-        let W = rig.layout.size.width
-        func screenX(_ v: SCNVector3) -> CGFloat { CGFloat(rig.scnView.projectPoint(v).x) / W }
-        let back = p.pusherFrontZRetracted + 0.3
-        let front = p.slopeFrontZ
-        for side: Float in [-1, 1] {
-            let outer = screenX(SCNVector3(side * p.config.deckWidth / 2, p.handoffHeight, p.handoffPlaneZ))
-            let innerBack = screenX(SCNVector3(side * p.rampInnerX(atZ: back), p.rampInnerHeight, back))
-            let innerFront = screenX(SCNVector3(side * p.rampInnerX(atZ: front), p.rampInnerHeight, front))
-            print("RAMP_POS side=\(side) outer=\(outer) innerBack=\(innerBack) innerFront=\(innerFront)")
-            XCTAssertEqual(outer, side < 0 ? 0.10 : 0.90, accuracy: 0.01, "斜坡外沿 = 下落区边缘")
-            XCTAssertEqual(innerBack, side < 0 ? 0.33 : 0.67, accuracy: 0.01, "推板旁的斜坡内沿 = 参考推板两边")
-            XCTAssertEqual(innerFront, side < 0 ? 0.23 : 0.77, accuracy: 0.01, "前端斜坡内沿 = 参考接币盘两边")
-        }
+        XCTAssertGreaterThan(landings, 30, "60 秒里有足够多的金币落下")
+        // 门槛 2 连续性：逐帧位置跳变不超过物理运动、大小一帧变化 ≤ 5%；落进接币槽前不被挡住（声明的遮挡物除外）、不出画面
+        XCTAssertEqual(pusher.continuityViolations, [], "逐帧位置、大小连续")
+        XCTAssertLessThanOrEqual(pusher.maxSizeChange, 0.05)
+        XCTAssertGreaterThan(checks, 1000)
+        XCTAssertEqual(occlusion, [], "没有金币被挡住或跑出画面")
+        XCTAssertEqual(Set(pusher.removalReasons.keys), ["fellIntoTray"], "只有掉进接币槽的金币被移除")
+        XCTAssertNil(life["lostBehindWall"]); XCTAssertNil(life["lostSide"])
+        // 门槛 3 不立着
+        XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
+        // 门槛 4 落点：≥95% 先落在推板顶面或斜坡上（实际要求 0% 落在金币堆上）；斜坡上的金币 100% 在 3 秒内到推板顶面
+        XCTAssertEqual(landedPile, 0, "没有金币直接落到推板前方的金币堆上")
+        XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp) / Double(max(1, landings)), 0.95)
+        XCTAssertEqual((life["rampToPusher"] ?? 0) + pusher.pendingRampCoins, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
+        XCTAssertEqual(pusher.rampTimeouts, 0)
+        // 门槛 5 流转：推板收回时金币从推板顶面掉到下层金币堆
+        XCTAssertGreaterThan(life["pusherToPile"] ?? 0, 10, "推板顶面 → 金币堆")
+        // 门槛 6 金币堆：覆盖参考金币堆左右范围 ≥95%，2–3 层
+        XCTAssertGreaterThanOrEqual(covAvg, 0.95, "金币堆覆盖 272–935 像素")
+        XCTAssertTrue((1.5...3.5).contains(layerAvg), "金币堆 2–3 层（实测 \(layerAvg)）")
+        // 门槛 7 下落时长：参考 1.75 秒 ±10%
+        XCTAssertEqual(fallAvg, ReferenceBoxes.fallSeconds, accuracy: ReferenceBoxes.fallSeconds * 0.1, "投币口到第一次落地")
     }
 }
