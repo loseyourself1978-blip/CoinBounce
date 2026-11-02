@@ -84,15 +84,30 @@ struct CoinPusherView: View {
                 CabinetPillar()
                     .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
 
-                // 3D 推币台一直延伸到屏幕底部，投币按钮叠在台面前沿上（与参考布局一致）
-                PusherSceneView(pusher: pusher3D, coinDiameter: layout.coinRadius * 2,
-                                handoffY: layout.bedEntryY - layout.pusherView.minY,
-                                fieldLeft: layout.fieldMinX - layout.coinRadius - layout.pusherView.minX,
-                                fieldRight: layout.fieldMaxX + layout.coinRadius - layout.pusherView.minX,
-                                frontY: layout.pusherFrontY - layout.pusherView.minY)
-                    .place(in: layout.pusherView)
+                // 推币机后方的背景（红绒布、暗色机柜）：3D 视图是透明的，只画机器和金币
+                MachineBackdrop()
+                    .place(in: CGRect(x: 0, y: layout.pusherView.minY, width: sw, height: sh - layout.pusherView.minY))
 
-                // ── 投币按钮 ──
+                // 中奖金币雨（纯视觉，2D）
+                SpriteView(scene: dropScene, options: [.allowsTransparency])
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
+
+                // v11.3：3D 视图铺满全屏，盖在 2D 界面上——每一枚金币从投币口到掉进接币槽都是同一个 3D 金币
+                PusherSceneView(pusher: pusher3D, layout: layout)
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
+
+                // 画在 3D 金币之上的部件（参考里它们挡住金币）：投币口滑块、BONUS 牌
+                coinSlider(w: layout.coinSliderWidth, h: layout.sliderTrack.height * 0.8)
+                    .position(x: layout.coinSliderCenter(offset: gameState.coinSliderOffset).x, y: layout.sliderTrack.midY)
+                    .allowsHitTesting(false)
+                bonusPlaque(layout: layout)
+                // 两侧炮管（参考 x 40–160 / 1050–1170、y 1690–1830 像素）
+                CannonView(right: false).place(in: ReferenceBoxes.rect(ReferenceBoxes.cannonLeft, layout.size)).allowsHitTesting(false)
+                CannonView(right: true).place(in: ReferenceBoxes.rect(ReferenceBoxes.cannonRight, layout.size)).allowsHitTesting(false)
+
+                // ── 底部面板和投币按钮（参考：深色框 + 金色标牌 + 六边形按钮）──
                 coinDropButton(w: layout.dropButton.width, h: layout.dropButton.height, bottomInset: layout.safeArea.bottom)
                     .place(in: layout.dropButton)
 
@@ -100,13 +115,13 @@ struct CoinPusherView: View {
                 LocalCoinCanvasLayer(layout: layout)
                     .frame(width: sw, height: sh)
 
-                // 下落中的金币（SpriteKit）：画在老虎机、战斗区、水果灯排之上
-                SpriteView(scene: dropScene, options: [.allowsTransparency])
+                #if DEBUG
+                // 调试：-refOverlay /绝对路径/frame.png [不透明度]——把本地的参考帧半透明叠在整屏上，逐像素对齐用。
+                // 图片从仓库外的本地路径读取，不打包进 App；Release 版不编译这段
+                ReferenceOverlay()
                     .frame(width: sw, height: sh)
                     .allowsHitTesting(false)
-
-                // BONUS 牌画在下落金币之上：金币从中间穿过时被牌遮住一段，形成穿透效果
-                bonusPlaque(layout: layout)
+                #endif
 
                 // 飞分特效层
                 ForEach(gameState.floatingScores) { score in
@@ -132,11 +147,13 @@ struct CoinPusherView: View {
             .onAppear {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
-                // 下落区 → 3D 推币台；3D 推币台掉落 → 计分
-                gameState.onCoinToPusher = { [pusher3D] point, velocity, special in
-                    pusher3D.handOff(viewPoint: point, screenVelocity: velocity, special: special)
+                // 投币 → 3D 金币从投币口落下；按屏幕投影位置触发战斗区 / 水果 / BONUS；掉进接币槽 → 计分
+                gameState.onDrop = { [pusher3D] coin in
+                    pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial)
                 }
-                gameState.handoffReady = { [pusher3D] point in pusher3D.isReadyForHandoff(viewPoint: point) }
+                pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
+                pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
+                pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0) }
                 pusher3D.onCoinDropped = { special in gameState.coinFellOffPusher(isSpecial: special) }
             }
             .onChange(of: gameState.pusherSpeedMultiplier) { pusher3D.setPusherSpeed($0) }
@@ -214,21 +231,23 @@ struct CoinPusherView: View {
         }
         if ProcessInfo.processInfo.arguments.contains("-autoplay") {
             pusher3D.logsLifecycle = true
-            // 每秒一次的验收日志：交接误差、移除原因、遮挡、金币堆层数、下落时长
-            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [pusher3D, dropScene] _ in
-                let layout = gameState.layout
+            // 每秒一次的验收日志：落点、下落时长、流转、连续性、立着的金币、遮挡、金币堆
+            // 遮挡检查要逐枚做命中测试（会等渲染线程），放慢到每 5 秒一次，不拖慢主线程上的投币节奏
+            Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [pusher3D] _ in
                 guard let view = pusher3D.view else { return }
-                let occ = pusher3D.occlusionReport(in: view, panelTopY: layout.dropButton.minY - layout.pusherView.minY)
-                let jumps = pusher3D.handoffSamples.map(\.jump), errs = pusher3D.handoffSamples.map(\.diameterError)
-                let falls = gameState.fallTimes
-                let layers = pusher3D.pileLayers()
-                NSLog("VERIFY handoffs=%d maxJump=%.2f maxDiamErr=%.3f removed=%@ life=%@ occChecked=%d occProblems=%d %@ layersP90=%.2f layersMax=%.2f fallAvg=%.2f fallN=%d",
-                      jumps.count, jumps.max() ?? 0, errs.max() ?? 0,
-                      pusher3D.removalReasons.description, pusher3D.lifecycleCounts.description,
+                let occ = pusher3D.occlusionReport(in: view)
+                let pile = pusher3D.pileStats()
+                func avg(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
+                NSLog("VERIFY life=%@ removed=%@ fallAvg=%.2f fallN=%d rampSlideAvg=%.2f pusherToPileAvg=%.2f rampTimeouts=%d continuity=%d maxSize=%.3f standing=%d occChecked=%d occProblems=%d %@ layersP90=%.1f coverage=%.3f pileN=%d",
+                      pusher3D.lifecycleCounts.description, pusher3D.removalReasons.description,
+                      avg(pusher3D.fallTimes), pusher3D.fallTimes.count, avg(pusher3D.rampSlideTimes), avg(pusher3D.pusherToPileTimes),
+                      pusher3D.rampTimeouts, pusher3D.continuityViolations.count, pusher3D.maxSizeChange, pusher3D.standingViolations,
                       occ.checked, occ.problems.count, occ.problems.prefix(3).joined(separator: " | "),
-                      layers.p90, layers.max, falls.isEmpty ? 0 : falls.reduce(0, +) / Double(falls.count), falls.count)
+                      pile.layersP90, pile.coverage, pile.count)
+                if let first = pusher3D.continuityViolations.first { NSLog("VERIFY_CONT first=%@ last=%@", first, pusher3D.continuityViolations.last ?? "") }
             }
-            Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
+            // 投币频率按参考录屏实测：约 1.67 枚 / 秒
+            Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
                 if !gameState.canDropCoin { gameState.availableCoins += 100 }
                 // 水果全亮弹出选卡时自动选第一张，录屏不被遮住
                 if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
@@ -551,11 +570,12 @@ struct CoinPusherView: View {
             Color(red: 0.10, green: 0.07, blue: 0.04)
             // v11.2 按参考：BONUS 轨道后面是红绒布，左边两张扑克牌、右边大金币和一叠金币、两侧炮管（全部原创矢量绘制）
             BonusBackdrop(size: lane.size)
-            // 滑轨
+            // 滑轨：参考 x 370–860、y 1748–1758 像素的深色细杆
+            let bar = ReferenceBoxes.rect(ReferenceBoxes.bonusBar, layout.size)
             Capsule()
-                .fill(Color(red: 0.35, green: 0.25, blue: 0.10))
-                .frame(width: layout.fieldMaxX - layout.fieldMinX + layout.coinRadius * 2, height: 4)
-                .position(x: layout.centerX - lane.minX, y: lane.height / 2)
+                .fill(LinearGradient(colors: [Color(white: 0.35), Color(white: 0.12)], startPoint: .top, endPoint: .bottom))
+                .frame(width: bar.width, height: max(3, bar.height))
+                .position(x: bar.midX - lane.minX, y: bar.midY - lane.minY)
             // BONUS 牌后面的「孔洞」：金币从这里穿过
             Capsule()
                 .fill(Color.black.opacity(0.7))
@@ -568,7 +588,7 @@ struct CoinPusherView: View {
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
         let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
-        HollowBonusSliderTarget(width: layout.bonusSliderWidth, maxHeight: layout.bonusLane.height * 0.9)
+        HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(95, layout.size))
             .position(x: slider.x, y: slider.y)
             .allowsHitTesting(false)
     }
@@ -577,16 +597,19 @@ struct CoinPusherView: View {
     @ViewBuilder
     func coinDropButton(w: CGFloat, h: CGFloat, bottomInset: CGFloat = 0) -> some View {
         // 按钮贴在屏幕最下方（安全区之内，底边留 6 点），引导箭头和提示在按钮上方
-        // 参考：六边形按钮约 15–16% 屏宽；按钮顶边对齐面板顶边下方 3 点，整个按钮在面板里，不挡住上方掉落的金币
-        // 没有底部安全区的机型（SE）面板只有约 40 点高，按钮缩小到放得下，不被屏幕底边切掉
-        let buttonSize = min(w * 0.15, (h + bottomInset - 6) / 0.92)
-        let buttonY = -h / 2 + 3 + buttonSize * 0.46
+        // 参考：六边形按钮 190×215 像素（约 15.8% 屏宽），中心在 (603, 2470)；按真实屏幕尺寸换算到本区域内的偏移
+        let screen = gameState.layout.size
+        let band = gameState.layout.dropButton
+        let buttonSize = ReferenceBoxes.x(190, screen)
+        let buttonY = ReferenceBoxes.y(2470, screen) - band.midY
 
         ZStack {
             // 底部金色面板（参考取色 #fcc54f，深色外框 #14100a）：从台面前沿一直到屏幕底部，台面掉下的金币落到面板后面
-            BottomGoldPanel()
-                .frame(width: w, height: h + 60)
-                .offset(y: 30)
+            // 参考：深色框 x 40–1168、y 2370–2580；金色标牌 x 150–1030、y 2410–2540
+            let frameRect = ReferenceBoxes.rect(ReferenceBoxes.bottomFrame, screen)
+            let labelRect = ReferenceBoxes.rect(ReferenceBoxes.bottomLabel, screen)
+            BottomGoldPanel(frameRect: frameRect.offsetBy(dx: 0, dy: -band.minY), labelRect: labelRect.offsetBy(dx: 0, dy: -band.minY))
+                .frame(width: w, height: h, alignment: .topLeading)
                 .allowsHitTesting(false)
             // 投币按钮（居中，贴近参考App）
             ZStack {
@@ -612,7 +635,7 @@ struct CoinPusherView: View {
                             endPoint: .bottom
                         )
                     )
-                    .frame(width: buttonSize, height: buttonSize * 0.92)
+                    .frame(width: buttonSize, height: buttonSize * 1.13)   // 参考 190×215
                     .overlay(
                         Hexagon().stroke(Color(red: 0.98, green: 0.90, blue: 0.55), lineWidth: 3)
                     )
@@ -623,7 +646,7 @@ struct CoinPusherView: View {
                 Hexagon()
                     .fill(LinearGradient(colors: [Color(red: 0.36, green: 0.26, blue: 0.10), Color(red: 0.18, green: 0.12, blue: 0.05)],
                                          startPoint: .top, endPoint: .bottom))
-                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.68)
+                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.84)
                     .overlay(
                         Text("$")
                             .font(.system(size: buttonSize * 0.28, weight: .black, design: .rounded))
@@ -905,26 +928,30 @@ struct TutorialArrow: View {
     }
 }
 
-/// 底部金色面板：深色外框 + 金色内板 + 细微横纹（原创绘制，配色按参考取色）
+/// 底部面板（原创绘制，按参考框摆放）：深色外框 + 金色标牌（带细横纹）
 struct BottomGoldPanel: View {
+    let frameRect: CGRect
+    let labelRect: CGRect
     var body: some View {
-        ZStack {
-            Rectangle().fill(Color(red: 0.08, green: 0.06, blue: 0.04))
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(LinearGradient(colors: [Color(red: 0.12, green: 0.09, blue: 0.05), Color(red: 0.05, green: 0.04, blue: 0.03)],
+                                     startPoint: .top, endPoint: .bottom))
+                .frame(width: frameRect.width, height: frameRect.height)
+                .offset(x: frameRect.minX, y: frameRect.minY)
             RoundedRectangle(cornerRadius: 6)
                 .fill(LinearGradient(colors: [Color(red: 0.99, green: 0.84, blue: 0.45), Color(red: 0.93, green: 0.70, blue: 0.27),
                                               Color(red: 0.80, green: 0.55, blue: 0.18)],
                                      startPoint: .top, endPoint: .bottom))
                 .overlay(
                     VStack(spacing: 5) {
-                        ForEach(0..<12, id: \.self) { _ in
-                            Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
-                        }
+                        ForEach(0..<10, id: \.self) { _ in Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1) }
                     }
                     .clipped()
                 )
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.55, green: 0.36, blue: 0.10), lineWidth: 2))
-                .padding(.horizontal, 14)
-                .padding(.top, 8)
+                .frame(width: labelRect.width, height: labelRect.height)
+                .offset(x: labelRect.minX, y: labelRect.minY)
         }
     }
 }
@@ -962,15 +989,6 @@ struct BonusBackdrop: View {
                     .foregroundStyle(Color(red: 0.85, green: 0.5, blue: 0.05)))
                 .frame(width: h * 1.05, height: h * 1.05)
                 .position(x: w * 0.8, y: h * 0.62)
-            // 两侧炮管
-            ForEach([false, true], id: \.self) { right in
-                Capsule()
-                    .fill(LinearGradient(colors: [Color(white: 0.35), Color(white: 0.08)], startPoint: .top, endPoint: .bottom))
-                    .overlay(Capsule().stroke(ArtPalette.gold, lineWidth: 1.5))
-                    .frame(width: h * 0.9, height: h * 0.36)
-                    .rotationEffect(.degrees(right ? 200 : -20))
-                    .position(x: right ? w - h * 0.4 : h * 0.4, y: h * 0.7)
-            }
         }
         .frame(width: w, height: h)
         .clipped()
@@ -1039,5 +1057,63 @@ struct ArchTrack: View {
             }
         }
         .onAppear { withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() } }
+    }
+}
+
+/// 推币机后方背景（原创绘制，配色按参考取色）：上部红绒布、下部暗色机柜
+struct MachineBackdrop: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [Color(red: 0.45, green: 0.07, blue: 0.04), Color(red: 0.30, green: 0.05, blue: 0.03)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(maxHeight: .infinity)
+            LinearGradient(colors: [Color(red: 0.16, green: 0.09, blue: 0.04), Color(red: 0.06, green: 0.04, blue: 0.02)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(maxHeight: .infinity)
+        }
+    }
+}
+
+#if DEBUG
+/// 调试用参考帧叠加（只在 Debug 编译）
+struct ReferenceOverlay: View {
+    private static let image: (UIImage, Double)? = {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-refOverlay"), i + 1 < args.count, let img = UIImage(contentsOfFile: args[i + 1]) else { return nil }
+        let opacity = i + 2 < args.count ? Double(args[i + 2]) ?? 0.5 : 0.5
+        return (img, opacity)
+    }()
+    var body: some View {
+        if let (img, opacity) = Self.image {
+            Image(uiImage: img).resizable().opacity(opacity)
+        }
+    }
+}
+#endif
+
+/// 炮管（原创绘制）：深色炮身、金色环、炮口朝向中间
+struct CannonView: View {
+    let right: Bool
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            ZStack {
+                Capsule()
+                    .fill(LinearGradient(colors: [Color(white: 0.38), Color(white: 0.08)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: w * 0.95, height: h * 0.42)
+                ForEach(0..<2, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.45), Color(red: 0.7, green: 0.45, blue: 0.1)], startPoint: .top, endPoint: .bottom))
+                        .frame(width: w * 0.1, height: h * 0.5)
+                        .offset(x: (right ? -1 : 1) * w * (0.18 + 0.2 * CGFloat(i)))
+                }
+                Ellipse()
+                    .fill(Color.black)
+                    .frame(width: w * 0.16, height: h * 0.34)
+                    .offset(x: (right ? -1 : 1) * w * 0.44)
+            }
+            .rotationEffect(.degrees(right ? -18 : 18))
+            .frame(width: w, height: h)
+        }
     }
 }

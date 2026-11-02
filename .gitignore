@@ -36,3 +36,9 @@ xcuserdata/
 *.mp4
 samples/
 video_frames/
+
+# 本地参考帧（-refOverlay 调试用），不进仓库
+overlay_frames/
+*.refframe.png
+参考素材/
+视频对比*/
