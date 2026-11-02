@@ -32,11 +32,15 @@ final class GameLayoutTests: XCTestCase {
         return i.isNull ? 0 : i.width * i.height
     }
 
-    func test_regions_insideSafeArea() {
+    /// v11.4：参考隐藏状态栏、画面从屏幕最顶端开始（JACKPOT 牌在灵动岛后面）。所有区域在屏幕内；
+    /// 可点的金币 / 帮助 / 设置一行及以下的区域在安全区上沿以下
+    func test_regions_insideScreen_controlsBelowSafeTop() {
         for (name, l) in screens {
+            let screen = CGRect(origin: .zero, size: l.size)
             for region in l.regions {
-                assertInside(region.frame, safeRect(l), "\(name) \(region.name)")
+                assertInside(region.frame, screen, "\(name) \(region.name)")
                 XCTAssertGreaterThan(region.frame.height, 0, "\(name) \(region.name) 高度")
+                if region.name != "jackpot" { XCTAssertGreaterThanOrEqual(region.frame.minY, l.safeArea.top, "\(name) \(region.name) 在安全区上沿以下") }
             }
         }
     }
@@ -72,17 +76,19 @@ final class GameLayoutTests: XCTestCase {
 
     func test_layout_matchesReferenceProportions() {
         let l = screens[1].layout
-        let usable = l.size.height - l.safeArea.top - l.safeArea.bottom
-        XCTAssertEqual(l.slotMachine.height / usable, 0.2095, accuracy: 0.001, "老虎机占安全区 20.95%")
+        XCTAssertEqual(l.slotMachine.height / l.size.height, (1280 - 787) / 2622, accuracy: 0.001, "老虎机占整屏 18.8%（参考 787–1280 像素）")
         XCTAssertGreaterThan(l.slotMachine.height, l.dropField.height * 1.8, "老虎机明显高于战斗区")
         XCTAssertEqual(l.pusherView.maxY, l.size.height, "推币台延伸到屏幕底部，投币按钮叠在上面")
         // v11.1：各区域在 iPhone 17 整屏上的位置与参考 App 实测一致（误差 1% 屏高以内）
         do {
             let l = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
             let H = l.size.height
+            XCTAssertEqual(l.jackpot.minY, 0, "JACKPOT 从屏幕最顶端开始")
+            XCTAssertEqual(l.jackpot.maxY / H, 250 / 2622, accuracy: 0.002, "JACKPOT 底部 250 像素")
+            XCTAssertEqual(l.topRow.midY / H, 395 / 2622, accuracy: 0.005, "金币 / 按钮一行 330–460 像素")
             XCTAssertEqual(l.slotMachine.minY / H, 0.30, accuracy: 0.01, "老虎机顶部 ≈ 30%")
-            XCTAssertEqual(l.slotMachine.maxY / H, 0.485, accuracy: 0.01, "老虎机底部 ≈ 48.5%")
-            XCTAssertEqual(l.fruitBar.minY / H, 0.575, accuracy: 0.01, "水果排顶部 ≈ 57.5%")
+            XCTAssertEqual(l.slotMachine.maxY / H, 0.488, accuracy: 0.005, "老虎机底部 ≈ 48.8%")
+            XCTAssertEqual(l.fruitBar.minY / H, 0.588, accuracy: 0.005, "水果排顶部 ≈ 58.8%")
             XCTAssertEqual(l.bonusLane.maxY / H, 0.69, accuracy: 0.01, "BONUS 底部 ≈ 69%")
             XCTAssertEqual(l.dropButton.minY / H, 0.905, accuracy: 0.01, "底部面板 ≈ 90.5%")
             XCTAssertEqual(l.pusherFrontY / H, 0.855, accuracy: 0.01, "台面前沿 ≈ 85.5%（参考 85–86%）")
