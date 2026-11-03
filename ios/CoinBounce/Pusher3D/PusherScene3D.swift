@@ -312,7 +312,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     // MARK: 灯光、材质、相机
     private func buildScene() {
         scene.physicsWorld.gravity = baseGravity
-        scene.physicsWorld.timeStep = 1.0 / 120.0   // v11.5：180 → 120 Hz（真机物理是瓶颈；每帧 2 个子步）
+        scene.physicsWorld.timeStep = PusherScene3D.physicsTimeStep
         scene.background.contents = nil      // 透明：3D 视图铺满全屏，盖在 2D 界面上，只画机器和金币
         let camera = SCNCamera()
         camera.projectionDirection = .horizontal
@@ -882,7 +882,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             logFrames += 1
             if logWindowStart == 0 { logWindowStart = time }
             if time - logWindowStart >= 1 {
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs())
                 logFrames = 0
                 logWindowStart = time
             }
@@ -916,6 +916,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             }
         }
         #endif
+        physicsStepStart = CACurrentMediaTime()   // 到 didSimulatePhysics 之间是物理推进（含推板动作）
     }
     private var lastDebugTick = 0
 
@@ -926,6 +927,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let g = geo
         let now = CACurrentMediaTime()
         var removed: [Bool] = []
+        if physicsStepStart > 0 { physicsMsSum += (now - physicsStepStart) * 1000; physicsMsCount += 1 }
         coinLock.lock(); defer { coinLock.unlock() }
         _coins.removeAll { node in
             let id = ObjectIdentifier(node)
@@ -969,6 +971,17 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
                 for special in removed { self?.onCoinDropped?(special) }
             }
         }
+    }
+
+    // MARK: 性能统计
+    /// v11.5：物理步长 180 → 120 Hz（真机上金币两两碰撞检测是主要开销，按步数线性增长；90 Hz 时下落变慢到 1.95 秒以上）
+    static let physicsTimeStep: TimeInterval = 1.0 / 120.0
+    private var physicsStepStart: TimeInterval = 0
+    private var physicsMsSum: Double = 0, physicsMsCount = 0
+    /// 每帧从渲染器 update 到物理推进完的平均毫秒数（读取后清零）
+    func takePhysicsMs() -> Double {
+        defer { physicsMsSum = 0; physicsMsCount = 0 }
+        return physicsMsCount == 0 ? 0 : physicsMsSum / Double(physicsMsCount)
     }
 
     // MARK: 金币生命周期（调试日志 + 测试断言）
