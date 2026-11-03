@@ -370,4 +370,26 @@ extension Pusher3DTests {
         XCTAssertLessThan(g.wallZ, g.fallPlaneZ - pusher.config.coinRadius, "金币落在后墙前方")
         XCTAssertGreaterThan(g.pusherFrontExtendedZ, g.fallPlaneZ + pusher.config.coinRadius, "推出时越过落点")
     }
+
+    /// v11.5：手机发热（.serious / .critical）时降级画质，.fair 及以下恢复；玩法和物理参数不变
+    func test_thermalFallback_switchesRenderQuality() {
+        let pusher = PusherScene3D(viewSize: iPhone17.size)
+        let view = SCNView(frame: CGRect(origin: .zero, size: iPhone17.size))
+        view.scene = pusher.scene; view.pointOfView = pusher.cameraNode; pusher.view = view
+        let step = pusher.scene.physicsWorld.timeStep, gravity = pusher.scene.physicsWorld.gravity
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .nominal), .full)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .fair), .full)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .serious), .reduced)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .critical), .reduced)
+        pusher.updateRenderQuality(thermalState: .serious)
+        XCTAssertEqual(pusher.renderQuality, .reduced)
+        XCTAssertEqual(view.antialiasingMode, .none)
+        XCTAssertEqual(pusher.cameraNode.camera?.screenSpaceAmbientOcclusionIntensity, 0)
+        pusher.updateRenderQuality(thermalState: .fair)
+        XCTAssertEqual(pusher.renderQuality, .full)
+        XCTAssertEqual(view.antialiasingMode, .multisampling2X)
+        XCTAssertEqual(Double(pusher.cameraNode.camera?.screenSpaceAmbientOcclusionIntensity ?? 0), 1.2, accuracy: 1e-5)
+        XCTAssertEqual(pusher.scene.physicsWorld.timeStep, step, "物理不变")
+        XCTAssertEqual(pusher.scene.physicsWorld.gravity.y, gravity.y)
+    }
 }

@@ -210,7 +210,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 特殊金币：白金色、自发光
     private lazy var specialGeometry: SCNCylinder = {
         let g = SCNCylinder(radius: CGFloat(config.coinRadius), height: CGFloat(config.coinThickness))
-        g.radialSegmentCount = 24
+        g.radialSegmentCount = 20
         // 与普通金币同样的浮雕正面和滚边，只是染成白金色并带柔和自发光（不再是一块纯白圆片）
         let platinum = UIColor(red: 0.85, green: 0.93, blue: 1.0, alpha: 1)
         let glow = UIColor(red: 1, green: 0.9, blue: 0.55, alpha: 1)
@@ -264,16 +264,55 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         self.config = config
         geo = MachineGeometry(viewSize: viewSize)
         coinGeometry = SCNCylinder(radius: CGFloat(config.coinRadius), height: CGFloat(config.coinThickness))
-        coinGeometry.radialSegmentCount = 28
+        coinGeometry.radialSegmentCount = 20   // v11.5：28 → 20（看不出差别，绘制、阴影和碰撞体都更省）
         super.init()
         buildScene()
         apply(geometry: MachineGeometry(viewSize: viewSize))
+        // v11.5：手机发热（.serious 及以上）时降低画质（阴影、环境光遮蔽、抗锯齿），玩法和物理不变；降温到 .fair 及以下恢复
+        thermalObserver = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.updateRenderQuality()
+        }
+        updateRenderQuality()
+    }
+    deinit { if let thermalObserver { NotificationCenter.default.removeObserver(thermalObserver) } }
+
+    // MARK: 发热降级
+    enum RenderQuality: Equatable { case full, reduced }
+    private let keyLightNode = SCNNode()
+    private var thermalObserver: NSObjectProtocol?
+    private(set) var renderQuality: RenderQuality = .full
+    /// 画面验收（逐帧连续性、大小检查覆盖所有金币）：测试里默认开；App 里只在 -autoplay 验收时开（玩家玩的时候关，省每帧对上百枚金币的投影）
+    var verifiesMotion = true
+    /// 调试：-forceThermalFallback 强制降级画质
+    static var forcesFallback = ProcessInfo.processInfo.arguments.contains("-forceThermalFallback")
+    static func renderQuality(for state: ProcessInfo.ThermalState) -> RenderQuality {
+        if forcesFallback { return .reduced }
+        switch state {
+        case .serious, .critical: return .reduced
+        default: return .full
+        }
+    }
+    func updateRenderQuality(thermalState: ProcessInfo.ThermalState = ProcessInfo.processInfo.thermalState) {
+        apply(renderQuality: PusherScene3D.renderQuality(for: thermalState))
+    }
+    func apply(renderQuality q: RenderQuality) {
+        renderQuality = q
+        let full = q == .full
+        // 阴影：全画质 12 次采样柔和阴影；降级时 1 次采样、阴影贴图减半
+        keyLightNode.light?.shadowSampleCount = full ? 12 : 1
+        keyLightNode.light?.shadowRadius = full ? 5 : 1
+        keyLightNode.light?.shadowMapSize = full ? .zero : CGSize(width: 1024, height: 1024)
+        cameraNode.camera?.screenSpaceAmbientOcclusionIntensity = full ? 1.2 : 0
+        if let view {
+            view.antialiasingMode = full ? .multisampling2X : .none
+            view.preferredFramesPerSecond = 60
+        }
     }
 
     // MARK: 灯光、材质、相机
     private func buildScene() {
         scene.physicsWorld.gravity = baseGravity
-        scene.physicsWorld.timeStep = 1.0 / 180.0
+        scene.physicsWorld.timeStep = 1.0 / 120.0   // v11.5：180 → 120 Hz（真机物理是瓶颈；每帧 2 个子步）
         scene.background.contents = nil      // 透明：3D 视图铺满全屏，盖在 2D 界面上，只画机器和金币
         let camera = SCNCamera()
         camera.projectionDirection = .horizontal
@@ -285,7 +324,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         scene.rootNode.addChildNode(cameraNode)
 
         // 主光：前上方，柔和阴影；补光：环境光偏暗（参考整体偏暗、金属高光明显）
-        let key = SCNNode()
+        let key = keyLightNode
         key.light = SCNLight()
         key.light!.type = .directional
         key.light!.intensity = 900
@@ -440,7 +479,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let pileStartZ = g.postFrontZ - 0.3
         _ = node("table", box: wide * 2, 2, pileStartZ - floorBackZ, at: SCNVector3(0, -1, (pileStartZ + floorBackZ) / 2), "felt",
                  friction: GameConstants.deckFriction)
-        let frontHalf = max(g.pileHalfWidth(atZ: pileStartZ), g.pileHalfWidth(atZ: lipZ)) + 0.3
+        let frontHalf = max(g.pileHalfWidth(atZ: pileStartZ), g.pileHalfWidth(atZ: lipZ)) + 0.6
         _ = node("tableFront", box: frontHalf * 2, 2, lipZ - pileStartZ, at: SCNVector3(0, -1, (lipZ + pileStartZ) / 2), "felt",
                  friction: GameConstants.deckFriction)
         // 推板（运动学）：暗橄榄色顶面 + 黑色前脸；下沿伸进台面，金币不会被压到推板下面。
@@ -545,9 +584,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         // 金币堆两侧（透明碰撞墙，沿屏幕竖线）：从推板前沿到波浪前沿
         for side: Float in [-1, 1] {
             let z0 = g.postFrontZ - 0.3, z1 = lipZ + 0.3
-            let x0 = side * (g.pileHalfWidth(atZ: z0) + 0.15), x1 = side * (g.pileHalfWidth(atZ: z1) + 0.15)
+            // 墙厚 0.6（内侧面仍在金币堆边上）：物理 120 Hz 时被挤压的金币也穿不过去
+            let x0 = side * (g.pileHalfWidth(atZ: z0) + 0.3), x1 = side * (g.pileHalfWidth(atZ: z1) + 0.3)
             let dx = x1 - x0, dz = z1 - z0
-            let w = node(side < 0 ? "pileWallLeft" : "pileWallRight", box: 0.3, 3, (dx * dx + dz * dz).squareRoot(),
+            let w = node(side < 0 ? "pileWallLeft" : "pileWallRight", box: 0.6, 3, (dx * dx + dz * dz).squareRoot(),
                          at: SCNVector3((x0 + x1) / 2, 1.5, (z0 + z1) / 2), "invisible", friction: 0.1)
             w.eulerAngles = SCNVector3(0, atan2(dx, dz), 0)
             w.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: w.geometry!, options: nil))
@@ -842,7 +882,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             logFrames += 1
             if logWindowStart == 0 { logWindowStart = time }
             if time - logWindowStart >= 1 {
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue)
                 logFrames = 0
                 logWindowStart = time
             }
@@ -915,7 +955,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
                 let sideChute = p.z > g.postFrontZ - 0.4 && p.z <= g.lipZ - 0.2 && abs(p.x) > g.pileHalfWidth(atZ: p.z) + 0.1
                 let reason = p.z > g.lipZ - 0.2 ? "fellIntoTray" : sideChute ? "sideChute" : "lostBelow"
                 removalReasons[reason, default: 0] += 1
-                logEvent("removed", detail: "\(reason) at \(p.x),\(p.z)")
+                logEvent("removed", detail: "\(reason) at \(p.x),\(p.z) first=\(track.firstLanding?.rawValue ?? "-") prefilled=\(track.prefilled) phase=\(track.phase.rawValue) age=\(String(format: "%.1f", now - track.born))")
                 tracks[id] = nil
                 if reason == "fellIntoTray" { removed.append(node.name == PusherScene3D.specialName) }
                 node.removeFromParentNode()
@@ -1061,21 +1101,22 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 负载高时墙钟、本帧时间和物理实际推进的时间会错开一帧，造成误报
     private func sampleScreen(_ renderer: SCNSceneRenderer, time: TimeInterval) {
         let r = config.coinRadius
-        let right = SCNVector3(1, 0, 0)
         var releaseList: [(SCNNode, CoinTrack)] = []
         var battle = 0
         var fruits: [CGFloat] = [], bonuses: [CGFloat] = []
         framesSampled += 1
         for node in coins {
-            guard let track = tracks[ObjectIdentifier(node)], !track.prefilled || track.phase != .onPile || true else { continue }
+            guard let track = tracks[ObjectIdentifier(node)] else { continue }
+            // 不做画面验收时只看下落中的金币（触发战斗区 / 水果 / BONUS 事件、解除约束）；落地后的金币不必每帧投影
+            if !verifiesMotion && !track.falling { continue }
             let p = node.presentation.position
             // 刚加进场景、物理还没同步的那一帧，presentation 在原点：跳过
             if p.x == 0 && p.y == 0 && p.z == 0 { continue }
             let s = renderer.projectPoint(p)
             let sp = CGPoint(x: CGFloat(s.x), y: CGFloat(s.y))
-            let a = renderer.projectPoint(SCNVector3(p.x - right.x * r, p.y, p.z)), b = renderer.projectPoint(SCNVector3(p.x + right.x * r, p.y, p.z))
+            // 屏幕直径：相机没有偏航和滚转，世界 x 方向的 2r 投到屏幕上正好是 2r·焦距/深度（省掉每枚每帧两次投影）
             let visualScale = CGFloat(node.childNodes.first?.scale.x ?? 1)
-            let diameter = CGFloat(abs(b.x - a.x)) * visualScale
+            let diameter = CGFloat(2 * r * geo.focal / max(0.1, geo.depth(p))) * visualScale
             let v = node.physicsBody?.velocity ?? SCNVector3Zero
             // 世界速度换算成屏幕速度：按这枚金币自己的深度（越靠近相机，同样的速度在屏幕上走得越快）
             let speed = CGFloat((v.x * v.x + v.y * v.y + v.z * v.z).squareRoot() * geo.focal / max(0.1, geo.depth(p)))

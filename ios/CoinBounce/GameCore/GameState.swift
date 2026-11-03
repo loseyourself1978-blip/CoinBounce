@@ -103,6 +103,11 @@ struct FloatingScore: Identifiable {
 }
 
 // MARK: - GameState V8.0 - 超高性能物理驱动版
+final class SliderMotion: ObservableObject {
+    @Published var coin: CGFloat = 0
+    @Published var bonus: CGFloat = 0
+}
+
 class GameState: ObservableObject {
     static let shared = GameState()
 
@@ -122,8 +127,11 @@ class GameState: ObservableObject {
     @Published var hasDroppedFirstCoin: Bool = false { didSet { scheduleSave() } }
 
     // MARK: - 滑块系统
-    @Published var coinSliderOffset: CGFloat = 0.0
-    @Published var bonusSliderOffset: CGFloat = 0.0
+    /// v11.5：两个滑块每帧都在动，放在单独的 SliderMotion 里发布——只有滑块那几个小视图跟着刷新，
+    /// 整个游戏画面不再每帧重算一次（真机帧率）
+    let sliders = SliderMotion()
+    var coinSliderOffset: CGFloat = 0.0 { didSet { sliders.coin = coinSliderOffset } }
+    var bonusSliderOffset: CGFloat = 0.0 { didSet { sliders.bonus = bonusSliderOffset } }
     
     private var sliderTime: CGFloat = 0
     /// 滑块角速度（游戏时间，已除以 simulationSpeed），周期见 GameConstants
@@ -150,7 +158,11 @@ class GameState: ObservableObject {
         var color: Color
         var life: CGFloat = 1.0
     }
-    var particles: [Particle] = []
+    var particles: [Particle] = [] {
+        didSet { let has = !particles.isEmpty; if has != hasParticles { hasParticles = has } }
+    }
+    /// v11.5：有粒子时才把全屏粒子画布放进画面（没有粒子时那层每帧在 CPU 上重画整屏，真机帧率的大头）
+    @Published var hasParticles = false
     
     // MARK: - 2D 金币
     /// 等待下落区（SpriteKit）生成的金币；DropFieldScene 每帧取走
@@ -186,7 +198,11 @@ class GameState: ObservableObject {
     /// 投币时由 3D 推币机接手（v11.3：金币从投币口开始就是 3D 金币）
     var onDrop: ((Active2DCoin) -> Void)?
     /// 等待下落区生成的中奖金币雨（纯视觉）
-    var pendingCoinRain = 0
+    var pendingCoinRain = 0 {
+        didSet { if pendingCoinRain > 0 && !coinRainShowing { coinRainShowing = true } }
+    }
+    /// v11.5：中奖金币雨（2D 精灵层）正在显示。没有金币雨时整个全屏 SpriteKit 层不放进画面，省一层全屏透明合成（真机帧率）
+    @Published var coinRainShowing = false
     /// 生成特殊金币用的随机数（测试里可替换）
     var randomUnit: () -> Double = { Double.random(in: 0..<1) }
 

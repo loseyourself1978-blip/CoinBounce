@@ -84,8 +84,10 @@ struct CoinPusherView: View {
                 // ── 推币台 ──
                 // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
                 CabinetPillar()
+                    .drawingGroup()   // 闪烁灯泡（带光晕）交给 GPU 合成，不在主线程上逐帧重画
                     .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
                 CabinetPillar()
+                    .drawingGroup()
                     .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
 
                 // 推币机后方的背景（红绒布、暗色机柜）：3D 视图是透明的，只画机器和金币
@@ -93,9 +95,11 @@ struct CoinPusherView: View {
                     .place(in: CGRect(x: 0, y: layout.pusherView.minY, width: sw, height: sh - layout.pusherView.minY))
 
                 // 中奖金币雨（纯视觉，2D）
-                SpriteView(scene: dropScene, options: [.allowsTransparency])
-                    .frame(width: sw, height: sh)
-                    .allowsHitTesting(false)
+                if gameState.coinRainShowing {
+                    SpriteView(scene: dropScene, options: [.allowsTransparency])
+                        .frame(width: sw, height: sh)
+                        .allowsHitTesting(false)
+                }
 
                 // v11.3：3D 视图铺满全屏，盖在 2D 界面上——每一枚金币从投币口到掉进接币槽都是同一个 3D 金币
                 PusherSceneView(pusher: pusher3D, layout: layout)
@@ -103,8 +107,10 @@ struct CoinPusherView: View {
                     .allowsHitTesting(false)
 
                 // 画在 3D 金币之上的部件（参考里它们挡住金币）：投币口滑块、BONUS 牌
-                coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
-                    .position(layout.coinSliderCenter(offset: gameState.coinSliderOffset))
+                SliderReader(motion: gameState.sliders) { m in
+                    coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                        .position(layout.coinSliderCenter(offset: m.coin))
+                }
                     .allowsHitTesting(false)
                 bonusPlaque(layout: layout)
                 // 两侧炮管（参考 x 40–160 / 1050–1170、y 1690–1830 像素）
@@ -116,8 +122,10 @@ struct CoinPusherView: View {
                     .place(in: layout.dropButton)
 
                 // 粒子：与物理同一坐标，直接按点绘制
-                LocalCoinCanvasLayer(layout: layout)
-                    .frame(width: sw, height: sh)
+                if gameState.hasParticles {
+                    LocalCoinCanvasLayer(layout: layout)
+                        .frame(width: sw, height: sh)
+                }
 
                 #if DEBUG
                 // 调试：-refOverlay /绝对路径/frame.png [不透明度]——把本地的参考帧半透明叠在整屏上，逐像素对齐用。
@@ -235,8 +243,27 @@ struct CoinPusherView: View {
         if ProcessInfo.processInfo.arguments.contains("-autoplay") || ProcessInfo.processInfo.arguments.contains("-debugPhysicsLog") {
             pusher3D.logsPhysicsStats = true
         }
+        // 玩家模式不做逐帧画面验收；-autoplay 验收时打开。-autoplayLite：和 -autoplay 一样自动投币，但不做验收（测真实玩家负载下的帧率）
+        let autoplayLite = ProcessInfo.processInfo.arguments.contains("-autoplayLite")
+        pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
+        if autoplayLite {
+            pusher3D.logsPhysicsStats = true
+            Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
+                if !gameState.canDropCoin { gameState.availableCoins += 100 }
+                if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
+                    gameState.pickCard(card.kind)
+                    gameState.finishCardPick()
+                }
+                gameState.dropCoin()
+            }
+            Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [pusher3D] _ in
+                func avg(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
+                NSLog("LITE fallAvg=%.2f fallN=%d coins=%d", avg(pusher3D.fallTimes), pusher3D.fallTimes.count, pusher3D.coinCount)
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("-autoplay") {
-            pusher3D.logsLifecycle = true
+            // 逐事件日志只在 -debugLifecycleLog 时打（日志在渲染线程上写，连着控制台时会拖慢帧率）；计数照常
+            pusher3D.logsLifecycle = ProcessInfo.processInfo.arguments.contains("-debugLifecycleLog")
             // 每秒一次的验收日志：落点、下落时长、流转、连续性、立着的金币、遮挡、金币堆
             // 遮挡检查要逐枚做命中测试（会等渲染线程），放慢到每 5 秒一次，不拖慢主线程上的投币节奏
             Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [pusher3D] _ in
@@ -287,6 +314,7 @@ struct CoinPusherView: View {
         ZStack(alignment: .top) {
             // Jackpot 标题框：参考大牌 50–1160 × 0–250 像素
             JackpotMarquee(width: w, height: h)
+                .drawingGroup()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // 标签和数字排成一行、放在牌子下部：灵动岛最低到约 60% 牌高（iPhone 17），文字不被挡住
@@ -342,7 +370,6 @@ struct CoinPusherView: View {
     @ViewBuilder
     func coinSliderTrack(layout: GameLayout) -> some View {
         let h = layout.sliderTrack.height
-        let slider = layout.coinSliderCenter(offset: gameState.coinSliderOffset)
 
         ZStack(alignment: .topLeading) {
             // v11.2 按参考：拱形投币口——深红底，金色拱形灯管（顶边水平、两侧圆弧向下），沿拱形一圈灯泡；
@@ -352,6 +379,7 @@ struct CoinPusherView: View {
             let archW = ReferenceBoxes.x(ReferenceBoxes.archFrame.width, layout.size)
             let archBottom = ReferenceBoxes.y(ReferenceBoxes.archFrame.maxY, layout.size) - layout.sliderTrack.minY
             ArchTrack(bulbCount: 28)
+                .drawingGroup()
                 .frame(width: archW, height: archBottom)
                 .position(x: layout.centerX - layout.sliderTrack.minX, y: archBottom / 2)
             RoundedRectangle(cornerRadius: h * 0.1)
@@ -361,8 +389,11 @@ struct CoinPusherView: View {
                 .position(x: layout.centerX - layout.sliderTrack.minX, y: layout.coinPlateY - layout.sliderTrack.minY)
 
             // COIN滑块 (金币出口)，与 dropCoin 的落点同一位置
-            coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
-                .position(x: slider.x - layout.sliderTrack.minX, y: slider.y - layout.sliderTrack.minY)
+            SliderReader(motion: gameState.sliders) { m in
+                let slider = layout.coinSliderCenter(offset: m.coin)
+                coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                    .position(x: slider.x - layout.sliderTrack.minX, y: slider.y - layout.sliderTrack.minY)
+            }
         }
     }
 
@@ -580,7 +611,6 @@ struct CoinPusherView: View {
     @ViewBuilder
     func bonusLane(layout: GameLayout) -> some View {
         let lane = layout.bonusLane
-        let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
 
         ZStack(alignment: .topLeading) {
             Color(red: 0.10, green: 0.07, blue: 0.04)
@@ -593,24 +623,29 @@ struct CoinPusherView: View {
                 .frame(width: bar.width, height: max(3, bar.height))
                 .position(x: bar.midX - lane.minX, y: bar.midY - lane.minY)
             // BONUS 牌后面的「孔洞」：金币从这里穿过
+            SliderReader(motion: gameState.sliders) { m in
+            let slider = layout.bonusSliderCenter(offset: m.bonus)
             Capsule()
                 .fill(Color.black.opacity(0.7))
                 .frame(width: layout.bonusSliderWidth * 0.8, height: lane.height * 0.35)
                 .position(x: slider.x - lane.minX, y: lane.height / 2)
+            }
         }
     }
 
     /// BONUS 牌（整屏坐标），叠在下落金币之上
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
-        let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
         // 闪光按当前时间算；每秒重画 30 次（不依赖父视图刷新）
-        TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
-            HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
-                                    time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
-        }
+        SliderReader(motion: gameState.sliders) { m in
+            let slider = layout.bonusSliderCenter(offset: m.bonus)
+            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
+                HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
+                                        time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
+            }
             .position(x: slider.x, y: slider.y)
-            .allowsHitTesting(false)
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: - 投币按钮
@@ -813,6 +848,13 @@ struct FloatingScoreView: View {
 }
 
 // MARK: - 六边形
+/// v11.5：只跟着滑块位置刷新的小视图（滑块每帧都在动，整个游戏画面不跟着重算）
+struct SliderReader<Content: View>: View {
+    @ObservedObject var motion: SliderMotion
+    @ViewBuilder let content: (SliderMotion) -> Content
+    var body: some View { content(motion) }
+}
+
 /// v11.5：等边六边形（尖顶朝上、六条边一样长），外框 宽 = 高。外框归一化到 1×1 时左右竖边从 a 到 1−a，
 /// 斜边与竖边等长：1 − 2a = √(0.25 + a²) → a = (4 − √7) / 6 ≈ 0.2257，边长 ≈ 0.549，上下顶角约 131°、两侧顶角约 114°
 struct Hexagon: Shape {
@@ -896,7 +938,8 @@ struct HollowBonusSliderTarget: View {
         Group {
             let t = time
             let sweep = t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t)
-            let glow = 0.45 + 0.2 * sin(t * 2.2)
+            // 光晕平时不动，只在闪光时随闪光增强（平时整块牌不用每帧重画）
+            let glow = sweep >= 0 ? 0.45 + 0.35 * sin(sweep * .pi) : 0.45
             ZStack(alignment: .top) {
                 // 背后的金色光晕（氛围）
                 shield(w, h)
