@@ -14,6 +14,10 @@ final class Pusher3DTests: XCTestCase {
 
     func test_prefill_fillsPileTwoLayers() {
         let pusher = PusherScene3D(viewSize: iPhone17.size)
+        let view = SCNView(frame: CGRect(origin: .zero, size: iPhone17.size)); view.scene = pusher.scene; view.pointOfView = pusher.cameraNode
+        pusher.fit(viewSize: iPhone17.size, layout: iPhone17)
+        let xs = pusher.coinPositions.values.map { CGFloat(view.projectPoint($0).x) }
+        print("PREFILL n=\(pusher.coinCount) screenX \(xs.min() ?? 0)…\(xs.max() ?? 0) worldX \(pusher.coinPositions.values.map { $0.x }.min() ?? 0)…\(pusher.coinPositions.values.map { $0.x }.max() ?? 0)")
         XCTAssertGreaterThanOrEqual(pusher.coinCount, 30, "开局金币堆在下层台面上铺两层")
         XCTAssertLessThanOrEqual(pusher.coinCount, pusher.config.maxCoins)
     }
@@ -133,7 +137,7 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertGreaterThan(g.rampInnerHeight, g.pusherHeight, "内侧低端在推板顶面上方")
         XCTAssertEqual(g.rampInnerX, g.pusherHalfWidth, accuracy: 0.25, "内侧低端正对推板侧边")
         XCTAssertGreaterThan(g.rampFrontZ, g.fallPlaneZ + 0.3, "斜坡伸到下落平面前方")
-        XCTAssertGreaterThan(g.pusherFrontRetractedZ, g.fallPlaneZ + 0.3, "推板收回时顶面仍在下落平面下方：金币总落在推板上")
+        XCTAssertLessThan(g.pusherFrontRetractedZ - g.wallZ, g.coinRadius, "v11.5 推板收回到墙根：顶面露出的部分不到半枚金币，顶面上的金币一个来回就被刮下")
         XCTAssertGreaterThan(g.fallPlaneZ, g.wallZ + 0.3, "下落平面在后墙前方")
     }
 
@@ -198,7 +202,8 @@ final class Pusher3DTests: XCTestCase {
 
         let life = pusher.lifecycleCounts
         let landedPusher = life["landedPusher"] ?? 0, landedRamp = life["landedRamp"] ?? 0, landedPile = life["landedPile"] ?? 0
-        let landings = landedPusher + landedRamp + landedPile
+        let landedSweep = life["landedSweep"] ?? 0
+        let landings = landedPusher + landedRamp + landedPile + landedSweep
         let fallAvg = pusher.fallTimes.isEmpty ? 0 : pusher.fallTimes.reduce(0, +) / Double(pusher.fallTimes.count)
         let covAvg = coverage.isEmpty ? 0 : coverage.reduce(0, +) / CGFloat(coverage.count)
         let layerAvg = layers.isEmpty ? 0 : layers.reduce(0, +) / Float(layers.count)
@@ -217,8 +222,15 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
         // 门槛 4 落点：≥95% 先落在推板顶面或斜坡上（实际要求 0% 落在金币堆上）；斜坡上的金币 100% 在 3 秒内到推板顶面
         XCTAssertEqual(landedPile, 0, "没有金币直接落到推板前方的金币堆上")
-        XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp) / Double(max(1, landings)), 0.95)
-        XCTAssertEqual((life["rampToPusher"] ?? 0) + pendingRamp, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
+        // v11.5：推板收回到墙根时落下的金币落在推板扫过的台面上（推出时推走），也算对的落点
+        XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp + landedSweep) / Double(max(1, landings)), 0.95)
+        // v11.5 新门槛：到推板顶面的金币 ≥98% 在一个推板周期内掉到金币堆，没有一枚撑过两个周期
+        let period = GameConstants.pusherPeriod
+        let dwell = pusher.pusherToPileTimes
+        print("DWELL n=\(dwell.count) within1=\(dwell.filter { $0 <= period }.count) max=\(dwell.max() ?? 0)")
+        XCTAssertGreaterThanOrEqual(Double(dwell.filter { $0 <= period }.count) / Double(max(1, dwell.count)), 0.98, "推板顶面的金币一个周期内掉下")
+        XCTAssertLessThan(dwell.max() ?? 0, period * 2, "没有金币在推板顶面撑过两个周期")
+        XCTAssertEqual((life["rampToPusher"] ?? 0) + (life["rampToSweep"] ?? 0) + pendingRamp, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
         XCTAssertEqual(pusher.rampTimeouts, 0)
         // 门槛 5 流转：推板收回时金币从推板顶面掉到下层金币堆
         XCTAssertGreaterThan(life["pusherToPile"] ?? 0, 10, "推板顶面 → 金币堆")

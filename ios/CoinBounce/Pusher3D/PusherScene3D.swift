@@ -16,20 +16,22 @@ enum ReferenceBoxes {
     static let pusherFrontRetractedY: CGFloat = 1982
     static let pusherFrontExtendedY: CGFloat = 2076
     static let pusherFaceHeight: CGFloat = 45          // 黑色前脸 2065–2110
-    static let pusherX: ClosedRange<CGFloat> = 408...800
+    // v11.5（用户要求）：推板、金币堆加宽——铜柱各向外移 80 像素，两侧绿色台阶贴满到屏幕左右边，
+    // 推板顶面 328–878（宽约 40%），金币堆 190–1016，铜前沿、彩色面板、斜坡跟着铜柱走
+    static let pusherX: ClosedRange<CGFloat> = 328...878
     // 斜坡：外端（贴屏幕边）和内侧低端（推板顶面侧边正上方），绿色顶面 + 铜色前沿
-    static let rampOuterX: CGFloat = 70, rampOuterTopY: CGFloat = 1815, rampOuterBottomY: CGFloat = 1885
-    static let rampInnerX: CGFloat = 415, rampInnerTopY: CGFloat = 1965, rampInnerBottomY: CGFloat = 2010
+    static let rampOuterX: CGFloat = 10, rampOuterTopY: CGFloat = 1815, rampOuterBottomY: CGFloat = 1885
+    static let rampInnerX: CGFloat = 335, rampInnerTopY: CGFloat = 1965, rampInnerBottomY: CGFloat = 2010
     // 推板两侧铜柱、两侧绿色台阶（下层）、台阶下铜条
-    static let postLeftX: ClosedRange<CGFloat> = 312...405, postRightX: ClosedRange<CGFloat> = 800...895
+    static let postLeftX: ClosedRange<CGFloat> = 232...325, postRightX: ClosedRange<CGFloat> = 881...974
     static let postY: ClosedRange<CGFloat> = 2045...2160
-    static let shelfLeftX: ClosedRange<CGFloat> = 40...312, shelfRightX: ClosedRange<CGFloat> = 895...1168
+    static let shelfLeftX: ClosedRange<CGFloat> = 0...232, shelfRightX: ClosedRange<CGFloat> = 974...1206
     static let shelfY: ClosedRange<CGFloat> = 2045...2140
     static let railY: ClosedRange<CGFloat> = 2140...2200
     // 金币堆（下层台面）、波浪铜前沿、下方左右彩色面板
-    static let pileX: ClosedRange<CGFloat> = 272...935, pileY: ClosedRange<CGFloat> = 2130...2310
-    static let lipX: ClosedRange<CGFloat> = 300...905, lipY: ClosedRange<CGFloat> = 2290...2380
-    static let panelLeftX: ClosedRange<CGFloat> = 125...310, panelRightX: ClosedRange<CGFloat> = 895...1080
+    static let pileX: ClosedRange<CGFloat> = 190...1016, pileY: ClosedRange<CGFloat> = 2130...2310
+    static let lipX: ClosedRange<CGFloat> = 220...986, lipY: ClosedRange<CGFloat> = 2290...2380
+    static let panelLeftX: ClosedRange<CGFloat> = 45...230, panelRightX: ClosedRange<CGFloat> = 976...1161
     static let panelY: ClosedRange<CGFloat> = 2215...2400
     // 底部面板、金色标牌、六边形投币按钮、BONUS 轨道、两侧炮管
     static let bottomFrame = CGRect(x: 40, y: 2370, width: 1128, height: 210)
@@ -109,11 +111,9 @@ struct MachineGeometry {
     var pusherFrontExtendedZ: Float { hitY(cx, sy(ReferenceBoxes.pusherFrontExtendedY + ReferenceBoxes.pusherFaceHeight), y: 0).z }
     var pusherHeight: Float { hitZ(cx, sy(ReferenceBoxes.pusherFrontExtendedY), z: pusherFrontExtendedZ).y }
     var wallZ: Float { hitY(cx, sy(ReferenceBoxes.wallY), y: pusherHeight).z }
-    /// 推板收回时的前沿：参考里几乎收到墙根（1982 像素），我们留到下落平面前方一枚金币，
-    /// 任何时候落下的金币下面都有推板顶面（不会落到推板前脸和金币堆之间）
-    var pusherFrontRetractedZ: Float {
-        max(hitY(cx, sy(ReferenceBoxes.pusherFrontRetractedY), y: pusherHeight).z, fallPlaneZ + PusherScene3D.nominalCoinRadius + 0.15)
-    }
+    /// 推板收回时的前沿：v11.5 按参考收到墙根（1982 像素）——顶面几乎全部缩进后墙下面，
+    /// 落在推板顶面上的金币一个来回就被后墙刮下去（收回时落下的金币落在推板前面的台面上，推板推出时推走）
+    var pusherFrontRetractedZ: Float { hitY(cx, sy(ReferenceBoxes.pusherFrontRetractedY), y: pusherHeight).z }
     var pusherStroke: Float { pusherFrontExtendedZ - pusherFrontRetractedZ }
     var pusherHalfWidth: Float {
         let r = abs(hitY(sx(ReferenceBoxes.pusherX.upperBound), sy(ReferenceBoxes.pusherFrontExtendedY), y: pusherHeight).x)
@@ -144,16 +144,17 @@ struct MachineGeometry {
     func postX(_ r: ClosedRange<CGFloat>) -> (Float, Float) {
         (hitY(sx(r.lowerBound), sy(ReferenceBoxes.postY.upperBound), y: 0).x, hitY(sx(r.upperBound), sy(ReferenceBoxes.postY.upperBound), y: 0).x)
     }
-    var postTop: Float { hitZ(sx(358), sy(ReferenceBoxes.postY.lowerBound), z: postFrontZ).y }
+    var postTop: Float { hitZ(sx((ReferenceBoxes.postLeftX.lowerBound + ReferenceBoxes.postLeftX.upperBound) / 2), sy(ReferenceBoxes.postY.lowerBound), z: postFrontZ).y }
+    private var shelfMidX: CGFloat { (ReferenceBoxes.shelfLeftX.lowerBound + ReferenceBoxes.shelfLeftX.upperBound) / 2 }
     var shelfHeight: Float { postTop * 0.9 }
     var shelfZ: (back: Float, front: Float) {
-        (hitY(sx(176), sy(ReferenceBoxes.shelfY.lowerBound), y: shelfHeight).z, hitY(sx(176), sy(ReferenceBoxes.shelfY.upperBound), y: shelfHeight).z)
+        (hitY(sx(shelfMidX), sy(ReferenceBoxes.shelfY.lowerBound), y: shelfHeight).z, hitY(sx(shelfMidX), sy(ReferenceBoxes.shelfY.upperBound), y: shelfHeight).z)
     }
     func shelfX(_ r: ClosedRange<CGFloat>) -> (Float, Float) {
         let z = shelfZ.front
         return (hitZ(sx(r.lowerBound), sy(ReferenceBoxes.shelfY.upperBound), z: z).x, hitZ(sx(r.upperBound), sy(ReferenceBoxes.shelfY.upperBound), z: z).x)
     }
-    var railBottom: Float { hitZ(sx(176), sy(ReferenceBoxes.railY.upperBound), z: shelfZ.front).y }
+    var railBottom: Float { hitZ(sx(shelfMidX), sy(ReferenceBoxes.railY.upperBound), z: shelfZ.front).y }
     func frontRect(x r: ClosedRange<CGFloat>, y yr: ClosedRange<CGFloat>, z: Float) -> (minX: Float, maxX: Float, minY: Float, maxY: Float) {
         let a = hitZ(sx(r.lowerBound), sy(yr.lowerBound), z: z), b = hitZ(sx(r.upperBound), sy(yr.upperBound), z: z)
         return (min(a.x, b.x), max(a.x, b.x), min(a.y, b.y), max(a.y, b.y))
@@ -179,8 +180,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         var coinRadius: Float = 0.42
         var coinThickness: Float = 0.42 * PusherScene3D.coinThicknessRatio
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
-        var maxCoins = 400
-        var prefillCoins = 200
+        var maxCoins = 480
+        var prefillCoins = 280
     }
 
     let scene = SCNScene()
@@ -312,16 +313,32 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         coinMaterial.normal.wrapS = .repeat
         coinMaterial.normal.contentsTransform = SCNMatrix4MakeScale(28, 1, 1)
         coinMaterial.metalness.contents = 1.0
-        coinMaterial.roughness.contents = 0.25
+        coinMaterial.roughness.contents = 0.2
         coinMaterial.multiply.contents = PusherScene3D.coinTint
+        // v11.5：更亮的金色——微弱的金色自发光托住暗部，粗糙度更低、反光更集中
+        coinMaterial.emission.contents = PusherScene3D.coinGlow
+        coinMaterial.emission.intensity = 0.12
         let face = SCNMaterial()
         face.lightingModel = .physicallyBased
         face.diffuse.contents = PusherScene3D.coinFaceImage()
         face.normal.contents = PusherScene3D.coinFaceNormalImage()
         face.metalness.contents = 1.0
-        face.roughness.contents = 0.3
+        face.roughness.contents = 0.18
         face.multiply.contents = PusherScene3D.coinTint
+        face.emission.contents = PusherScene3D.coinGlow
+        face.emission.intensity = 0.16
         coinGeometry.materials = [coinMaterial, face, face]
+        // 只照金币的高光灯：从机器后上方照向相机方向，平放的金币正面把它反射进镜头（金色反光）；
+        // 不照台面和铜件，机器整体亮度不变
+        let glint = SCNNode()
+        glint.light = SCNLight()
+        glint.light!.type = .directional
+        glint.light!.intensity = 1400
+        glint.light!.color = UIColor(red: 1, green: 0.92, blue: 0.7, alpha: 1)
+        glint.light!.categoryBitMask = PusherScene3D.coinLightMask
+        glint.position = SCNVector3(0, 30, -70)
+        glint.look(at: SCNVector3(0, 0, -34))
+        scene.rootNode.addChildNode(glint)
 
         func pbr(_ color: UIColor, metal: CGFloat, rough: CGFloat) -> SCNMaterial {
             let m = SCNMaterial()
@@ -690,6 +707,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let node = SCNNode()
         let visual = SCNNode(geometry: special ? specialGeometry : coinGeometry)
         visual.name = "coinVisual"
+        visual.categoryBitMask = 1 | PusherScene3D.coinLightMask
         visual.castsShadow = true
         node.addChildNode(visual)
         if special { node.name = PusherScene3D.specialName }
@@ -991,7 +1009,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             track.firstLanding = ph
             track.firstLandingTime = now
             fallTimes.append(now - track.born)
-            logEvent(ph == .onPusher ? "landedPusher" : ph == .onRamp ? "landedRamp" : "landedPile",
+            // 推板收回时落下的金币落在推板前脸前面、推板扫过的台面上（推出时被推走）：单独计为 landedSweep
+            let sweep = ph == .onPile && p.z < geo.pusherFrontExtendedZ + config.coinRadius
+            logEvent(ph == .onPusher ? "landedPusher" : ph == .onRamp ? "landedRamp" : sweep ? "landedSweep" : "landedPile",
                      detail: "at \(p.x),\(p.y),\(p.z) pusherFront=\(pusherFrontZ)")
         }
         switch ph {
@@ -1003,6 +1023,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
                 rampSlideTimes.append(now - r); logEvent("rampToPusher")
             }
             if track.pusherTime == nil { track.pusherTime = now }
+        case .onPile where track.rampTime.map({ $0.isFinite }) == true && !track.rampReachedPusher && p.z < geo.pusherFrontExtendedZ + config.coinRadius:
+            // v11.5：推板收回时斜坡上滑下的金币落在推板扫过的台面上（推出时推走），与滑到推板顶面同样算到位
+            track.rampReachedPusher = true
+            logEvent("rampToSweep")
         case .onPile:
             if let t = track.pusherTime, (previous == .onPusher || previous == .airborne) {
                 pusherToPileTimes.append(now - t); logEvent("pusherToPile")
@@ -1201,7 +1225,10 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     static let rampFriction: CGFloat = 0.9
     /// 推板顶面摩擦：金币在推板顶面停留约 7.5 秒后被推到金币堆（参考 6.5–8.5 秒）
     static let pusherTopFriction: CGFloat = 0.31
-    static let coinTint = UIColor(red: 1.0, green: 0.80, blue: 0.52, alpha: 1)
+    static let coinTint = UIColor(red: 1.0, green: 0.88, blue: 0.56, alpha: 1)
+    static let coinGlow = UIColor(red: 1.0, green: 0.72, blue: 0.18, alpha: 1)
+    /// 高光灯只照这个类别的节点（金币外观节点 = 默认类别 1 | 这个）
+    static let coinLightMask = 1 << 4
 
     /// 原创扑克牌牌面：白底圆角、红 / 黑「A」和花色（代码绘制）
     static func playingCardImage(red: Bool) -> UIImage {

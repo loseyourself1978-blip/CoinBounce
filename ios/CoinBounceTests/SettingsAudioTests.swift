@@ -1,5 +1,7 @@
 import XCTest
 import QuartzCore
+import SwiftUI
+import UIKit
 @testable import CoinBounce
 
 // ============================================================
@@ -90,5 +92,32 @@ final class SettingsAudioTests: XCTestCase {
         let before = HapticManager.shared.playCount
         HapticManager.shared.coinDrop()
         XCTAssertEqual(HapticManager.shared.playCount, before + 1)
+    }
+
+    /// v11.5：游戏画面显示且 App 在前台时屏幕常亮；进后台或画面消失时恢复
+    func test_screenAwake_whileGameVisibleAndActive() {
+        ScreenAwake.setAppActive(true)
+        ScreenAwake.setGameVisible(true)
+        XCTAssertTrue(UIApplication.shared.isIdleTimerDisabled, "游戏中不自动锁屏")
+        ScreenAwake.setAppActive(false)
+        XCTAssertFalse(UIApplication.shared.isIdleTimerDisabled, "进后台恢复")
+        ScreenAwake.setAppActive(true)
+        XCTAssertTrue(UIApplication.shared.isIdleTimerDisabled)
+        ScreenAwake.setGameVisible(false)
+        XCTAssertFalse(UIApplication.shared.isIdleTimerDisabled, "游戏画面消失恢复")
+        ScreenAwake.setGameVisible(true)
+    }
+
+    /// v11.5：投币按钮是等边六边形，外框宽 = 高
+    func test_hexButton_equilateral() {
+        let p = Hexagon().path(in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        var pts: [CGPoint] = []
+        p.forEach { el in
+            switch el { case .move(let q), .line(let q): pts.append(q); default: break }
+        }
+        XCTAssertEqual(pts.count, 6)
+        let sides = (0..<6).map { i -> CGFloat in let a = pts[i], b = pts[(i + 1) % 6]; return hypot(b.x - a.x, b.y - a.y) }
+        for s in sides { XCTAssertEqual(s, 0.5486, accuracy: 0.002, "六条边等长") }
+        XCTAssertEqual(Hexagon.heightRatio, 1)
     }
 }

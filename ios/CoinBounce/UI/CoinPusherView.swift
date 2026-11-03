@@ -164,7 +164,9 @@ struct CoinPusherView: View {
             .onChange(of: gameState.wideMouthActive) { pusher3D.setEasyDrop($0) }
             .onAppear {
                 startAnimations()
+                ScreenAwake.setGameVisible(true)
             }
+            .onDisappear { ScreenAwake.setGameVisible(false) }
             .onChange(of: layout) { newLayout in
                 gameState.updateLayout(newLayout)
                 dropScene.apply(layout: newLayout)
@@ -602,7 +604,7 @@ struct CoinPusherView: View {
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
         let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
-        HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(95, layout.size))
+        HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size))
             .position(x: slider.x, y: slider.y)
             .allowsHitTesting(false)
     }
@@ -649,7 +651,7 @@ struct CoinPusherView: View {
                             endPoint: .bottom
                         )
                     )
-                    .frame(width: buttonSize, height: buttonSize * 1.13)   // 参考 190×215
+                    .frame(width: buttonSize, height: buttonSize * Hexagon.heightRatio)   // 正六边形
                     .overlay(
                         Hexagon().stroke(Color(red: 0.98, green: 0.90, blue: 0.55), lineWidth: 3)
                     )
@@ -660,7 +662,7 @@ struct CoinPusherView: View {
                 Hexagon()
                     .fill(LinearGradient(colors: [Color(red: 0.36, green: 0.26, blue: 0.10), Color(red: 0.18, green: 0.12, blue: 0.05)],
                                          startPoint: .top, endPoint: .bottom))
-                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.84)
+                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.74 * Hexagon.heightRatio)
                     .overlay(
                         Text("$")
                             .font(.system(size: buttonSize * 0.28, weight: .black, design: .rounded))
@@ -807,18 +809,20 @@ struct FloatingScoreView: View {
 }
 
 // MARK: - 六边形
+/// v11.5：等边六边形（尖顶朝上、六条边一样长），外框 宽 = 高。外框归一化到 1×1 时左右竖边从 a 到 1−a，
+/// 斜边与竖边等长：1 − 2a = √(0.25 + a²) → a = (4 − √7) / 6 ≈ 0.2257，边长 ≈ 0.549，上下顶角约 131°、两侧顶角约 114°
 struct Hexagon: Shape {
+    static let heightRatio: CGFloat = 1
+    static let shoulder: CGFloat = (4 - sqrt(7)) / 6
     func path(in rect: CGRect) -> Path {
-        let w = rect.width
-        let h = rect.height
-        let dx = w * 0.22
+        let w = rect.width, h = rect.height, a = Hexagon.shoulder
         return Path { p in
-            p.move(to: CGPoint(x: dx, y: 0))
-            p.addLine(to: CGPoint(x: w - dx, y: 0))
-            p.addLine(to: CGPoint(x: w, y: h * 0.5))
-            p.addLine(to: CGPoint(x: w - dx, y: h))
-            p.addLine(to: CGPoint(x: dx, y: h))
-            p.addLine(to: CGPoint(x: 0, y: h * 0.5))
+            p.move(to: CGPoint(x: rect.minX + w / 2, y: rect.minY))
+            p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * a))
+            p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * (1 - a)))
+            p.addLine(to: CGPoint(x: rect.minX + w / 2, y: rect.maxY))
+            p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + h * (1 - a)))
+            p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + h * a))
             p.closeSubpath()
         }
     }
@@ -851,6 +855,19 @@ struct LocalCoinCanvasLayer: View {
 struct HollowBonusSliderTarget: View {
     let width: CGFloat
     let maxHeight: CGFloat
+    /// 闪光时间表：每 3.65 秒一格，格内起点随机偏移 0–0.65 秒 → 相邻两次闪光间隔 3.0–4.3 秒，每次持续 0.7 秒
+    static let glintSlot = 3.65, glintJitter = 0.65, glintDuration = 0.7
+    /// t 时刻闪光走到边框的哪里（0…1），不在闪光时返回 −1
+    static func glintProgress(at t: TimeInterval) -> Double {
+        let k = floor(t / glintSlot)
+        // 每格一个固定的伪随机偏移（同一格每帧一样）
+        var x = UInt64(bitPattern: Int64(k)) &* 0x9E3779B97F4A7C15
+        x ^= x >> 31; x = x &* 0xBF58476D1CE4E5B9; x ^= x >> 29
+        let jitter = Double(x % 10_000) / 10_000 * glintJitter
+        let local = t - k * glintSlot - jitter
+        return (0..<glintDuration).contains(local) ? local / glintDuration : -1
+    }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 盾牌外形
     private func shield(_ w: CGFloat, _ h: CGFloat) -> Path {
@@ -866,36 +883,63 @@ struct HollowBonusSliderTarget: View {
     }
 
     var body: some View {
-        // 宽度 = layout.bonusSliderWidth，与物理命中范围一致；更高、有厚度的立体铭牌
+        // v11.5：高 135 像素（原 95）的立体铭牌——多层厚度（看得见的侧面）、倒角高光、投影、背后金色光晕；
+        // 金色边框上一道高光每 3–4.3 秒（随机）绕边框闪过一次（减少动态效果时不闪）
         let w = width
-        let depth = max(3, maxHeight * 0.1)
-        let h = min(w * 0.72, maxHeight - depth)
-
-        ZStack(alignment: .top) {
-            // 侧面（厚度）：向下偏移的暗金色层
-            shield(w, h)
-                .fill(LinearGradient(colors: [ArtPalette.goldDeep, Color(red: 0.35, green: 0.2, blue: 0.02)], startPoint: .top, endPoint: .bottom))
-                .offset(y: depth)
-                .shadow(color: .black.opacity(0.7), radius: 4, x: 0, y: 4)
-            // 正面：黑金渐变 + 金色倒角描边 + 顶部高光
-            shield(w, h)
-                .fill(LinearGradient(colors: [Color(red: 0.22, green: 0.18, blue: 0.14), Color(red: 0.05, green: 0.04, blue: 0.03)], startPoint: .top, endPoint: .bottom))
-                .overlay(shield(w, h).stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: 2.5))
-                .overlay(
+        let depth = max(4, maxHeight * 0.13)
+        let h = maxHeight - depth
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let sweep = HollowBonusSliderTarget.glintProgress(at: t)
+            let glow = 0.45 + 0.2 * sin(t * 2.2)
+            ZStack(alignment: .top) {
+                // 背后的金色光晕（氛围）
+                shield(w, h)
+                    .fill(ArtPalette.goldLight.opacity(glow * 0.55))
+                    .blur(radius: w * 0.16)
+                    .scaleEffect(1.12)
+                // 厚度：两层向下偏移的暗金侧面
+                shield(w, h)
+                    .fill(Color(red: 0.25, green: 0.14, blue: 0.02))
+                    .offset(y: depth)
+                    .shadow(color: .black.opacity(0.75), radius: 5, x: 0, y: 5)
+                shield(w, h)
+                    .fill(LinearGradient(colors: [ArtPalette.goldDeep, Color(red: 0.45, green: 0.27, blue: 0.04)], startPoint: .top, endPoint: .bottom))
+                    .offset(y: depth * 0.55)
+                // 金色外框（倒角）
+                shield(w, h)
+                    .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
+                // 黑金正面（内缩一圈，留出金边）
+                shield(w * 0.84, h * 0.84)
+                    .fill(LinearGradient(colors: [Color(red: 0.26, green: 0.2, blue: 0.14), Color(red: 0.04, green: 0.03, blue: 0.02)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: w * 0.84, height: h * 0.84)
+                    .offset(y: h * 0.08)
+                // 顶部高光
+                shield(w, h)
+                    .fill(LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
+                // 闪过边框的高光
+                if sweep >= 0 {
                     shield(w, h)
-                        .fill(LinearGradient(colors: [Color.white.opacity(0.35), .clear], startPoint: .top, endPoint: .center))
-                        .padding(3)
-                )
-            VStack(spacing: 0) {
-                ArtCoin(size: h * 0.36)
-                Text("BONUS")
-                    .font(.system(size: min(w * 0.22, h * 0.3), weight: .black))
-                    .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                        .trim(from: max(0, sweep - 0.12), to: min(1, sweep + 0.02))
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: max(2, w * 0.07), lineCap: .round))
+                        .blur(radius: 1.2)
+                        .blendMode(.plusLighter)
+                }
+                shield(w, h)
+                    .stroke(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.9), lineWidth: 1)
+                VStack(spacing: h * 0.02) {
+                    ArtCoin(size: h * 0.34)
+                        .shadow(color: ArtPalette.goldLight.opacity(glow), radius: 4)
+                    Text("BONUS")
+                        .font(.system(size: min(w * 0.22, h * 0.22), weight: .black))
+                        .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.97, blue: 0.75), ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: .black, radius: 0, x: 1, y: 1)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                .frame(width: w, height: h)
             }
-            .frame(width: w, height: h)
+            .frame(width: w, height: h + depth, alignment: .top)
         }
         .frame(width: w, height: h + depth, alignment: .top)
     }
