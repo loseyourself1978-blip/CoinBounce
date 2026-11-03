@@ -241,7 +241,7 @@ struct CoinPusherView: View {
             // 遮挡检查要逐枚做命中测试（会等渲染线程），放慢到每 5 秒一次，不拖慢主线程上的投币节奏
             Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [pusher3D] _ in
                 guard let view = pusher3D.view else { return }
-                let occ = pusher3D.occlusionReport(in: view)
+                let occ = pusher3D.occlusionReport(in: view, maxCoins: 20)
                 let pile = pusher3D.pileStats()
                 func avg(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
                 NSLog("VERIFY life=%@ removed=%@ fallAvg=%.2f fallN=%d rampSlideAvg=%.2f pusherToPileAvg=%.2f rampTimeouts=%d continuity=%d maxSize=%.3f standing=%d occChecked=%d occProblems=%d %@ layersP90=%.1f coverage=%.3f pileN=%d",
@@ -604,7 +604,11 @@ struct CoinPusherView: View {
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
         let slider = layout.bonusSliderCenter(offset: gameState.bonusSliderOffset)
-        HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size))
+        // 闪光按当前时间算；每秒重画 30 次（不依赖父视图刷新）
+        TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
+            HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
+                                    time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
+        }
             .position(x: slider.x, y: slider.y)
             .allowsHitTesting(false)
     }
@@ -855,8 +859,8 @@ struct LocalCoinCanvasLayer: View {
 struct HollowBonusSliderTarget: View {
     let width: CGFloat
     let maxHeight: CGFloat
-    /// 闪光时间表：每 3.65 秒一格，格内起点随机偏移 0–0.65 秒 → 相邻两次闪光间隔 3.0–4.3 秒，每次持续 0.7 秒
-    static let glintSlot = 3.65, glintJitter = 0.65, glintDuration = 0.7
+    /// 闪光时间表：每 3.75 秒一格，格内起点随机偏移 0–0.65 秒 → 相邻两次闪光间隔 3.1–4.4 秒，每次持续 0.9 秒
+    static let glintSlot = 3.75, glintJitter = 0.65, glintDuration = 0.9
     /// t 时刻闪光走到边框的哪里（0…1），不在闪光时返回 −1
     static func glintProgress(at t: TimeInterval) -> Double {
         let k = floor(t / glintSlot)
@@ -867,7 +871,8 @@ struct HollowBonusSliderTarget: View {
         let local = t - k * glintSlot - jitter
         return (0..<glintDuration).contains(local) ? local / glintDuration : -1
     }
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 当前时间（秒）；0 = 不闪（减少动态效果）
+    var time: TimeInterval = 0
 
     /// 盾牌外形
     private func shield(_ w: CGFloat, _ h: CGFloat) -> Path {
@@ -884,13 +889,13 @@ struct HollowBonusSliderTarget: View {
 
     var body: some View {
         // v11.5：高 135 像素（原 95）的立体铭牌——多层厚度（看得见的侧面）、倒角高光、投影、背后金色光晕；
-        // 金色边框上一道高光每 3–4.3 秒（随机）绕边框闪过一次（减少动态效果时不闪）
+        // 金色边框上一道高光每 3.1–4.4 秒（随机）绕边框闪过一次（减少动态效果时不闪）
         let w = width
         let depth = max(4, maxHeight * 0.13)
         let h = maxHeight - depth
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let sweep = HollowBonusSliderTarget.glintProgress(at: t)
+        Group {
+            let t = time
+            let sweep = t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t)
             let glow = 0.45 + 0.2 * sin(t * 2.2)
             ZStack(alignment: .top) {
                 // 背后的金色光晕（氛围）
@@ -919,10 +924,14 @@ struct HollowBonusSliderTarget: View {
                     .fill(LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
                 // 闪过边框的高光
                 if sweep >= 0 {
+                    // 整圈金边短暂提亮（闪烁），一道白光沿边框扫过
                     shield(w, h)
-                        .trim(from: max(0, sweep - 0.12), to: min(1, sweep + 0.02))
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: max(2, w * 0.07), lineCap: .round))
-                        .blur(radius: 1.2)
+                        .stroke(Color(red: 1, green: 0.97, blue: 0.8).opacity(0.7 * sin(sweep * .pi)), lineWidth: max(2, w * 0.08))
+                        .blendMode(.plusLighter)
+                    shield(w, h)
+                        .trim(from: max(0, sweep - 0.2), to: min(1, sweep + 0.03))
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: max(3, w * 0.11), lineCap: .round))
+                        .blur(radius: 1)
                         .blendMode(.plusLighter)
                 }
                 shield(w, h)

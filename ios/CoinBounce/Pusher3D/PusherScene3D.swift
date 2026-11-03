@@ -333,7 +333,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         let glint = SCNNode()
         glint.light = SCNLight()
         glint.light!.type = .directional
-        glint.light!.intensity = 1400
+        glint.light!.intensity = 900
         glint.light!.color = UIColor(red: 1, green: 0.92, blue: 0.7, alpha: 1)
         glint.light!.categoryBitMask = PusherScene3D.coinLightMask
         glint.position = SCNVector3(0, 30, -70)
@@ -815,9 +815,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
                     let y = c.coinThickness / 2 + Float(layer) * (c.coinThickness + 0.01) + 0.02
                     addCoin(at: SCNVector3(x + Float.random(in: -0.04...0.04), y, z), tilt: Float.random(in: -0.04...0.04))
                     placed += 1
-                    x += d * (layer == 0 ? 1.0 : 1.15)
+                    x += d * (layer == 0 ? 1.0 : 1.08)
                 }
-                z -= d * 0.87 * (layer == 0 ? 1.0 : 1.15)
+                z -= d * 0.87 * (layer == 0 ? 1.0 : 1.08)
                 row += 1
             }
         }
@@ -904,10 +904,16 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             }
             let p = node.presentation.position
             updatePhase(node, track: track, position: p, now: now)
+            // v11.5：推板扫过的那段台面上的金币不休眠——睡着的金币被推板前脸撞醒时会一下子弹开（画面上跳一下）
+            if let body = node.physicsBody {
+                let inSweep = p.z < g.pusherFrontExtendedZ + config.coinRadius * 2 && p.z > g.wallZ && p.y < g.pusherHeight + 0.2
+                if body.allowsResting == inSweep { body.allowsResting = !inSweep }
+            }
             if p.y < PusherScene3D.removeBelowY {
                 // 从前沿掉下，或从金币堆两侧墙外的落币槽掉下（v11.5），都进接币槽
-                let sideChute = p.z > g.postFrontZ - 0.4 && abs(p.x) > g.pileHalfWidth(atZ: p.z) + 0.1
-                let reason = p.z > g.lipZ - 0.2 || sideChute ? "fellIntoTray" : "lostBelow"
+                // 从前沿掉下 → 接币槽（算玩家的）；从金币堆两侧墙外的落币槽掉下（v11.5）→ 机器收走（不算玩家的，真机两侧落币也归机器）
+                let sideChute = p.z > g.postFrontZ - 0.4 && p.z <= g.lipZ - 0.2 && abs(p.x) > g.pileHalfWidth(atZ: p.z) + 0.1
+                let reason = p.z > g.lipZ - 0.2 ? "fellIntoTray" : sideChute ? "sideChute" : "lostBelow"
                 removalReasons[reason, default: 0] += 1
                 logEvent("removed", detail: "\(reason) at \(p.x),\(p.z)")
                 tracks[id] = nil
@@ -1114,14 +1120,17 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     /// 声明的遮挡物（参考里同样挡住金币堆两侧后角）
     static let declaredOccluders: Set<String> = ["postLeft", "postRight", "shelfLeft", "shelfRight", "shelfLeftRail", "shelfRightRail", "lip", "panelLeft", "panelRight", "panelLeftFrame", "panelRightFrame", "pusherGuideLeft", "pusherGuideRight"]
     private(set) var declaredHidden = 0
-    func occlusionReport(in view: SCNView) -> (checked: Int, problems: [String]) {
+    /// maxCoins：最多检查几枚（App 里 -autoplay 在主线程上做，只抽查一部分，避免卡住界面；测试里查全部）
+    func occlusionReport(in view: SCNView, maxCoins: Int = .max) -> (checked: Int, problems: [String]) {
         var problems: [String] = []
         var checked = 0
         let cam = cameraNode.position
-        let coinIDs = Set(coins.map { ObjectIdentifier($0) })
-        for node in coins {
+        let all = coins
+        let coinIDs = Set(all.map { ObjectIdentifier($0) })
+        for node in (maxCoins < all.count ? Array(all.shuffled().prefix(maxCoins)) : all) {
             let p = node.presentation.position
-            guard p.y > -0.15 else { continue }        // 已经越过前沿往下掉：被铜前沿和底部面板挡住是允许的
+            // 已经越过前沿往下掉：被铜前沿和底部面板挡住是允许的（低于台面 0.15，或已经过了凸起铜边的前面 lipZ + 0.25）
+            guard p.y > -0.15 && p.z < geo.lipZ + 0.25 else { continue }
             checked += 1
             let s = view.projectPoint(p)
             let sp = CGPoint(x: CGFloat(s.x), y: CGFloat(s.y))
@@ -1233,8 +1242,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
     static let rampFriction: CGFloat = 0.9
     /// 推板顶面摩擦：金币在推板顶面停留约 7.5 秒后被推到金币堆（参考 6.5–8.5 秒）
     static let pusherTopFriction: CGFloat = 0.31
-    static let coinTint = UIColor(red: 1.0, green: 0.88, blue: 0.56, alpha: 1)
-    static let coinGlow = UIColor(red: 1.0, green: 0.72, blue: 0.18, alpha: 1)
+    static let coinTint = UIColor(red: 1.0, green: 0.79, blue: 0.40, alpha: 1)
+    static let coinGlow = UIColor(red: 1.0, green: 0.66, blue: 0.14, alpha: 1)
     /// 高光灯只照这个类别的节点（金币外观节点 = 默认类别 1 | 这个）
     static let coinLightMask = 1 << 4
 

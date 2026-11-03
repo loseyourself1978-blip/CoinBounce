@@ -216,7 +216,8 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertLessThanOrEqual(pusher.maxSizeChange, 0.05)
         XCTAssertGreaterThan(checks, 1000)
         XCTAssertEqual(occlusion, [], "没有金币被挡住或跑出画面")
-        XCTAssertEqual(Set(pusher.removalReasons.keys), ["fellIntoTray"], "只有掉进接币槽的金币被移除")
+        XCTAssertTrue(Set(pusher.removalReasons.keys).isSubset(of: ["fellIntoTray", "sideChute"]), "只有掉进接币槽或两侧落币槽的金币被移除")
+        XCTAssertLessThanOrEqual(pusher.removalReasons["sideChute"] ?? 0, 3, "两侧落币槽很少有金币（60 秒 ≤ 3 枚）")
         XCTAssertNil(life["lostBehindWall"]); XCTAssertNil(life["lostSide"])
         // 门槛 3 不立着
         XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
