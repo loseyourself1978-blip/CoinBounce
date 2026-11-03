@@ -435,7 +435,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
         rampNodes.removeAll()
         // 下层台面：从后背板一直到波浪前沿（后背板后面不放东西）
         let floorBackZ = g.backPanelZ - 0.2
-        _ = node("table", box: wide * 2, 2, lipZ - floorBackZ, at: SCNVector3(0, -1, (lipZ + floorBackZ) / 2), "felt",
+        // v11.5：铜柱前沿以后（金币堆那一段）台面只铺到金币堆两侧墙外沿：翻到侧墙外面的金币从两侧的缝
+        // 掉进接币槽（像真机两侧的落币槽），不会停在前沿两端、跑出画面
+        let pileStartZ = g.postFrontZ - 0.3
+        _ = node("table", box: wide * 2, 2, pileStartZ - floorBackZ, at: SCNVector3(0, -1, (pileStartZ + floorBackZ) / 2), "felt",
+                 friction: GameConstants.deckFriction)
+        let frontHalf = max(g.pileHalfWidth(atZ: pileStartZ), g.pileHalfWidth(atZ: lipZ)) + 0.3
+        _ = node("tableFront", box: frontHalf * 2, 2, lipZ - pileStartZ, at: SCNVector3(0, -1, (lipZ + pileStartZ) / 2), "felt",
                  friction: GameConstants.deckFriction)
         // 推板（运动学）：暗橄榄色顶面 + 黑色前脸；下沿伸进台面，金币不会被压到推板下面。
         // 长度 = 推到最远时的前沿到后背板，收回时后端伸到后背板后面（看不见）
@@ -899,7 +905,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             let p = node.presentation.position
             updatePhase(node, track: track, position: p, now: now)
             if p.y < PusherScene3D.removeBelowY {
-                let reason = p.z > g.lipZ - 0.2 ? "fellIntoTray" : "lostBelow"
+                // 从前沿掉下，或从金币堆两侧墙外的落币槽掉下（v11.5），都进接币槽
+                let sideChute = p.z > g.postFrontZ - 0.4 && abs(p.x) > g.pileHalfWidth(atZ: p.z) + 0.1
+                let reason = p.z > g.lipZ - 0.2 || sideChute ? "fellIntoTray" : "lostBelow"
                 removalReasons[reason, default: 0] += 1
                 logEvent("removed", detail: "\(reason) at \(p.x),\(p.z)")
                 tracks[id] = nil
