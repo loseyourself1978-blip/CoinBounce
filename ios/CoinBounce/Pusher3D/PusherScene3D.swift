@@ -1008,7 +1008,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             logFrames += 1
             if logWindowStart == 0 { logWindowStart = time }
             if time - logWindowStart >= 1 {
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, pileTiltShare(), pileFloatShare())
                 logFrames = 0
                 logWindowStart = time
             }
@@ -1413,6 +1413,36 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     }
 
     /// 金币堆：层数（每枚压在几枚之上，90 百分位）和屏幕横向覆盖率（参考金币堆 272–935 像素）
+    /// 金币堆里斜着（币面法线偏离竖直 > 20°）的金币占比：方盒碰撞体的角会把金币斜撑起来
+    func pileTiltShare() -> Double {
+        let g = geo
+        var n = 0, tilted = 0
+        for c in coins {
+            let p = c.presentation.position
+            guard p.y > -0.1, p.y < g.pusherHeight - 0.1, p.z > pusherFrontZ, p.z < g.lipZ, tracks[ObjectIdentifier(c)]?.falling == false else { continue }
+            n += 1
+            if abs(c.presentation.worldTransform.m22) < 0.94 { tilted += 1 }
+        }
+        return n == 0 ? 0 : Double(tilted) / Double(n)
+    }
+
+    /// 金币堆里「看上去悬空」的金币占比：不在台面上（高于一枚厚度），下面却没有哪枚金币的圆面和它重叠
+    /// （方盒碰撞体的角比圆面多出约 0.41 半径，金币可能只靠在下面那枚的看不见的角上）
+    func pileFloatShare() -> Double {
+        let g = geo, r = config.coinRadius, t = config.coinThickness
+        let pts = coins.filter { tracks[ObjectIdentifier($0)]?.falling == false }.map { $0.presentation.position }
+            .filter { $0.y > -0.1 && $0.y < g.pusherHeight - 0.1 && $0.z > pusherFrontZ && $0.z < g.lipZ }
+        var raised = 0, floating = 0
+        for p in pts where p.y > t * 1.2 {
+            raised += 1
+            let supported = pts.contains { q in
+                q.y < p.y - t * 0.3 && q.y > p.y - t * 2.5 && (p.x - q.x) * (p.x - q.x) + (p.z - q.z) * (p.z - q.z) < (2 * r * 0.98) * (2 * r * 0.98)
+            }
+            if !supported { floating += 1 }
+        }
+        return pts.isEmpty ? 0 : Double(floating) / Double(pts.count)
+    }
+
     func pileStats() -> (layersP90: Float, coverage: CGFloat, count: Int) {
         let c = config, g = geo
         let pts = coins.map { $0.presentation.position }.filter { $0.y > -0.1 && $0.y < g.pusherHeight - 0.1 && $0.z > pusherFrontZ - 0.1 && $0.z < g.lipZ }
