@@ -46,7 +46,9 @@ struct GameLayout: Equatable {
     let fruitHitHalfWidth: CGFloat
     let fruitBaffleXs: [CGFloat]       // 水果之间的格挡
     let fruitBaffleHalfWidth: CGFloat
-    let bonusSliderWidth: CGFloat
+    let bonusSliderWidth: CGFloat      // BONUS 牌外宽 = 开口 + 两根立柱
+    let bonusOpeningWidth: CGFloat     // v11.6：两根立柱之间的开口（金币整枚穿过才触发老虎机）
+    let bonusPostWidth: CGFloat        // v11.6：牌两侧的立柱（有碰撞体，随牌移动）
     let bonusSliderTravel: CGFloat
     let bedEntryY: CGFloat             // 下落金币越过这条线后交给 3D 推币台（推币台区域顶部附近）
     /// 当前布局与 v9.5 物理（下落 380 单位、推币床 215 单位）的纵向比例，
@@ -149,7 +151,9 @@ struct GameLayout: Equatable {
         for k in 1...6 { posts.append(CGPoint(x: left + lampW * CGFloat(k), y: pinY)) }
         fruitPins = posts
 
-        bonusSliderWidth = fruitLampWidth
+        bonusOpeningWidth = coinRadius * 2 * GameConstants.bonusOpeningToCoinDiameter
+        bonusPostWidth = coinRadius * 2 * GameConstants.bonusPostToCoinDiameter
+        bonusSliderWidth = bonusOpeningWidth + 2 * bonusPostWidth
         // 参考 App 的 BONUS 滑块约 ±16% 屏宽
         bonusSliderTravel = min(max(0, contentW / 2 - bonusSliderWidth / 2), size.width * GameConstants.bonusSliderTravelFraction)
 
@@ -190,8 +194,19 @@ struct GameLayout: Equatable {
         return min(1, max(-1, (x - centerX) / half))
     }
 
-    /// 金币是否正从 BONUS 滑块中间穿过
+    /// 金币是否正从 BONUS 滑块中间穿过（按标准金币半径）
     func bonusContains(x: CGFloat, offset: CGFloat) -> Bool {
-        abs(x - bonusSliderCenter(offset: offset).x) < bonusSliderWidth / 2
+        bonusFullyInside(x: x, radius: coinRadius, gateX: bonusSliderCenter(offset: offset).x)
+    }
+
+    /// v11.6 触发规则：整枚金币（整个直径，不只是圆心）都在两根立柱之间的开口里
+    func bonusFullyInside(x: CGFloat, radius: CGFloat, gateX: CGFloat) -> Bool {
+        abs(x - gateX) + radius <= bonusOpeningWidth / 2 + 0.001
+    }
+
+    /// 金币是否骑在立柱上（金币横跨的范围和某一根立柱重叠超过 tolerance 点）：一半在里一半在外
+    func bonusStraddlesPost(x: CGFloat, radius: CGFloat, gateX: CGFloat, tolerance: CGFloat = 1) -> Bool {
+        let d = abs(x - gateX), inner = bonusOpeningWidth / 2, outer = inner + bonusPostWidth
+        return d + radius > inner + tolerance && d - radius < outer - tolerance
     }
 }

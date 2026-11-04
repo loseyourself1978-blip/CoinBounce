@@ -71,6 +71,10 @@ struct GameConstants {
     // 滑块（按参考 App 测量）：COIN 约 ±17% 屏宽、周期约 4 秒；BONUS 约 ±16% 屏宽、周期约 4.6 秒
     static let coinSliderTravelFraction: CGFloat = 0.17
     static let bonusSliderTravelFraction: CGFloat = 0.16
+    /// v11.6 BONUS 闸门：参考视频里 BONUS 牌内框开口约 126 像素、金币直径约 78 像素（开口 ≈ 1.62 枚金币宽），
+    /// 两侧边框立柱（红边 + 倒角）约 12 像素。按金币直径的比例换算（本作金币比参考大），开口两边余量与参考相同
+    static let bonusOpeningToCoinDiameter: CGFloat = 126.0 / 78.0
+    static let bonusPostToCoinDiameter: CGFloat = 12.0 / 78.0
     static let coinSliderPeriod: Double = 4.0
     static let bonusSliderPeriod: Double = 4.6
     static let pusherPeriod: Double = 3.3           // 3D 推板往复周期（秒）：新参考录屏 60fps 逐帧跟踪推板前脸，约 3.3 秒

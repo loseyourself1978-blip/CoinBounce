@@ -209,7 +209,23 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 下落中的金币越过战斗区 / 水果排 / BONUS 轨道（按屏幕投影位置判断，主线程回调）
     var onCrossBattle: (() -> Void)?
     var onCrossFruit: ((_ x: CGFloat) -> Void)?
-    var onCrossBonus: ((_ x: CGFloat) -> Void)?
+    /// x：越线时金币圆心的屏幕横坐标；radius：金币屏幕半径；gateX：BONUS 牌当时的中心（和立柱碰撞体同一帧）
+    var onCrossBonus: ((_ x: CGFloat, _ radius: CGFloat, _ gateX: CGFloat) -> Void)?
+    /// v11.6 BONUS 闸门：滑块当前偏移（点），每帧读一次，移动牌两侧的立柱碰撞体
+    var bonusOffsetProvider: (() -> CGFloat)?
+    static var bonusGateEnabled = !ProcessInfo.processInfo.arguments.contains("-debugNoBonusGate")
+    private var gateLayout: GameLayout?
+    private var bonusPosts: [(node: SCNNode, side: CGFloat)] = []
+    private var bonusPostBaseX: Float = 0, bonusPostScale: Float = 0
+    private var bonusPostTopY: CGFloat = 0, bonusPostBottomY: CGFloat = 0
+    /// 立柱碰撞体当前所在的 BONUS 牌中心（屏幕点）
+    private(set) var bonusGateX: CGFloat = 0
+    /// 越过 BONUS 线的下落金币数、整枚穿过开口的数、越线时骑在立柱上的数、按旧规则（圆心在灯牌宽内）会命中的数
+    private(set) var bonusCrossings = 0, bonusPasses = 0, bonusStraddles = 0, bonusOldRuleHits = 0
+    /// 逐帧检查：下落金币压进立柱的最大深度（点）
+    private(set) var bonusMaxPenetration: CGFloat = 0
+    /// 接触松弛被横向推回的次数
+    private(set) var bonusCorrections = 0
     /// 屏幕上的事件线（点）：战斗区、水果排、BONUS 轨道（金币在 BONUS 线处解除平面约束，落向推板 / 斜坡）
     private(set) var battleLineY: CGFloat = 0, fruitLineY: CGFloat = 0, releaseLineY: CGFloat = 0
     /// 底部面板顶边（点）：金币在它下面就被面板挡住（声明的遮挡物）
@@ -381,7 +397,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         let glint = SCNNode()
         glint.light = SCNLight()
         glint.light!.type = .directional
-        glint.light!.intensity = 900
+        glint.light!.intensity = 1400
         glint.light!.color = UIColor(red: 1, green: 0.92, blue: 0.7, alpha: 1)
         glint.light!.categoryBitMask = PusherScene3D.coinLightMask
         glint.position = SCNVector3(0, 30, -70)
@@ -641,6 +657,15 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             _ = node(name + "Rail", box: abs(x1 - x0), railH, 0.2, at: SCNVector3((x0 + x1) / 2, g.railBottom + railH / 2, sz.front + 0.1), "copper", physics: false)
         }
         // v11.6（用户要求）：金币堆两侧不再有墙，被推挤的金币从左右两侧和正前方都能掉下去（都算玩家的）
+        // 两侧和正前方一样有一道很低的凸边（高 lipRise，看不见）：边上的金币要被推挤才翻过去掉下，金币堆两边铺得满
+        for side: Float in [-1, 1] {
+            let z0 = g.postFrontZ - 0.3, z1 = lipZ + 0.25
+            let x0 = side * (g.pileHalfWidth(atZ: z0) + 0.125), x1 = side * (g.pileHalfWidth(atZ: z1) + 0.125)
+            let dx = x1 - x0, dz = z1 - z0
+            let sideRise = PusherScene3D.sideLipRise
+            orientedNode(side < 0 ? "sideLipLeft" : "sideLipRight", box: 0.25, sideRise + 0.4, (dx * dx + dz * dz).squareRoot(),
+                         at: SCNVector3((x0 + x1) / 2, (sideRise - 0.4) / 2, (z0 + z1) / 2), euler: SCNVector3(0, atan2(dx, dz), 0), "invisible", friction: 0.3)
+        }
         // 屏幕左右边缘（透明碰撞墙，沿屏幕竖线投到台面上）：从后背板到前沿前方。台面比屏幕宽，
         // 翻到金币堆侧墙外（台阶上、角落里）的金币也只会沿台面滑到前沿掉进接币槽，不会从侧面跑出画面
         for side: Float in [-1, 1] {
@@ -727,6 +752,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         releaseLineY = layout.bonusLane.midY
         panelTopY = ReferenceBoxes.y(ReferenceBoxes.bottomFrame.minY, viewSize)
         releaseDepth = geo.depth(geo.hitZ(geo.cx, releaseLineY, z: geo.fallPlaneZ))
+        gateLayout = layout
         buildPegs(layout)
         isFitted = true
     }
@@ -780,6 +806,51 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             n.name = "fieldWall"
             pegRoot.addChildNode(n)
         }
+        buildBonusPosts(layout)
+    }
+
+    /// v11.6 BONUS 闸门：牌左右两根立柱（看不见的盒子碰撞体），高度和 BONUS 牌一样，
+    /// 每帧随滑块移动（运动学刚体）。金币要么整枚从两柱之间的开口穿过，要么被立柱挡开从外面落下
+    private func buildBonusPosts(_ layout: GameLayout) {
+        bonusPosts = []
+        guard PusherScene3D.bonusGateEnabled else { return }
+        let g = geo, z = g.fallPlaneZ
+        let plaqueH = ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size)
+        let midY = layout.bonusLane.midY
+        bonusPostTopY = midY - plaqueH / 2
+        bonusPostBottomY = midY + plaqueH / 2
+        let m = g.hitZ(layout.centerX, midY, z: z)
+        bonusPostScale = (g.hitZ(layout.centerX + 100, midY, z: z).x - m.x) / 100
+        bonusPostBaseX = m.x
+        let top = g.hitZ(layout.centerX, bonusPostTopY, z: z), bottom = g.hitZ(layout.centerX, bonusPostBottomY, z: z)
+        // 碰撞体比画出来的立柱每边宽 1.5 点：高速金币（≈250 点/秒）接触时会压进去 2–3 点，这样画面上金币边不会压到立柱
+        let width = Float(layout.bonusPostWidth + 2 * PusherScene3D.bonusPostContactPad) * bonusPostScale
+        // 盒子碰撞体（胶囊和金币圆柱接触时会压进去约一个胶囊半径）；顶端是平的，停在上面的金币由「速度太小就横向轻推」挪走
+        let capsule = SCNBox(width: CGFloat(width), height: CGFloat(abs(top.y - bottom.y)), length: CGFloat(config.coinRadius * 4), chamferRadius: 0)
+        for side: CGFloat in [-1, 1] {
+            let n = SCNNode(geometry: capsule)
+            n.geometry?.materials = [materials["invisible"]!]
+            n.position = SCNVector3(m.x, (top.y + bottom.y) / 2, (top.z + bottom.z) / 2)
+            let b = SCNPhysicsBody(type: .kinematic, shape: SCNPhysicsShape(geometry: capsule, options: nil))
+            b.categoryBitMask = PusherScene3D.catPeg
+            b.restitution = PusherScene3D.pegRestitution
+            b.friction = 0.08
+            n.physicsBody = b
+            n.name = "bonusPost"
+            pegRoot.addChildNode(n)
+            bonusPosts.append((n, side))
+        }
+        updateBonusGate()
+    }
+
+    /// 立柱跟着 BONUS 牌走：中心 ±（开口/2 + 立柱/2）
+    private func updateBonusGate() {
+        guard let l = gateLayout else { return }
+        let offset = bonusOffsetProvider?() ?? 0
+        bonusGateX = l.centerX + offset
+        for (n, side) in bonusPosts {
+            n.position.x = bonusPostBaseX + Float(offset + side * (l.bonusOpeningWidth / 2 + l.bonusPostWidth / 2)) * bonusPostScale
+        }
     }
 
     // MARK: 金币
@@ -797,7 +868,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         if special { node.name = PusherScene3D.specialName }
         node.position = position
         node.eulerAngles = SCNVector3(tilt, Float.random(in: 0...(2 * .pi)), tilt * 0.5)
-        let body = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: coinGeometry, options: nil))
+        let shape = falling ? SCNPhysicsShape(geometry: coinGeometry, options: nil)
+                            : PusherScene3D.pileShape(radius: config.coinRadius, thickness: config.coinThickness, geometry: coinGeometry)
+        let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = 0.05
         body.friction = GameConstants.pusherCoinFriction
         body.rollingFriction = 0.08
@@ -866,7 +939,17 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     private func release(_ node: SCNNode, track: CoinTrack) {
         track.falling = false
         track.releasedAt = CACurrentMediaTime()
-        guard let body = node.physicsBody else { return }
+        guard let old = node.physicsBody else { return }
+        // 换成台面用的碰撞体（盒子），位置、速度不变
+        let v = old.velocity
+        node.transform = node.presentation.transform
+        let body = SCNPhysicsBody(type: .dynamic, shape: PusherScene3D.pileShape(radius: config.coinRadius, thickness: config.coinThickness, geometry: coinGeometry))
+        body.mass = 0.05
+        body.rollingFriction = 0.08
+        body.angularDamping = 0.35
+        body.continuousCollisionDetectionThreshold = CGFloat(config.coinThickness * 0.5)
+        node.physicsBody = body
+        body.velocity = v
         node.childNodes.first?.scale = SCNVector3(1, 1, 1)
         node.childNodes.first?.categoryBitMask &= ~PusherScene3D.fallLightMask
         body.velocityFactor = SCNVector3(1, 1, 1)
@@ -920,11 +1003,12 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         pendingSpawns.removeAll()
         coinLock.unlock()
         for (s, v, special) in spawns { makeFallingCoin(atScreen: s, screenVelocity: v, special: special) }
+        updateBonusGate()
         if logsPhysicsStats {
             logFrames += 1
             if logWindowStart == 0 { logWindowStart = time }
             if time - logWindowStart >= 1 {
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs())
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections)
                 logFrames = 0
                 logWindowStart = time
             }
@@ -1038,6 +1122,15 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         let now = CACurrentMediaTime()
         if now - track.lastPegHitTime > 0.08 { track.pegHits += 1 }
         track.lastPegHitTime = now
+    }
+
+    /// v11.6 性能：台面上的金币用扁盒子做碰撞体（Bullet 盒对盒有专门的快速算法，金币堆的碰撞计算从约 14 毫秒降到约 5 毫秒）；
+    /// 盒子边长 = 金币直径（同一层相邻的金币不会叠进去）。下落中的金币仍用圆柱，碰格挡钉的弹法和圆形金币一样
+    static var pileUsesBoxCollider = !ProcessInfo.processInfo.arguments.contains("-debugCylinderPile")
+    static func pileShape(radius: Float, thickness: Float, geometry: SCNGeometry) -> SCNPhysicsShape {
+        guard pileUsesBoxCollider else { return SCNPhysicsShape(geometry: geometry, options: nil) }
+        let side = CGFloat(radius * 2)
+        return SCNPhysicsShape(geometry: SCNBox(width: side, height: CGFloat(thickness), length: side, chamferRadius: 0), options: nil)
     }
 
     // MARK: 性能统计
@@ -1187,7 +1280,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         let r = config.coinRadius
         var releaseList: [(SCNNode, CoinTrack)] = []
         var battle = 0
-        var fruits: [CGFloat] = [], bonuses: [CGFloat] = []
+        var fruits: [CGFloat] = [], bonuses: [(CGFloat, CGFloat, CGFloat)] = []
         framesSampled += 1
         for node in coins {
             guard let track = tracks[ObjectIdentifier(node)] else { continue }
@@ -1197,7 +1290,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             // 刚加进场景、物理还没同步的那一帧，presentation 在原点：跳过
             if p.x == 0 && p.y == 0 && p.z == 0 { continue }
             let s = renderer.projectPoint(p)
-            let sp = CGPoint(x: CGFloat(s.x), y: CGFloat(s.y))
+            var sp = CGPoint(x: CGFloat(s.x), y: CGFloat(s.y))
             // 屏幕直径：相机没有偏航和滚转，世界 x 方向的 2r 投到屏幕上正好是 2r·焦距/深度（省掉每枚每帧两次投影）
             let visualScale = CGFloat(node.childNodes.first?.scale.x ?? 1)
             let diameter = CGFloat(2 * r * geo.focal / max(0.1, geo.depth(p))) * visualScale
@@ -1224,9 +1317,43 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             guard track.falling else { continue }
             if !track.crossedBattle && sp.y >= battleLineY { track.crossedBattle = true; battle += 1 }
             if !track.crossedFruit && sp.y >= fruitLineY { track.crossedFruit = true; fruits.append(sp.x) }
+            // v11.6 闸门：在立柱高度范围内逐帧量金币压进立柱多深（圆到立柱矩形的距离 < 半径）。
+            // 高速金币和运动学立柱接触时物理会让它压进去几点（接触松弛）：圆心在立柱高度范围内、从侧面压进去时，
+            // 把金币沿横向推回它圆心所在的那一侧（开口里或外面）、横向速度反向——画面上金币不会一半在里一半在外
+            if !bonusPosts.isEmpty, let l = gateLayout, sp.y + diameter / 2 > bonusPostTopY, sp.y - diameter / 2 < bonusPostBottomY {
+                for side: CGFloat in [-1, 1] {
+                    let a = bonusGateX + side * l.bonusOpeningWidth / 2, b = a + side * l.bonusPostWidth
+                    let lo = min(a, b), hi = max(a, b)
+                    if sp.y >= bonusPostTopY && sp.y <= bonusPostBottomY && sp.x + diameter / 2 > lo && sp.x - diameter / 2 < hi {
+                        // 圆心在立柱中线靠开口一侧 → 推进开口；否则推到外面
+                        let towardGate = (sp.x - (lo + hi) / 2) * side < 0
+                        let target = towardGate ? (side < 0 ? hi + diameter / 2 : lo - diameter / 2) : (side < 0 ? lo - diameter / 2 : hi + diameter / 2)
+                        let shift = target - sp.x
+                        var pos = node.presentation.position
+                        pos.x += Float(shift) * bonusPostScale
+                        node.position = pos
+                        if var vel = node.physicsBody?.velocity, (vel.x > 0) != (shift > 0) { vel.x = -vel.x * Float(PusherScene3D.pegRestitution); node.physicsBody?.velocity = vel }
+                        sp.x = target
+                        bonusCorrections += 1
+                    }
+                    let dx = max(lo - sp.x, 0, sp.x - hi), dy = max(bonusPostTopY - sp.y, 0, sp.y - bonusPostBottomY)
+                    bonusMaxPenetration = max(bonusMaxPenetration, diameter / 2 - hypot(dx, dy))
+                }
+            }
             if !track.crossedBonus && sp.y >= releaseLineY {
                 track.crossedBonus = true
-                bonuses.append(sp.x)
+                bonuses.append((sp.x, diameter / 2, bonusGateX))
+                if let l = gateLayout {
+                    bonusCrossings += 1
+                    let inside = l.bonusFullyInside(x: sp.x, radius: diameter / 2, gateX: bonusGateX)
+                    let straddle = l.bonusStraddlesPost(x: sp.x, radius: diameter / 2, gateX: bonusGateX)
+                    if inside { bonusPasses += 1 }
+                    if straddle { bonusStraddles += 1 }
+                    if abs(sp.x - bonusGateX) < l.fruitLampWidth / 2 { bonusOldRuleHits += 1 }
+                    if logsLifecycle || logsPhysicsStats {
+                        NSLog("BONUS_CROSS x=%.1f r=%.1f gate=%.1f inside=%d straddle=%d", sp.x, diameter / 2, bonusGateX, inside ? 1 : 0, straddle ? 1 : 0)
+                    }
+                }
                 releaseList.append((node, track))
                 pegHitCounts.append(track.pegHits)
                 if let x0 = track.spawnScreenX { lateralShifts.append(sp.x - x0) }
@@ -1239,7 +1366,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                 guard let self else { return }
                 for _ in 0..<battle { self.onCrossBattle?() }
                 fruits.forEach { self.onCrossFruit?($0) }
-                bonuses.forEach { self.onCrossBonus?($0) }
+                bonuses.forEach { self.onCrossBonus?($0.0, $0.1, $0.2) }
             }
         }
     }
@@ -1270,7 +1397,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             let hits = view.hitTest(sp, options: [.searchMode: SCNHitTestSearchMode.all.rawValue, .ignoreHiddenNodes: true])
             for hit in hits {
                 let n = hit.node
-                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") { continue }   // 看不见的碰撞体不算遮挡
+                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") || (n.name ?? "").hasPrefix("sideLip") { continue }   // 看不见的碰撞体不算遮挡
                 let w = hit.worldCoordinates
                 let d = ((w.x - cam.x) * (w.x - cam.x) + (w.y - cam.y) * (w.y - cam.y) + (w.z - cam.z) * (w.z - cam.z)).squareRoot()
                 if d < dist - config.coinRadius - 0.05 {
@@ -1364,10 +1491,14 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     static let coinThicknessRatio: Float = 0.18 / 1.3
     /// 几何布置用的金币半径（实际半径由屏幕大小算出，约 0.43）
     static let nominalCoinRadius: Float = 0.45
-    /// 前沿铜边高出台面的高度（约 1.5 枚金币厚）
-    static let lipRise: Float = 0.04
-    /// 金币堆台面向两侧的倾角（弧度）
-    static let pileCrownAngle: Float = 0
+    /// 前沿铜边高出台面的高度（约 1.2 枚金币厚）；v11.6 和侧边、台面倾角一起调到返还率约 0.99（场上约 95 枚）
+    static let lipRise: Float = 0.075
+    /// 金币堆两侧的凸边比正前方高：边上的金币留得住（金币堆两边铺满），被挤得厉害时才从两侧翻下去
+    static let sideLipRise: Float = 0.10
+    /// 金币堆台面向两侧的倾角（弧度）：v11.6 约 0.6°，被推挤的金币往两侧散开、靠在侧边上，金币堆两边铺满
+    static let pileCrownAngle: Float = 0.02
+    /// BONUS 立柱碰撞体每边比画出来的宽多少（点）
+    static let bonusPostContactPad: CGFloat = 1.5
     /// 斜坡摩擦：金币滑到推板顶面约 0.5 秒（参考 0.43–0.70 秒）
     static let rampFriction: CGFloat = 0.9
     /// 推板顶面摩擦：金币在推板顶面停留约 7.5 秒后被推到金币堆（参考 6.5–8.5 秒）

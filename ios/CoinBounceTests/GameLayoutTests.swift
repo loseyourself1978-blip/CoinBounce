@@ -251,6 +251,41 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
+    /// v11.6 BONUS 闸门触发规则：整枚金币（整个直径）都在开口里才算；圆心在里、边缘压到立柱不算
+    func test_bonusGate_fullDiameterRule() {
+        for (name, l) in screens {
+            let gate: CGFloat = 200, r = l.coinRadius, half = l.bonusOpeningWidth / 2
+            XCTAssertEqual(l.bonusOpeningWidth / (2 * r), 126.0 / 78.0, accuracy: 0.01, "\(name) 开口 = 参考比例（126/78 枚金币宽）")
+            XCTAssertEqual(l.bonusSliderWidth, l.bonusOpeningWidth + 2 * l.bonusPostWidth, accuracy: 0.001)
+            XCTAssertGreaterThan(half, r, "\(name) 开口比金币宽")
+            XCTAssertTrue(l.bonusFullyInside(x: gate, radius: r, gateX: gate), "\(name) 正中穿过")
+            XCTAssertTrue(l.bonusFullyInside(x: gate + half - r, radius: r, gateX: gate), "\(name) 右边缘刚好贴着立柱内侧")
+            XCTAssertTrue(l.bonusFullyInside(x: gate - (half - r), radius: r, gateX: gate), "\(name) 左边缘刚好贴着立柱内侧")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half - r + 1, radius: r, gateX: gate), "\(name) 边缘压进立柱 1 点")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half - 1, radius: r, gateX: gate), "\(name) 圆心在开口里、半枚在外")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half + l.bonusPostWidth + r, radius: r, gateX: gate), "\(name) 从立柱外面落下")
+            // 骑在立柱上的判定
+            XCTAssertTrue(l.bonusStraddlesPost(x: gate + half, radius: r, gateX: gate), "\(name) 圆心在立柱内沿 = 骑在立柱上")
+            XCTAssertFalse(l.bonusStraddlesPost(x: gate, radius: r, gateX: gate))
+            XCTAssertFalse(l.bonusStraddlesPost(x: gate + half + l.bonusPostWidth + r, radius: r, gateX: gate), "\(name) 贴着立柱外侧落下不算")
+            // 半径更小（上半区金币外观缩小）时余量更大
+            XCTAssertTrue(l.bonusFullyInside(x: gate + half - r + 1, radius: r - 2, gateX: gate))
+        }
+    }
+
+    func test_bonusTrigger_onlyOnFullPassThrough() {
+        let l = screens[0].layout
+        state.updateLayout(l)
+        let gate = l.bonusSliderCenter(offset: 0).x, half = l.bonusOpeningWidth / 2, r = l.coinRadius
+        let before = state.bonusTriggerCount
+        XCTAssertFalse(state.coinCrossedBonusLane(x: gate + half, radius: r, gateX: gate), "半枚在外不触发")
+        XCTAssertFalse(state.isSpinning)
+        XCTAssertEqual(state.bonusTriggerCount, before)
+        XCTAssertTrue(state.coinCrossedBonusLane(x: gate + half - r - 0.5, radius: r, gateX: gate), "整枚穿过触发")
+        XCTAssertEqual(state.bonusTriggerCount, before + 1)
+        XCTAssertTrue(state.isSpinning)
+    }
+
     func test_coinThroughBonusSlider_startsSlot() {
         let l = screens[0].layout
         state.updateLayout(l)

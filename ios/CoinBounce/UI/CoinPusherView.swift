@@ -175,7 +175,8 @@ struct CoinPusherView: View {
                 }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
                 pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
-                pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0) }
+                pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
+                pusher3D.bonusOffsetProvider = { gameState.bonusSliderOffset }
                 pusher3D.onCoinDropped = { special in gameState.coinFellOffPusher(isSpecial: special) }
             }
             .onChange(of: gameState.pusherSpeedMultiplier) { pusher3D.setPusherSpeed($0) }
@@ -326,15 +327,16 @@ struct CoinPusherView: View {
                 .drawingGroup()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // v11.6：两行——「JACKPOT」和奖池数字，立体金色字、带闪光；放在灵动岛下面（灵动岛最低约到 48% 牌高）
+            // v11.6：两行——「JACKPOT」和奖池数字，立体金色字、带闪光；整块放在灵动岛下面
+            // （iPhone 17 录屏实测灵动岛下沿约 47% 牌高，两行字从约 52% 牌高开始）
             TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
                 let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
-                VStack(spacing: h * 0.01) {
-                    GoldText3D(text: "JACKPOT", size: h * 0.14, tracking: h * 0.03, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t + 1.6))
-                    GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.3, tracking: 1, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t))
+                VStack(spacing: 0) {
+                    GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t + 1.6))
+                    GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, h * 0.06)
+                .padding(.bottom, h * 0.05)
             }
         }
         .frame(height: h)
@@ -626,7 +628,7 @@ struct CoinPusherView: View {
             let slider = layout.bonusSliderCenter(offset: m.bonus)
             Capsule()
                 .fill(Color.black.opacity(0.7))
-                .frame(width: layout.bonusSliderWidth * 0.8, height: lane.height * 0.35)
+                .frame(width: layout.bonusOpeningWidth, height: lane.height * 0.35)
                 .position(x: slider.x - lane.minX, y: lane.height / 2)
             }
         }
@@ -639,7 +641,7 @@ struct CoinPusherView: View {
         SliderReader(motion: gameState.sliders) { m in
             let slider = layout.bonusSliderCenter(offset: m.bonus)
             TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
-                HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
+                HollowBonusSliderTarget(width: layout.bonusSliderWidth, postWidth: layout.bonusPostWidth, maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
                                         time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
             }
             .position(x: slider.x, y: slider.y)
@@ -930,6 +932,8 @@ struct LocalCoinCanvasLayer: View {
 
 struct HollowBonusSliderTarget: View {
     let width: CGFloat
+    /// v11.6：两侧立柱宽（有碰撞体）；正面黑底的宽度就是两柱之间的开口
+    var postWidth: CGFloat = 0
     let maxHeight: CGFloat
     /// 闪光时间表：每 3.75 秒一格，格内起点随机偏移 0–0.65 秒 → 相邻两次闪光间隔 3.1–4.4 秒，每次持续 0.9 秒
     static let glintSlot = 3.75, glintJitter = 0.65, glintDuration = 0.9
@@ -987,10 +991,11 @@ struct HollowBonusSliderTarget: View {
                 // 金色外框（倒角）
                 shield(w, h)
                     .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
-                // 黑金正面（内缩一圈，留出金边）
-                shield(w * 0.84, h * 0.84)
+                // 黑金正面（内缩一圈，留出金边）；v11.6 宽度 = 两根立柱之间的开口
+                let face = postWidth > 0 ? (w - 2 * postWidth) / w : 0.84
+                shield(w * face, h * 0.84)
                     .fill(LinearGradient(colors: [Color(red: 0.26, green: 0.2, blue: 0.14), Color(red: 0.04, green: 0.03, blue: 0.02)], startPoint: .top, endPoint: .bottom))
-                    .frame(width: w * 0.84, height: h * 0.84)
+                    .frame(width: w * face, height: h * 0.84)
                     .offset(y: h * 0.08)
                 // 顶部高光
                 shield(w, h)
@@ -1009,6 +1014,21 @@ struct HollowBonusSliderTarget: View {
                 }
                 shield(w, h)
                     .stroke(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.9), lineWidth: 1)
+                // v11.6 闸门立柱：和边框一样的金色倒角，贯穿整块牌的高度；闪光时一起提亮
+                if postWidth > 0 {
+                    HStack(spacing: 0) {
+                        ForEach(0..<2, id: \.self) { i in
+                            if i == 1 { Spacer(minLength: 0) }
+                            Capsule()
+                                .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .leading, endPoint: .trailing))
+                                .overlay(Capsule().stroke(Color(red: 0.45, green: 0.08, blue: 0.04), lineWidth: max(1, postWidth * 0.18)))
+                                .overlay(Capsule().fill(Color.white.opacity(sweep >= 0 ? 0.55 * sin(sweep * .pi) : 0)).blendMode(.plusLighter))
+                                .frame(width: postWidth, height: h + depth)
+                                .shadow(color: .black.opacity(0.6), radius: 2, x: 0, y: 2)
+                        }
+                    }
+                    .frame(width: w, height: h + depth)
+                }
                 VStack(spacing: h * 0.02) {
                     ArtCoin(size: h * 0.34)
                         .shadow(color: ArtPalette.goldLight.opacity(glow), radius: 4)

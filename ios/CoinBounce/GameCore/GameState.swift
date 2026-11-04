@@ -133,6 +133,8 @@ class GameState: ObservableObject {
     /// 整个游戏画面不再每帧重算一次（真机帧率）
     let sliders = SliderMotion()
     var coinSliderOffset: CGFloat = 0.0 { didSet { sliders.coin = coinSliderOffset } }
+    /// 金币整枚穿过 BONUS 开口、启动老虎机的次数（验收：每次都对应一次完整穿过）
+    private(set) var bonusTriggerCount = 0
     var bonusSliderOffset: CGFloat = 0.0 { didSet { sliders.bonus = bonusSliderOffset } }
     
     private var sliderTime: CGFloat = 0
@@ -470,8 +472,12 @@ class GameState: ObservableObject {
 
     /// 金币穿过 BONUS 轨道：从滑块中间穿过时启动老虎机，返回是否命中
     @discardableResult
-    func coinCrossedBonusLane(x: CGFloat) -> Bool {
-        guard layout.bonusContains(x: x, offset: bonusSliderOffset) else { return false }
+    /// v11.6：radius / gateX 来自 3D 场景越线那一帧（金币屏幕半径、BONUS 牌当时的位置）；不给就用标准金币和当前滑块位置
+    func coinCrossedBonusLane(x: CGFloat, radius: CGFloat? = nil, gateX: CGFloat? = nil) -> Bool {
+        let gx = gateX ?? layout.bonusSliderCenter(offset: bonusSliderOffset).x
+        guard layout.bonusFullyInside(x: x, radius: radius ?? layout.coinRadius, gateX: gx) else { return false }
+        bonusTriggerCount += 1
+        NSLog("BONUS_TRIGGER x=%.1f r=%.1f gate=%.1f", x, radius ?? layout.coinRadius, gx)
         triggerBonusHit()
         return true
     }

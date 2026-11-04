@@ -164,7 +164,15 @@ final class Pusher3DTests: XCTestCase {
         view.isPlaying = true
         view.rendersContinuously = true
         state.onDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial) }
+        // v11.6 BONUS 闸门：立柱跟着滑块走，越线时由 GameState 按整枚金币规则决定是否启动老虎机
+        pusher.bonusOffsetProvider = { state.bonusSliderOffset }
+        // 金币日志（COIN_LIFE / BONUS_CROSS）：门槛不过时能查到是哪一枚
+        pusher.logsLifecycle = true
+        pusher.onCrossBonus = { state.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
+        let triggersBefore = state.bonusTriggerCount
+        let sliderTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in state.step(dt: 1.0 / 60) }
         defer {
+            sliderTimer.invalidate()
             view.isPlaying = false
             window.isHidden = true
             state.onDrop = nil
@@ -237,6 +245,13 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(meanHits, 3, "平均每枚碰钉 ≥ 3 次")
         XCTAssertGreaterThanOrEqual(meanShift, 45, "平均横向位移 ≥ 45 点")
         XCTAssertGreaterThanOrEqual(spread, 45, "过 BONUS 线时的横向分布标准差 ≥ 45 点")
+        // v11.6 BONUS 闸门门槛：没有金币骑在立柱上（一半在里一半在外）；每次启动老虎机都对应一次整枚穿过开口
+        let triggers = state.bonusTriggerCount - triggersBefore
+        print("BONUS crossings=\(pusher.bonusCrossings) passes=\(pusher.bonusPasses) triggers=\(triggers) straddles=\(pusher.bonusStraddles) oldRule=\(pusher.bonusOldRuleHits) maxPenetration=\(pusher.bonusMaxPenetration) corrections=\(pusher.bonusCorrections)")
+        XCTAssertGreaterThan(pusher.bonusCrossings, 30)
+        XCTAssertEqual(pusher.bonusStraddles, 0, "越过 BONUS 线时没有金币骑在立柱上")
+        XCTAssertEqual(triggers, pusher.bonusPasses, "老虎机触发次数 = 整枚穿过开口的次数")
+        XCTAssertLessThan(pusher.bonusMaxPenetration, CGFloat(layout.coinRadius) * 0.25, "金币不会压进立柱")
         print("FALLS sorted top=\(pusher.fallTimes.sorted().suffix(8).map { String(format: "%.2f", $0) }) median=\(pusher.fallTimes.sorted()[pusher.fallTimes.count / 2]) maxHits=\(hitsArr.max() ?? 0)")
         print("PEGS n=\(hitsArr.count) hitShare=\(hitShare) meanHits=\(meanHits) meanShiftPt=\(meanShift) spreadPt=\(spread) hist=\(Dictionary(grouping: hitsArr, by: { $0 }).mapValues(\.count).sorted { $0.key < $1.key })")
         print("DWELL n=\(dwell.count) within1=\(dwell.filter { $0 <= period }.count) max=\(dwell.max() ?? 0)")
@@ -260,6 +275,38 @@ final class Pusher3DTests: XCTestCase {
 
 // MARK: - v11.3.1 替代 v11.2 被删除的测试（同一行为在新的「一枚 3D 金币走完全程」路径上的检查）
 extension Pusher3DTests {
+    /// v11.6 BONUS 闸门：两根运动学立柱，在开口两边，随滑块偏移移动
+    func test_bonusPosts_followSliderAndFlankOpening() {
+        let layout = iPhone17
+        var offset: CGFloat = 0
+        let pusher = PusherScene3D(viewSize: layout.size)
+        pusher.bonusOffsetProvider = { offset }
+        let view = SCNView(frame: CGRect(origin: .zero, size: layout.size))
+        view.scene = pusher.scene
+        view.pointOfView = pusher.cameraNode
+        pusher.view = view
+        pusher.fit(viewSize: layout.size, layout: layout)
+        func postScreenXs() -> [CGFloat] {
+            pusher.scene.rootNode.childNodes(passingTest: { n, _ in n.name == "bonusPost" })
+                .map { CGFloat(view.projectPoint($0.position).x) }.sorted()
+        }
+        for o: CGFloat in [0, layout.bonusSliderTravel, -layout.bonusSliderTravel] {
+            offset = o
+            pusher.renderer(view, updateAtTime: 0)
+            let xs = postScreenXs()
+            XCTAssertEqual(xs.count, 2)
+            let gate = layout.bonusSliderCenter(offset: o).x
+            let expect = layout.bonusOpeningWidth / 2 + layout.bonusPostWidth / 2
+            XCTAssertEqual(xs[0], gate - expect, accuracy: 1.5, "左立柱在开口左边 offset=\(o)")
+            XCTAssertEqual(xs[1], gate + expect, accuracy: 1.5, "右立柱在开口右边 offset=\(o)")
+            XCTAssertEqual(pusher.bonusGateX, gate, accuracy: 0.01)
+        }
+        for n in pusher.scene.rootNode.childNodes(passingTest: { n, _ in n.name == "bonusPost" }) {
+            XCTAssertEqual(n.physicsBody?.type, .kinematic)
+            XCTAssertEqual(n.physicsBody?.categoryBitMask, PusherScene3D.catPeg)
+        }
+    }
+
     private func fittedScene(_ layout: GameLayout) -> (PusherScene3D, SCNView) {
         let pusher = PusherScene3D(viewSize: layout.size)
         let view = SCNView(frame: CGRect(origin: .zero, size: layout.size))
@@ -351,7 +398,7 @@ extension Pusher3DTests {
     /// 替代 test_noVisibleSideCovers：钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都只有碰撞、不画出来
     func test_noVisibleColliders() {
         let (pusher, _) = fittedScene(iPhone17)
-        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight"]
+        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight", "sideLipLeft", "sideLipRight", "bonusPost"]
         let nodes = pusher.scene.rootNode.childNodes(passingTest: { n, _ in names.contains(n.name ?? "") })
         XCTAssertEqual(Set(nodes.compactMap(\.name)), names, "每种碰撞体都在")
         for n in nodes {
@@ -444,6 +491,6 @@ extension Pusher3DTests {
             XCTAssertEqual(n.physicsBody?.type, .static, name)
             XCTAssertNotEqual(n.eulerAngles.y, 0, "\(name) 沿屏幕竖线转好角度")
         }
-        XCTAssertEqual(PusherScene3D.lipRise, 0.04, accuracy: 1e-6, "v11.6 去掉侧墙后铜边 0.04：金币堆约 2 层，场上金币约 105 枚")
+        XCTAssertEqual(PusherScene3D.lipRise, 0.075, accuracy: 1e-6, "v11.6 去掉侧墙、台面金币改盒子碰撞体后铜边 0.075（侧边 0.14、倾角 0.01）：金币堆约 2 层，返还率约 0.99")
     }
 }
