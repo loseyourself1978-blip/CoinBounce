@@ -49,7 +49,11 @@ struct GameConstants {
     /// 老虎机顶→水果排 1.2 秒，水果排→推板约 0.3 秒）。我们的平均下落时长必须在它的 ±10% 以内
     static let referenceFallSeconds: Double = 1.75
     /// 3D 下落金币在下落平面里的线性阻尼：和格挡弹跳一起，让投币口到推板顶面约 1.75 秒
-    static let fallLinearDamping: CGFloat = 0.5
+    static let fallLinearDamping: CGFloat = 0.25
+    /// 下落平面里额外的向下加速度（重力的倍数）：v11.5 物理改为 120 Hz 后下落约 1.85 秒，加一点回到约 1.75 秒
+    static let fallGravityBoost: Float = 0.08
+    /// BONUS 牌高度（参考像素，1206×2622 画面）：v11.5 用户要求比 95 高约 40%
+    static let bonusPlaqueHeightPx: CGFloat = 135
     /// 参考录屏（60fps）里玩家的投币频率：9 秒 15 枚，约每 0.6 秒一枚（-autoplay 和验收测试用）
     static let referenceDropInterval: TimeInterval = 0.6
     /// 参考 App 实测：接币盘里的金币堆大多 1–2 层，叠得最高的两枚一摞（2.mp4 第 12 秒接币盘特写）。

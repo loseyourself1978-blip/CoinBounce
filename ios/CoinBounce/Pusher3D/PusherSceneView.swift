@@ -32,6 +32,7 @@ struct PusherSceneView: UIViewRepresentable {
         view.rendersContinuously = true
         view.preferredFramesPerSecond = 60
         view.antialiasingMode = .multisampling2X
+        pusher.updateRenderQuality()   // 发热降级时同时关掉抗锯齿
         view.backgroundColor = .clear
         view.isOpaque = false
         view.isUserInteractionEnabled = false

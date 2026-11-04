@@ -180,6 +180,10 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
             }
         }
 
+        // 金币雨落完、没有金币了：通知界面把这一层拿掉
+        if coinRoot.children.isEmpty && state.pendingCoinRain == 0 && state.pendingDrops.isEmpty && state.coinRainShowing {
+            DispatchQueue.main.async { if state.pendingCoinRain == 0 { state.coinRainShowing = false } }
+        }
         let battleLine = layout.dropField.midY
         let fruitLine = layout.fruitBar.midY
         let bonusLine = layout.bonusLane.midY

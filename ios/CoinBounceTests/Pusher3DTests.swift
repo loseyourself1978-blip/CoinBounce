@@ -14,6 +14,10 @@ final class Pusher3DTests: XCTestCase {
 
     func test_prefill_fillsPileTwoLayers() {
         let pusher = PusherScene3D(viewSize: iPhone17.size)
+        let view = SCNView(frame: CGRect(origin: .zero, size: iPhone17.size)); view.scene = pusher.scene; view.pointOfView = pusher.cameraNode
+        pusher.fit(viewSize: iPhone17.size, layout: iPhone17)
+        let xs = pusher.coinPositions.values.map { CGFloat(view.projectPoint($0).x) }
+        print("PREFILL n=\(pusher.coinCount) screenX \(xs.min() ?? 0)…\(xs.max() ?? 0) worldX \(pusher.coinPositions.values.map { $0.x }.min() ?? 0)…\(pusher.coinPositions.values.map { $0.x }.max() ?? 0)")
         XCTAssertGreaterThanOrEqual(pusher.coinCount, 30, "开局金币堆在下层台面上铺两层")
         XCTAssertLessThanOrEqual(pusher.coinCount, pusher.config.maxCoins)
     }
@@ -133,7 +137,7 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertGreaterThan(g.rampInnerHeight, g.pusherHeight, "内侧低端在推板顶面上方")
         XCTAssertEqual(g.rampInnerX, g.pusherHalfWidth, accuracy: 0.25, "内侧低端正对推板侧边")
         XCTAssertGreaterThan(g.rampFrontZ, g.fallPlaneZ + 0.3, "斜坡伸到下落平面前方")
-        XCTAssertGreaterThan(g.pusherFrontRetractedZ, g.fallPlaneZ + 0.3, "推板收回时顶面仍在下落平面下方：金币总落在推板上")
+        XCTAssertLessThan(g.pusherFrontRetractedZ - g.wallZ, g.coinRadius, "v11.5 推板收回到墙根：顶面露出的部分不到半枚金币，顶面上的金币一个来回就被刮下")
         XCTAssertGreaterThan(g.fallPlaneZ, g.wallZ + 0.3, "下落平面在后墙前方")
     }
 
@@ -198,7 +202,8 @@ final class Pusher3DTests: XCTestCase {
 
         let life = pusher.lifecycleCounts
         let landedPusher = life["landedPusher"] ?? 0, landedRamp = life["landedRamp"] ?? 0, landedPile = life["landedPile"] ?? 0
-        let landings = landedPusher + landedRamp + landedPile
+        let landedSweep = life["landedSweep"] ?? 0
+        let landings = landedPusher + landedRamp + landedPile + landedSweep
         let fallAvg = pusher.fallTimes.isEmpty ? 0 : pusher.fallTimes.reduce(0, +) / Double(pusher.fallTimes.count)
         let covAvg = coverage.isEmpty ? 0 : coverage.reduce(0, +) / CGFloat(coverage.count)
         let layerAvg = layers.isEmpty ? 0 : layers.reduce(0, +) / Float(layers.count)
@@ -211,14 +216,22 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertLessThanOrEqual(pusher.maxSizeChange, 0.05)
         XCTAssertGreaterThan(checks, 1000)
         XCTAssertEqual(occlusion, [], "没有金币被挡住或跑出画面")
-        XCTAssertEqual(Set(pusher.removalReasons.keys), ["fellIntoTray"], "只有掉进接币槽的金币被移除")
+        XCTAssertTrue(Set(pusher.removalReasons.keys).isSubset(of: ["fellIntoTray", "sideChute"]), "只有掉进接币槽或两侧落币槽的金币被移除")
+        XCTAssertLessThanOrEqual(pusher.removalReasons["sideChute"] ?? 0, 3, "两侧落币槽很少有金币（60 秒 ≤ 3 枚）")
         XCTAssertNil(life["lostBehindWall"]); XCTAssertNil(life["lostSide"])
         // 门槛 3 不立着
         XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
         // 门槛 4 落点：≥95% 先落在推板顶面或斜坡上（实际要求 0% 落在金币堆上）；斜坡上的金币 100% 在 3 秒内到推板顶面
         XCTAssertEqual(landedPile, 0, "没有金币直接落到推板前方的金币堆上")
-        XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp) / Double(max(1, landings)), 0.95)
-        XCTAssertEqual((life["rampToPusher"] ?? 0) + pendingRamp, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
+        // v11.5：推板收回到墙根时落下的金币落在推板扫过的台面上（推出时推走），也算对的落点
+        XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp + landedSweep) / Double(max(1, landings)), 0.95)
+        // v11.5 新门槛：到推板顶面的金币 ≥98% 在一个推板周期内掉到金币堆，没有一枚撑过两个周期
+        let period = GameConstants.pusherPeriod
+        let dwell = pusher.pusherToPileTimes
+        print("DWELL n=\(dwell.count) within1=\(dwell.filter { $0 <= period }.count) max=\(dwell.max() ?? 0)")
+        XCTAssertGreaterThanOrEqual(Double(dwell.filter { $0 <= period }.count) / Double(max(1, dwell.count)), 0.98, "推板顶面的金币一个周期内掉下")
+        XCTAssertLessThan(dwell.max() ?? 0, period * 2, "没有金币在推板顶面撑过两个周期")
+        XCTAssertEqual((life["rampToPusher"] ?? 0) + (life["rampToSweep"] ?? 0) + pendingRamp, landedRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
         XCTAssertEqual(pusher.rampTimeouts, 0)
         // 门槛 5 流转：推板收回时金币从推板顶面掉到下层金币堆
         XCTAssertGreaterThan(life["pusherToPile"] ?? 0, 10, "推板顶面 → 金币堆")
@@ -326,7 +339,7 @@ extension Pusher3DTests {
     /// 替代 test_noVisibleSideCovers：钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都只有碰撞、不画出来
     func test_noVisibleColliders() {
         let (pusher, _) = fittedScene(iPhone17)
-        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"]
+        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight"]
         let nodes = pusher.scene.rootNode.childNodes(passingTest: { n, _ in names.contains(n.name ?? "") })
         XCTAssertEqual(Set(nodes.compactMap(\.name)), names, "每种碰撞体都在")
         for n in nodes {
@@ -340,7 +353,7 @@ extension Pusher3DTests {
     func test_ramps_exactlyOnePerSide() {
         let (pusher, _) = fittedScene(iPhone17)
         XCTAssertEqual(pusher.rampNodes.map(\.name), ["rampLeft", "rampRight"])
-        XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in (n.name ?? "").hasPrefix("ramp") && n.name != "rampGuard" && !(n.name ?? "").hasPrefix("rampTrim") }).count, 2)
+        XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in (n.name ?? "").hasPrefix("ramp") && n.name != "rampGuard" && !(n.name ?? "").hasPrefix("rampTrim") && !(n.name ?? "").hasPrefix("rampCap") }).count, 2)
         XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in n.name == "trayCabinet" }).count, 0)
         for r in pusher.rampNodes { XCTAssertEqual(r.physicsBody?.type, .static) }
     }
@@ -356,5 +369,69 @@ extension Pusher3DTests {
         XCTAssertGreaterThanOrEqual(wallBottom, g.pusherHeight, "后墙不压推板")
         XCTAssertLessThan(g.wallZ, g.fallPlaneZ - pusher.config.coinRadius, "金币落在后墙前方")
         XCTAssertGreaterThan(g.pusherFrontExtendedZ, g.fallPlaneZ + pusher.config.coinRadius, "推出时越过落点")
+    }
+
+    /// v11.5：手机发热（.serious / .critical）时降级画质，.fair 及以下恢复；玩法和物理参数不变
+    func test_thermalFallback_switchesRenderQuality() {
+        let pusher = PusherScene3D(viewSize: iPhone17.size)
+        let view = SCNView(frame: CGRect(origin: .zero, size: iPhone17.size))
+        view.scene = pusher.scene; view.pointOfView = pusher.cameraNode; pusher.view = view
+        let step = pusher.scene.physicsWorld.timeStep, gravity = pusher.scene.physicsWorld.gravity
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .nominal), .full)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .fair), .full)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .serious), .reduced)
+        XCTAssertEqual(PusherScene3D.renderQuality(for: .critical), .reduced)
+        pusher.updateRenderQuality(thermalState: .serious)
+        XCTAssertEqual(pusher.renderQuality, .reduced)
+        XCTAssertEqual(view.antialiasingMode, .none)
+        XCTAssertEqual(pusher.cameraNode.camera?.screenSpaceAmbientOcclusionIntensity, 0)
+        pusher.updateRenderQuality(thermalState: .fair)
+        XCTAssertEqual(pusher.renderQuality, .full)
+        XCTAssertEqual(view.antialiasingMode, .multisampling2X)
+        XCTAssertEqual(Double(pusher.cameraNode.camera?.screenSpaceAmbientOcclusionIntensity ?? 0), 1.2, accuracy: 1e-5)
+        XCTAssertEqual(pusher.scene.physicsWorld.timeStep, step, "物理不变")
+        XCTAssertEqual(pusher.scene.physicsWorld.gravity.y, gravity.y)
+    }
+
+    /// v11.5：下落平面里额外 8% 重力的向下加速度（物理 120 Hz 后保持下落约 1.75 秒）
+    func test_fallGravityBoost_appliedToFallingCoinsOnly() {
+        let layout = iPhone17
+        let (pusher, view) = fittedScene(layout)
+        guard let coin = pusher.makeFallingCoin(atScreen: CGPoint(x: layout.size.width / 2, y: layout.dropField.midY), screenVelocity: .zero, special: false) else { return XCTFail() }
+        coin.physicsBody?.velocity = SCNVector3(0, -2, 0)
+        pusher.renderer(view, didSimulatePhysicsAtTime: 1.0)
+        coin.physicsBody?.velocity = SCNVector3(0, -2, 0)
+        pusher.renderer(view, didSimulatePhysicsAtTime: 1.02)
+        let expected = -2 - PusherScene3D.verticalGravity * GameConstants.fallGravityBoost * 0.02
+        XCTAssertEqual(coin.physicsBody?.velocity.y ?? 0, expected, accuracy: 1e-4, "下落中的金币每帧多一点向下的速度")
+        XCTAssertEqual(GameConstants.fallGravityBoost, 0.08, accuracy: 1e-6)
+    }
+
+    /// v11.5：推板两侧导轨内侧面正好贴着推板侧面（不留缝、也不伸进推板顶面上方）
+    func test_pusherGuides_flushWithPusherSides() {
+        let (pusher, _) = fittedScene(iPhone17)
+        let halfP = pusher.geo.pusherHalfWidth
+        for name in ["pusherGuideLeft", "pusherGuideRight"] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true), let box = n.geometry as? SCNBox else { return XCTFail("缺少 \(name)") }
+            let inner = abs(n.position.x) - Float(box.width) / 2
+            XCTAssertEqual(inner, halfP, accuracy: 1e-3, "\(name) 内侧面 = 推板侧面")
+            XCTAssertNotNil(n.physicsBody)
+        }
+    }
+
+    /// v11.5：金币堆台面向两侧各倾斜 1.2°（中间最高）；两侧墙和屏幕边墙都带物理体、按屏幕方向转好角度
+    func test_pileCrownAndWalls() {
+        let (pusher, _) = fittedScene(iPhone17)
+        for (name, sign) in [("tableFrontLeft", Float(1)), ("tableFrontRight", Float(-1))] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
+            XCTAssertEqual(n.eulerAngles.z, sign * PusherScene3D.pileCrownAngle, accuracy: 1e-5, "\(name) 外侧向下")
+            XCTAssertEqual(n.physicsBody?.type, .static)
+        }
+        for name in ["pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
+            XCTAssertEqual(n.physicsBody?.type, .static, name)
+            XCTAssertNotEqual(n.eulerAngles.y, 0, "\(name) 沿屏幕竖线转好角度")
+        }
+        XCTAssertEqual(PusherScene3D.lipRise, 0.07, accuracy: 1e-6, "v11.5 铜边 0.09 → 0.07，金币堆约 2.5 层")
     }
 }
