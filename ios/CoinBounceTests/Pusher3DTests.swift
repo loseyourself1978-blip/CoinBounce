@@ -181,6 +181,7 @@ final class Pusher3DTests: XCTestCase {
         var occlusion: [String] = []
         var checks = 0
         var coverage: [CGFloat] = [], layers: [Float] = [], visibleFloat: [Double] = [], warmCoverage: [CGFloat] = []
+        var windowStart: (life: [String: Int], standing: Int, dwell: Int, rampTimeouts: Int, pendingRamp: Int) = ([:], 0, 0, 0, 0)
         var elapsed = 0
         let timers = [
             Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
@@ -196,6 +197,12 @@ final class Pusher3DTests: XCTestCase {
                 // v11.6：金币堆按玩家看到的平衡状态验收——先预热 120 秒（开局预铺的金币被推走、两侧开始掉币），
                 // 再量 60 秒；预热期间金币堆平的那一段覆盖不能低于 0.85（开局不会明显变空）
                 if elapsed >= 5 && elapsed <= PusherScene3DGateTiming.warmUp { warmCoverage.append(pusher.pileStats().coverage) }
+                // 预热结束：记下各计数，金币流转门槛（落点、斜坡、推板停留、立着）只算后面 60 秒（平衡状态，和 v11.5 一样 60 秒、0 枚）
+                if elapsed == PusherScene3DGateTiming.warmUp {
+                    SCNTransaction.lock()
+                    windowStart = (pusher.lifecycleCounts, pusher.standingViolations, pusher.pusherToPileTimes.count, pusher.rampTimeouts, pusher.pendingRampCoins)
+                    SCNTransaction.unlock()
+                }
                 if elapsed > PusherScene3DGateTiming.warmUp {
                     let p = pusher.pileStats(); coverage.append(p.coverage); layers.append(p.layersP90)
                     _ = pusher.pileFloatShare(); visibleFloat.append(pusher.lastVisibleFloatShare)
@@ -214,7 +221,9 @@ final class Pusher3DTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         let pendingRamp = pusher.pendingRampCoins(asOf: stoppedAt)
 
-        let life = pusher.lifecycleCounts
+        let lifeAll = pusher.lifecycleCounts
+        // 金币流转门槛只算预热后的 60 秒
+        let life = lifeAll.reduce(into: [String: Int]()) { $0[$1.key] = $1.value - (windowStart.life[$1.key] ?? 0) }.filter { $0.value != 0 }
         let landedPusher = life["landedPusher"] ?? 0, landedRamp = life["landedRamp"] ?? 0, landedPile = life["landedPile"] ?? 0
         let landedSweep = life["landedSweep"] ?? 0
         let landings = landedPusher + landedRamp + landedPile + landedSweep
@@ -231,18 +240,16 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertGreaterThan(checks, 1000)
         XCTAssertEqual(occlusion, [], "没有金币被挡住或跑出画面")
         XCTAssertTrue(Set(pusher.removalReasons.keys).isSubset(of: ["fellIntoTray", "fellSide"]), "只有从前沿或左右两侧掉进接币槽的金币被移除")
-        XCTAssertNil(life["lostBehindWall"]); XCTAssertNil(life["lostSide"])
+        XCTAssertNil(lifeAll["lostBehindWall"]); XCTAssertNil(lifeAll["lostSide"])
         // 门槛 3 不立着
-        XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
+        XCTAssertEqual(pusher.standingViolations - windowStart.standing, 0, "没有金币立着停住超过 0.5 秒")
         // 门槛 4 落点：≥95% 先落在推板顶面或斜坡上（实际要求 0% 落在金币堆上）；斜坡上的金币 100% 在 3 秒内到推板顶面
-        // v11.6：门槛从 60 秒（约 100 枚）延长到 180 秒（约 300 枚），「0 枚」改成同样的比例：每 200 枚落下的最多 1 枚
-        //（偶尔有金币弹在推板顶面的金币上、飞到前面）
-        XCTAssertLessThanOrEqual(landedPile, landings / 200, "几乎没有金币直接落到推板前方的金币堆上")
+        XCTAssertEqual(landedPile, 0, "没有金币直接落到推板前方的金币堆上")
         // v11.5：推板收回到墙根时落下的金币落在推板扫过的台面上（推出时推走），也算对的落点
         XCTAssertGreaterThanOrEqual(Double(landedPusher + landedRamp + landedSweep) / Double(max(1, landings)), 0.95)
         // v11.5 新门槛：到推板顶面的金币 ≥98% 在一个推板周期内掉到金币堆，没有一枚撑过两个周期
         let period = GameConstants.pusherPeriod
-        let dwell = pusher.pusherToPileTimes
+        let dwell = Array(pusher.pusherToPileTimes.dropFirst(windowStart.dwell))
         let hitsArr = pusher.pegHitCounts, shifts = pusher.lateralShifts.map { abs($0) }, xs = pusher.releaseXs
         let hitShare = Double(hitsArr.filter { $0 >= 1 }.count) / Double(max(1, hitsArr.count))
         let meanHits = Double(hitsArr.reduce(0, +)) / Double(max(1, hitsArr.count))
@@ -272,9 +279,9 @@ final class Pusher3DTests: XCTestCase {
         print("DWELL n=\(dwell.count) within1=\(dwell.filter { $0 <= period }.count) max=\(dwell.max() ?? 0)")
         XCTAssertGreaterThanOrEqual(Double(dwell.filter { $0 <= period }.count) / Double(max(1, dwell.count)), 0.98, "推板顶面的金币一个周期内掉下")
         XCTAssertLessThan(dwell.max() ?? 0, period * 2, "没有金币在推板顶面撑过两个周期")
-        // 180 秒约 170 枚落在斜坡上：允许差 1 枚（被弹出斜坡的那一枚）
-        XCTAssertLessThanOrEqual(abs((life["rampToPusher"] ?? 0) + (life["rampToSweep"] ?? 0) + pendingRamp - landedRamp), max(0, landedRamp / 150), "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
-        XCTAssertEqual(pusher.rampTimeouts, 0)
+        // 窗口开始时还在斜坡上的金币在窗口里到位，所以两边各加上窗口开始 / 结束时还在滑的
+        XCTAssertEqual((life["rampToPusher"] ?? 0) + (life["rampToSweep"] ?? 0) + (life["rampToPile"] ?? 0) + pendingRamp, landedRamp + windowStart.pendingRamp, "斜坡上的金币全部滑到推板顶面（测试结束时还在滑的不到 3 秒）")
+        XCTAssertEqual(pusher.rampTimeouts - windowStart.rampTimeouts, 0)
         // 门槛 5 流转：推板收回时金币从推板顶面掉到下层金币堆
         XCTAssertGreaterThan(life["pusherToPile"] ?? 0, 10, "推板顶面 → 金币堆")
         // 推板推动金币堆，前沿的金币掉进接币槽（替代 v11.2 的 test_livePhysics_pusherMovesPileAndCoinsFallOff）

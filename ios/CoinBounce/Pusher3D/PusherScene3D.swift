@@ -1217,6 +1217,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         /// 台面金币当前用圆柱碰撞体（叠在别的金币上面时）还是方盒（贴着台面时）
         var roundCollider = false
         var lastShapeCheck: TimeInterval = 0
+        /// 在推板顶面期间到过的最高点、最靠前的位置（查停留过久的金币用）
+        var pusherMaxY: Float = -.infinity, pusherMaxZ: Float = -.infinity
         var prefilled = false
         let born: TimeInterval
         var releasedAt: TimeInterval?
@@ -1293,13 +1295,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             if normalY < 0.5 && speed < 0.3 {
                 // 立着停住的金币轻推一下让它倒下（真机里金币也几乎不会立着停住）
                 if let since = track.standingSince, now - since > 0.2, now - since < 0.5, let body = node.physicsBody {
-                    body.applyTorque(SCNVector4(1, 0, 0, 0.02 * (Bool.random() ? 1 : -1)), asImpulse: true)
+                    // 绕「币面内的水平轴」（币面法线 × 竖直）转才会倒下；v11.6 前固定绕世界 x 轴，币面朝左右立着
+                    // （侧面边带上滑下来的金币）时只会原地转，倒不下去
+                    let ax = -m.m23, az = m.m21, len = (ax * ax + az * az).squareRoot()
+                    let axis = len > 0.1 ? SCNVector3(ax / len, 0, az / len) : SCNVector3(1, 0, 0)
+                    body.applyTorque(SCNVector4(axis.x, 0, axis.z, 0.03 * (Bool.random() ? 1 : -1)), asImpulse: true)
                 }
                 if let since = track.standingSince {
                     if now - since > 0.5 { standingViolations += 1; track.standingSince = .infinity; logEvent("standing", detail: "\(p.x),\(p.y),\(p.z)") }
                 } else { track.standingSince = now }
             } else if track.standingSince != .infinity { track.standingSince = nil }
         }
+        if track.pusherTime != nil { track.pusherMaxY = max(track.pusherMaxY, p.y); track.pusherMaxZ = max(track.pusherMaxZ, p.z) }
         guard ph != track.phase, ph != .airborne else { return }
         let previous = track.phase
         track.phase = ph
@@ -1328,9 +1335,18 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         case .onPile:
             if let t = track.pusherTime, (previous == .onPusher || previous == .airborne) {
                 pusherToPileTimes.append(now - t); logEvent("pusherToPile")
+                if now - t > GameConstants.pusherPeriod { logEvent("pusherLong", detail: "dwell=\(String(format: "%.1f", now - t)) at \(p.x),\(p.y),\(p.z) maxY=\(track.pusherMaxY) maxZ=\(track.pusherMaxZ) pusherH=\(geo.pusherHeight) extFront=\(geo.pusherFrontExtendedZ) previous=\(previous.rawValue) round=\(track.roundCollider)") }
+                track.pusherMaxY = -.infinity; track.pusherMaxZ = -.infinity
                 track.pusherTime = nil
             }
-        case .fallingFront: logEvent("fellFront")
+            // v11.6：斜坡末端滑下、落在推板前面金币上的金币（比推板扫过的台面稍远）：也离开了斜坡、到了台面，单独计数
+            if let r = track.rampTime, r.isFinite, !track.rampReachedPusher {
+                track.rampReachedPusher = true
+                logEvent("rampToPile", detail: "at \(p.x),\(p.y),\(p.z) after=\(String(format: "%.2f", now - r))")
+            }
+        case .fallingFront:
+            logEvent("fellFront")
+            if let r = track.rampTime, r.isFinite, !track.rampReachedPusher { logEvent("rampLost", detail: "to=fallingFront at \(p.x),\(p.y),\(p.z)") }
         case .lostBehindWall: logEvent("lostBehindWall", detail: "\(p.x),\(p.y),\(p.z)")
         case .lostSide: logEvent("lostSide", detail: "\(p.x),\(p.y),\(p.z) first=\(track.firstLanding?.rawValue ?? "-") previous=\(previous.rawValue) prefilled=\(track.prefilled) age=\(now - track.born)")
         default: break
@@ -1464,7 +1480,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             let hits = view.hitTest(sp, options: [.searchMode: SCNHitTestSearchMode.all.rawValue, .ignoreHiddenNodes: true])
             for hit in hits {
                 let n = hit.node
-                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") || (n.name ?? "").hasPrefix("sideLip") { continue }   // 看不见的碰撞体不算遮挡
+                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") || (n.name ?? "").hasPrefix("sideLip") || n.name == "bonusPost" { continue }   // 看不见的碰撞体不算遮挡
                 let w = hit.worldCoordinates
                 let d = ((w.x - cam.x) * (w.x - cam.x) + (w.y - cam.y) * (w.y - cam.y) + (w.z - cam.z) * (w.z - cam.z)).squareRoot()
                 if d < dist - config.coinRadius - 0.05 {
@@ -1632,7 +1648,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 前沿铜边高出台面的高度（约 1 枚金币厚）；v11.6 和两侧边带一起调到返还率约 0.97–1.04（场上约 95 枚）
     static let lipRise: Float = 0.06
     /// 金币堆两侧的凸边高出边带斜面多少：v11.6 只有 0.02（不到半枚金币厚），金币靠在上面铺满两边，被推挤就翻下去
-    static let sideLipRise: Float = 0.02
+    static let sideLipRise: Float = 0.0
     /// 金币堆台面向两侧的倾角（弧度）：v11.6 约 1.1°，被推挤的金币往两侧散开，金币堆两边铺满
     static let pileCrownAngle: Float = 0.02
     /// BONUS 立柱碰撞体每边比画出来的宽多少（点）

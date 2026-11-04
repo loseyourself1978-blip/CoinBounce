@@ -183,10 +183,9 @@ final class CoinBounceTests: XCTestCase {
     func test_queuedSpin_startsAfterStop() {
         state.spinSlot()
         state.triggerBonusHit()
-        let done = expectation(description: "second spin")
-        // 一次转动约 1.2 + 4×0.4 + 0.5 秒，之后 0.9 秒开始下一次
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) { done.fulfill() }
-        wait(for: [done], timeout: 8)
+        // 一次转动约 1.2 + 4×0.4 + 0.5 秒，之后 0.9 秒开始下一次：等到排队的转动真的开始（不用固定秒数，负载高时也不误报）
+        let started = expectation(for: NSPredicate { _, _ in self.state.queuedSpins == 0 && self.state.isSpinning }, evaluatedWith: nil)
+        wait(for: [started], timeout: 15)
         XCTAssertEqual(state.queuedSpins, 0, "排队的转动已开始")
         XCTAssertTrue(state.isSpinning)
     }
