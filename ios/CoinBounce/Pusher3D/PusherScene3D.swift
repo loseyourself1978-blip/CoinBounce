@@ -566,13 +566,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate {
             ramp.physicsBody = rb
             machineRoot.addChildNode(ramp)
             rampNodes.append(ramp)
-            // 斜坡前沿的挡边（看不见，高出斜面 0.3）：金币只能顺着斜坡滑到推板上，不会从斜坡前沿滚落到台阶上
-            // 挡边高出斜面 0.9：弹起的金币也翻不过去（翻过去会落到台阶上，再从台面侧边滑出画面）
-            let guardBox = SCNBox(width: CGFloat(length), height: 1.2, length: 0.12, chamferRadius: 0)
+            // 斜坡前沿的挡边（看不见）：金币只能顺着斜坡滑到推板上，不会从斜坡前沿滚落到台阶上
+            // 挡边高出斜面约 2.3：弹起的金币也翻不过去（翻过去会落进台阶后面看不见的角落）
+            let guardBox = SCNBox(width: CGFloat(length), height: 2.4, length: 0.12, chamferRadius: 0)
             guardBox.materials = [materials["invisible"]!]
             let guardNode = SCNNode(geometry: guardBox)
             guardNode.name = "rampGuard"
-            guardNode.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 + 0.5, g.rampFrontZ + 0.06)
+            guardNode.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 + 1.1, g.rampFrontZ + 0.06)
             guardNode.eulerAngles = ramp.eulerAngles
             let gb = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: guardBox, options: nil))
             gb.categoryBitMask = PusherScene3D.catMachine

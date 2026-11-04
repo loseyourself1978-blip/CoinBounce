@@ -353,7 +353,7 @@ extension Pusher3DTests {
     func test_ramps_exactlyOnePerSide() {
         let (pusher, _) = fittedScene(iPhone17)
         XCTAssertEqual(pusher.rampNodes.map(\.name), ["rampLeft", "rampRight"])
-        XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in (n.name ?? "").hasPrefix("ramp") && n.name != "rampGuard" && !(n.name ?? "").hasPrefix("rampTrim") }).count, 2)
+        XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in (n.name ?? "").hasPrefix("ramp") && n.name != "rampGuard" && !(n.name ?? "").hasPrefix("rampTrim") && !(n.name ?? "").hasPrefix("rampCap") }).count, 2)
         XCTAssertEqual(pusher.scene.rootNode.childNodes(passingTest: { n, _ in n.name == "trayCabinet" }).count, 0)
         for r in pusher.rampNodes { XCTAssertEqual(r.physicsBody?.type, .static) }
     }
