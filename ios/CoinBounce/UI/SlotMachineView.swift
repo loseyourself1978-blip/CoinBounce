@@ -44,6 +44,12 @@ struct SlotMachineView: View {
                     .position(p)
             }
 
+            // v11.6 灯牌闪光：每个灯牌各自不规则地偶尔闪一下（不会一起闪），转动时不闪
+            if spinState == .spinIdle {
+                CellGlintLayer(reelsFrame: reelsFrame)
+                    .allowsHitTesting(false)
+            }
+
             // 中奖线：中间一行发光闪烁
             if winLineActive {
                 WinLine()
@@ -249,6 +255,17 @@ struct SlotSymbolCell: View {
             SymbolContent(type: symbol.type, size: size)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // v11.6 灯牌：金色倒角边框（参考 BONUS 牌的边框），上亮下暗，凸起的立体感
+        .overlay(
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.08)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1.5, size * 0.035))
+                RoundedRectangle(cornerRadius: size * 0.07)
+                    .stroke(LinearGradient(colors: [Color.white.opacity(0.55), .clear, Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                    .padding(max(1.5, size * 0.035))
+            }
+            .padding(1.5)
+        )
     }
 }
 
@@ -277,6 +294,14 @@ struct SymbolBackground: View {
             return [Color.orange.opacity(0.9), Color.yellow.opacity(0.6), Color.orange.opacity(0.8)]
         case .king:
             return [Color.indigo.opacity(0.9), Color.purple.opacity(0.7), Color.indigo.opacity(0.8)]
+        case .crown, .coinPile:
+            return [Color.yellow.opacity(0.95), Color.orange.opacity(0.7), Color.yellow.opacity(0.8)]
+        case .jokerBig:
+            return [Color.red.opacity(0.95), Color.yellow.opacity(0.6), Color.red.opacity(0.8)]
+        case .jokerSmall:
+            return [Color.gray.opacity(0.9), Color.white.opacity(0.5), Color.gray.opacity(0.8)]
+        case .bunny:
+            return [Color.pink.opacity(0.95), Color.yellow.opacity(0.7), Color.pink.opacity(0.8)]
         }
     }
     
@@ -322,10 +347,16 @@ struct SymbolContent: View {
                 .frame(width: size * 0.7, height: size * 0.7)
                 .blur(radius: 8)
             
-            // 主符号（矢量绘制）
-            SlotSymbolArt(type: type, size: size * 0.6)
-                .shadow(color: config.glowColor.opacity(0.8), radius: 4, x: 0, y: 0)
-                .offset(y: -size * 0.05)
+            // 主符号（矢量绘制）：v11.6 放大、加深色描边投影和顶部高光，立体感和对比更强
+            SlotSymbolArt(type: type, size: size * 0.66)
+                .shadow(color: .black.opacity(0.85), radius: 0, x: size * 0.02, y: size * 0.025)
+                .shadow(color: config.glowColor.opacity(0.9), radius: 5, x: 0, y: 0)
+                .overlay(
+                    LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center)
+                        .mask(SlotSymbolArt(type: type, size: size * 0.66))
+                        .blendMode(.plusLighter)
+                )
+                .offset(y: -size * 0.06)
             
             // 底部标签
             Text(config.label)
@@ -347,6 +378,47 @@ struct SymbolContent: View {
         case .nine:  return ("NINE", Color.green)
         case .jack:  return ("JACK", Color.orange)
         case .king:  return ("KING", Color.purple)
+        case .crown: return ("CROWN", Color.yellow)
+        case .coinPile: return ("COINS", Color.yellow)
+        case .jokerBig: return ("JOKER", Color.red)
+        case .jokerSmall: return ("JOKER", Color.white)
+        case .bunny: return ("BUNNY", Color.pink)
         }
     }
 }
+
+/// v11.6 灯牌闪光：每格一道白光沿金色边框扫过（和 BONUS 牌同样的设计），每格各自的随机间隔 6–10 秒、持续 0.8 秒，
+/// 15 格错开出现、不会一起闪
+struct CellGlintLayer: View {
+    let reelsFrame: CGRect
+    static let slot = 8.0, jitter = 4.0, duration = 0.8
+    /// 第 cell 格在 t 时刻的闪光进度（0…1），不在闪时 −1
+    static func progress(cell: Int, at t: TimeInterval) -> Double {
+        let shifted = t + Double(cell) * 3.37            // 每格错开
+        let k = floor(shifted / slot)
+        var x = UInt64(bitPattern: Int64(k) &* 31 &+ Int64(cell) &* 7919) &* 0x9E3779B97F4A7C15
+        x ^= x >> 31; x = x &* 0xBF58476D1CE4E5B9; x ^= x >> 29
+        let start = Double(x % 10_000) / 10_000 * jitter
+        let local = shifted - k * slot - start
+        return (0..<duration).contains(local) ? local / duration : -1
+    }
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1.0 / 20)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, _ in
+                let cw = (reelsFrame.width - 16) / 5, ch = reelsFrame.height / 3
+                for i in 0..<15 {
+                    let p = CellGlintLayer.progress(cell: i, at: t)
+                    guard p >= 0 else { continue }
+                    let col = i % 5, row = i / 5
+                    let r = CGRect(x: reelsFrame.minX + CGFloat(col) * (cw + 4), y: reelsFrame.minY + CGFloat(row) * ch, width: cw, height: ch).insetBy(dx: 2, dy: 2)
+                    let border = Path(roundedRect: r, cornerRadius: ch * 0.08)
+                    let streak = border.trimmedPath(from: max(0, p - 0.18), to: min(1, p + 0.02))
+                    ctx.stroke(border, with: .color(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.5 * sin(p * .pi))), lineWidth: 2)
+                    ctx.stroke(streak, with: .color(.white), style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                }
+            }
+        }
+    }
+}
+

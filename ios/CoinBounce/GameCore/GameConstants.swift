@@ -27,6 +27,10 @@ struct GameConstants {
     static let slotSmallWinReward: Int = 30
     static let slotBigWinReward: Int = 200
     static let slotJackpotReward: Int = 500
+    /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
+    static let jackpotPool: Int = 10000
+    /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
+    static let ultimateJackpotChance: Double = 1.0 / 1500
 
     // 激励广告领币
     static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
@@ -47,11 +51,13 @@ struct GameConstants {
     static let dropFallSeconds: Double = 0.92      // 下落区自由落体时长；加上格挡弹跳后从投币口到推币台约 1.75 秒（见 referenceFallSeconds）
     /// 参考 App 实测：金币从 COIN 滑块落到推币台约 1.75 秒（2.mp4 第 8.1–9.6 秒逐帧跟踪：投币口→老虎机顶约 0.25 秒，
     /// 老虎机顶→水果排 1.2 秒，水果排→推板约 0.3 秒）。我们的平均下落时长必须在它的 ±10% 以内
-    static let referenceFallSeconds: Double = 1.75
+    static let referenceFallSeconds: Double = 2.0   // v11.6 新参考（格挡钉更多）约 2.0 秒
     /// 3D 下落金币在下落平面里的线性阻尼：和格挡弹跳一起，让投币口到推板顶面约 1.75 秒
-    static let fallLinearDamping: CGFloat = 0.25
-    /// 下落平面里额外的向下加速度（重力的倍数）：v11.5 物理改为 120 Hz 后下落约 1.85 秒，加一点回到约 1.75 秒
-    static let fallGravityBoost: Float = 0.08
+    static let fallLinearDamping: CGFloat = 0.0
+    /// 下落平面里额外的向下加速度（重力的倍数）：v11.6 格挡钉变多、弹跳耗能，加这一点让投币口到落地约 2.0 秒（新参考）
+    static let fallGravityBoost: Float = 0.1
+    /// v11.6：多倍投币时相邻两枚之间的间隔（秒），金币跟着滑块依次落下
+    static let batchDropInterval: Double = 0.18
     /// BONUS 牌高度（参考像素，1206×2622 画面）：v11.5 用户要求比 95 高约 40%
     static let bonusPlaqueHeightPx: CGFloat = 135
     /// 参考录屏（60fps）里玩家的投币频率：9 秒 15 枚，约每 0.6 秒一枚（-autoplay 和验收测试用）

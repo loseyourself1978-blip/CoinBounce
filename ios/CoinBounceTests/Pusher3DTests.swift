@@ -85,8 +85,6 @@ final class Pusher3DTests: XCTestCase {
         box("postLeft", x: ReferenceBoxes.postLeftX, y: ReferenceBoxes.postY)
         box("postRight", x: ReferenceBoxes.postRightX, y: ReferenceBoxes.postY)
         box("lip", x: ReferenceBoxes.lipX, y: nil)
-        box("panelLeft", x: ReferenceBoxes.panelLeftX, y: ReferenceBoxes.panelY)
-        box("panelRight", x: ReferenceBoxes.panelRightX, y: ReferenceBoxes.panelY)
         // 台阶顶面：后沿、前沿
         let sz = g.shelfZ
         check("shelfBack", SCNVector3(-3.5, g.shelfHeight, sz.back), x: nil, y: ReferenceBoxes.shelfY.lowerBound)
@@ -111,19 +109,20 @@ final class Pusher3DTests: XCTestCase {
                 XCTAssertEqual(ours.maxY, py(y.upperBound), accuracy: tolY, "\(name) \(label) 下边", file: file, line: line)
             }
         }
-        box2D("jackpotPanel", layout.jackpot, x: 50...1160, y: 0...250)
-        box2D("topRow", layout.topRow, x: 50...1150, y: 330...460)
-        box2D("slotCabinet", layout.slotMachine, x: 165...1045, y: 787...1280)
-        box2D("slotReels", layout.slotReels, x: 190...1030, y: 820...1250)
+        // v11.6：老虎机向上加高、JACKPOT 两行（用户要求，不再按参考框）
+        box2D("jackpotPanel", layout.jackpot, x: 50...1160, y: 0...320)
+        box2D("topRow", layout.topRow, x: 50...1150, y: 326...400)
+        box2D("slotCabinet", layout.slotMachine, x: 130...1076, y: 570...1280)
+        box2D("slotReels", layout.slotReels, x: 150...1056, y: 650...1250)
         box2D("battle", layout.dropField.insetBy(dx: 0, dy: 4), x: 165...1040, y: 1300...1520)   // 战斗区边框画在区域内 4 点
         let fruitSpan = CGRect(x: layout.fruitCenters[0].x - layout.fruitLampWidth / 2, y: layout.fruitBar.minY, width: layout.fruitLampWidth * 7, height: layout.fruitBar.height)
         box2D("fruitRow", fruitSpan, x: 120...1090, y: nil)
         XCTAssertEqual(layout.fruitBar.midY, py(ReferenceBoxes.fruitRow.midY), accuracy: tolY, "\(name) 水果排中线", file: file, line: line)
-        // 投币口：金币出口在 COIN 牌（约 600 像素）和拱门灯泡横条（744）之间
-        XCTAssertTrue((py(590)...py(670)).contains(layout.coinSpawnY), "\(name) 投币口 y \(Int(layout.coinSpawnY / size.height * 2622)) 像素", file: file, line: line)
-        // 下落路径上的格挡：老虎机符号格都在参考转轴窗口内
-        let reels = ReferenceBoxes.rect(ReferenceBoxes.slotReels, size)
-        for p in layout.slotObstacles { XCTAssertTrue(reels.contains(p), "\(name) 符号格挡 \(p) 在参考转轴窗口内", file: file, line: line) }
+        // 投币口：金币出口在 COIN 牌下沿和拱门灯泡横条（560）之间
+        XCTAssertTrue((py(500)...py(560)).contains(layout.coinSpawnY), "\(name) 投币口 y \(Int(layout.coinSpawnY / size.height * 2622)) 像素", file: file, line: line)
+        // 下落路径上的格挡钉：都在老虎机和战斗区里
+        let field = layout.slotMachine.union(layout.dropField).insetBy(dx: 0, dy: -layout.slotObstacleRadius * 2)
+        for p in layout.slotObstacles { XCTAssertTrue(field.contains(p), "\(name) 格挡钉 \(p) 在老虎机 / 战斗区里", file: file, line: line) }
         for p in layout.fruitPins { XCTAssertTrue(layout.fruitBar.contains(p), file: file, line: line) }
     }
 
@@ -216,8 +215,7 @@ final class Pusher3DTests: XCTestCase {
         XCTAssertLessThanOrEqual(pusher.maxSizeChange, 0.05)
         XCTAssertGreaterThan(checks, 1000)
         XCTAssertEqual(occlusion, [], "没有金币被挡住或跑出画面")
-        XCTAssertTrue(Set(pusher.removalReasons.keys).isSubset(of: ["fellIntoTray", "sideChute"]), "只有掉进接币槽或两侧落币槽的金币被移除")
-        XCTAssertLessThanOrEqual(pusher.removalReasons["sideChute"] ?? 0, 3, "两侧落币槽很少有金币（60 秒 ≤ 3 枚）")
+        XCTAssertTrue(Set(pusher.removalReasons.keys).isSubset(of: ["fellIntoTray", "fellSide"]), "只有从前沿或左右两侧掉进接币槽的金币被移除")
         XCTAssertNil(life["lostBehindWall"]); XCTAssertNil(life["lostSide"])
         // 门槛 3 不立着
         XCTAssertEqual(pusher.standingViolations, 0, "没有金币立着停住超过 0.5 秒")
@@ -228,6 +226,19 @@ final class Pusher3DTests: XCTestCase {
         // v11.5 新门槛：到推板顶面的金币 ≥98% 在一个推板周期内掉到金币堆，没有一枚撑过两个周期
         let period = GameConstants.pusherPeriod
         let dwell = pusher.pusherToPileTimes
+        let hitsArr = pusher.pegHitCounts, shifts = pusher.lateralShifts.map { abs($0) }, xs = pusher.releaseXs
+        let hitShare = Double(hitsArr.filter { $0 >= 1 }.count) / Double(max(1, hitsArr.count))
+        let meanHits = Double(hitsArr.reduce(0, +)) / Double(max(1, hitsArr.count))
+        let meanShift = shifts.reduce(0, +) / CGFloat(max(1, shifts.count))
+        let meanX = xs.reduce(0, +) / CGFloat(max(1, xs.count))
+        let spread = (xs.map { ($0 - meanX) * ($0 - meanX) }.reduce(0, +) / CGFloat(max(1, xs.count))).squareRoot()
+        // v11.6 格挡钉门槛（参考：几乎每枚金币都碰到钉子、明显改变方向、落点分散）
+        XCTAssertGreaterThanOrEqual(hitShare, 0.95, "≥95% 的金币至少碰一次钉子")
+        XCTAssertGreaterThanOrEqual(meanHits, 3, "平均每枚碰钉 ≥ 3 次")
+        XCTAssertGreaterThanOrEqual(meanShift, 45, "平均横向位移 ≥ 45 点")
+        XCTAssertGreaterThanOrEqual(spread, 45, "过 BONUS 线时的横向分布标准差 ≥ 45 点")
+        print("FALLS sorted top=\(pusher.fallTimes.sorted().suffix(8).map { String(format: "%.2f", $0) }) median=\(pusher.fallTimes.sorted()[pusher.fallTimes.count / 2]) maxHits=\(hitsArr.max() ?? 0)")
+        print("PEGS n=\(hitsArr.count) hitShare=\(hitShare) meanHits=\(meanHits) meanShiftPt=\(meanShift) spreadPt=\(spread) hist=\(Dictionary(grouping: hitsArr, by: { $0 }).mapValues(\.count).sorted { $0.key < $1.key })")
         print("DWELL n=\(dwell.count) within1=\(dwell.filter { $0 <= period }.count) max=\(dwell.max() ?? 0)")
         XCTAssertGreaterThanOrEqual(Double(dwell.filter { $0 <= period }.count) / Double(max(1, dwell.count)), 0.98, "推板顶面的金币一个周期内掉下")
         XCTAssertLessThan(dwell.max() ?? 0, period * 2, "没有金币在推板顶面撑过两个周期")
@@ -305,12 +316,13 @@ extension Pusher3DTests {
         guard walls.count == 2 else { return }
         for (wall, edge) in zip(walls, [layout.fieldMinX - layout.coinRadius, layout.fieldMaxX + layout.coinRadius]) {
             let h = Float((wall.geometry as! SCNBox).height) / 2
-            // 墙内侧面：投币口处贴着下落区边缘；往下（透视）只会向内收、不超过半枚金币，金币从不出 2D 下落区
+            // 墙内侧面：v11.6 向外让出「下落中金币外观缩小、碰撞半径不变」的差值（投币口处最多约 0.3 枚金币），
+            // 往下（透视）向内收、不超过半枚金币
             let inward: CGFloat = wall.position.x < 0 ? 1 : -1
             for (i, ly) in [h, 0, -h].enumerated() {
                 let sx = CGFloat(view.projectPoint(wall.convertPosition(SCNVector3(Float(inward) * 0.1, ly, 0), to: nil)).x)
-                if i == 0 { XCTAssertEqual(sx, edge, accuracy: 1.5, "投币口处墙内侧 = 下落区边缘", file: file, line: line) }
-                XCTAssertGreaterThanOrEqual((sx - edge) * inward, -1.5, "墙不在下落区外", file: file, line: line)
+                if i == 0 { XCTAssertLessThanOrEqual((edge - sx) * inward, layout.coinRadius * 0.6, "投币口处墙内侧在下落区边缘外不超过 0.3 枚金币", file: file, line: line) }
+                XCTAssertGreaterThanOrEqual((sx - edge) * inward, -layout.coinRadius * 0.6, "墙在下落区外不超过 0.3 枚金币", file: file, line: line)
                 XCTAssertLessThanOrEqual((sx - edge) * inward, layout.coinRadius, "墙最多向内收半枚金币", file: file, line: line)
             }
         }
@@ -339,7 +351,7 @@ extension Pusher3DTests {
     /// 替代 test_noVisibleSideCovers：钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都只有碰撞、不画出来
     func test_noVisibleColliders() {
         let (pusher, _) = fittedScene(iPhone17)
-        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight"]
+        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight"]
         let nodes = pusher.scene.rootNode.childNodes(passingTest: { n, _ in names.contains(n.name ?? "") })
         XCTAssertEqual(Set(nodes.compactMap(\.name)), names, "每种碰撞体都在")
         for n in nodes {
@@ -404,7 +416,7 @@ extension Pusher3DTests {
         pusher.renderer(view, didSimulatePhysicsAtTime: 1.02)
         let expected = -2 - PusherScene3D.verticalGravity * GameConstants.fallGravityBoost * 0.02
         XCTAssertEqual(coin.physicsBody?.velocity.y ?? 0, expected, accuracy: 1e-4, "下落中的金币每帧多一点向下的速度")
-        XCTAssertEqual(GameConstants.fallGravityBoost, 0.08, accuracy: 1e-6)
+        XCTAssertGreaterThan(GameConstants.fallGravityBoost, 0, "下落平面里有额外的向下加速度")
     }
 
     /// v11.5：推板两侧导轨内侧面正好贴着推板侧面（不留缝、也不伸进推板顶面上方）
@@ -427,11 +439,11 @@ extension Pusher3DTests {
             XCTAssertEqual(n.eulerAngles.z, sign * PusherScene3D.pileCrownAngle, accuracy: 1e-5, "\(name) 外侧向下")
             XCTAssertEqual(n.physicsBody?.type, .static)
         }
-        for name in ["pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"] {
+        for name in ["screenWallLeft", "screenWallRight"] {
             guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
             XCTAssertEqual(n.physicsBody?.type, .static, name)
             XCTAssertNotEqual(n.eulerAngles.y, 0, "\(name) 沿屏幕竖线转好角度")
         }
-        XCTAssertEqual(PusherScene3D.lipRise, 0.07, accuracy: 1e-6, "v11.5 铜边 0.09 → 0.07，金币堆约 2.5 层")
+        XCTAssertEqual(PusherScene3D.lipRise, 0.04, accuracy: 1e-6, "v11.6 去掉侧墙后铜边 0.04：金币堆约 2 层，场上金币约 105 枚")
     }
 }

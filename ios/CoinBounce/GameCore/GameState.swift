@@ -9,6 +9,8 @@ import CoreHaptics
 // MARK: - 老虎机符号类型 (V9.0)
 enum SymbolType: String, CaseIterable {
     case wild, seven, bar, heart, diamond, star, nine, jack, king
+    // v11.6 新增金色 / 贵重符号；bunny（兔女郎）是终极大奖符号
+    case crown, coinPile, jokerBig, jokerSmall, bunny
 }
 
 // MARK: - 老虎机符号模型 (V9.0)
@@ -391,6 +393,32 @@ class GameState: ObservableObject {
     // MARK: - 行为接口
     var canDropCoin: Bool { availableCoins > 0 }
 
+    // MARK: v11.6 COIN 倍数：点 COIN 牌在 1 → 2 → 5 → 10 之间切换，投币按钮一次投这么多枚（跟着滑块依次落下）
+    static let coinMultipliers = [1, 2, 5, 10]
+    @Published var coinMultiplier = 1
+    func cycleCoinMultiplier() {
+        let all = GameState.coinMultipliers
+        let i = all.firstIndex(of: coinMultiplier) ?? 0
+        coinMultiplier = all[(i + 1) % all.count]
+        AudioManager.shared.play(.buttonTap)
+    }
+    /// 余额够不够这一次投币（按当前倍数）
+    var canDropBatch: Bool { availableCoins >= coinMultiplier }
+    /// 按当前倍数投币：第一枚马上落下，其余每隔 batchDropInterval 秒一枚（每枚都按当时滑块的位置）。余额不够时一枚也不投、返回 false
+    /// schedule：延迟多少秒后执行（默认主线程 asyncAfter；测试里换成立即记录）
+    @discardableResult
+    func dropBatch(schedule: (TimeInterval, @escaping () -> Void) -> Void = { delay, work in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }) -> Bool {
+        let n = coinMultiplier
+        guard availableCoins >= n else { return false }
+        dropCoin()
+        for i in 1..<max(2, n) where i < n {
+            schedule(GameConstants.batchDropInterval * Double(i)) { [weak self] in self?.dropCoin() }
+        }
+        return true
+    }
+
     /// 重新显示首次投币引导（存档里记为未投过币）
     func resetTutorial() {
         hasDroppedFirstCoin = false
@@ -620,14 +648,11 @@ class GameState: ObservableObject {
         
         let symbolMap: [SymbolType] = SymbolType.allCases
         
-        // 1. 生成 15 个物理格子结果 (5x3)
-        let results = (0..<15).map { _ in 
-            let r = Double.random(in: 0...1)
-            if r < 0.03 { return 0 } else if r < 0.15 { return 1 }
-            else if r < 0.30 { return 2 } else if r < 0.45 { return 3 }
-            else if r < 0.58 { return 4 } else if r < 0.70 { return 5 }
-            else if r < 0.82 { return 6 } else if r < 0.92 { return 7 }
-            else { return 8 }
+        // 1. 生成 15 个物理格子结果 (5x3)：v11.6 按 slotWeights 抽；另有 1/1500 的机会直接出中间一行 5 个兔女郎（终极大奖）
+        var results = (0..<15).map { _ in GameState.randomSymbolIndex(randomUnit()) }
+        if randomUnit() < GameConstants.ultimateJackpotChance {
+            let bunny = SymbolType.allCases.firstIndex(of: .bunny)!
+            for i in 5..<10 { results[i] = bunny }
         }
         for i in 0..<15 { slotValues[i] = results[i] }
         
@@ -674,9 +699,27 @@ class GameState: ObservableObject {
         }
     }
 
-    private func evaluateWin() {
+    /// v11.6 每个符号的出现概率（合计 1）；兔女郎（终极大奖符号）最少见
+    static let slotWeights: [(SymbolType, Double)] = [
+        (.wild, 0.03), (.seven, 0.10), (.bar, 0.12), (.heart, 0.12), (.diamond, 0.11), (.star, 0.10), (.nine, 0.10),
+        (.jack, 0.08), (.king, 0.07), (.crown, 0.05), (.coinPile, 0.05), (.jokerBig, 0.025), (.jokerSmall, 0.025), (.bunny, 0.02)
+    ]
+    /// u ∈ [0, 1) → 符号在 SymbolType.allCases 里的下标
+    static func randomSymbolIndex(_ u: Double) -> Int {
+        var acc = 0.0
+        for (type, w) in slotWeights {
+            acc += w
+            if u < acc { return SymbolType.allCases.firstIndex(of: type)! }
+        }
+        return SymbolType.allCases.firstIndex(of: slotWeights.last!.0)!
+    }
+
+    func evaluateWin() {
         let middleRow = [slotValues[5], slotValues[6], slotValues[7], slotValues[8], slotValues[9]]
-        if middleRow.allSatisfy({ $0 == middleRow[0] || $0 == 0 }) { slotJackpot() }
+        let bunny = SymbolType.allCases.firstIndex(of: .bunny)!
+        // 终极大奖：中间一行 5 个都是兔女郎（百搭不算）
+        if middleRow.allSatisfy({ $0 == bunny }) { ultimateJackpot() }
+        else if middleRow.allSatisfy({ $0 == middleRow[0] || $0 == 0 }) { slotJackpot() }
         else if checkFourMatch(row: middleRow) { slotBigWin() }
         else if checkThreeMatch(row: middleRow) { slotSmallWin() }
     }
@@ -710,6 +753,20 @@ class GameState: ObservableObject {
         }
         return false
     }
+
+    /// v11.6 终极大奖：派出顶部 JACKPOT 奖池全部金币，满屏金币雨和粒子
+    private func ultimateJackpot() {
+        currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
+        ultimateJackpotCount += 1
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot)
+        addCoins(GameConstants.jackpotPool)
+        addFloatingScore(text: "JACKPOT +\(GameConstants.jackpotPool)", x: layout.slotMachine.midX, y: layout.slotMachine.midY, color: .yellow, big: true)
+        pendingCoinRain += GameConstants.coinRainJackpot * 3
+        spawnParticles(count: 200, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .pink, .white])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
+    }
+    /// 终极大奖次数（测试和统计用）
+    private(set) var ultimateJackpotCount = 0
 
     private func slotJackpot() {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true

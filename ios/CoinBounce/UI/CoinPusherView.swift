@@ -50,8 +50,6 @@ struct CoinPusherView: View {
                     .place(in: CGRect(x: 0, y: 0, width: sw, height: layout.sliderTrack.minY))
                 jackpotWithTransition(w: layout.jackpot.width, h: layout.jackpot.height)
                     .place(in: layout.jackpot)
-                topRow(layout: layout)
-                    .place(in: layout.topRow)
 
                 // ── 老虎机（SPIN 在转轴右侧）──
                 SlotMachineView(
@@ -81,6 +79,11 @@ struct CoinPusherView: View {
                 bonusLane(layout: layout)
                     .place(in: layout.bonusLane)
 
+                // ── v11.6 格挡钉：看得见的立体黄铜钉（和 3D 下落平面里的碰撞钉同一组位置）──
+                PegsLayer(pegs: layout.slotObstacles + layout.fruitPins, radius: layout.slotObstacleRadius)
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
+
                 // ── 推币台 ──
                 // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
                 CabinetPillar()
@@ -89,6 +92,9 @@ struct CoinPusherView: View {
                 CabinetPillar()
                     .drawingGroup()
                     .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
+                // 金币余额、帮助 / 设置叠在投币口区域上方两侧（v11.6，画在立柱之上），不挡 COIN 牌的往复范围
+                topRow(layout: layout)
+                    .place(in: layout.topRow)
 
                 // 推币机后方的背景（红绒布、暗色机柜）：3D 视图是透明的，只画机器和金币
                 MachineBackdrop()
@@ -107,11 +113,15 @@ struct CoinPusherView: View {
                     .allowsHitTesting(false)
 
                 // 画在 3D 金币之上的部件（参考里它们挡住金币）：投币口滑块、BONUS 牌
+                // v11.6：点 COIN 牌在 1 → 2 → 5 → 10 之间切换每次投币的枚数
                 SliderReader(motion: gameState.sliders) { m in
                     coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                        .contentShape(Rectangle())
+                        .onTapGesture { gameState.cycleCoinMultiplier() }
+                        .accessibilityLabel(Text(verbatim: "\(gameState.coinMultiplier) COIN"))
+                        .accessibilityAddTraits(.isButton)
                         .position(layout.coinSliderCenter(offset: m.coin))
                 }
-                    .allowsHitTesting(false)
                 bonusPlaque(layout: layout)
                 // 两侧炮管（参考 x 40–160 / 1050–1170、y 1690–1830 像素）
                 CannonView(right: false).place(in: ReferenceBoxes.rect(ReferenceBoxes.cannonLeft, layout.size)).allowsHitTesting(false)
@@ -182,8 +192,7 @@ struct CoinPusherView: View {
     }
 
     private func dropOrHint() {
-        if gameState.canDropCoin {
-            gameState.dropCoin()
+        if gameState.dropBatch() {
         } else {
             AudioManager.shared.play(.noCoins)
             gameState.requestFreeCoins()
@@ -317,25 +326,15 @@ struct CoinPusherView: View {
                 .drawingGroup()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // 标签和数字排成一行、放在牌子下部：灵动岛最低到约 60% 牌高（iPhone 17），文字不被挡住
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(alignment: .firstTextBaseline, spacing: h * 0.1) {
-                    Text("JACKPOT")
-                        .font(.system(size: max(8, h * 0.13), weight: .black, design: .rounded))
-                        .foregroundColor(ArtPalette.goldLight)
-                        .tracking(2)
-                    Text("100000")
-                        .font(.system(size: max(18, h * 0.3), weight: .black, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [
-                            Color(red: 0.95, green: 0.75, blue: 0.15),
-                            Color(red: 1.00, green: 0.98, blue: 0.65),
-                            Color(red: 0.90, green: 0.70, blue: 0.10)
-                        ], startPoint: .top, endPoint: .bottom))
-                        .shadow(color: .orange.opacity(0.5), radius: 4)
+            // v11.6：两行——「JACKPOT」和奖池数字，立体金色字、带闪光；放在灵动岛下面（灵动岛最低约到 48% 牌高）
+            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
+                let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
+                VStack(spacing: h * 0.01) {
+                    GoldText3D(text: "JACKPOT", size: h * 0.14, tracking: h * 0.03, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t + 1.6))
+                    GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.3, tracking: 1, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t))
                 }
-                .frame(height: h * 0.36)
-                .padding(.bottom, h * 0.04)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, h * 0.06)
             }
         }
         .frame(height: h)
@@ -414,7 +413,7 @@ struct CoinPusherView: View {
                 .stroke(Color(red: 0.82, green: 0.66, blue: 0.31), lineWidth: 1)
 
             // 1 COIN 文字
-            Text("1 COIN")
+            Text(verbatim: "\(gameState.coinMultiplier) COIN")
                 .font(.system(size: min(sliderW * 0.22, sliderH * 0.6), weight: .bold, design: .rounded))
                 .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.55))
         }
@@ -717,8 +716,10 @@ struct CoinPusherView: View {
                     .onChanged { _ in
                         guard holdDropTimer == nil else { return }
                         dropOrHint()
-                        holdDropTimer = Timer.scheduledTimer(withTimeInterval: 0.22, repeats: true) { _ in
-                            if gameState.canDropCoin { gameState.dropCoin() }
+                        // 按住连投：每次投当前倍数的一批（一批落完再投下一批）
+                        let every = max(0.22, GameConstants.batchDropInterval * Double(gameState.coinMultiplier) + 0.1)
+                        holdDropTimer = Timer.scheduledTimer(withTimeInterval: every, repeats: true) { _ in
+                            if gameState.canDropBatch { gameState.dropBatch() }
                         }
                     }
                     .onEnded { _ in
@@ -848,6 +849,35 @@ struct FloatingScoreView: View {
 }
 
 // MARK: - 六边形
+/// v11.6：格挡钉——立体黄铜钉（投影、圆柱身、顶面高光），一次画完交给 GPU
+struct PegsLayer: View {
+    let pegs: [CGPoint]
+    let radius: CGFloat
+    var body: some View {
+        Canvas { ctx, _ in
+            let r = radius
+            for p in pegs {
+                // 投影
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - r * 1.1 + r * 0.35, y: p.y - r * 0.4 + r * 0.9, width: r * 2.2, height: r * 1.1)),
+                         with: .color(.black.opacity(0.45)))
+                // 钉身（竖着的短圆柱：上下两个椭圆 + 中间矩形）
+                let body = CGRect(x: p.x - r, y: p.y - r * 1.25, width: r * 2, height: r * 2.3)
+                ctx.fill(Path(roundedRect: body, cornerRadius: r),
+                         with: .linearGradient(Gradient(colors: [Color(red: 0.45, green: 0.27, blue: 0.05), Color(red: 1, green: 0.86, blue: 0.45),
+                                                                 Color(red: 0.85, green: 0.6, blue: 0.15), Color(red: 0.4, green: 0.22, blue: 0.03)]),
+                                               startPoint: CGPoint(x: body.minX, y: 0), endPoint: CGPoint(x: body.maxX, y: 0)))
+                // 顶面
+                let top = CGRect(x: p.x - r * 0.9, y: p.y - r * 1.2, width: r * 1.8, height: r * 0.9)
+                ctx.fill(Path(ellipseIn: top), with: .linearGradient(Gradient(colors: [Color(red: 1, green: 0.97, blue: 0.75), Color(red: 0.9, green: 0.68, blue: 0.2)]),
+                                                                     startPoint: CGPoint(x: 0, y: top.minY), endPoint: CGPoint(x: 0, y: top.maxY)))
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - r * 0.45, y: p.y - r * 1.05, width: r * 0.5, height: r * 0.3)), with: .color(.white.opacity(0.85)))
+                ctx.stroke(Path(roundedRect: body, cornerRadius: r), with: .color(Color(red: 0.3, green: 0.15, blue: 0.02)), lineWidth: max(0.6, r * 0.12))
+            }
+        }
+        .drawingGroup()
+    }
+}
+
 /// v11.5：只跟着滑块位置刷新的小视图（滑块每帧都在动，整个游戏画面不跟着重算）
 struct SliderReader<Content: View>: View {
     @ObservedObject var motion: SliderMotion
@@ -1109,23 +1139,95 @@ struct BonusBackdrop: View {
     }
 }
 
-/// 原创扑克牌：米白圆角牌面、红 / 黑「A」和花色
+/// v11.6 立体金字：几层向右下偏移的暗金色叠出厚度，正面金色渐变 + 上半高光，闪光时一道白光从左往右扫过字面
+struct GoldText3D: View {
+    let text: String
+    let size: CGFloat
+    var tracking: CGFloat = 0
+    /// 闪光进度 0…1，−1 表示不闪
+    var glint: Double = -1
+    var body: some View {
+        let face = Text(verbatim: text).font(.system(size: size, weight: .black, design: .rounded)).tracking(tracking)
+        let depth = max(1, size * 0.06)
+        ZStack {
+            ForEach(1..<4, id: \.self) { i in
+                face.foregroundStyle(Color(red: 0.45 - 0.08 * Double(i), green: 0.26 - 0.05 * Double(i), blue: 0.03))
+                    .offset(x: depth * CGFloat(i) * 0.6, y: depth * CGFloat(i))
+            }
+            face.foregroundStyle(LinearGradient(stops: [
+                .init(color: Color(red: 1, green: 0.97, blue: 0.7), location: 0),
+                .init(color: Color(red: 1, green: 0.84, blue: 0.3), location: 0.45),
+                .init(color: Color(red: 0.86, green: 0.55, blue: 0.08), location: 0.55),
+                .init(color: Color(red: 1, green: 0.8, blue: 0.25), location: 1)
+            ], startPoint: .top, endPoint: .bottom))
+            .shadow(color: Color.orange.opacity(0.6), radius: size * 0.12)
+            if glint >= 0 {
+                // 闪光：一道斜白光，被字形遮住只在字上显示
+                GeometryReader { geo in
+                    LinearGradient(colors: [.clear, .white.opacity(0.95), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: geo.size.width * 0.25)
+                        .rotationEffect(.degrees(18))
+                        .offset(x: -geo.size.width * 0.3 + geo.size.width * 1.3 * glint)
+                }
+                .mask(face)
+                .blendMode(.plusLighter)
+            }
+        }
+        .fixedSize()
+    }
+}
+
+/// v11.6 原创扑克牌：红心 K（国王）、黑桃 Q（王后）——卡通人像、金色边框、有厚度的立体牌
 struct PlayingCardShape: View {
     let red: Bool
     var body: some View {
         GeometryReader { geo in
-            let ink = red ? Color(red: 0.8, green: 0.1, blue: 0.12) : Color(red: 0.1, green: 0.1, blue: 0.12)
+            let w = geo.size.width, h = geo.size.height
+            let ink = red ? Color(red: 0.82, green: 0.08, blue: 0.12) : Color(red: 0.12, green: 0.1, blue: 0.16)
+            let letter = red ? "K" : "Q"
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: geo.size.width * 0.12)
-                    .fill(Color(red: 0.98, green: 0.94, blue: 0.86))
-                    .overlay(RoundedRectangle(cornerRadius: geo.size.width * 0.1).stroke(Color(red: 0.75, green: 0.55, blue: 0.3), lineWidth: 1.5)
-                        .padding(geo.size.width * 0.05))
-                Text(verbatim: "A").font(.system(size: geo.size.width * 0.3, weight: .black)).foregroundStyle(ink)
-                    .padding(geo.size.width * 0.1)
-                Image(systemName: red ? "suit.heart.fill" : "suit.spade.fill")
-                    .resizable().scaledToFit().foregroundStyle(ink)
-                    .frame(width: geo.size.width * 0.45)
-                    .position(x: geo.size.width / 2, y: geo.size.height * 0.58)
+                // 厚度：右下偏移的暗色层 + 投影
+                RoundedRectangle(cornerRadius: w * 0.12)
+                    .fill(Color(red: 0.62, green: 0.48, blue: 0.3))
+                    .offset(x: w * 0.04, y: w * 0.05)
+                    .shadow(color: .black.opacity(0.5), radius: w * 0.06, x: w * 0.04, y: w * 0.06)
+                RoundedRectangle(cornerRadius: w * 0.12)
+                    .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.92), Color(red: 0.93, green: 0.86, blue: 0.72)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                RoundedRectangle(cornerRadius: w * 0.1)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1.5, w * 0.035))
+                    .padding(w * 0.05)
+                // 角标
+                VStack(spacing: 0) {
+                    Text(verbatim: letter).font(.system(size: w * 0.24, weight: .black, design: .serif)).foregroundStyle(ink)
+                    Image(systemName: red ? "suit.heart.fill" : "suit.spade.fill").resizable().scaledToFit().foregroundStyle(ink).frame(width: w * 0.14)
+                }
+                .padding(.leading, w * 0.1).padding(.top, w * 0.07)
+                // 卡通人像：王冠、脸、（国王）胡子 / （王后）长发
+                ZStack {
+                    if !red {
+                        Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.22, blue: 0.1), Color(red: 0.25, green: 0.1, blue: 0.05)], startPoint: .top, endPoint: .bottom))
+                            .frame(width: w * 0.5, height: w * 0.62).offset(y: w * 0.08)
+                    }
+                    Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.87, blue: 0.74), Color(red: 0.95, green: 0.72, blue: 0.56)], center: .topLeading, startRadius: 0, endRadius: w * 0.3))
+                        .frame(width: w * 0.36, height: w * 0.36)
+                    // 眼睛、腮红、笑
+                    HStack(spacing: w * 0.08) { Circle().fill(Color.black).frame(width: w * 0.04); Circle().fill(Color.black).frame(width: w * 0.04) }.offset(y: -w * 0.02)
+                    HStack(spacing: w * 0.16) { Circle().fill(Color.pink.opacity(0.5)).frame(width: w * 0.06); Circle().fill(Color.pink.opacity(0.5)).frame(width: w * 0.06) }.offset(y: w * 0.04)
+                    if red {
+                        // 国王的白胡子
+                        Ellipse().fill(Color.white).overlay(Ellipse().stroke(Color(red: 0.7, green: 0.7, blue: 0.75), lineWidth: 0.8))
+                            .frame(width: w * 0.3, height: w * 0.2).offset(y: w * 0.14)
+                    } else {
+                        Capsule().fill(Color(red: 0.85, green: 0.2, blue: 0.3)).frame(width: w * 0.08, height: w * 0.025).offset(y: w * 0.08)
+                    }
+                    // 王冠
+                    CrownShape()
+                        .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                        .overlay(CrownShape().stroke(ArtPalette.outline, lineWidth: 0.8))
+                        .frame(width: w * 0.34, height: w * 0.2)
+                        .offset(y: -w * 0.24)
+                }
+                .position(x: w / 2, y: h * 0.56)
             }
         }
     }

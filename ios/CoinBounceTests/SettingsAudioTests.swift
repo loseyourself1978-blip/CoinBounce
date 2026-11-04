@@ -120,4 +120,74 @@ final class SettingsAudioTests: XCTestCase {
         for s in sides { XCTAssertEqual(s, 0.5486, accuracy: 0.002, "六条边等长") }
         XCTAssertEqual(Hexagon.heightRatio, 1)
     }
+
+    // MARK: v11.6 COIN 倍数
+    func test_coinMultiplier_cycles_1_2_5_10() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.coinMultiplier = 1
+        var seen: [Int] = [state.coinMultiplier]
+        for _ in 0..<4 { state.cycleCoinMultiplier(); seen.append(state.coinMultiplier) }
+        XCTAssertEqual(seen, [1, 2, 5, 10, 1])
+        state.coinMultiplier = 1
+    }
+
+    func test_dropBatch_checksBalance() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.onDrop = nil
+        state.coinMultiplier = 5
+        state.availableCoins = 3
+        state.pendingDrops.removeAll()
+        XCTAssertFalse(state.canDropBatch)
+        XCTAssertFalse(state.dropBatch(), "余额不够一批：一枚都不投")
+        XCTAssertEqual(state.availableCoins, 3)
+        XCTAssertTrue(state.pendingDrops.isEmpty)
+        state.coinMultiplier = 1
+    }
+
+    func test_dropBatch_dropsSequentially() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.onDrop = nil
+        state.coinMultiplier = 5
+        state.availableCoins = 20
+        state.pendingDrops.removeAll()
+        var scheduled: [(TimeInterval, () -> Void)] = []
+        XCTAssertTrue(state.dropBatch(schedule: { scheduled.append(($0, $1)) }))
+        XCTAssertEqual(state.pendingDrops.count, 1, "第一枚马上落下")
+        XCTAssertEqual(scheduled.map(\.0), (1...4).map { GameConstants.batchDropInterval * Double($0) }, "其余每隔 \(GameConstants.batchDropInterval) 秒一枚")
+        scheduled.forEach { $0.1() }
+        XCTAssertEqual(state.pendingDrops.count, 5)
+        XCTAssertEqual(state.availableCoins, 15)
+        state.coinMultiplier = 1
+        state.pendingDrops.removeAll()
+    }
+
+    // MARK: v11.6 老虎机符号与终极大奖
+    func test_slotWeights_sumToOne_andCoverAllSymbols() {
+        XCTAssertEqual(GameState.slotWeights.map(\.1).reduce(0, +), 1, accuracy: 1e-9)
+        XCTAssertEqual(Set(GameState.slotWeights.map(\.0)), Set(SymbolType.allCases))
+        XCTAssertEqual(GameState.randomSymbolIndex(0), SymbolType.allCases.firstIndex(of: .wild))
+        XCTAssertEqual(GameState.randomSymbolIndex(0.9999), SymbolType.allCases.firstIndex(of: .bunny))
+    }
+
+    func test_ultimateJackpot_paysPool_onFiveBunnies() {
+        let state = GameState.shared
+        state.resetForTesting()
+        let bunny = SymbolType.allCases.firstIndex(of: .bunny)!
+        let before = state.availableCoins
+        for i in 5..<10 { state.slotValues[i] = bunny }
+        state.evaluateWin()
+        XCTAssertEqual(state.availableCoins, before + GameConstants.jackpotPool, "中间一行 5 个兔女郎：派出整个奖池")
+        // 百搭不能代替兔女郎
+        state.resetForTesting()
+        let b2 = state.availableCoins
+        state.slotValues[5] = 0
+        for i in 6..<10 { state.slotValues[i] = bunny }
+        state.evaluateWin()
+        XCTAssertLessThan(state.availableCoins, b2 + GameConstants.jackpotPool)
+        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 1500, accuracy: 1e-12, "约 1500 次转动出一次")
+    }
 }
+
