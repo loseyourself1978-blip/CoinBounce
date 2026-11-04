@@ -339,7 +339,7 @@ extension Pusher3DTests {
     /// 替代 test_noVisibleSideCovers：钉子、侧墙、斜坡挡边、前沿碰撞体、金币堆侧墙都只有碰撞、不画出来
     func test_noVisibleColliders() {
         let (pusher, _) = fittedScene(iPhone17)
-        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"]
+        let names: Set<String> = ["peg", "fieldWall", "rampGuard", "lipCollider", "pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight", "rampCapLeft", "rampCapRight"]
         let nodes = pusher.scene.rootNode.childNodes(passingTest: { n, _ in names.contains(n.name ?? "") })
         XCTAssertEqual(Set(nodes.compactMap(\.name)), names, "每种碰撞体都在")
         for n in nodes {
@@ -391,5 +391,47 @@ extension Pusher3DTests {
         XCTAssertEqual(Double(pusher.cameraNode.camera?.screenSpaceAmbientOcclusionIntensity ?? 0), 1.2, accuracy: 1e-5)
         XCTAssertEqual(pusher.scene.physicsWorld.timeStep, step, "物理不变")
         XCTAssertEqual(pusher.scene.physicsWorld.gravity.y, gravity.y)
+    }
+
+    /// v11.5：下落平面里额外 8% 重力的向下加速度（物理 120 Hz 后保持下落约 1.75 秒）
+    func test_fallGravityBoost_appliedToFallingCoinsOnly() {
+        let layout = iPhone17
+        let (pusher, view) = fittedScene(layout)
+        guard let coin = pusher.makeFallingCoin(atScreen: CGPoint(x: layout.size.width / 2, y: layout.dropField.midY), screenVelocity: .zero, special: false) else { return XCTFail() }
+        coin.physicsBody?.velocity = SCNVector3(0, -2, 0)
+        pusher.renderer(view, didSimulatePhysicsAtTime: 1.0)
+        coin.physicsBody?.velocity = SCNVector3(0, -2, 0)
+        pusher.renderer(view, didSimulatePhysicsAtTime: 1.02)
+        let expected = -2 - PusherScene3D.verticalGravity * GameConstants.fallGravityBoost * 0.02
+        XCTAssertEqual(coin.physicsBody?.velocity.y ?? 0, expected, accuracy: 1e-4, "下落中的金币每帧多一点向下的速度")
+        XCTAssertEqual(GameConstants.fallGravityBoost, 0.08, accuracy: 1e-6)
+    }
+
+    /// v11.5：推板两侧导轨内侧面正好贴着推板侧面（不留缝、也不伸进推板顶面上方）
+    func test_pusherGuides_flushWithPusherSides() {
+        let (pusher, _) = fittedScene(iPhone17)
+        let halfP = pusher.geo.pusherHalfWidth
+        for name in ["pusherGuideLeft", "pusherGuideRight"] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true), let box = n.geometry as? SCNBox else { return XCTFail("缺少 \(name)") }
+            let inner = abs(n.position.x) - Float(box.width) / 2
+            XCTAssertEqual(inner, halfP, accuracy: 1e-3, "\(name) 内侧面 = 推板侧面")
+            XCTAssertNotNil(n.physicsBody)
+        }
+    }
+
+    /// v11.5：金币堆台面向两侧各倾斜 1.2°（中间最高）；两侧墙和屏幕边墙都带物理体、按屏幕方向转好角度
+    func test_pileCrownAndWalls() {
+        let (pusher, _) = fittedScene(iPhone17)
+        for (name, sign) in [("tableFrontLeft", Float(1)), ("tableFrontRight", Float(-1))] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
+            XCTAssertEqual(n.eulerAngles.z, sign * PusherScene3D.pileCrownAngle, accuracy: 1e-5, "\(name) 外侧向下")
+            XCTAssertEqual(n.physicsBody?.type, .static)
+        }
+        for name in ["pileWallLeft", "pileWallRight", "screenWallLeft", "screenWallRight"] {
+            guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
+            XCTAssertEqual(n.physicsBody?.type, .static, name)
+            XCTAssertNotEqual(n.eulerAngles.y, 0, "\(name) 沿屏幕竖线转好角度")
+        }
+        XCTAssertEqual(PusherScene3D.lipRise, 0.07, accuracy: 1e-6, "v11.5 铜边 0.09 → 0.07，金币堆约 2.5 层")
     }
 }
