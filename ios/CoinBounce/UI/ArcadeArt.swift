@@ -401,6 +401,35 @@ struct SlotSymbolArt: View {
                 card(letter: "J", accent: ArtPalette.teal)
             case .king:
                 card(letter: "K", accent: ArtPalette.magenta)
+            case .crown:
+                // 大金冠：金色冠身 + 三颗宝石 + 冠顶珍珠
+                CrownShape()
+                    .fill(LinearGradient(colors: [Color(red: 1, green: 0.97, blue: 0.7), ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                    .overlay(CrownShape().stroke(ArtPalette.outline, lineWidth: line * 1.2))
+                    .frame(width: size * 0.9, height: size * 0.66)
+                ForEach(0..<3, id: \.self) { i in
+                    DiamondGemShape().fill(i == 1 ? Color(red: 0.9, green: 0.1, blue: 0.2) : Color(red: 0.1, green: 0.5, blue: 0.95))
+                        .overlay(DiamondGemShape().stroke(Color.white.opacity(0.8), lineWidth: line * 0.6))
+                        .frame(width: size * 0.16, height: size * 0.14)
+                        .offset(x: CGFloat(i - 1) * size * 0.25, y: size * 0.14)
+                }
+            case .coinPile:
+                // 一堆金币：三层斜放的金币
+                ForEach(0..<6, id: \.self) { k in
+                    let row = k < 3 ? 0 : (k < 5 ? 1 : 2)
+                    let col = k < 3 ? k : (k < 5 ? k - 3 : 0)
+                    let n = row == 0 ? 3 : (row == 1 ? 2 : 1)
+                    Ellipse()
+                        .fill(LinearGradient(colors: [Color(red: 1, green: 0.95, blue: 0.6), ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                        .overlay(Ellipse().stroke(ArtPalette.outline, lineWidth: line))
+                        .overlay(Ellipse().stroke(Color.white.opacity(0.6), lineWidth: line * 0.6).padding(size * 0.03))
+                        .frame(width: size * 0.36, height: size * 0.22)
+                        .offset(x: (CGFloat(col) - CGFloat(n - 1) / 2) * size * 0.3, y: size * (0.2 - 0.17 * CGFloat(row)))
+                }
+            case .jokerBig, .jokerSmall:
+                jester(big: type == .jokerBig)
+            case .bunny:
+                BunnyGirlIcon(size: size)
             }
         }
         .frame(width: size, height: size)
@@ -413,6 +442,40 @@ struct SlotSymbolArt: View {
             .foregroundStyle(LinearGradient(colors: fill, startPoint: .top, endPoint: .bottom))
             .shadow(color: ArtPalette.outline, radius: 0, x: line, y: line)
             .shadow(color: ArtPalette.outline, radius: 0, x: -line * 0.5, y: -line * 0.5)
+    }
+
+    /// 大王 / 小王：小丑帽（三个尖角挂铃铛）+ 笑脸；大王红金、小王黑银
+    private func jester(big: Bool) -> some View {
+        let a = big ? Color(red: 0.92, green: 0.12, blue: 0.18) : Color(red: 0.2, green: 0.2, blue: 0.26)
+        let b = big ? ArtPalette.gold : Color(red: 0.78, green: 0.8, blue: 0.86)
+        return ZStack {
+            Path { p in
+                p.move(to: CGPoint(x: size * 0.15, y: size * 0.5))
+                p.addLine(to: CGPoint(x: size * 0.1, y: size * 0.12))
+                p.addLine(to: CGPoint(x: size * 0.36, y: size * 0.36))
+                p.addLine(to: CGPoint(x: size * 0.5, y: size * 0.04))
+                p.addLine(to: CGPoint(x: size * 0.64, y: size * 0.36))
+                p.addLine(to: CGPoint(x: size * 0.9, y: size * 0.12))
+                p.addLine(to: CGPoint(x: size * 0.85, y: size * 0.5))
+                p.closeSubpath()
+            }
+            .fill(LinearGradient(colors: [a, b, a], startPoint: .leading, endPoint: .trailing))
+            .overlay(Path { p in
+                p.move(to: CGPoint(x: size * 0.15, y: size * 0.5)); p.addLine(to: CGPoint(x: size * 0.1, y: size * 0.12)); p.addLine(to: CGPoint(x: size * 0.36, y: size * 0.36))
+                p.addLine(to: CGPoint(x: size * 0.5, y: size * 0.04)); p.addLine(to: CGPoint(x: size * 0.64, y: size * 0.36)); p.addLine(to: CGPoint(x: size * 0.9, y: size * 0.12))
+                p.addLine(to: CGPoint(x: size * 0.85, y: size * 0.5)); p.closeSubpath()
+            }.stroke(ArtPalette.outline, lineWidth: line))
+            ForEach([CGPoint(x: 0.1, y: 0.12), CGPoint(x: 0.5, y: 0.04), CGPoint(x: 0.9, y: 0.12)], id: \.x) { pt in
+                Circle().fill(ArtPalette.goldLight).overlay(Circle().stroke(ArtPalette.outline, lineWidth: line * 0.6))
+                    .frame(width: size * 0.12, height: size * 0.12)
+                    .position(x: size * pt.x, y: size * pt.y)
+            }
+            Circle().fill(Color(red: 1, green: 0.9, blue: 0.8)).overlay(Circle().stroke(ArtPalette.outline, lineWidth: line))
+                .frame(width: size * 0.42, height: size * 0.42).position(x: size * 0.5, y: size * 0.66)
+            Path { p in p.addArc(center: CGPoint(x: size * 0.5, y: size * 0.66), radius: size * 0.12, startAngle: .degrees(20), endAngle: .degrees(160), clockwise: false) }
+                .stroke(a, lineWidth: line * 1.4)
+        }
+        .frame(width: size, height: size)
     }
 
     private func card(letter: String, accent: Color) -> some View {
@@ -549,15 +612,18 @@ struct ReelsIcon: View {
 struct JackpotMarquee: View {
     let width: CGFloat
     let height: CGFloat
-    @State private var blink = false
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: height * 0.3)
-                .fill(LinearGradient(colors: [ArtPalette.magentaDeep, ArtPalette.magenta], startPoint: .top, endPoint: .bottom))
-            RoundedRectangle(cornerRadius: height * 0.3)
-                .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(2, height * 0.06))
-            // 边框灯泡
+            ZStack {
+                RoundedRectangle(cornerRadius: height * 0.3)
+                    .fill(LinearGradient(colors: [ArtPalette.magentaDeep, ArtPalette.magenta], startPoint: .top, endPoint: .bottom))
+                RoundedRectangle(cornerRadius: height * 0.3)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(2, height * 0.06))
+            }
+            .drawingGroup()
+            // 边框灯泡（两态闪烁，只动不透明度）
+            BlinkPair(duration: 0.6) { blink in
             HStack(spacing: 0) {
                 ForEach(0..<9, id: \.self) { i in
                     Circle()
@@ -567,13 +633,11 @@ struct JackpotMarquee: View {
                 }
             }
             .padding(.horizontal, height * 0.35)
-            .frame(height: height)
+            .frame(width: width, height: height)
             .offset(y: -height * 0.39)
+            }
         }
         .frame(width: width, height: height)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.6).repeatForever()) { blink.toggle() }
-        }
     }
 }
 
@@ -607,8 +671,6 @@ struct MarqueeLights: View {
 // MARK: - 机柜立柱（左右两侧，金属圆柱质感 + 一列闪烁灯泡）
 
 struct CabinetPillar: View {
-    @State private var phase = false
-
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
@@ -621,6 +683,9 @@ struct CabinetPillar: View {
                                startPoint: .leading, endPoint: .trailing)
                     .overlay(Rectangle().fill(ArtPalette.gold.opacity(0.85)).frame(width: max(1.5, w * 0.06)))
                     .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
+                    .drawingGroup()
+                // v11.6 性能：灯泡两种亮法各画一次，闪烁只动上层的不透明度（原来每帧重画整根立柱）
+                BlinkPair(duration: 0.5) { phase in
                 VStack(spacing: 0) {
                     ForEach(0..<count, id: \.self) { i in
                         Circle()
@@ -634,11 +699,83 @@ struct CabinetPillar: View {
                             .frame(maxHeight: .infinity)
                     }
                 }
+                }
             }
             .frame(width: w, height: geo.size.height)
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() }
+    }
+}
+
+/// v11.6 性能：两态闪烁。两种状态各用 drawingGroup 栅格化一次，闪烁只动上层的不透明度（图层属性，不重画内容）。
+/// 原来用 repeatForever 动画直接改颜色、阴影，drawingGroup 每帧都要重新栅格化（主线程大头）
+struct BlinkPair<Content: View>: View {
+    let duration: Double
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var on = false
+    var body: some View {
+        ZStack {
+            content(false).drawingGroup()
+            content(true).drawingGroup().opacity(on ? 1 : 0)
+        }
+        .onAppear { withAnimation(.easeInOut(duration: duration).repeatForever()) { on.toggle() } }
+    }
+}
+
+/// v11.6 终极大奖符号：原创卡通兔女郎头像（兔耳发箍、金色领结、眨眼笑），只画头肩，金色调
+struct BunnyGirlIcon: View {
+    let size: CGFloat
+    var body: some View {
+        let s = size, line = max(1, size * 0.035)
+        ZStack {
+            // 兔耳发箍（黑色外耳、粉色内耳）
+            ForEach([-1.0, 1.0], id: \.self) { side in
+                Capsule().fill(Color(red: 0.12, green: 0.1, blue: 0.14))
+                    .overlay(Capsule().fill(Color(red: 1, green: 0.6, blue: 0.75)).padding(s * 0.03))
+                    .overlay(Capsule().stroke(ArtPalette.goldLight, lineWidth: line * 0.7))
+                    .frame(width: s * 0.15, height: s * 0.42)
+                    .rotationEffect(.degrees(side * 14))
+                    .offset(x: CGFloat(side) * s * 0.13, y: -s * 0.3)
+            }
+            // 头发
+            Ellipse().fill(LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.4), Color(red: 0.85, green: 0.55, blue: 0.1)], startPoint: .top, endPoint: .bottom))
+                .frame(width: s * 0.56, height: s * 0.5).offset(y: -s * 0.02)
+            // 脸
+            Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.9, blue: 0.82), Color(red: 0.97, green: 0.76, blue: 0.64)], center: .topLeading, startRadius: 0, endRadius: s * 0.35))
+                .overlay(Circle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: line * 0.6))
+                .frame(width: s * 0.42, height: s * 0.42).offset(y: s * 0.04)
+            // 刘海
+            Path { p in
+                p.move(to: CGPoint(x: s * 0.29, y: s * 0.42)); p.addQuadCurve(to: CGPoint(x: s * 0.71, y: s * 0.42), control: CGPoint(x: s * 0.5, y: s * 0.22))
+                p.addLine(to: CGPoint(x: s * 0.62, y: s * 0.36)); p.addLine(to: CGPoint(x: s * 0.5, y: s * 0.42)); p.addLine(to: CGPoint(x: s * 0.4, y: s * 0.35)); p.closeSubpath()
+            }.fill(Color(red: 0.95, green: 0.72, blue: 0.2))
+            // 眼：左眼睁（大眼高光）、右眼眨眼
+            Circle().fill(Color(red: 0.2, green: 0.45, blue: 0.85)).overlay(Circle().fill(.white).frame(width: s * 0.025).offset(x: -s * 0.01, y: -s * 0.012))
+                .frame(width: s * 0.07, height: s * 0.07).position(x: s * 0.42, y: s * 0.53)
+            Path { p in p.addArc(center: CGPoint(x: s * 0.59, y: s * 0.54), radius: s * 0.035, startAngle: .degrees(200), endAngle: .degrees(340), clockwise: false) }
+                .stroke(Color(red: 0.25, green: 0.15, blue: 0.1), lineWidth: line)
+            // 腮红、微笑
+            Circle().fill(Color.pink.opacity(0.45)).frame(width: s * 0.07).position(x: s * 0.36, y: s * 0.6)
+            Circle().fill(Color.pink.opacity(0.45)).frame(width: s * 0.07).position(x: s * 0.64, y: s * 0.6)
+            Path { p in p.addArc(center: CGPoint(x: s * 0.5, y: s * 0.6), radius: s * 0.05, startAngle: .degrees(20), endAngle: .degrees(160), clockwise: false) }
+                .stroke(Color(red: 0.85, green: 0.25, blue: 0.35), lineWidth: line)
+            // 金色领结
+            BowTieShape()
+                .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                .overlay(BowTieShape().stroke(ArtPalette.outline, lineWidth: line * 0.8))
+                .frame(width: s * 0.3, height: s * 0.13).position(x: s * 0.5, y: s * 0.84)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+struct BowTieShape: Shape {
+    func path(in r: CGRect) -> Path {
+        Path { p in
+            p.move(to: CGPoint(x: r.minX, y: r.minY)); p.addLine(to: CGPoint(x: r.midX - r.width * 0.08, y: r.midY - r.height * 0.15))
+            p.addLine(to: CGPoint(x: r.midX + r.width * 0.08, y: r.midY - r.height * 0.15)); p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY)); p.addLine(to: CGPoint(x: r.midX + r.width * 0.08, y: r.midY + r.height * 0.15))
+            p.addLine(to: CGPoint(x: r.midX - r.width * 0.08, y: r.midY + r.height * 0.15)); p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.closeSubpath()
         }
     }
 }
+

@@ -46,7 +46,9 @@ struct GameLayout: Equatable {
     let fruitHitHalfWidth: CGFloat
     let fruitBaffleXs: [CGFloat]       // 水果之间的格挡
     let fruitBaffleHalfWidth: CGFloat
-    let bonusSliderWidth: CGFloat
+    let bonusSliderWidth: CGFloat      // BONUS 牌外宽 = 开口 + 两根立柱
+    let bonusOpeningWidth: CGFloat     // v11.6：两根立柱之间的开口（金币整枚穿过才触发老虎机）
+    let bonusPostWidth: CGFloat        // v11.6：牌两侧的立柱（有碰撞体，随牌移动）
     let bonusSliderTravel: CGFloat
     let bedEntryY: CGFloat             // 下落金币越过这条线后交给 3D 推币台（推币台区域顶部附近）
     /// 当前布局与 v9.5 物理（下落 380 单位、推币床 215 单位）的纵向比例，
@@ -117,29 +119,22 @@ struct GameLayout: Equatable {
         fieldMinX = left + coinRadius
         fieldMaxX = right - coinRadius
 
-        // 老虎机符号格就是下落区的障碍物：每格中心一个碰撞圆（与 SlotMachineView 的 5 列、3 行、列间距 4 一致）
-        let reelSpacing: CGFloat = 4
-        let cellW = (slotReels.width - reelSpacing * 4) / 5
-        let cellH = slotReels.height / 3
-        slotObstacleRadius = max(6, min(cellW, cellH) * 0.16)   // 留出与格挡钉之间至少一枚金币的空隙（v11 金币加大 30%）
-        var obstacles: [CGPoint] = []
-        for row in 0..<3 {
-            for col in 0..<5 {
-                obstacles.append(CGPoint(x: slotReels.minX + (cellW + reelSpacing) * CGFloat(col) + cellW / 2,
-                                         y: slotReels.minY + cellH * (CGFloat(row) + 0.5)))
-            }
-        }
-        slotObstacles = obstacles
-        // 转轴之间的金色格挡钉：每列之间、每行交界处各一个，金币在符号间多次弹跳、下落变慢
-        slotPinRadius = max(3, cellW * 0.06)
-        var pins: [CGPoint] = []
-        for row in 0...3 {
-            for col in 1..<5 {
-                let x = slotReels.minX + (cellW + reelSpacing) * CGFloat(col) - reelSpacing / 2
-                pins.append(CGPoint(x: x, y: slotReels.minY + cellH * CGFloat(row) + (row == 0 ? slotPinRadius : row == 3 ? -slotPinRadius : 0)))
-            }
-        }
-        slotPins = pins
+        // v11.6 格挡钉（参考逐帧测量，交错排列，最大限度改变金币轨迹）：A 排 3 根、B 排 4 根、C 排 3 根、D 排 4 根（贴墙的不放）
+        let pegR = px(ReferenceBoxes.pegRadius)
+        slotObstacleRadius = pegR
+        let reels = slotReels, slotBottom = slotMachine.maxY, battle = dropField
+        let colW = reels.width / 5
+        var pegs: [CGPoint] = []
+        for i in 1...3 { pegs.append(CGPoint(x: reels.minX + colW * (CGFloat(i) + 0.5), y: reels.minY - pegR * 1.6)) }     // A：上沿、中间三列上方
+        // 两端紧贴下落区侧墙的钉子不放：钉子和墙之间的缝比金币窄，金币会架在上面停住
+        for j in 1...4 { pegs.append(CGPoint(x: reels.minX + colW * CGFloat(j), y: reels.midY)) }                         // B：转轴中线、分隔线上
+        // C：老虎机下沿、中间三列正下方（最外两列下面的钉子和侧墙之间物理上比金币窄，会卡住金币，不放）
+        for i in 1...3 { pegs.append(CGPoint(x: reels.minX + colW * (CGFloat(i) + 0.5), y: (slotBottom + battle.minY) / 2 - pegR * 0.5)) }
+        let battleW = battle.width / 5
+        for j in 1...4 { pegs.append(CGPoint(x: battle.minX + battleW * CGFloat(j), y: battle.minY + battle.height * 0.55)) }  // D：战斗区
+        slotObstacles = pegs
+        slotPinRadius = pegR
+        slotPins = []
 
         // 水果：7 等分内容宽度；判定宽度按 v9.5 比例（间距 40 对应 28 / 22）
         let lampW = contentW / 7
@@ -149,11 +144,16 @@ struct GameLayout: Equatable {
         fruitHitHalfWidth = lampW * (28.0 / 40.0)
         fruitBaffleXs = (1..<7).map { left + lampW * CGFloat($0) }
         fruitBaffleHalfWidth = lampW * (22.0 / 40.0)
-        fruitPinRadius = 4
-        let pinY = fruitBar.minY + fruitBar.height * 0.2
-        fruitPins = fruitBaffleXs.map { CGPoint(x: $0, y: pinY) }
+        // v11.6：水果灯之间每个间隔（含两端）一根格挡钉，在水果灯高度居中
+        fruitPinRadius = pegR
+        let pinY = fruitBar.midY
+        var posts: [CGPoint] = []
+        for k in 1...6 { posts.append(CGPoint(x: left + lampW * CGFloat(k), y: pinY)) }
+        fruitPins = posts
 
-        bonusSliderWidth = fruitLampWidth
+        bonusOpeningWidth = coinRadius * 2 * GameConstants.bonusOpeningToCoinDiameter
+        bonusPostWidth = coinRadius * 2 * GameConstants.bonusPostToCoinDiameter
+        bonusSliderWidth = bonusOpeningWidth + 2 * bonusPostWidth
         // 参考 App 的 BONUS 滑块约 ±16% 屏宽
         bonusSliderTravel = min(max(0, contentW / 2 - bonusSliderWidth / 2), size.width * GameConstants.bonusSliderTravelFraction)
 
@@ -194,8 +194,19 @@ struct GameLayout: Equatable {
         return min(1, max(-1, (x - centerX) / half))
     }
 
-    /// 金币是否正从 BONUS 滑块中间穿过
+    /// 金币是否正从 BONUS 滑块中间穿过（按标准金币半径）
     func bonusContains(x: CGFloat, offset: CGFloat) -> Bool {
-        abs(x - bonusSliderCenter(offset: offset).x) < bonusSliderWidth / 2
+        bonusFullyInside(x: x, radius: coinRadius, gateX: bonusSliderCenter(offset: offset).x)
+    }
+
+    /// v11.6 触发规则：整枚金币（整个直径，不只是圆心）都在两根立柱之间的开口里
+    func bonusFullyInside(x: CGFloat, radius: CGFloat, gateX: CGFloat) -> Bool {
+        abs(x - gateX) + radius <= bonusOpeningWidth / 2 + 0.001
+    }
+
+    /// 金币是否骑在立柱上（金币横跨的范围和某一根立柱重叠超过 tolerance 点）：一半在里一半在外
+    func bonusStraddlesPost(x: CGFloat, radius: CGFloat, gateX: CGFloat, tolerance: CGFloat = 1) -> Bool {
+        let d = abs(x - gateX), inner = bonusOpeningWidth / 2, outer = inner + bonusPostWidth
+        return d + radius > inner + tolerance && d - radius < outer - tolerance
     }
 }

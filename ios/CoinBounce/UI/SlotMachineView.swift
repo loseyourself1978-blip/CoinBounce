@@ -44,6 +44,12 @@ struct SlotMachineView: View {
                     .position(p)
             }
 
+            // v11.6 灯牌闪光：每个灯牌各自不规则地偶尔闪一下（不会一起闪），转动时不闪
+            if spinState == .spinIdle {
+                CellGlintLayer(reelsFrame: reelsFrame)
+                    .allowsHitTesting(false)
+            }
+
             // 中奖线：中间一行发光闪烁
             if winLineActive {
                 WinLine()
@@ -59,7 +65,6 @@ struct SlotMachineView: View {
 // MARK: - 老虎机外框
 
 struct SlotMachineFrame: View {
-    @State private var blink = false
     
     var body: some View {
         ZStack {
@@ -98,37 +103,34 @@ struct SlotMachineFrame: View {
                             .padding(7)
                             .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 7))
                         
-                        // 闪烁彩灯：沿上下边框排列，不超出外框
+                        // 闪烁彩灯：沿上下边框排列，不超出外框（v11.6 性能：两态各栅格化一次，只动不透明度）
+                        BlinkPair(duration: 0.5) { blink in
                         VStack {
-                            lightRow(offset: 0)
+                            lightRow(offset: 0, blink: blink)
                             Spacer()
-                            lightRow(offset: 1)
+                            lightRow(offset: 1, blink: blink)
                         }
                         .padding(.vertical, 1)
                         .padding(.horizontal, 18)
+                        }
                     }
                 )
                 .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
-                blink.toggle()
-            }
-        }
     }
     
-    private func lightRow(offset: Int) -> some View {
+    private func lightRow(offset: Int, blink: Bool) -> some View {
         HStack {
             ForEach(0..<8) { i in
                 Circle()
-                    .fill(blinkColor(i + offset))
+                    .fill(blinkColor(i + offset, blink: blink))
                     .frame(width: 5, height: 5)
                 if i < 7 { Spacer(minLength: 0) }
             }
         }
     }
 
-    func blinkColor(_ i: Int) -> Color {
+    func blinkColor(_ i: Int, blink: Bool) -> Color {
         let colors: [Color] = [.red, .yellow, .blue, .green]
         if blink {
             return colors[(i + 1) % colors.count]
@@ -163,6 +165,8 @@ struct SlotReelView: View {
                     ForEach(ReelStrip.visibleRows(position: position, count: symbols.count), id: \.slot) { row in
                         SlotSymbolCell(symbol: symbols[row.index], size: cellH)
                             .frame(width: geo.size.width, height: cellH)
+                            // v11.6 性能：每格栅格化（GPU），转动时新滚进来的格子不在主线程用 CPU 画径向渐变、模糊光圈
+                            .drawingGroup()
                             .offset(y: (row.y + (spinning ? 0 : settle)) * cellH)
                     }
                 }
@@ -223,14 +227,17 @@ enum ReelStrip {
 // MARK: - 中奖线
 
 struct WinLine: View {
-    @State private var glow = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldLight], startPoint: .leading, endPoint: .trailing),
-                    lineWidth: glow ? 5 : 3)
-            .shadow(color: ArtPalette.gold.opacity(glow ? 1 : 0.5), radius: glow ? 12 : 4)
-            .background(RoundedRectangle(cornerRadius: 6).fill(ArtPalette.goldLight.opacity(glow ? 0.18 : 0.06)))
-            .onAppear { withAnimation(.easeInOut(duration: 0.35).repeatForever()) { glow = true } }
+        // v11.6 性能：两种亮度各栅格化一次，只动上层不透明度（原来每帧改线宽、阴影，主线程逐帧重画）
+        BlinkPair(duration: 0.35) { glow in
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldLight], startPoint: .leading, endPoint: .trailing),
+                        lineWidth: glow ? 5 : 3)
+                .shadow(color: ArtPalette.gold.opacity(glow ? 1 : 0.5), radius: glow ? 12 : 4)
+                .background(RoundedRectangle(cornerRadius: 6).fill(ArtPalette.goldLight.opacity(glow ? 0.18 : 0.06)))
+                .padding(14)
+        }
+        .padding(-14)
     }
 }
 
@@ -249,6 +256,17 @@ struct SlotSymbolCell: View {
             SymbolContent(type: symbol.type, size: size)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // v11.6 灯牌：金色倒角边框（参考 BONUS 牌的边框），上亮下暗，凸起的立体感
+        .overlay(
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.08)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1.5, size * 0.035))
+                RoundedRectangle(cornerRadius: size * 0.07)
+                    .stroke(LinearGradient(colors: [Color.white.opacity(0.55), .clear, Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                    .padding(max(1.5, size * 0.035))
+            }
+            .padding(1.5)
+        )
     }
 }
 
@@ -277,6 +295,14 @@ struct SymbolBackground: View {
             return [Color.orange.opacity(0.9), Color.yellow.opacity(0.6), Color.orange.opacity(0.8)]
         case .king:
             return [Color.indigo.opacity(0.9), Color.purple.opacity(0.7), Color.indigo.opacity(0.8)]
+        case .crown, .coinPile:
+            return [Color.yellow.opacity(0.95), Color.orange.opacity(0.7), Color.yellow.opacity(0.8)]
+        case .jokerBig:
+            return [Color.red.opacity(0.95), Color.yellow.opacity(0.6), Color.red.opacity(0.8)]
+        case .jokerSmall:
+            return [Color.gray.opacity(0.9), Color.white.opacity(0.5), Color.gray.opacity(0.8)]
+        case .bunny:
+            return [Color.pink.opacity(0.95), Color.yellow.opacity(0.7), Color.pink.opacity(0.8)]
         }
     }
     
@@ -322,10 +348,16 @@ struct SymbolContent: View {
                 .frame(width: size * 0.7, height: size * 0.7)
                 .blur(radius: 8)
             
-            // 主符号（矢量绘制）
-            SlotSymbolArt(type: type, size: size * 0.6)
-                .shadow(color: config.glowColor.opacity(0.8), radius: 4, x: 0, y: 0)
-                .offset(y: -size * 0.05)
+            // 主符号（矢量绘制）：v11.6 放大、加深色描边投影和顶部高光，立体感和对比更强
+            SlotSymbolArt(type: type, size: size * 0.66)
+                .shadow(color: .black.opacity(0.85), radius: 0, x: size * 0.02, y: size * 0.025)
+                .shadow(color: config.glowColor.opacity(0.9), radius: 5, x: 0, y: 0)
+                .overlay(
+                    LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center)
+                        .mask(SlotSymbolArt(type: type, size: size * 0.66))
+                        .blendMode(.plusLighter)
+                )
+                .offset(y: -size * 0.06)
             
             // 底部标签
             Text(config.label)
@@ -347,6 +379,51 @@ struct SymbolContent: View {
         case .nine:  return ("NINE", Color.green)
         case .jack:  return ("JACK", Color.orange)
         case .king:  return ("KING", Color.purple)
+        case .crown: return ("CROWN", Color.yellow)
+        case .coinPile: return ("COINS", Color.yellow)
+        case .jokerBig: return ("JOKER", Color.red)
+        case .jokerSmall: return ("JOKER", Color.white)
+        case .bunny: return ("BUNNY", Color.pink)
         }
     }
 }
+
+/// v11.6 灯牌闪光：每格一道白光沿金色边框扫过（和 BONUS 牌同样的设计），每格各自的随机间隔 6–10 秒、持续 0.8 秒，
+/// 15 格错开出现、不会一起闪
+struct CellGlintLayer: View {
+    let reelsFrame: CGRect
+    static let slot = 8.0, jitter = 4.0, duration = 0.8
+    /// 第 cell 格在 t 时刻的闪光进度（0…1），不在闪时 −1
+    static func progress(cell: Int, at t: TimeInterval) -> Double {
+        let shifted = t + Double(cell) * 3.37            // 每格错开
+        let k = floor(shifted / slot)
+        var x = UInt64(bitPattern: Int64(k) &* 31 &+ Int64(cell) &* 7919) &* 0x9E3779B97F4A7C15
+        x ^= x >> 31; x = x &* 0xBF58476D1CE4E5B9; x ^= x >> 29
+        let start = Double(x % 10_000) / 10_000 * jitter
+        let local = shifted - k * slot - start
+        return (0..<duration).contains(local) ? local / duration : -1
+    }
+    /// 每格一个周期（8 格时间 = 64 秒）里的闪光起点
+    static let period = slot * 8
+    static let cellStarts: [[Double]] = (0..<15).map { cell in GlintSchedule.starts(period: period) { progress(cell: cell, at: $0) } }
+    var body: some View {
+        // v11.6 性能：每格一个 Core Animation 闪光（关键帧在渲染服务器上播放），不再每秒重画 20 次整层 Canvas
+        if PerfDebug.freezeUI {
+            EmptyView()
+        } else {
+            let cw = (reelsFrame.width - 16) / 5, ch = reelsFrame.height / 3
+            ZStack(alignment: .topLeading) {
+                ForEach(0..<15, id: \.self) { i in
+                    let col = i % 5, row = i / 5
+                    let r = CGRect(x: reelsFrame.minX + CGFloat(col) * (cw + 4), y: reelsFrame.minY + CGFloat(row) * ch, width: cw, height: ch).insetBy(dx: 2, dy: 2)
+                    CAGlintStroke(path: { UIBezierPath(roundedRect: $0, cornerRadius: ch * 0.08).cgPath },
+                                  starts: CellGlintLayer.cellStarts[i], period: CellGlintLayer.period, duration: CellGlintLayer.duration,
+                                  borderWidth: 2, streakWidth: 3.5, borderPeak: 0.5)
+                        .frame(width: r.width, height: r.height)
+                        .position(x: r.midX, y: r.midY)
+                }
+            }
+        }
+    }
+}
+

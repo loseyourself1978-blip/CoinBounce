@@ -50,8 +50,6 @@ struct CoinPusherView: View {
                     .place(in: CGRect(x: 0, y: 0, width: sw, height: layout.sliderTrack.minY))
                 jackpotWithTransition(w: layout.jackpot.width, h: layout.jackpot.height)
                     .place(in: layout.jackpot)
-                topRow(layout: layout)
-                    .place(in: layout.topRow)
 
                 // ── 老虎机（SPIN 在转轴右侧）──
                 SlotMachineView(
@@ -81,14 +79,20 @@ struct CoinPusherView: View {
                 bonusLane(layout: layout)
                     .place(in: layout.bonusLane)
 
+                // ── v11.6 格挡钉：看得见的立体黄铜钉（和 3D 下落平面里的碰撞钉同一组位置）──
+                PegsLayer(pegs: layout.slotObstacles + layout.fruitPins, radius: layout.slotObstacleRadius)
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
+
                 // ── 推币台 ──
                 // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
-                CabinetPillar()
-                    .drawingGroup()   // 闪烁灯泡（带光晕）交给 GPU 合成，不在主线程上逐帧重画
+                CabinetPillar()   // v11.6：灯泡两态各栅格化一次，闪烁只动不透明度（外面不能再包 drawingGroup，否则又每帧重画）
                     .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
                 CabinetPillar()
-                    .drawingGroup()
                     .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
+                // 金币余额、帮助 / 设置叠在投币口区域上方两侧（v11.6，画在立柱之上），不挡 COIN 牌的往复范围
+                topRow(layout: layout)
+                    .place(in: layout.topRow)
 
                 // 推币机后方的背景（红绒布、暗色机柜）：3D 视图是透明的，只画机器和金币
                 MachineBackdrop()
@@ -107,11 +111,15 @@ struct CoinPusherView: View {
                     .allowsHitTesting(false)
 
                 // 画在 3D 金币之上的部件（参考里它们挡住金币）：投币口滑块、BONUS 牌
+                // v11.6：点 COIN 牌在 1 → 2 → 5 → 10 之间切换每次投币的枚数
                 SliderReader(motion: gameState.sliders) { m in
                     coinSlider(w: layout.coinSliderWidth, h: ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, layout.size))
+                        .contentShape(Rectangle())
+                        .onTapGesture { gameState.cycleCoinMultiplier() }
+                        .accessibilityLabel(Text(verbatim: "\(gameState.coinMultiplier) COIN"))
+                        .accessibilityAddTraits(.isButton)
                         .position(layout.coinSliderCenter(offset: m.coin))
                 }
-                    .allowsHitTesting(false)
                 bonusPlaque(layout: layout)
                 // 两侧炮管（参考 x 40–160 / 1050–1170、y 1690–1830 像素）
                 CannonView(right: false).place(in: ReferenceBoxes.rect(ReferenceBoxes.cannonLeft, layout.size)).allowsHitTesting(false)
@@ -165,7 +173,8 @@ struct CoinPusherView: View {
                 }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
                 pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
-                pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0) }
+                pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
+                pusher3D.bonusOffsetProvider = { gameState.bonusSliderOffset }
                 pusher3D.onCoinDropped = { special in gameState.coinFellOffPusher(isSpecial: special) }
             }
             .onChange(of: gameState.pusherSpeedMultiplier) { pusher3D.setPusherSpeed($0) }
@@ -182,8 +191,7 @@ struct CoinPusherView: View {
     }
 
     private func dropOrHint() {
-        if gameState.canDropCoin {
-            gameState.dropCoin()
+        if gameState.dropBatch() {
         } else {
             AudioManager.shared.play(.noCoins)
             gameState.requestFreeCoins()
@@ -248,6 +256,7 @@ struct CoinPusherView: View {
         pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
         if autoplayLite {
             pusher3D.logsPhysicsStats = true
+            PerfDebug.monitor.start()
             Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
                 if !gameState.canDropCoin { gameState.availableCoins += 100 }
                 if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
@@ -314,29 +323,18 @@ struct CoinPusherView: View {
         ZStack(alignment: .top) {
             // Jackpot 标题框：参考大牌 50–1160 × 0–250 像素
             JackpotMarquee(width: w, height: h)
-                .drawingGroup()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // 标签和数字排成一行、放在牌子下部：灵动岛最低到约 60% 牌高（iPhone 17），文字不被挡住
+            // v11.6：两行——「JACKPOT」和奖池数字，立体金色字、带闪光；整块放在灵动岛下面
+            // （iPhone 17 录屏实测灵动岛下沿约 47% 牌高，两行字从约 52% 牌高开始）
+            // v11.6 性能：字是静态的（栅格化一次），闪光用 Core Animation 光带扫过（不再每秒重画 30 次）
+            let glints = !reduceMotion && !PerfDebug.freezeUI
             VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(alignment: .firstTextBaseline, spacing: h * 0.1) {
-                    Text("JACKPOT")
-                        .font(.system(size: max(8, h * 0.13), weight: .black, design: .rounded))
-                        .foregroundColor(ArtPalette.goldLight)
-                        .tracking(2)
-                    Text("100000")
-                        .font(.system(size: max(18, h * 0.3), weight: .black, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [
-                            Color(red: 0.95, green: 0.75, blue: 0.15),
-                            Color(red: 1.00, green: 0.98, blue: 0.65),
-                            Color(red: 0.90, green: 0.70, blue: 0.10)
-                        ], startPoint: .top, endPoint: .bottom))
-                        .shadow(color: .orange.opacity(0.5), radius: 4)
-                }
-                .frame(height: h * 0.36)
-                .padding(.bottom, h * 0.04)
+                GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
+                GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, h * 0.05)
         }
         .frame(height: h)
     }
@@ -379,7 +377,6 @@ struct CoinPusherView: View {
             let archW = ReferenceBoxes.x(ReferenceBoxes.archFrame.width, layout.size)
             let archBottom = ReferenceBoxes.y(ReferenceBoxes.archFrame.maxY, layout.size) - layout.sliderTrack.minY
             ArchTrack(bulbCount: 28)
-                .drawingGroup()
                 .frame(width: archW, height: archBottom)
                 .position(x: layout.centerX - layout.sliderTrack.minX, y: archBottom / 2)
             RoundedRectangle(cornerRadius: h * 0.1)
@@ -400,6 +397,15 @@ struct CoinPusherView: View {
     // MARK: - COIN滑块 (金币出口)
     @ViewBuilder
     func coinSlider(w sliderW: CGFloat, h sliderH: CGFloat) -> some View {
+        // v11.6 性能：牌面只由宽高和枚数决定；滑块每帧移动时不重算、不重画
+        CoinPlate(w: sliderW, h: sliderH, multiplier: gameState.coinMultiplier).equatable()
+    }
+}
+
+struct CoinPlate: View, Equatable {
+    let w: CGFloat, h: CGFloat, multiplier: Int
+    var body: some View {
+        let sliderW = w, sliderH = h
         ZStack {
             // 盾牌背景
             RoundedRectangle(cornerRadius: sliderH * 0.2)
@@ -414,13 +420,16 @@ struct CoinPusherView: View {
                 .stroke(Color(red: 0.82, green: 0.66, blue: 0.31), lineWidth: 1)
 
             // 1 COIN 文字
-            Text("1 COIN")
+            Text(verbatim: "\(multiplier) COIN")
                 .font(.system(size: min(sliderW * 0.22, sliderH * 0.6), weight: .bold, design: .rounded))
                 .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.55))
         }
         .frame(width: sliderW, height: sliderH)
+        .drawingGroup()
     }
+}
 
+extension CoinPusherView {
     // MARK: - 战斗场景
     @ViewBuilder
     func battleArea(w: CGFloat, h: CGFloat) -> some View {
@@ -598,6 +607,8 @@ struct CoinPusherView: View {
                     FruitIcon(index: index, size: iconSize * 0.78)
                         .saturation(gameState.fruitsLit[index] ? 1 : 0.35)
                 }
+                // v11.6 性能：水果牌栅格化一次；碰到水果时的弹跳放大只缩放栅格，不在主线程逐帧重画矢量图（径向渐变）
+                .drawingGroup()
                 .opacity(gameState.fruitsLit[index] ? 1.0 : 0.6)
                 .scaleEffect(gameState.fruitPulseIndex == index ? 1.3 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.5), value: gameState.fruitPulseIndex)
@@ -627,7 +638,7 @@ struct CoinPusherView: View {
             let slider = layout.bonusSliderCenter(offset: m.bonus)
             Capsule()
                 .fill(Color.black.opacity(0.7))
-                .frame(width: layout.bonusSliderWidth * 0.8, height: lane.height * 0.35)
+                .frame(width: layout.bonusOpeningWidth, height: lane.height * 0.35)
                 .position(x: slider.x - lane.minX, y: lane.height / 2)
             }
         }
@@ -636,14 +647,13 @@ struct CoinPusherView: View {
     /// BONUS 牌（整屏坐标），叠在下落金币之上
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
-        // 闪光按当前时间算；每秒重画 30 次（不依赖父视图刷新）
+        // 牌随滑块移动；闪光由 Core Animation 播放（v11.6）
         SliderReader(motion: gameState.sliders) { m in
             let slider = layout.bonusSliderCenter(offset: m.bonus)
-            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
-                HollowBonusSliderTarget(width: ReferenceBoxes.x(130, layout.size), maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
-                                        time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
-            }
-            .position(x: slider.x, y: slider.y)
+            HollowBonusSliderTarget(width: layout.bonusSliderWidth, postWidth: layout.bonusPostWidth, maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
+                                    time: reduceMotion || PerfDebug.freezeUI ? 0 : 1)
+                .equatable()
+                .position(x: slider.x, y: slider.y)
         }
         .allowsHitTesting(false)
     }
@@ -717,8 +727,10 @@ struct CoinPusherView: View {
                     .onChanged { _ in
                         guard holdDropTimer == nil else { return }
                         dropOrHint()
-                        holdDropTimer = Timer.scheduledTimer(withTimeInterval: 0.22, repeats: true) { _ in
-                            if gameState.canDropCoin { gameState.dropCoin() }
+                        // 按住连投：每次投当前倍数的一批（一批落完再投下一批）
+                        let every = max(0.22, GameConstants.batchDropInterval * Double(gameState.coinMultiplier) + 0.1)
+                        holdDropTimer = Timer.scheduledTimer(withTimeInterval: every, repeats: true) { _ in
+                            if gameState.canDropBatch { gameState.dropBatch() }
                         }
                     }
                     .onEnded { _ in
@@ -848,6 +860,35 @@ struct FloatingScoreView: View {
 }
 
 // MARK: - 六边形
+/// v11.6：格挡钉——立体黄铜钉（投影、圆柱身、顶面高光），一次画完交给 GPU
+struct PegsLayer: View {
+    let pegs: [CGPoint]
+    let radius: CGFloat
+    var body: some View {
+        Canvas { ctx, _ in
+            let r = radius
+            for p in pegs {
+                // 投影
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - r * 1.1 + r * 0.35, y: p.y - r * 0.4 + r * 0.9, width: r * 2.2, height: r * 1.1)),
+                         with: .color(.black.opacity(0.45)))
+                // 钉身（竖着的短圆柱：上下两个椭圆 + 中间矩形）
+                let body = CGRect(x: p.x - r, y: p.y - r * 1.25, width: r * 2, height: r * 2.3)
+                ctx.fill(Path(roundedRect: body, cornerRadius: r),
+                         with: .linearGradient(Gradient(colors: [Color(red: 0.45, green: 0.27, blue: 0.05), Color(red: 1, green: 0.86, blue: 0.45),
+                                                                 Color(red: 0.85, green: 0.6, blue: 0.15), Color(red: 0.4, green: 0.22, blue: 0.03)]),
+                                               startPoint: CGPoint(x: body.minX, y: 0), endPoint: CGPoint(x: body.maxX, y: 0)))
+                // 顶面
+                let top = CGRect(x: p.x - r * 0.9, y: p.y - r * 1.2, width: r * 1.8, height: r * 0.9)
+                ctx.fill(Path(ellipseIn: top), with: .linearGradient(Gradient(colors: [Color(red: 1, green: 0.97, blue: 0.75), Color(red: 0.9, green: 0.68, blue: 0.2)]),
+                                                                     startPoint: CGPoint(x: 0, y: top.minY), endPoint: CGPoint(x: 0, y: top.maxY)))
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - r * 0.45, y: p.y - r * 1.05, width: r * 0.5, height: r * 0.3)), with: .color(.white.opacity(0.85)))
+                ctx.stroke(Path(roundedRect: body, cornerRadius: r), with: .color(Color(red: 0.3, green: 0.15, blue: 0.02)), lineWidth: max(0.6, r * 0.12))
+            }
+        }
+        .drawingGroup()
+    }
+}
+
 /// v11.5：只跟着滑块位置刷新的小视图（滑块每帧都在动，整个游戏画面不跟着重算）
 struct SliderReader<Content: View>: View {
     @ObservedObject var motion: SliderMotion
@@ -898,8 +939,14 @@ struct LocalCoinCanvasLayer: View {
     }
 }
 
-struct HollowBonusSliderTarget: View {
+struct HollowBonusSliderTarget: View, Equatable {
+    /// v11.6 性能：内容只由这几个数决定；滑块每帧移动时 SwiftUI 比较相等就不重算牌面（配合 .equatable()）
+    static func == (a: Self, b: Self) -> Bool {
+        a.width == b.width && a.postWidth == b.postWidth && a.maxHeight == b.maxHeight && a.time == b.time
+    }
     let width: CGFloat
+    /// v11.6：两侧立柱宽（有碰撞体）；正面黑底的宽度就是两柱之间的开口
+    var postWidth: CGFloat = 0
     let maxHeight: CGFloat
     /// 闪光时间表：每 3.75 秒一格，格内起点随机偏移 0–0.65 秒 → 相邻两次闪光间隔 3.1–4.4 秒，每次持续 0.9 秒
     static let glintSlot = 3.75, glintJitter = 0.65, glintDuration = 0.9
@@ -935,11 +982,11 @@ struct HollowBonusSliderTarget: View {
         let w = width
         let depth = max(4, maxHeight * 0.13)
         let h = maxHeight - depth
+        // v11.6 性能：整块牌是静态的（drawingGroup 栅格化一次，牌随滑块移动时不重画），
+        // 边框闪光用 Core Animation 关键帧（CAGlintStroke）叠在上面，主线程不用每秒重画 30 次
+        let glow = 0.45
+        let pad = w * 0.3   // 光晕、投影超出牌面的部分也画进栅格
         Group {
-            let t = time
-            let sweep = t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t)
-            // 光晕平时不动，只在闪光时随闪光增强（平时整块牌不用每帧重画）
-            let glow = sweep >= 0 ? 0.45 + 0.35 * sin(sweep * .pi) : 0.45
             ZStack(alignment: .top) {
                 // 背后的金色光晕（氛围）
                 shield(w, h)
@@ -957,28 +1004,31 @@ struct HollowBonusSliderTarget: View {
                 // 金色外框（倒角）
                 shield(w, h)
                     .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
-                // 黑金正面（内缩一圈，留出金边）
-                shield(w * 0.84, h * 0.84)
+                // 黑金正面（内缩一圈，留出金边）；v11.6 宽度 = 两根立柱之间的开口
+                let face = postWidth > 0 ? (w - 2 * postWidth) / w : 0.84
+                shield(w * face, h * 0.84)
                     .fill(LinearGradient(colors: [Color(red: 0.26, green: 0.2, blue: 0.14), Color(red: 0.04, green: 0.03, blue: 0.02)], startPoint: .top, endPoint: .bottom))
-                    .frame(width: w * 0.84, height: h * 0.84)
+                    .frame(width: w * face, height: h * 0.84)
                     .offset(y: h * 0.08)
                 // 顶部高光
                 shield(w, h)
                     .fill(LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
-                // 闪过边框的高光
-                if sweep >= 0 {
-                    // 整圈金边短暂提亮（闪烁），一道白光沿边框扫过
-                    shield(w, h)
-                        .stroke(Color(red: 1, green: 0.97, blue: 0.8).opacity(0.7 * sin(sweep * .pi)), lineWidth: max(2, w * 0.08))
-                        .blendMode(.plusLighter)
-                    shield(w, h)
-                        .trim(from: max(0, sweep - 0.2), to: min(1, sweep + 0.03))
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: max(3, w * 0.11), lineCap: .round))
-                        .blur(radius: 1)
-                        .blendMode(.plusLighter)
-                }
                 shield(w, h)
                     .stroke(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.9), lineWidth: 1)
+                // v11.6 闸门立柱：和边框一样的金色倒角，贯穿整块牌的高度；闪光时一起提亮
+                if postWidth > 0 {
+                    HStack(spacing: 0) {
+                        ForEach(0..<2, id: \.self) { i in
+                            if i == 1 { Spacer(minLength: 0) }
+                            Capsule()
+                                .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .leading, endPoint: .trailing))
+                                .overlay(Capsule().stroke(Color(red: 0.45, green: 0.08, blue: 0.04), lineWidth: max(1, postWidth * 0.18)))
+                                .frame(width: postWidth, height: h + depth)
+                                .shadow(color: .black.opacity(0.6), radius: 2, x: 0, y: 2)
+                        }
+                    }
+                    .frame(width: w, height: h + depth)
+                }
                 VStack(spacing: h * 0.02) {
                     ArtCoin(size: h * 0.34)
                         .shadow(color: ArtPalette.goldLight.opacity(glow), radius: 4)
@@ -992,6 +1042,20 @@ struct HollowBonusSliderTarget: View {
                 .frame(width: w, height: h)
             }
             .frame(width: w, height: h + depth, alignment: .top)
+            .padding(pad)
+            .drawingGroup()
+            .padding(-pad)
+            .overlay(alignment: .top) {
+                // 闪光：整圈金边短暂提亮，一道白光沿边框扫过（和原来同样的时间表：每 3.1–4.4 秒一次、持续 0.9 秒）
+                if time != 0 {
+                    CAGlintStroke(path: { shield($0.width, $0.height).cgPath },
+                                  starts: GlintSchedule.bonusStarts(offset: 0), period: GlintSchedule.bonusPeriod,
+                                  duration: HollowBonusSliderTarget.glintDuration,
+                                  borderWidth: max(2, w * 0.08), streakWidth: max(3, w * 0.11), borderPeak: 0.7, tail: 0.2, head: 0.03,
+                                  borderColor: UIColor(red: 1, green: 0.97, blue: 0.8, alpha: 1))
+                        .frame(width: w, height: h)
+                }
+            }
         }
         .frame(width: w, height: h + depth, alignment: .top)
     }
@@ -1109,23 +1173,97 @@ struct BonusBackdrop: View {
     }
 }
 
-/// 原创扑克牌：米白圆角牌面、红 / 黑「A」和花色
+/// v11.6 立体金字：几层向右下偏移的暗金色叠出厚度，正面金色渐变 + 上半高光，闪光时一道白光从左往右扫过字面
+struct GoldText3D: View {
+    let text: String
+    let size: CGFloat
+    var tracking: CGFloat = 0
+    /// v11.6 性能：一个周期（GlintSchedule.bonusPeriod）里每次闪光的起点；nil 表示不闪
+    var glintStarts: [Double]? = nil
+    var body: some View {
+        let face = Text(verbatim: text).font(.system(size: size, weight: .black, design: .rounded)).tracking(tracking)
+        let depth = max(1, size * 0.06)
+        let pad = size * 0.3
+        ZStack {
+            ForEach(1..<4, id: \.self) { i in
+                face.foregroundStyle(Color(red: 0.45 - 0.08 * Double(i), green: 0.26 - 0.05 * Double(i), blue: 0.03))
+                    .offset(x: depth * CGFloat(i) * 0.6, y: depth * CGFloat(i))
+            }
+            face.foregroundStyle(LinearGradient(stops: [
+                .init(color: Color(red: 1, green: 0.97, blue: 0.7), location: 0),
+                .init(color: Color(red: 1, green: 0.84, blue: 0.3), location: 0.45),
+                .init(color: Color(red: 0.86, green: 0.55, blue: 0.08), location: 0.55),
+                .init(color: Color(red: 1, green: 0.8, blue: 0.25), location: 1)
+            ], startPoint: .top, endPoint: .bottom))
+            .shadow(color: Color.orange.opacity(0.6), radius: size * 0.12)
+        }
+        .fixedSize()
+        // 立体字只栅格化一次（留出光晕的边）
+        .padding(pad)
+        .drawingGroup()
+        .padding(-pad)
+        .overlay {
+            // 闪光：一道斜白光，被字形遮住只在字上显示（Core Animation 播放）
+            if let starts = glintStarts {
+                CAGlintBand(starts: starts, period: GlintSchedule.bonusPeriod, duration: HollowBonusSliderTarget.glintDuration)
+                    .mask(face)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
+/// v11.6 原创扑克牌：红心 K（国王）、黑桃 Q（王后）——卡通人像、金色边框、有厚度的立体牌
 struct PlayingCardShape: View {
     let red: Bool
     var body: some View {
         GeometryReader { geo in
-            let ink = red ? Color(red: 0.8, green: 0.1, blue: 0.12) : Color(red: 0.1, green: 0.1, blue: 0.12)
+            let w = geo.size.width, h = geo.size.height
+            let ink = red ? Color(red: 0.82, green: 0.08, blue: 0.12) : Color(red: 0.12, green: 0.1, blue: 0.16)
+            let letter = red ? "K" : "Q"
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: geo.size.width * 0.12)
-                    .fill(Color(red: 0.98, green: 0.94, blue: 0.86))
-                    .overlay(RoundedRectangle(cornerRadius: geo.size.width * 0.1).stroke(Color(red: 0.75, green: 0.55, blue: 0.3), lineWidth: 1.5)
-                        .padding(geo.size.width * 0.05))
-                Text(verbatim: "A").font(.system(size: geo.size.width * 0.3, weight: .black)).foregroundStyle(ink)
-                    .padding(geo.size.width * 0.1)
-                Image(systemName: red ? "suit.heart.fill" : "suit.spade.fill")
-                    .resizable().scaledToFit().foregroundStyle(ink)
-                    .frame(width: geo.size.width * 0.45)
-                    .position(x: geo.size.width / 2, y: geo.size.height * 0.58)
+                // 厚度：右下偏移的暗色层 + 投影
+                RoundedRectangle(cornerRadius: w * 0.12)
+                    .fill(Color(red: 0.62, green: 0.48, blue: 0.3))
+                    .offset(x: w * 0.04, y: w * 0.05)
+                    .shadow(color: .black.opacity(0.5), radius: w * 0.06, x: w * 0.04, y: w * 0.06)
+                RoundedRectangle(cornerRadius: w * 0.12)
+                    .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.92), Color(red: 0.93, green: 0.86, blue: 0.72)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                RoundedRectangle(cornerRadius: w * 0.1)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1.5, w * 0.035))
+                    .padding(w * 0.05)
+                // 角标
+                VStack(spacing: 0) {
+                    Text(verbatim: letter).font(.system(size: w * 0.24, weight: .black, design: .serif)).foregroundStyle(ink)
+                    Image(systemName: red ? "suit.heart.fill" : "suit.spade.fill").resizable().scaledToFit().foregroundStyle(ink).frame(width: w * 0.14)
+                }
+                .padding(.leading, w * 0.1).padding(.top, w * 0.07)
+                // 卡通人像：王冠、脸、（国王）胡子 / （王后）长发
+                ZStack {
+                    if !red {
+                        Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.22, blue: 0.1), Color(red: 0.25, green: 0.1, blue: 0.05)], startPoint: .top, endPoint: .bottom))
+                            .frame(width: w * 0.5, height: w * 0.62).offset(y: w * 0.08)
+                    }
+                    Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.87, blue: 0.74), Color(red: 0.95, green: 0.72, blue: 0.56)], center: .topLeading, startRadius: 0, endRadius: w * 0.3))
+                        .frame(width: w * 0.36, height: w * 0.36)
+                    // 眼睛、腮红、笑
+                    HStack(spacing: w * 0.08) { Circle().fill(Color.black).frame(width: w * 0.04); Circle().fill(Color.black).frame(width: w * 0.04) }.offset(y: -w * 0.02)
+                    HStack(spacing: w * 0.16) { Circle().fill(Color.pink.opacity(0.5)).frame(width: w * 0.06); Circle().fill(Color.pink.opacity(0.5)).frame(width: w * 0.06) }.offset(y: w * 0.04)
+                    if red {
+                        // 国王的白胡子
+                        Ellipse().fill(Color.white).overlay(Ellipse().stroke(Color(red: 0.7, green: 0.7, blue: 0.75), lineWidth: 0.8))
+                            .frame(width: w * 0.3, height: w * 0.2).offset(y: w * 0.14)
+                    } else {
+                        Capsule().fill(Color(red: 0.85, green: 0.2, blue: 0.3)).frame(width: w * 0.08, height: w * 0.025).offset(y: w * 0.08)
+                    }
+                    // 王冠
+                    CrownShape()
+                        .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                        .overlay(CrownShape().stroke(ArtPalette.outline, lineWidth: 0.8))
+                        .frame(width: w * 0.34, height: w * 0.2)
+                        .offset(y: -w * 0.24)
+                }
+                .position(x: w / 2, y: h * 0.56)
             }
         }
     }
@@ -1134,7 +1272,6 @@ struct PlayingCardShape: View {
 /// 拱形投币口灯管（原创绘制）：顶边水平、两端大圆角向下，金色灯管上一圈交替闪烁的灯泡
 struct ArchTrack: View {
     let bulbCount: Int
-    @State private var phase = false
 
     struct ArchShape: Shape {
         func path(in r: CGRect) -> Path {
@@ -1157,10 +1294,16 @@ struct ArchTrack: View {
             let rect = CGRect(origin: .zero, size: geo.size).insetBy(dx: 4, dy: 4)
             let path = ArchShape().path(in: rect)
             ZStack {
-                path.stroke(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4), Color(red: 0.85, green: 0.45, blue: 0.08)],
-                                           startPoint: .top, endPoint: .bottom),
-                            style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                path.stroke(Color(red: 0.45, green: 0.2, blue: 0.03), style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                ZStack {
+                    path.stroke(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4), Color(red: 0.85, green: 0.45, blue: 0.08)],
+                                               startPoint: .top, endPoint: .bottom),
+                                style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                    path.stroke(Color(red: 0.45, green: 0.2, blue: 0.03), style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                }
+                .drawingGroup()
+                // 灯泡两态闪烁，只动不透明度
+                BlinkPair(duration: 0.5) { phase in
+                ZStack {
                 ForEach(0..<bulbCount, id: \.self) { i in
                     let t = (CGFloat(i) + 0.5) / CGFloat(bulbCount)
                     let pt = path.trimmedPath(from: 0, to: t).currentPoint ?? .zero
@@ -1170,9 +1313,11 @@ struct ArchTrack: View {
                         .shadow(color: Color(red: 1, green: 0.7, blue: 0.3).opacity(0.9), radius: 3)
                         .position(pt)
                 }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                }
             }
         }
-        .onAppear { withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() } }
     }
 }
 
@@ -1231,5 +1376,153 @@ struct CannonView: View {
             .rotationEffect(.degrees(right ? -18 : 18))
             .frame(width: w, height: h)
         }
+    }
+}
+
+// MARK: - v11.6 性能：Core Animation 闪光（关键帧在渲染服务器上播放，主线程不用每帧重画 SwiftUI 视图）
+
+/// 闪光时间表：在一个周期里按原来的进度函数找出每次闪光的起点（秒）
+enum GlintSchedule {
+    static func starts(period: Double, progress: (Double) -> Double) -> [Double] {
+        var result: [Double] = []
+        var previous = false, t = 0.0
+        while t < period {
+            let on = progress(t) >= 0
+            if on && !previous { result.append(t) }
+            previous = on
+            t += 1.0 / 240
+        }
+        return result
+    }
+    /// BONUS 牌和 JACKPOT 字：每 3.75 秒一格、格内随机偏移（16 格 = 60 秒一个周期）
+    static let bonusPeriod = HollowBonusSliderTarget.glintSlot * 16
+    static func bonusStarts(offset: Double) -> [Double] {
+        starts(period: bonusPeriod) { HollowBonusSliderTarget.glintProgress(at: $0 + offset) }
+    }
+}
+
+/// 关键帧：周期内每次闪光按进度 p（0…1）采样 9 个点，闪光之外取 idle
+private func glintKeyframes<T>(starts: [Double], period: Double, duration: Double, idle: T, value: (Double) -> T) -> (times: [NSNumber], values: [T]) {
+    var times: [NSNumber] = [0], values: [T] = [idle]
+    for s in starts where s > 0.002 && s + duration < period - 0.002 {
+        times.append(NSNumber(value: (s - 0.001) / period)); values.append(idle)
+        for i in 0...8 {
+            let p = Double(i) / 8
+            times.append(NSNumber(value: (s + duration * p) / period)); values.append(value(p))
+        }
+        times.append(NSNumber(value: (s + duration + 0.001) / period)); values.append(idle)
+    }
+    times.append(1); values.append(idle)
+    return (times, values)
+}
+
+private func installKeyframes<T>(_ layer: CALayer, keyPath: String, period: Double, frames: (times: [NSNumber], values: [T])) {
+    let a = CAKeyframeAnimation(keyPath: keyPath)
+    a.keyTimes = frames.times
+    a.values = frames.values
+    a.duration = period
+    a.repeatCount = .infinity
+    a.calculationMode = .linear
+    a.isRemovedOnCompletion = false
+    // 所有闪光共用一个时间基准（和原来按绝对时间算的进度一样，不同元素不会同时闪）
+    a.timeOffset = CACurrentMediaTime().truncatingRemainder(dividingBy: period)
+    layer.add(a, forKey: keyPath)
+}
+
+/// 沿路径扫过的闪光：整圈边框短暂提亮 + 一道白光沿路径跑过
+struct CAGlintStroke: UIViewRepresentable {
+    let path: (CGRect) -> CGPath
+    let starts: [Double]
+    let period: Double
+    let duration: Double
+    let borderWidth: CGFloat
+    let streakWidth: CGFloat
+    var borderPeak: Float = 0.5
+    var tail: Double = 0.18, head: Double = 0.02
+    var borderColor = UIColor(red: 1, green: 0.95, blue: 0.7, alpha: 1)
+
+    func makeUIView(context: Context) -> GlintStrokeView {
+        let v = GlintStrokeView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
+    }
+    func updateUIView(_ v: GlintStrokeView, context: Context) { v.config = self }
+}
+
+final class GlintStrokeView: UIView {
+    // 每次 SwiftUI 更新都会调 updateUIView：只在第一次拿到配置时安装动画（之后只在尺寸变了时重装），不能每帧重装
+    var config: CAGlintStroke? { didSet { if oldValue == nil { setNeedsLayout() } } }
+    private let border = CAShapeLayer(), streak = CAShapeLayer()
+    private var installedFor: CGSize = .zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        for l in [border, streak] {
+            l.fillColor = nil; l.lineCap = .round; l.lineJoin = .round; l.opacity = 0
+            layer.addSublayer(l)
+        }
+        streak.strokeColor = UIColor.white.cgColor
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let c = config, bounds.width > 0, bounds.size != installedFor else { return }
+        installedFor = bounds.size
+        let p = c.path(bounds)
+        for l in [border, streak] { l.frame = bounds; l.path = p }
+        border.lineWidth = c.borderWidth; streak.lineWidth = c.streakWidth
+        border.strokeColor = c.borderColor.cgColor
+        let P = c.period, d = c.duration
+        installKeyframes(border, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { Float(sin($0 * .pi)) * c.borderPeak })
+        installKeyframes(streak, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { _ in Float(1) })
+        installKeyframes(streak, keyPath: "strokeStart", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(0)) { CGFloat(max(0, $0 - c.tail)) })
+        installKeyframes(streak, keyPath: "strokeEnd", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(0)) { CGFloat(min(1, $0 + c.head)) })
+    }
+}
+
+/// 斜着扫过的白光带（JACKPOT 字上的闪光）：在 SwiftUI 里用字形 mask 住，只在字上显示
+struct CAGlintBand: UIViewRepresentable {
+    let starts: [Double]
+    let period: Double
+    let duration: Double
+    func makeUIView(context: Context) -> GlintBandView {
+        let v = GlintBandView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
+    }
+    func updateUIView(_ v: GlintBandView, context: Context) { v.config = self }
+}
+
+final class GlintBandView: UIView {
+    var config: CAGlintBand? { didSet { if oldValue == nil { setNeedsLayout() } } }
+    private let band = CAGradientLayer()
+    private var installedFor: CGSize = .zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        band.colors = [UIColor.clear.cgColor, UIColor.white.withAlphaComponent(0.95).cgColor, UIColor.clear.cgColor]
+        band.startPoint = CGPoint(x: 0, y: 0.5); band.endPoint = CGPoint(x: 1, y: 0.5)
+        band.opacity = 0
+        layer.addSublayer(band)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let c = config, bounds.width > 0, bounds.size != installedFor else { return }
+        installedFor = bounds.size
+        let w = bounds.width, h = bounds.height, bw = w * 0.25
+        band.bounds = CGRect(x: 0, y: 0, width: bw, height: h * 2)
+        band.setAffineTransform(CGAffineTransform(rotationAngle: .pi * 18 / 180))
+        // 和原来一样：光带左沿从 −0.3w 扫到 w
+        let P = c.period, d = c.duration
+        band.position = CGPoint(x: -0.3 * w + bw / 2, y: h / 2)
+        installKeyframes(band, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { _ in Float(1) })
+        installKeyframes(band, keyPath: "position.x", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(-0.3 * w + bw / 2)) { CGFloat(-0.3 * w + 1.3 * w * $0 + bw / 2) })
     }
 }

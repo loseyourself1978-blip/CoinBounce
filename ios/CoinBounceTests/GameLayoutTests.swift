@@ -50,10 +50,18 @@ final class GameLayoutTests: XCTestCase {
             let regions = l.regions
             for i in 0..<regions.count {
                 for j in (i + 1)..<regions.count {
+                    // v11.6：金币 / 按钮一行叠在投币口区域上方两侧（用户允许），另外检查它不挡 COIN 牌
+                    let pair = Set([regions[i].name, regions[j].name])
+                    if pair == ["topRow", "sliderTrack"] { continue }
                     XCTAssertLessThan(overlapArea(regions[i].frame, regions[j].frame), 0.01,
                                       "\(name) \(regions[i].name) 与 \(regions[j].name) 重叠")
                 }
             }
+            // COIN 牌往复的整个范围
+            let plateH = ReferenceBoxes.y(ReferenceBoxes.coinPlate.height, l.size)
+            let plate = CGRect(x: l.centerX - l.coinSliderTravel - l.coinSliderWidth / 2, y: l.coinPlateY - plateH / 2,
+                               width: l.coinSliderTravel * 2 + l.coinSliderWidth, height: plateH)
+            XCTAssertFalse(l.topRow.intersects(plate), "\(name) 金币 / 按钮一行不挡 COIN 牌")
         }
     }
 
@@ -65,18 +73,14 @@ final class GameLayoutTests: XCTestCase {
     }
 
     /// v11.1：铆钉只做装饰（不参与碰撞），只检查位置在转轴区内
-    func test_slotPins_insideReelsAndLeaveRoomForCoins() {
-        for (name, l) in screens {
-            XCTAssertEqual(l.slotPins.count, 16, "4 列间隔 × 4 条行界")
-            for p in l.slotPins {
-                XCTAssertTrue(l.slotReels.insetBy(dx: -1, dy: -1).contains(p), "\(name) 格挡钉在转轴区内")
-            }
-        }
+    /// v11.6：转轴间的装饰铆钉不再单独画（格挡钉由 PegsLayer 统一画，和碰撞钉同一组位置）
+    func test_slotPins_replacedByPegs() {
+        for (_, l) in screens { XCTAssertTrue(l.slotPins.isEmpty) }
     }
 
     func test_layout_matchesReferenceProportions() {
         let l = screens[1].layout
-        XCTAssertEqual(l.slotMachine.height / l.size.height, (1280 - 787) / 2622, accuracy: 0.001, "老虎机占整屏 18.8%（参考 787–1280 像素）")
+        XCTAssertEqual(l.slotMachine.height / l.size.height, (1280 - 570) / 2622, accuracy: 0.001, "v11.6 老虎机向上加高：570–1280 像素（原 787–1280）")
         XCTAssertGreaterThan(l.slotMachine.height, l.dropField.height * 1.8, "老虎机明显高于战斗区")
         XCTAssertEqual(l.pusherView.maxY, l.size.height, "推币台延伸到屏幕底部，投币按钮叠在上面")
         // v11.1：各区域在 iPhone 17 整屏上的位置与参考 App 实测一致（误差 1% 屏高以内）
@@ -84,9 +88,9 @@ final class GameLayoutTests: XCTestCase {
             let l = GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
             let H = l.size.height
             XCTAssertEqual(l.jackpot.minY, 0, "JACKPOT 从屏幕最顶端开始")
-            XCTAssertEqual(l.jackpot.maxY / H, 250 / 2622, accuracy: 0.002, "JACKPOT 底部 250 像素")
-            XCTAssertEqual(l.topRow.midY / H, 395 / 2622, accuracy: 0.005, "金币 / 按钮一行 330–460 像素")
-            XCTAssertEqual(l.slotMachine.minY / H, 0.30, accuracy: 0.01, "老虎机顶部 ≈ 30%")
+            XCTAssertEqual(l.jackpot.maxY / H, 320 / 2622, accuracy: 0.002, "JACKPOT 两行，底部 320 像素")
+            XCTAssertEqual(l.topRow.midY / H, 363 / 2622, accuracy: 0.005, "金币 / 按钮一行 326–400 像素")
+            XCTAssertEqual(l.slotMachine.minY / H, 570 / 2622, accuracy: 0.005, "老虎机顶部 570 像素")
             XCTAssertEqual(l.slotMachine.maxY / H, 0.488, accuracy: 0.005, "老虎机底部 ≈ 48.8%")
             XCTAssertEqual(l.fruitBar.minY / H, 0.588, accuracy: 0.005, "水果排顶部 ≈ 58.8%")
             XCTAssertEqual(l.bonusLane.maxY / H, 0.69, accuracy: 0.01, "BONUS 底部 ≈ 69%")
@@ -131,19 +135,27 @@ final class GameLayoutTests: XCTestCase {
         }
     }
 
-    func test_slotObstacles_insideReels() {
+    /// v11.6 格挡钉：A 排 3、B 排 4、C 排 3、D 排 4、水果排 6；同一排相邻两钉、钉和下落区侧墙之间都能让金币通过；
+    /// 排与排交错（下一排的钉不在上一排钉的正下方）
+    func test_pegs_staggeredAndPassable() {
         for (name, l) in screens {
-            XCTAssertEqual(l.slotObstacles.count, 15, "5×3 个符号格")
-            for p in l.slotObstacles {
-                let r = l.slotObstacleRadius
-                assertInside(CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2), l.slotReels, "\(name) 符号格障碍")
+            XCTAssertEqual(l.slotObstacles.count, 14, name)
+            XCTAssertEqual(l.fruitPins.count, 6, name)
+            let all: [CGPoint] = l.slotObstacles + l.fruitPins
+            let grouped: [Int: [CGPoint]] = Dictionary(grouping: all, by: { (p: CGPoint) -> Int in Int(p.y.rounded()) })
+            var rows: [[CGPoint]] = grouped.values.map { (row: [CGPoint]) -> [CGPoint] in row.sorted { $0.x < $1.x } }
+            rows.sort { $0[0].y < $1[0].y }
+            XCTAssertEqual(rows.count, 5, "\(name) 5 排")
+            let r = l.slotObstacleRadius
+            for row in rows {
+                for (a, b) in zip(row, row.dropFirst()) { XCTAssertGreaterThan(b.x - a.x - r * 2, l.coinRadius * 2, "\(name) 相邻两钉之间过得去") }
+                XCTAssertGreaterThan(row.first!.x - r - (l.fieldMinX - l.coinRadius), l.coinRadius * 2, "\(name) 左墙和钉之间过得去")
+                XCTAssertGreaterThan((l.fieldMaxX + l.coinRadius) - row.last!.x - r, l.coinRadius * 2, "\(name) 右墙和钉之间过得去")
             }
-            // 相邻障碍之间要能让金币通过
-            let gap = l.slotObstacles[1].x - l.slotObstacles[0].x - l.slotObstacleRadius * 2
-            XCTAssertGreaterThan(gap, l.coinRadius * 2, "\(name) 金币能从符号之间穿过")
-            for p in l.fruitPins {
-                XCTAssertTrue(l.fruitBar.contains(p), "\(name) 水果钉在水果栏内")
+            for (upper, lower) in zip(rows, rows.dropFirst()) where upper.count != lower.count {
+                for p in lower { XCTAssertFalse(upper.contains { abs($0.x - p.x) < r }, "\(name) 交错排列") }
             }
+            for p in l.fruitPins { XCTAssertTrue(l.fruitBar.contains(p), "\(name) 水果钉在水果栏内") }
         }
     }
 
@@ -237,6 +249,41 @@ final class GameLayoutTests: XCTestCase {
                 XCTAssertEqual(state.fruitsLit.filter { $0 }.count, 1, "\(name) 只点亮一个")
             }
         }
+    }
+
+    /// v11.6 BONUS 闸门触发规则：整枚金币（整个直径）都在开口里才算；圆心在里、边缘压到立柱不算
+    func test_bonusGate_fullDiameterRule() {
+        for (name, l) in screens {
+            let gate: CGFloat = 200, r = l.coinRadius, half = l.bonusOpeningWidth / 2
+            XCTAssertEqual(l.bonusOpeningWidth / (2 * r), 126.0 / 78.0, accuracy: 0.01, "\(name) 开口 = 参考比例（126/78 枚金币宽）")
+            XCTAssertEqual(l.bonusSliderWidth, l.bonusOpeningWidth + 2 * l.bonusPostWidth, accuracy: 0.001)
+            XCTAssertGreaterThan(half, r, "\(name) 开口比金币宽")
+            XCTAssertTrue(l.bonusFullyInside(x: gate, radius: r, gateX: gate), "\(name) 正中穿过")
+            XCTAssertTrue(l.bonusFullyInside(x: gate + half - r, radius: r, gateX: gate), "\(name) 右边缘刚好贴着立柱内侧")
+            XCTAssertTrue(l.bonusFullyInside(x: gate - (half - r), radius: r, gateX: gate), "\(name) 左边缘刚好贴着立柱内侧")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half - r + 1, radius: r, gateX: gate), "\(name) 边缘压进立柱 1 点")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half - 1, radius: r, gateX: gate), "\(name) 圆心在开口里、半枚在外")
+            XCTAssertFalse(l.bonusFullyInside(x: gate + half + l.bonusPostWidth + r, radius: r, gateX: gate), "\(name) 从立柱外面落下")
+            // 骑在立柱上的判定
+            XCTAssertTrue(l.bonusStraddlesPost(x: gate + half, radius: r, gateX: gate), "\(name) 圆心在立柱内沿 = 骑在立柱上")
+            XCTAssertFalse(l.bonusStraddlesPost(x: gate, radius: r, gateX: gate))
+            XCTAssertFalse(l.bonusStraddlesPost(x: gate + half + l.bonusPostWidth + r, radius: r, gateX: gate), "\(name) 贴着立柱外侧落下不算")
+            // 半径更小（上半区金币外观缩小）时余量更大
+            XCTAssertTrue(l.bonusFullyInside(x: gate + half - r + 1, radius: r - 2, gateX: gate))
+        }
+    }
+
+    func test_bonusTrigger_onlyOnFullPassThrough() {
+        let l = screens[0].layout
+        state.updateLayout(l)
+        let gate = l.bonusSliderCenter(offset: 0).x, half = l.bonusOpeningWidth / 2, r = l.coinRadius
+        let before = state.bonusTriggerCount
+        XCTAssertFalse(state.coinCrossedBonusLane(x: gate + half, radius: r, gateX: gate), "半枚在外不触发")
+        XCTAssertFalse(state.isSpinning)
+        XCTAssertEqual(state.bonusTriggerCount, before)
+        XCTAssertTrue(state.coinCrossedBonusLane(x: gate + half - r - 0.5, radius: r, gateX: gate), "整枚穿过触发")
+        XCTAssertEqual(state.bonusTriggerCount, before + 1)
+        XCTAssertTrue(state.isSpinning)
     }
 
     func test_coinThroughBonusSlider_startsSlot() {
