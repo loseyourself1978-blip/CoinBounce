@@ -226,6 +226,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     private(set) var bonusMaxPenetration: CGFloat = 0
     /// 接触松弛被横向推回的次数
     private(set) var bonusCorrections = 0
+    /// 陷进台面、被托回台面的次数
+    private(set) var deckClamps = 0
     /// 屏幕上的事件线（点）：战斗区、水果排、BONUS 轨道（金币在 BONUS 线处解除平面约束，落向推板 / 斜坡）
     private(set) var battleLineY: CGFloat = 0, fruitLineY: CGFloat = 0, releaseLineY: CGFloat = 0
     /// 底部面板顶边（点）：金币在它下面就被面板挡住（声明的遮挡物）
@@ -397,7 +399,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         let glint = SCNNode()
         glint.light = SCNLight()
         glint.light!.type = .directional
-        glint.light!.intensity = 1400
+        glint.light!.intensity = 800
         glint.light!.color = UIColor(red: 1, green: 0.92, blue: 0.7, alpha: 1)
         glint.light!.categoryBitMask = PusherScene3D.coinLightMask
         glint.position = SCNVector3(0, 30, -70)
@@ -957,8 +959,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 金币越过 BONUS 线：解除平面约束，位置和速度不变，落向推板顶面 / 斜坡，碰到后自然翻滚
     /// v11.6：台面金币平时用方盒碰撞体（便宜）。叠在别的金币上、却只靠方盒看不见的角撑着（看上去悬空）的金币，
     /// 换成圆柱碰撞体，落到下面金币的圆面上；回到贴着台面时换回方盒。每 0.25 秒看一次，换形状时位置、速度不变
-    /// 圆柱换回方盒时用的方盒边长比例（0.85·直径）
-    static let swapBackBoxScale: Float = 0.85
+    /// 圆柱换回方盒时用的方盒边长比例（0.9·直径：原大的方盒角会压进挤紧的邻居）
+    static let swapBackBoxScale: Float = 0.9
     static let hybridPile = !ProcessInfo.processInfo.arguments.contains("-debugBoxOnlyPile")
     private func updatePileCollider(_ node: SCNNode, track: CoinTrack, position p: SCNVector3, now: TimeInterval, among all: [SCNNode]) {
         guard PusherScene3D.pileUsesBoxCollider, now - track.lastShapeCheck > 0.1, let old = node.physicsBody else { return }
@@ -1086,7 +1088,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             if time - logWindowStart >= 1 {
                 let rms = takeRenderMs()
                 NSLog("RENDER_STATS renderMs=%.2f renderMaxMs=%.2f", rms.0, rms.1)
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, PerfDebug.pileStats ? pileTiltShare() : 0, PerfDebug.pileStats ? pileFloatShare() : 0, tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f sunk=%d clamps=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, PerfDebug.pileStats ? pileTiltShare() : 0, PerfDebug.pileStats ? pileFloatShare() : 0, tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare, lifecycleCounts["sunkBelowDeck"] ?? 0, deckClamps)
                 logFrames = 0
                 logWindowStart = time
             }
@@ -1167,7 +1169,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                 if body.allowsResting == inSweep { body.allowsResting = !inSweep }
             }
             // 诊断：沉到台面以下的金币（不在前沿或两侧掉落的位置），每枚记一次
-            if p.y < -0.06 && p.y > PusherScene3D.removeBelowY && p.z < g.lipZ - 0.4 && p.z > g.wallZ && !track.sunkLogged
+            if p.y < -0.04 && p.y > PusherScene3D.removeBelowY && p.z < g.lipZ - 0.4 && p.z > g.wallZ && !track.sunkLogged
                 && abs(p.x) < g.pileHalfWidth(atZ: min(p.z, g.lipZ)) - PusherScene3D.edgeStripWidth - 0.2 {
                 track.sunkLogged = true
                 logEvent("sunkBelowDeck", detail: "\(p.x),\(p.y),\(p.z) round=\(track.roundCollider) pusherFront=\(pusherFrontZ)")

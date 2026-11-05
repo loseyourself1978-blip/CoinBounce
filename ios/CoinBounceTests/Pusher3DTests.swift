@@ -265,6 +265,8 @@ final class Pusher3DTests: XCTestCase {
         let triggers = state.bonusTriggerCount - triggersBefore
         // v11.6：看得见的金币里只靠方盒碰撞体看不见的角撑着（看上去悬空）的 ≤ 1%
         let vfAvg = visibleFloat.isEmpty ? 0 : visibleFloat.reduce(0, +) / Double(visibleFloat.count)
+        // v11.6 浸泡统计（只报告、不作门槛，v11.6.1 物理的基线）：整个 180 秒里的偶发单枚事件
+        print("SOAK sunk=\(lifeAll["sunkBelowDeck"] ?? 0) standing=\(pusher.standingViolations) pusherLong=\(pusher.pusherToPileTimes.filter { $0 > period }.count) maxPostPenetration=\(pusher.bonusMaxPenetration) hidden=\(occlusion.count) continuity=\(pusher.continuityViolations.count) landedPile=\(lifeAll["landedPile"] ?? 0)")
         print("WARMUP minCoverage=\(warmCoverage.min() ?? 0) samples=\(warmCoverage.count)")
         XCTAssertGreaterThanOrEqual(warmCoverage.min() ?? 0, 0.85, "预热期间金币堆平的那一段不会明显变空")
         print("FLOAT visible=\(vfAvg) samples=\(visibleFloat.count)")
