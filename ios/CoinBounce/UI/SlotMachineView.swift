@@ -65,7 +65,6 @@ struct SlotMachineView: View {
 // MARK: - 老虎机外框
 
 struct SlotMachineFrame: View {
-    @State private var blink = false
     
     var body: some View {
         ZStack {
@@ -104,37 +103,34 @@ struct SlotMachineFrame: View {
                             .padding(7)
                             .clipShape(RoundedRectangle(cornerRadius: 12).inset(by: 7))
                         
-                        // 闪烁彩灯：沿上下边框排列，不超出外框
+                        // 闪烁彩灯：沿上下边框排列，不超出外框（v11.6 性能：两态各栅格化一次，只动不透明度）
+                        BlinkPair(duration: 0.5) { blink in
                         VStack {
-                            lightRow(offset: 0)
+                            lightRow(offset: 0, blink: blink)
                             Spacer()
-                            lightRow(offset: 1)
+                            lightRow(offset: 1, blink: blink)
                         }
                         .padding(.vertical, 1)
                         .padding(.horizontal, 18)
+                        }
                     }
                 )
                 .shadow(color: .orange.opacity(0.5), radius: 15, x: 0, y: 8)
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
-                blink.toggle()
-            }
-        }
     }
     
-    private func lightRow(offset: Int) -> some View {
+    private func lightRow(offset: Int, blink: Bool) -> some View {
         HStack {
             ForEach(0..<8) { i in
                 Circle()
-                    .fill(blinkColor(i + offset))
+                    .fill(blinkColor(i + offset, blink: blink))
                     .frame(width: 5, height: 5)
                 if i < 7 { Spacer(minLength: 0) }
             }
         }
     }
 
-    func blinkColor(_ i: Int) -> Color {
+    func blinkColor(_ i: Int, blink: Bool) -> Color {
         let colors: [Color] = [.red, .yellow, .blue, .green]
         if blink {
             return colors[(i + 1) % colors.count]
@@ -169,6 +165,8 @@ struct SlotReelView: View {
                     ForEach(ReelStrip.visibleRows(position: position, count: symbols.count), id: \.slot) { row in
                         SlotSymbolCell(symbol: symbols[row.index], size: cellH)
                             .frame(width: geo.size.width, height: cellH)
+                            // v11.6 性能：每格栅格化（GPU），转动时新滚进来的格子不在主线程用 CPU 画径向渐变、模糊光圈
+                            .drawingGroup()
                             .offset(y: (row.y + (spinning ? 0 : settle)) * cellH)
                     }
                 }
@@ -229,14 +227,17 @@ enum ReelStrip {
 // MARK: - 中奖线
 
 struct WinLine: View {
-    @State private var glow = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldLight], startPoint: .leading, endPoint: .trailing),
-                    lineWidth: glow ? 5 : 3)
-            .shadow(color: ArtPalette.gold.opacity(glow ? 1 : 0.5), radius: glow ? 12 : 4)
-            .background(RoundedRectangle(cornerRadius: 6).fill(ArtPalette.goldLight.opacity(glow ? 0.18 : 0.06)))
-            .onAppear { withAnimation(.easeInOut(duration: 0.35).repeatForever()) { glow = true } }
+        // v11.6 性能：两种亮度各栅格化一次，只动上层不透明度（原来每帧改线宽、阴影，主线程逐帧重画）
+        BlinkPair(duration: 0.35) { glow in
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldLight], startPoint: .leading, endPoint: .trailing),
+                        lineWidth: glow ? 5 : 3)
+                .shadow(color: ArtPalette.gold.opacity(glow ? 1 : 0.5), radius: glow ? 12 : 4)
+                .background(RoundedRectangle(cornerRadius: 6).fill(ArtPalette.goldLight.opacity(glow ? 0.18 : 0.06)))
+                .padding(14)
+        }
+        .padding(-14)
     }
 }
 
@@ -402,20 +403,24 @@ struct CellGlintLayer: View {
         let local = shifted - k * slot - start
         return (0..<duration).contains(local) ? local / duration : -1
     }
+    /// 每格一个周期（8 格时间 = 64 秒）里的闪光起点
+    static let period = slot * 8
+    static let cellStarts: [[Double]] = (0..<15).map { cell in GlintSchedule.starts(period: period) { progress(cell: cell, at: $0) } }
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1.0 / 20)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, _ in
-                let cw = (reelsFrame.width - 16) / 5, ch = reelsFrame.height / 3
-                for i in 0..<15 {
-                    let p = CellGlintLayer.progress(cell: i, at: t)
-                    guard p >= 0 else { continue }
+        // v11.6 性能：每格一个 Core Animation 闪光（关键帧在渲染服务器上播放），不再每秒重画 20 次整层 Canvas
+        if PerfDebug.freezeUI {
+            EmptyView()
+        } else {
+            let cw = (reelsFrame.width - 16) / 5, ch = reelsFrame.height / 3
+            ZStack(alignment: .topLeading) {
+                ForEach(0..<15, id: \.self) { i in
                     let col = i % 5, row = i / 5
                     let r = CGRect(x: reelsFrame.minX + CGFloat(col) * (cw + 4), y: reelsFrame.minY + CGFloat(row) * ch, width: cw, height: ch).insetBy(dx: 2, dy: 2)
-                    let border = Path(roundedRect: r, cornerRadius: ch * 0.08)
-                    let streak = border.trimmedPath(from: max(0, p - 0.18), to: min(1, p + 0.02))
-                    ctx.stroke(border, with: .color(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.5 * sin(p * .pi))), lineWidth: 2)
-                    ctx.stroke(streak, with: .color(.white), style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                    CAGlintStroke(path: { UIBezierPath(roundedRect: $0, cornerRadius: ch * 0.08).cgPath },
+                                  starts: CellGlintLayer.cellStarts[i], period: CellGlintLayer.period, duration: CellGlintLayer.duration,
+                                  borderWidth: 2, streakWidth: 3.5, borderPeak: 0.5)
+                        .frame(width: r.width, height: r.height)
+                        .position(x: r.midX, y: r.midY)
                 }
             }
         }

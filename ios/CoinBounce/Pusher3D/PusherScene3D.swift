@@ -407,7 +407,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         // 上半区的金币和台面上的金币一样亮、一样有金色反光
         fallLightNode.light = SCNLight()
         fallLightNode.light!.type = .directional
-        fallLightNode.light!.intensity = PusherScene3D.fallLightIntensity
+        fallLightNode.light!.intensity = PerfDebug.noFallLight ? 0 : PusherScene3D.fallLightIntensity
         fallLightNode.light!.color = UIColor(red: 1, green: 0.9, blue: 0.68, alpha: 1)
         fallLightNode.light!.categoryBitMask = PusherScene3D.fallLightMask
         scene.rootNode.addChildNode(fallLightNode)
@@ -957,6 +957,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 金币越过 BONUS 线：解除平面约束，位置和速度不变，落向推板顶面 / 斜坡，碰到后自然翻滚
     /// v11.6：台面金币平时用方盒碰撞体（便宜）。叠在别的金币上、却只靠方盒看不见的角撑着（看上去悬空）的金币，
     /// 换成圆柱碰撞体，落到下面金币的圆面上；回到贴着台面时换回方盒。每 0.25 秒看一次，换形状时位置、速度不变
+    /// 圆柱换回方盒时用的方盒边长比例（0.85·直径）
+    static let swapBackBoxScale: Float = 0.85
     static let hybridPile = !ProcessInfo.processInfo.arguments.contains("-debugBoxOnlyPile")
     private func updatePileCollider(_ node: SCNNode, track: CoinTrack, position p: SCNVector3, now: TimeInterval, among all: [SCNNode]) {
         guard PusherScene3D.pileUsesBoxCollider, now - track.lastShapeCheck > 0.1, let old = node.physicsBody else { return }
@@ -967,12 +969,15 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         // 只有「叠起来、却只靠方盒看不见的角撑着」的金币换成圆柱（落到圆面上）；回到贴着台面再换回方盒
         // 被别的金币盖住的看不见，也换回方盒（省物理开销）
         // （在 coinLock 里调用：用调用方的快照，不能再取 coins）
-        let want = onDeck && (track.roundCollider ? p.y > t * 0.9 && !isCovered(node, at: p, among: all)
-                                                  : p.y > t * 1.15 && !isCovered(node, at: p, among: all) && !isVisuallySupported(node, at: p))
+        // v11.6：换成圆柱后不再换回方盒——换回时方盒的角会压进挤紧的邻居，物理把金币压到台面以下
+        // 被盖住（看不见）或回到台面时换回方盒。换回用小一号的方盒（边长 0.85·直径，角只比圆面多出约 0.2 半径）：
+        // 原大的方盒角会压进挤紧的邻居，物理把金币压到台面以下
+        let want = track.roundCollider ? onDeck && p.y > t * 0.9 && !isCovered(node, at: p, among: all)
+                                       : onDeck && p.y > t * 1.15 && !isCovered(node, at: p, among: all) && !isVisuallySupported(node, at: p)
         guard want != track.roundCollider else { return }
         track.roundCollider = want
         let shape = want ? SCNPhysicsShape(geometry: coinGeometry, options: nil)
-                         : PusherScene3D.pileShape(radius: config.coinRadius, thickness: config.coinThickness, geometry: coinGeometry)
+                         : PusherScene3D.pileShape(radius: config.coinRadius * PusherScene3D.swapBackBoxScale, thickness: config.coinThickness, geometry: coinGeometry)
         let v = old.velocity, w = old.angularVelocity, resting = old.isResting
         node.transform = node.presentation.transform
         let body = SCNPhysicsBody(type: .dynamic, shape: shape)
@@ -1053,6 +1058,21 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     var pusherFrontZ: Float { (pusher?.presentation.position.z ?? pusherRestPosition.z) + pusherDepthValue / 2 }
 
     // MARK: 每帧：下落平面约束、事件线、统计
+    /// 测帧率用：渲染线程每帧从 willRender 到 didRender 的 CPU 时间（毫秒）
+    private var renderStart: CFTimeInterval = 0, renderMsSum: Double = 0, renderMsMax: Double = 0, renderMsCount = 0
+    func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
+        if logsPhysicsStats { renderStart = CACurrentMediaTime() }
+    }
+    func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
+        guard logsPhysicsStats, renderStart > 0 else { return }
+        let ms = (CACurrentMediaTime() - renderStart) * 1000
+        renderMsSum += ms; renderMsCount += 1; renderMsMax = max(renderMsMax, ms)
+    }
+    private func takeRenderMs() -> (Double, Double) {
+        defer { renderMsSum = 0; renderMsCount = 0; renderMsMax = 0 }
+        return (renderMsCount == 0 ? 0 : renderMsSum / Double(renderMsCount), renderMsMax)
+    }
+
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
         coinLock.lock()
         let spawns = pendingSpawns
@@ -1064,7 +1084,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             logFrames += 1
             if logWindowStart == 0 { logWindowStart = time }
             if time - logWindowStart >= 1 {
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, pileTiltShare(), pileFloatShare(), tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare)
+                let rms = takeRenderMs()
+                NSLog("RENDER_STATS renderMs=%.2f renderMaxMs=%.2f", rms.0, rms.1)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, PerfDebug.pileStats ? pileTiltShare() : 0, PerfDebug.pileStats ? pileFloatShare() : 0, tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare)
                 logFrames = 0
                 logWindowStart = time
             }
@@ -1144,6 +1166,12 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                 let inSweep = p.z < g.pusherFrontExtendedZ + config.coinRadius * 2 && p.z > g.wallZ && p.y < g.pusherHeight + 0.2
                 if body.allowsResting == inSweep { body.allowsResting = !inSweep }
             }
+            // 诊断：沉到台面以下的金币（不在前沿或两侧掉落的位置），每枚记一次
+            if p.y < -0.06 && p.y > PusherScene3D.removeBelowY && p.z < g.lipZ - 0.4 && p.z > g.wallZ && !track.sunkLogged
+                && abs(p.x) < g.pileHalfWidth(atZ: min(p.z, g.lipZ)) - PusherScene3D.edgeStripWidth - 0.2 {
+                track.sunkLogged = true
+                logEvent("sunkBelowDeck", detail: "\(p.x),\(p.y),\(p.z) round=\(track.roundCollider) pusherFront=\(pusherFrontZ)")
+            }
             if p.y < PusherScene3D.removeBelowY {
                 // 从前沿掉下，或从金币堆两侧墙外的落币槽掉下（v11.5），都进接币槽
                 // 从前沿掉下、或从金币堆左右两侧掉下（v11.6 去掉侧墙后），都进接币槽、算玩家的
@@ -1216,6 +1244,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         var falling = false
         /// 台面金币当前用圆柱碰撞体（叠在别的金币上面时）还是方盒（贴着台面时）
         var roundCollider = false
+        var sunkLogged = false
         var lastShapeCheck: TimeInterval = 0
         /// 在推板顶面期间到过的最高点、最靠前的位置（查停留过久的金币用）
         var pusherMaxY: Float = -.infinity, pusherMaxZ: Float = -.infinity
@@ -1299,7 +1328,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                     // （侧面边带上滑下来的金币）时只会原地转，倒不下去
                     let ax = -m.m23, az = m.m21, len = (ax * ax + az * az).squareRoot()
                     let axis = len > 0.1 ? SCNVector3(ax / len, 0, az / len) : SCNVector3(1, 0, 0)
-                    body.applyTorque(SCNVector4(axis.x, 0, axis.z, 0.03 * (Bool.random() ? 1 : -1)), asImpulse: true)
+                    body.applyTorque(SCNVector4(axis.x, 0, axis.z, 0.015 * (Bool.random() ? 1 : -1)), asImpulse: true)
                 }
                 if let since = track.standingSince {
                     if now - since > 0.5 { standingViolations += 1; track.standingSince = .infinity; logEvent("standing", detail: "\(p.x),\(p.y),\(p.z)") }
@@ -1315,7 +1344,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             track.firstLandingTime = now
             fallTimes.append(now - track.born)
             // 推板收回时落下的金币落在推板前脸前面、推板扫过的台面上（推出时被推走）：单独计为 landedSweep
-            let sweep = ph == .onPile && p.z < geo.pusherFrontExtendedZ + config.coinRadius
+            // v11.6：落在推板前脸前面那一排金币上面的（金币中心最远到前脸 + 2 个半径）也算落在推板扫过的台面上——
+            // 下面那排金币在推板扫过的范围里，推出时连同上面的一起推走
+            let sweep = ph == .onPile && p.z < geo.pusherFrontExtendedZ + config.coinRadius * 2
             logEvent(ph == .onPusher ? "landedPusher" : ph == .onRamp ? "landedRamp" : sweep ? "landedSweep" : "landedPile",
                      detail: "at \(p.x),\(p.y),\(p.z) pusherFront=\(pusherFrontZ)")
         }
@@ -1421,6 +1452,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                     }
                     let dx = max(lo - sp.x, 0, sp.x - hi), dy = max(bonusPostTopY - sp.y, 0, sp.y - bonusPostBottomY)
                     bonusMaxPenetration = max(bonusMaxPenetration, diameter / 2 - hypot(dx, dy))
+                    if logsLifecycle, diameter / 2 - hypot(dx, dy) > 3 {
+                        NSLog("BONUS_PEN pen=%.2f side=%.0f x=%.1f y=%.1f gate=%.1f top=%.1f bottom=%.1f r=%.1f v=%.2f,%.2f peg=%d", diameter / 2 - hypot(dx, dy), side, sp.x, sp.y, bonusGateX, bonusPostTopY, bonusPostBottomY, diameter / 2, v.x, v.y, track.pegHits)
+                    }
                 }
             }
             if !track.crossedBonus && sp.y >= releaseLineY {
@@ -1647,8 +1681,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     static let nominalCoinRadius: Float = 0.45
     /// 前沿铜边高出台面的高度（约 1 枚金币厚）；v11.6 和两侧边带一起调到返还率约 0.97–1.04（场上约 95 枚）
     static let lipRise: Float = 0.06
-    /// 金币堆两侧的凸边高出边带斜面多少：v11.6 只有 0.02（不到半枚金币厚），金币靠在上面铺满两边，被推挤就翻下去
-    static let sideLipRise: Float = 0.0
+    /// 金币堆两侧的凸边高出边带斜面多少：0.02（不到半枚金币厚），金币靠在上面铺满两边，被推挤就翻下去（约 8.5% 从两侧掉）
+    static let sideLipRise: Float = 0.02
     /// 金币堆台面向两侧的倾角（弧度）：v11.6 约 1.1°，被推挤的金币往两侧散开，金币堆两边铺满
     static let pileCrownAngle: Float = 0.02
     /// BONUS 立柱碰撞体每边比画出来的宽多少（点）
@@ -1913,3 +1947,44 @@ final class CoinSpriteStore {
 }
 
 
+
+
+/// v11.6 真机测帧率用的调试开关和主线程卡顿监视（只有带对应启动参数时才生效）
+enum PerfDebug {
+    static let args = ProcessInfo.processInfo.arguments
+    /// -debugFreezeUI：30 Hz 重画的 SwiftUI 动画层（JACKPOT 字、BONUS 牌、灯牌闪光）改为 1 小时才重画一次
+    static let freezeUI = args.contains("-debugFreezeUI")
+    /// -debugNoFallLight：关掉只照下落金币的灯
+    static let noFallLight = args.contains("-debugNoFallLight")
+    static func interval(_ normal: TimeInterval) -> TimeInterval { freezeUI ? 3600 : normal }
+    /// -debugPileStats：每秒统计金币堆斜着 / 悬空（物理接触查询，测帧率时不开）
+    static let pileStats = args.contains("-debugPileStats")
+
+    /// 主线程帧监视：每秒打印主线程帧数和最大帧间隔（-autoplayLite / -debugPhysicsLog 时开）
+    final class MainThreadMonitor: NSObject {
+        private var link: CADisplayLink?
+        private var last: CFTimeInterval = 0, windowStart: CFTimeInterval = 0, frames = 0, maxGap: CFTimeInterval = 0
+        private var over33 = 0, over100 = 0
+        func start() {
+            let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
+            l.add(to: .main, forMode: .common)
+            link = l
+        }
+        @objc private func tick(_ l: CADisplayLink) {
+            let t = l.timestamp
+            if last > 0 {
+                let gap = t - last
+                maxGap = max(maxGap, gap)
+                if gap > 0.033 { over33 += 1 }
+                if gap > 0.1 { over100 += 1 }
+            }
+            last = t; frames += 1
+            if windowStart == 0 { windowStart = t }
+            if t - windowStart >= 1 {
+                NSLog("MAIN_STATS fps=%.1f maxGapMs=%.1f over33=%d over100=%d", Double(frames) / (t - windowStart), maxGap * 1000, over33, over100)
+                frames = 0; maxGap = 0; windowStart = t; over33 = 0; over100 = 0
+            }
+        }
+    }
+    static let monitor = MainThreadMonitor()
+}

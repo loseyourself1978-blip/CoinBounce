@@ -612,15 +612,18 @@ struct ReelsIcon: View {
 struct JackpotMarquee: View {
     let width: CGFloat
     let height: CGFloat
-    @State private var blink = false
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: height * 0.3)
-                .fill(LinearGradient(colors: [ArtPalette.magentaDeep, ArtPalette.magenta], startPoint: .top, endPoint: .bottom))
-            RoundedRectangle(cornerRadius: height * 0.3)
-                .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(2, height * 0.06))
-            // 边框灯泡
+            ZStack {
+                RoundedRectangle(cornerRadius: height * 0.3)
+                    .fill(LinearGradient(colors: [ArtPalette.magentaDeep, ArtPalette.magenta], startPoint: .top, endPoint: .bottom))
+                RoundedRectangle(cornerRadius: height * 0.3)
+                    .stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(2, height * 0.06))
+            }
+            .drawingGroup()
+            // 边框灯泡（两态闪烁，只动不透明度）
+            BlinkPair(duration: 0.6) { blink in
             HStack(spacing: 0) {
                 ForEach(0..<9, id: \.self) { i in
                     Circle()
@@ -630,13 +633,11 @@ struct JackpotMarquee: View {
                 }
             }
             .padding(.horizontal, height * 0.35)
-            .frame(height: height)
+            .frame(width: width, height: height)
             .offset(y: -height * 0.39)
+            }
         }
         .frame(width: width, height: height)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.6).repeatForever()) { blink.toggle() }
-        }
     }
 }
 
@@ -670,8 +671,6 @@ struct MarqueeLights: View {
 // MARK: - 机柜立柱（左右两侧，金属圆柱质感 + 一列闪烁灯泡）
 
 struct CabinetPillar: View {
-    @State private var phase = false
-
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
@@ -684,6 +683,9 @@ struct CabinetPillar: View {
                                startPoint: .leading, endPoint: .trailing)
                     .overlay(Rectangle().fill(ArtPalette.gold.opacity(0.85)).frame(width: max(1.5, w * 0.06)))
                     .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
+                    .drawingGroup()
+                // v11.6 性能：灯泡两种亮法各画一次，闪烁只动上层的不透明度（原来每帧重画整根立柱）
+                BlinkPair(duration: 0.5) { phase in
                 VStack(spacing: 0) {
                     ForEach(0..<count, id: \.self) { i in
                         Circle()
@@ -697,12 +699,25 @@ struct CabinetPillar: View {
                             .frame(maxHeight: .infinity)
                     }
                 }
+                }
             }
             .frame(width: w, height: geo.size.height)
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() }
+    }
+}
+
+/// v11.6 性能：两态闪烁。两种状态各用 drawingGroup 栅格化一次，闪烁只动上层的不透明度（图层属性，不重画内容）。
+/// 原来用 repeatForever 动画直接改颜色、阴影，drawingGroup 每帧都要重新栅格化（主线程大头）
+struct BlinkPair<Content: View>: View {
+    let duration: Double
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var on = false
+    var body: some View {
+        ZStack {
+            content(false).drawingGroup()
+            content(true).drawingGroup().opacity(on ? 1 : 0)
         }
+        .onAppear { withAnimation(.easeInOut(duration: duration).repeatForever()) { on.toggle() } }
     }
 }
 

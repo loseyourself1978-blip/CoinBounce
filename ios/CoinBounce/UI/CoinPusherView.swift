@@ -86,11 +86,9 @@ struct CoinPusherView: View {
 
                 // ── 推币台 ──
                 // ── 机柜两侧金色立柱（带灯泡），把投币口到 BONUS 的区域框成一个有纵深的机柜 ──
-                CabinetPillar()
-                    .drawingGroup()   // 闪烁灯泡（带光晕）交给 GPU 合成，不在主线程上逐帧重画
+                CabinetPillar()   // v11.6：灯泡两态各栅格化一次，闪烁只动不透明度（外面不能再包 drawingGroup，否则又每帧重画）
                     .place(in: CGRect(x: 0, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
                 CabinetPillar()
-                    .drawingGroup()
                     .place(in: CGRect(x: sw - layout.sideMargin, y: layout.sliderTrack.minY, width: layout.sideMargin, height: layout.bonusLane.maxY - layout.sliderTrack.minY))
                 // 金币余额、帮助 / 设置叠在投币口区域上方两侧（v11.6，画在立柱之上），不挡 COIN 牌的往复范围
                 topRow(layout: layout)
@@ -258,6 +256,7 @@ struct CoinPusherView: View {
         pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
         if autoplayLite {
             pusher3D.logsPhysicsStats = true
+            PerfDebug.monitor.start()
             Timer.scheduledTimer(withTimeInterval: GameConstants.referenceDropInterval, repeats: true) { _ in
                 if !gameState.canDropCoin { gameState.availableCoins += 100 }
                 if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
@@ -324,20 +323,18 @@ struct CoinPusherView: View {
         ZStack(alignment: .top) {
             // Jackpot 标题框：参考大牌 50–1160 × 0–250 像素
             JackpotMarquee(width: w, height: h)
-                .drawingGroup()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // v11.6：两行——「JACKPOT」和奖池数字，立体金色字、带闪光；整块放在灵动岛下面
             // （iPhone 17 录屏实测灵动岛下沿约 47% 牌高，两行字从约 52% 牌高开始）
-            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
-                let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
-                VStack(spacing: 0) {
-                    GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t + 1.6))
-                    GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glint: t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, h * 0.05)
+            // v11.6 性能：字是静态的（栅格化一次），闪光用 Core Animation 光带扫过（不再每秒重画 30 次）
+            let glints = !reduceMotion && !PerfDebug.freezeUI
+            VStack(spacing: 0) {
+                GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
+                GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, h * 0.05)
         }
         .frame(height: h)
     }
@@ -380,7 +377,6 @@ struct CoinPusherView: View {
             let archW = ReferenceBoxes.x(ReferenceBoxes.archFrame.width, layout.size)
             let archBottom = ReferenceBoxes.y(ReferenceBoxes.archFrame.maxY, layout.size) - layout.sliderTrack.minY
             ArchTrack(bulbCount: 28)
-                .drawingGroup()
                 .frame(width: archW, height: archBottom)
                 .position(x: layout.centerX - layout.sliderTrack.minX, y: archBottom / 2)
             RoundedRectangle(cornerRadius: h * 0.1)
@@ -401,6 +397,15 @@ struct CoinPusherView: View {
     // MARK: - COIN滑块 (金币出口)
     @ViewBuilder
     func coinSlider(w sliderW: CGFloat, h sliderH: CGFloat) -> some View {
+        // v11.6 性能：牌面只由宽高和枚数决定；滑块每帧移动时不重算、不重画
+        CoinPlate(w: sliderW, h: sliderH, multiplier: gameState.coinMultiplier).equatable()
+    }
+}
+
+struct CoinPlate: View, Equatable {
+    let w: CGFloat, h: CGFloat, multiplier: Int
+    var body: some View {
+        let sliderW = w, sliderH = h
         ZStack {
             // 盾牌背景
             RoundedRectangle(cornerRadius: sliderH * 0.2)
@@ -415,13 +420,16 @@ struct CoinPusherView: View {
                 .stroke(Color(red: 0.82, green: 0.66, blue: 0.31), lineWidth: 1)
 
             // 1 COIN 文字
-            Text(verbatim: "\(gameState.coinMultiplier) COIN")
+            Text(verbatim: "\(multiplier) COIN")
                 .font(.system(size: min(sliderW * 0.22, sliderH * 0.6), weight: .bold, design: .rounded))
                 .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.55))
         }
         .frame(width: sliderW, height: sliderH)
+        .drawingGroup()
     }
+}
 
+extension CoinPusherView {
     // MARK: - 战斗场景
     @ViewBuilder
     func battleArea(w: CGFloat, h: CGFloat) -> some View {
@@ -599,6 +607,8 @@ struct CoinPusherView: View {
                     FruitIcon(index: index, size: iconSize * 0.78)
                         .saturation(gameState.fruitsLit[index] ? 1 : 0.35)
                 }
+                // v11.6 性能：水果牌栅格化一次；碰到水果时的弹跳放大只缩放栅格，不在主线程逐帧重画矢量图（径向渐变）
+                .drawingGroup()
                 .opacity(gameState.fruitsLit[index] ? 1.0 : 0.6)
                 .scaleEffect(gameState.fruitPulseIndex == index ? 1.3 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.5), value: gameState.fruitPulseIndex)
@@ -637,14 +647,13 @@ struct CoinPusherView: View {
     /// BONUS 牌（整屏坐标），叠在下落金币之上
     @ViewBuilder
     func bonusPlaque(layout: GameLayout) -> some View {
-        // 闪光按当前时间算；每秒重画 30 次（不依赖父视图刷新）
+        // 牌随滑块移动；闪光由 Core Animation 播放（v11.6）
         SliderReader(motion: gameState.sliders) { m in
             let slider = layout.bonusSliderCenter(offset: m.bonus)
-            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
-                HollowBonusSliderTarget(width: layout.bonusSliderWidth, postWidth: layout.bonusPostWidth, maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
-                                        time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
-            }
-            .position(x: slider.x, y: slider.y)
+            HollowBonusSliderTarget(width: layout.bonusSliderWidth, postWidth: layout.bonusPostWidth, maxHeight: ReferenceBoxes.y(GameConstants.bonusPlaqueHeightPx, layout.size),
+                                    time: reduceMotion || PerfDebug.freezeUI ? 0 : 1)
+                .equatable()
+                .position(x: slider.x, y: slider.y)
         }
         .allowsHitTesting(false)
     }
@@ -930,7 +939,11 @@ struct LocalCoinCanvasLayer: View {
     }
 }
 
-struct HollowBonusSliderTarget: View {
+struct HollowBonusSliderTarget: View, Equatable {
+    /// v11.6 性能：内容只由这几个数决定；滑块每帧移动时 SwiftUI 比较相等就不重算牌面（配合 .equatable()）
+    static func == (a: Self, b: Self) -> Bool {
+        a.width == b.width && a.postWidth == b.postWidth && a.maxHeight == b.maxHeight && a.time == b.time
+    }
     let width: CGFloat
     /// v11.6：两侧立柱宽（有碰撞体）；正面黑底的宽度就是两柱之间的开口
     var postWidth: CGFloat = 0
@@ -969,11 +982,11 @@ struct HollowBonusSliderTarget: View {
         let w = width
         let depth = max(4, maxHeight * 0.13)
         let h = maxHeight - depth
+        // v11.6 性能：整块牌是静态的（drawingGroup 栅格化一次，牌随滑块移动时不重画），
+        // 边框闪光用 Core Animation 关键帧（CAGlintStroke）叠在上面，主线程不用每秒重画 30 次
+        let glow = 0.45
+        let pad = w * 0.3   // 光晕、投影超出牌面的部分也画进栅格
         Group {
-            let t = time
-            let sweep = t == 0 ? -1 : HollowBonusSliderTarget.glintProgress(at: t)
-            // 光晕平时不动，只在闪光时随闪光增强（平时整块牌不用每帧重画）
-            let glow = sweep >= 0 ? 0.45 + 0.35 * sin(sweep * .pi) : 0.45
             ZStack(alignment: .top) {
                 // 背后的金色光晕（氛围）
                 shield(w, h)
@@ -1000,18 +1013,6 @@ struct HollowBonusSliderTarget: View {
                 // 顶部高光
                 shield(w, h)
                     .fill(LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.35)))
-                // 闪过边框的高光
-                if sweep >= 0 {
-                    // 整圈金边短暂提亮（闪烁），一道白光沿边框扫过
-                    shield(w, h)
-                        .stroke(Color(red: 1, green: 0.97, blue: 0.8).opacity(0.7 * sin(sweep * .pi)), lineWidth: max(2, w * 0.08))
-                        .blendMode(.plusLighter)
-                    shield(w, h)
-                        .trim(from: max(0, sweep - 0.2), to: min(1, sweep + 0.03))
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: max(3, w * 0.11), lineCap: .round))
-                        .blur(radius: 1)
-                        .blendMode(.plusLighter)
-                }
                 shield(w, h)
                     .stroke(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.9), lineWidth: 1)
                 // v11.6 闸门立柱：和边框一样的金色倒角，贯穿整块牌的高度；闪光时一起提亮
@@ -1022,7 +1023,6 @@ struct HollowBonusSliderTarget: View {
                             Capsule()
                                 .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .leading, endPoint: .trailing))
                                 .overlay(Capsule().stroke(Color(red: 0.45, green: 0.08, blue: 0.04), lineWidth: max(1, postWidth * 0.18)))
-                                .overlay(Capsule().fill(Color.white.opacity(sweep >= 0 ? 0.55 * sin(sweep * .pi) : 0)).blendMode(.plusLighter))
                                 .frame(width: postWidth, height: h + depth)
                                 .shadow(color: .black.opacity(0.6), radius: 2, x: 0, y: 2)
                         }
@@ -1042,6 +1042,20 @@ struct HollowBonusSliderTarget: View {
                 .frame(width: w, height: h)
             }
             .frame(width: w, height: h + depth, alignment: .top)
+            .padding(pad)
+            .drawingGroup()
+            .padding(-pad)
+            .overlay(alignment: .top) {
+                // 闪光：整圈金边短暂提亮，一道白光沿边框扫过（和原来同样的时间表：每 3.1–4.4 秒一次、持续 0.9 秒）
+                if time != 0 {
+                    CAGlintStroke(path: { shield($0.width, $0.height).cgPath },
+                                  starts: GlintSchedule.bonusStarts(offset: 0), period: GlintSchedule.bonusPeriod,
+                                  duration: HollowBonusSliderTarget.glintDuration,
+                                  borderWidth: max(2, w * 0.08), streakWidth: max(3, w * 0.11), borderPeak: 0.7, tail: 0.2, head: 0.03,
+                                  borderColor: UIColor(red: 1, green: 0.97, blue: 0.8, alpha: 1))
+                        .frame(width: w, height: h)
+                }
+            }
         }
         .frame(width: w, height: h + depth, alignment: .top)
     }
@@ -1164,11 +1178,12 @@ struct GoldText3D: View {
     let text: String
     let size: CGFloat
     var tracking: CGFloat = 0
-    /// 闪光进度 0…1，−1 表示不闪
-    var glint: Double = -1
+    /// v11.6 性能：一个周期（GlintSchedule.bonusPeriod）里每次闪光的起点；nil 表示不闪
+    var glintStarts: [Double]? = nil
     var body: some View {
         let face = Text(verbatim: text).font(.system(size: size, weight: .black, design: .rounded)).tracking(tracking)
         let depth = max(1, size * 0.06)
+        let pad = size * 0.3
         ZStack {
             ForEach(1..<4, id: \.self) { i in
                 face.foregroundStyle(Color(red: 0.45 - 0.08 * Double(i), green: 0.26 - 0.05 * Double(i), blue: 0.03))
@@ -1181,19 +1196,20 @@ struct GoldText3D: View {
                 .init(color: Color(red: 1, green: 0.8, blue: 0.25), location: 1)
             ], startPoint: .top, endPoint: .bottom))
             .shadow(color: Color.orange.opacity(0.6), radius: size * 0.12)
-            if glint >= 0 {
-                // 闪光：一道斜白光，被字形遮住只在字上显示
-                GeometryReader { geo in
-                    LinearGradient(colors: [.clear, .white.opacity(0.95), .clear], startPoint: .leading, endPoint: .trailing)
-                        .frame(width: geo.size.width * 0.25)
-                        .rotationEffect(.degrees(18))
-                        .offset(x: -geo.size.width * 0.3 + geo.size.width * 1.3 * glint)
-                }
-                .mask(face)
-                .blendMode(.plusLighter)
-            }
         }
         .fixedSize()
+        // 立体字只栅格化一次（留出光晕的边）
+        .padding(pad)
+        .drawingGroup()
+        .padding(-pad)
+        .overlay {
+            // 闪光：一道斜白光，被字形遮住只在字上显示（Core Animation 播放）
+            if let starts = glintStarts {
+                CAGlintBand(starts: starts, period: GlintSchedule.bonusPeriod, duration: HollowBonusSliderTarget.glintDuration)
+                    .mask(face)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 }
 
@@ -1256,7 +1272,6 @@ struct PlayingCardShape: View {
 /// 拱形投币口灯管（原创绘制）：顶边水平、两端大圆角向下，金色灯管上一圈交替闪烁的灯泡
 struct ArchTrack: View {
     let bulbCount: Int
-    @State private var phase = false
 
     struct ArchShape: Shape {
         func path(in r: CGRect) -> Path {
@@ -1279,10 +1294,16 @@ struct ArchTrack: View {
             let rect = CGRect(origin: .zero, size: geo.size).insetBy(dx: 4, dy: 4)
             let path = ArchShape().path(in: rect)
             ZStack {
-                path.stroke(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4), Color(red: 0.85, green: 0.45, blue: 0.08)],
-                                           startPoint: .top, endPoint: .bottom),
-                            style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                path.stroke(Color(red: 0.45, green: 0.2, blue: 0.03), style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                ZStack {
+                    path.stroke(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4), Color(red: 0.85, green: 0.45, blue: 0.08)],
+                                               startPoint: .top, endPoint: .bottom),
+                                style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                    path.stroke(Color(red: 0.45, green: 0.2, blue: 0.03), style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                }
+                .drawingGroup()
+                // 灯泡两态闪烁，只动不透明度
+                BlinkPair(duration: 0.5) { phase in
+                ZStack {
                 ForEach(0..<bulbCount, id: \.self) { i in
                     let t = (CGFloat(i) + 0.5) / CGFloat(bulbCount)
                     let pt = path.trimmedPath(from: 0, to: t).currentPoint ?? .zero
@@ -1292,9 +1313,11 @@ struct ArchTrack: View {
                         .shadow(color: Color(red: 1, green: 0.7, blue: 0.3).opacity(0.9), radius: 3)
                         .position(pt)
                 }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                }
             }
         }
-        .onAppear { withAnimation(.easeInOut(duration: 0.5).repeatForever()) { phase.toggle() } }
     }
 }
 
@@ -1353,5 +1376,153 @@ struct CannonView: View {
             .rotationEffect(.degrees(right ? -18 : 18))
             .frame(width: w, height: h)
         }
+    }
+}
+
+// MARK: - v11.6 性能：Core Animation 闪光（关键帧在渲染服务器上播放，主线程不用每帧重画 SwiftUI 视图）
+
+/// 闪光时间表：在一个周期里按原来的进度函数找出每次闪光的起点（秒）
+enum GlintSchedule {
+    static func starts(period: Double, progress: (Double) -> Double) -> [Double] {
+        var result: [Double] = []
+        var previous = false, t = 0.0
+        while t < period {
+            let on = progress(t) >= 0
+            if on && !previous { result.append(t) }
+            previous = on
+            t += 1.0 / 240
+        }
+        return result
+    }
+    /// BONUS 牌和 JACKPOT 字：每 3.75 秒一格、格内随机偏移（16 格 = 60 秒一个周期）
+    static let bonusPeriod = HollowBonusSliderTarget.glintSlot * 16
+    static func bonusStarts(offset: Double) -> [Double] {
+        starts(period: bonusPeriod) { HollowBonusSliderTarget.glintProgress(at: $0 + offset) }
+    }
+}
+
+/// 关键帧：周期内每次闪光按进度 p（0…1）采样 9 个点，闪光之外取 idle
+private func glintKeyframes<T>(starts: [Double], period: Double, duration: Double, idle: T, value: (Double) -> T) -> (times: [NSNumber], values: [T]) {
+    var times: [NSNumber] = [0], values: [T] = [idle]
+    for s in starts where s > 0.002 && s + duration < period - 0.002 {
+        times.append(NSNumber(value: (s - 0.001) / period)); values.append(idle)
+        for i in 0...8 {
+            let p = Double(i) / 8
+            times.append(NSNumber(value: (s + duration * p) / period)); values.append(value(p))
+        }
+        times.append(NSNumber(value: (s + duration + 0.001) / period)); values.append(idle)
+    }
+    times.append(1); values.append(idle)
+    return (times, values)
+}
+
+private func installKeyframes<T>(_ layer: CALayer, keyPath: String, period: Double, frames: (times: [NSNumber], values: [T])) {
+    let a = CAKeyframeAnimation(keyPath: keyPath)
+    a.keyTimes = frames.times
+    a.values = frames.values
+    a.duration = period
+    a.repeatCount = .infinity
+    a.calculationMode = .linear
+    a.isRemovedOnCompletion = false
+    // 所有闪光共用一个时间基准（和原来按绝对时间算的进度一样，不同元素不会同时闪）
+    a.timeOffset = CACurrentMediaTime().truncatingRemainder(dividingBy: period)
+    layer.add(a, forKey: keyPath)
+}
+
+/// 沿路径扫过的闪光：整圈边框短暂提亮 + 一道白光沿路径跑过
+struct CAGlintStroke: UIViewRepresentable {
+    let path: (CGRect) -> CGPath
+    let starts: [Double]
+    let period: Double
+    let duration: Double
+    let borderWidth: CGFloat
+    let streakWidth: CGFloat
+    var borderPeak: Float = 0.5
+    var tail: Double = 0.18, head: Double = 0.02
+    var borderColor = UIColor(red: 1, green: 0.95, blue: 0.7, alpha: 1)
+
+    func makeUIView(context: Context) -> GlintStrokeView {
+        let v = GlintStrokeView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
+    }
+    func updateUIView(_ v: GlintStrokeView, context: Context) { v.config = self }
+}
+
+final class GlintStrokeView: UIView {
+    // 每次 SwiftUI 更新都会调 updateUIView：只在第一次拿到配置时安装动画（之后只在尺寸变了时重装），不能每帧重装
+    var config: CAGlintStroke? { didSet { if oldValue == nil { setNeedsLayout() } } }
+    private let border = CAShapeLayer(), streak = CAShapeLayer()
+    private var installedFor: CGSize = .zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        for l in [border, streak] {
+            l.fillColor = nil; l.lineCap = .round; l.lineJoin = .round; l.opacity = 0
+            layer.addSublayer(l)
+        }
+        streak.strokeColor = UIColor.white.cgColor
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let c = config, bounds.width > 0, bounds.size != installedFor else { return }
+        installedFor = bounds.size
+        let p = c.path(bounds)
+        for l in [border, streak] { l.frame = bounds; l.path = p }
+        border.lineWidth = c.borderWidth; streak.lineWidth = c.streakWidth
+        border.strokeColor = c.borderColor.cgColor
+        let P = c.period, d = c.duration
+        installKeyframes(border, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { Float(sin($0 * .pi)) * c.borderPeak })
+        installKeyframes(streak, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { _ in Float(1) })
+        installKeyframes(streak, keyPath: "strokeStart", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(0)) { CGFloat(max(0, $0 - c.tail)) })
+        installKeyframes(streak, keyPath: "strokeEnd", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(0)) { CGFloat(min(1, $0 + c.head)) })
+    }
+}
+
+/// 斜着扫过的白光带（JACKPOT 字上的闪光）：在 SwiftUI 里用字形 mask 住，只在字上显示
+struct CAGlintBand: UIViewRepresentable {
+    let starts: [Double]
+    let period: Double
+    let duration: Double
+    func makeUIView(context: Context) -> GlintBandView {
+        let v = GlintBandView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
+    }
+    func updateUIView(_ v: GlintBandView, context: Context) { v.config = self }
+}
+
+final class GlintBandView: UIView {
+    var config: CAGlintBand? { didSet { if oldValue == nil { setNeedsLayout() } } }
+    private let band = CAGradientLayer()
+    private var installedFor: CGSize = .zero
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        band.colors = [UIColor.clear.cgColor, UIColor.white.withAlphaComponent(0.95).cgColor, UIColor.clear.cgColor]
+        band.startPoint = CGPoint(x: 0, y: 0.5); band.endPoint = CGPoint(x: 1, y: 0.5)
+        band.opacity = 0
+        layer.addSublayer(band)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let c = config, bounds.width > 0, bounds.size != installedFor else { return }
+        installedFor = bounds.size
+        let w = bounds.width, h = bounds.height, bw = w * 0.25
+        band.bounds = CGRect(x: 0, y: 0, width: bw, height: h * 2)
+        band.setAffineTransform(CGAffineTransform(rotationAngle: .pi * 18 / 180))
+        // 和原来一样：光带左沿从 −0.3w 扫到 w
+        let P = c.period, d = c.duration
+        band.position = CGPoint(x: -0.3 * w + bw / 2, y: h / 2)
+        installKeyframes(band, keyPath: "opacity", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { _ in Float(1) })
+        installKeyframes(band, keyPath: "position.x", period: P,
+                         frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(-0.3 * w + bw / 2)) { CGFloat(-0.3 * w + 1.3 * w * $0 + bw / 2) })
     }
 }

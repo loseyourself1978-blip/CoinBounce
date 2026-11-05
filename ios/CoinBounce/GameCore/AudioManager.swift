@@ -85,11 +85,15 @@ final class AudioManager {
         lastPlayed[effect] = now
         playCount += 1
         guard let pool = players[effect], !pool.isEmpty else { return true }
-        let player = pool.first(where: { !$0.isPlaying }) ?? pool[0]
-        player.currentTime = 0
-        player.play()
+        // v11.6 性能：AVAudioPlayer.play 每次要几毫秒（准备音频队列），放到串行的后台队列，不占主线程
+        playQueue.async {
+            let player = pool.first(where: { !$0.isPlaying }) ?? pool[0]
+            player.currentTime = 0
+            player.play()
+        }
         return true
     }
+    private let playQueue = DispatchQueue(label: "coinbounce.audio.play", qos: .userInitiated)
 
     /// 按设置开关背景音乐（App 回到前台时也调用）
     func updateMusic() {
