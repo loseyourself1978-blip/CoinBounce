@@ -171,6 +171,9 @@ final class Pusher3DTests: XCTestCase {
         // 金币日志（COIN_LIFE / BONUS_CROSS）：门槛不过时能查到是哪一枚
         pusher.logsLifecycle = true
         pusher.onCrossBonus = { state.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
+        // v11.7：中奖金币是真的 3D 金币；投币队列按下落中的金币限流
+        state.onRewardDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true) }
+        state.fallingCountProvider = { pusher.fallingCount }
         let triggersBefore = state.bonusTriggerCount
         let sliderTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in state.step(dt: 1.0 / 60) }
         defer {
@@ -292,6 +295,13 @@ final class Pusher3DTests: XCTestCase {
         // 与 v11.2 原测试相同的断言：有金币从前沿掉落、新投的币没有被丢弃（推动金币堆由上面的 pusherToPile 检查）
         XCTAssertGreaterThan(pusher.removalReasons["fellIntoTray"] ?? 0, 0, "金币堆被推动，前沿金币掉进接币槽")
         XCTAssertEqual(pusher.rejectedCount, 0, "新投的币没有被丢弃")
+        // v11.7 死角：没有金币停在推板顶面、斜坡、台面以外超过 3 秒
+        XCTAssertEqual(pusher.deadZoneCount, 0, "没有金币卡在死角")
+        // v11.7 中奖金币：每一枚都在场上或掉进接币槽 / 两侧（不会凭空消失）
+        let rewardOther = pusher.rewardRemoved.filter { $0.key != "fellIntoTray" && $0.key != "fellSide" }.values.reduce(0, +)
+        print("REWARD spawned=\(pusher.rewardSpawned) removed=\(pusher.rewardRemoved) inPlay=\(pusher.rewardInPlay) released=\(state.rewardDropsReleased)")
+        XCTAssertEqual(rewardOther, 0, "中奖金币没有凭空消失")
+        XCTAssertEqual(pusher.rewardSpawned, (pusher.rewardRemoved["fellIntoTray"] ?? 0) + (pusher.rewardRemoved["fellSide"] ?? 0) + pusher.rewardInPlay)
         // 门槛 6 金币堆：覆盖参考金币堆左右范围 ≥95%，2–3 层
         XCTAssertGreaterThanOrEqual(covAvg, 0.95, "预热后金币堆平的那一段（两侧边带之间）覆盖 ≥ 0.95")
         XCTAssertTrue((1.5...3.5).contains(layerAvg), "金币堆 2–3 层（实测 \(layerAvg)）")
@@ -332,6 +342,82 @@ extension Pusher3DTests {
             XCTAssertEqual(n.physicsBody?.type, .kinematic)
             XCTAssertEqual(n.physicsBody?.categoryBitMask, PusherScene3D.catPeg)
         }
+    }
+
+    // MARK: v11.7 10 COIN 快速连点 60 秒：转动次数 = 整枚穿过次数，队列有上限、不失控，停止投币后转完就停
+    func test_burst10_rapidTaps60s_spinsEqualPasses_boundedQueues() {
+        let layout = iPhone17
+        let state = GameState.shared
+        state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "Burst117")!, key: "Burst117.SaveData")
+        state.saveStore.clear()
+        state.resetForTesting()
+        state.updateLayout(layout)
+        state.showCardSelection = false
+        let window = UIWindow(frame: CGRect(origin: .zero, size: layout.size))
+        let pusher = PusherScene3D(viewSize: layout.size)
+        let view = SCNView(frame: window.bounds)
+        view.scene = pusher.scene
+        view.pointOfView = pusher.cameraNode
+        view.delegate = pusher
+        view.backgroundColor = .clear
+        pusher.view = view
+        window.addSubview(view)
+        window.isHidden = false
+        pusher.fit(viewSize: layout.size, layout: layout)
+        view.isPlaying = true
+        view.rendersContinuously = true
+        state.onDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial) }
+        state.onRewardDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true) }
+        state.fallingCountProvider = { pusher.fallingCount }
+        pusher.bonusOffsetProvider = { state.bonusSliderOffset }
+        pusher.onCrossBonus = { state.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
+        state.coinMultiplier = 10
+        let triggers0 = state.bonusTriggerCount, spins0 = state.spinsStarted, free0 = state.freeSpinsGranted
+        var maxQueue = 0, maxSpinQueue = 0, maxFalling = 0, taps = 0, accepted = 0
+        var tapping = true
+        let stepTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in
+            state.step(dt: 1.0 / 60)
+            maxQueue = max(maxQueue, state.dropQueue)
+            maxSpinQueue = max(maxSpinQueue, state.queuedSpins)
+            maxFalling = max(maxFalling, pusher.fallingCount)
+        }
+        // 快速连点：每 0.12 秒点一次 10 COIN；选卡弹出时马上选第一张（不挡投币）
+        let tapTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { _ in
+            guard tapping else { return }
+            state.availableCoins = max(state.availableCoins, 1000)
+            if state.showCardSelection, let card = state.offeredCards.first, state.pickedCard == nil { state.pickCard(card.kind) }
+            if state.pickedCard != nil { state.finishCardPick() }
+            taps += 1
+            if state.dropBatch() == .queued { accepted += 1 }
+        }
+        defer {
+            stepTimer.invalidate(); tapTimer.invalidate()
+            view.isPlaying = false
+            window.isHidden = true
+            state.onDrop = nil; state.onRewardDrop = nil; state.fallingCountProvider = nil
+            state.coinMultiplier = 1
+            state.resetForTesting()
+        }
+        let tapEnd = expectation(description: "60 s burst")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { tapping = false; tapEnd.fulfill() }
+        wait(for: [tapEnd], timeout: 120)
+        // 停止投币后：队列和转动都应在有限时间内排空、停下
+        let settled = expectation(for: NSPredicate { _, _ in
+            state.dropQueue == 0 && pusher.fallingCount == 0 && state.queuedSpins == 0 && state.slotSpinState == .spinIdle
+        }, evaluatedWith: nil)
+        wait(for: [settled], timeout: 90)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.5))
+        let spins = state.spinsStarted - spins0, triggers = state.bonusTriggerCount - triggers0, free = state.freeSpinsGranted - free0
+        print("BURST taps=\(taps) accepted=\(accepted) passes=\(pusher.bonusPasses) triggers=\(triggers) spins=\(spins) free=\(free) maxQueue=\(maxQueue) maxSpinQueue=\(maxSpinQueue) maxFalling=\(maxFalling) reward=\(pusher.rewardSpawned)/\(pusher.rewardRemoved) dead=\(pusher.deadZoneCount)")
+        XCTAssertGreaterThan(triggers, 5, "60 秒里有足够多的整枚穿过")
+        XCTAssertEqual(triggers, pusher.bonusPasses, "每次触发都对应一次整枚穿过")
+        XCTAssertEqual(spins, triggers + free, "转动次数 = 整枚穿过次数（+ 免费转动卡）")
+        XCTAssertLessThanOrEqual(maxQueue, GameConstants.maxQueuedDrops, "投币队列有上限")
+        XCTAssertLessThan(maxSpinQueue, 15, "转动排队不会越积越多")
+        XCTAssertLessThanOrEqual(maxFalling, GameConstants.maxCoinsInFlight + GameConstants.maxPhysicalReward, "同时下落的金币有上限")
+        XCTAssertEqual(state.slotSpinState, .spinIdle, "排空后停止转动")
+        XCTAssertEqual(pusher.deadZoneCount, 0)
+        XCTAssertEqual(pusher.rewardRemoved.filter { $0.key != "fellIntoTray" && $0.key != "fellSide" }.values.reduce(0, +), 0, "中奖金币没有凭空消失")
     }
 
     private func fittedScene(_ layout: GameLayout) -> (PusherScene3D, SCNView) {

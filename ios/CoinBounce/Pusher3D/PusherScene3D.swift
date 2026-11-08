@@ -1246,7 +1246,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     // MARK: 性能统计
     /// v11.5：物理步长 180 → 120 Hz（真机上金币两两碰撞检测是主要开销，按步数线性增长；90 Hz 时下落变慢到 1.95 秒以上）
-    static let physicsTimeStep: TimeInterval = 1.0 / 120.0
+    static let physicsTimeStep: TimeInterval = 1.0 / (UserDefaults.standard.object(forKey: "physicsHz") as? Double ?? 120.0) // TUNE
     private var physicsStepStart: TimeInterval = 0
     private var physicsMsSum: Double = 0, physicsMsCount = 0
     /// 每帧从渲染器 update 到物理推进完的平均毫秒数（读取后清零）

@@ -158,8 +158,15 @@ struct CoinPusherView: View {
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
-                    JackpotCelebrationView(amount: GameConstants.slotJackpotReward)
+                    JackpotCelebrationView(amount: gameState.jackpotExplosionAmount)
                         .frame(width: sw, height: sh)
+                }
+                // v11.7：大奖时兔女郎从一侧闪现（不挡操作）
+                if let c = gameState.celebration {
+                    BunnyCelebrationView(celebration: c, screen: CGSize(width: sw, height: sh))
+                        .id(c.id)
+                        .transition(.move(edge: c.fromLeft ? .leading : .trailing).combined(with: .opacity))
+                        .allowsHitTesting(false)
                 }
                 if gameState.showCardSelection {
                     CardSelectionView(cards: gameState.offeredCards, picked: gameState.pickedCard,
@@ -171,6 +178,7 @@ struct CoinPusherView: View {
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
             .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
+            .animation(.spring(response: 0.45, dampingFraction: 0.7), value: gameState.celebration)
             .onAppear {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
@@ -268,6 +276,15 @@ struct CoinPusherView: View {
         // 玩家模式不做逐帧画面验收；-autoplay 验收时打开。-autoplayLite：和 -autoplay 一样自动投币，但不做验收（测真实玩家负载下的帧率）
         let autoplayLite = ProcessInfo.processInfo.arguments.contains("-autoplayLite")
         pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
+        #if DEBUG
+        // 调试：-debugJackpot 每 8 秒强制一次终极大奖（检查兔女郎符号、奖池派奖、庆祝动画）
+        if ProcessInfo.processInfo.arguments.contains("-debugJackpot") {
+            Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { _ in
+                gameState.forceUltimateJackpotNextSpin = true
+                gameState.queueSpins(1)
+            }
+        }
+        #endif
         if autoplayLite {
             pusher3D.logsPhysicsStats = true
             PerfDebug.monitor.start()
@@ -349,7 +366,7 @@ struct CoinPusherView: View {
                 RollingJackpotNumber(meter: gameState.jackpotMeter, size: h * 0.29, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, h * 0.05)
+            .padding(.bottom, h * 0.03)
         }
         .frame(height: h)
     }
@@ -1587,4 +1604,73 @@ struct RollingJackpotNumber: View {
             if k >= steps { t.invalidate() }
         }
     }
+}
+
+/// v11.7 兔女郎庆祝：从一侧滑进来，按动作跳动 / 摇摆，周围闪光；飞吻时飘出爱心
+struct BunnyCelebrationView: View {
+    let celebration: GameState.BunnyCelebration
+    let screen: CGSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var beat = false
+    @State private var sparkle = false
+
+    var body: some View {
+        let h = screen.height * 0.42
+        let x = celebration.fromLeft ? screen.width * 0.2 : screen.width * 0.8
+        let y = screen.height * 0.6
+        ZStack {
+            // 闪光
+            ForEach(0..<8, id: \.self) { i in
+                let a = Double(i) / 8 * 2 * .pi
+                Image(systemName: "sparkle")
+                    .font(.system(size: h * (i.isMultiple(of: 2) ? 0.07 : 0.05), weight: .bold))
+                    .foregroundStyle(i.isMultiple(of: 3) ? Color.white : ArtPalette.goldLight)
+                    .shadow(color: ArtPalette.gold, radius: 4)
+                    .offset(x: cos(a) * h * 0.33, y: sin(a) * h * 0.45)
+                    .scaleEffect(sparkle ? 1.2 : 0.4)
+                    .opacity(sparkle ? 1 : 0.2)
+                    .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.07), value: sparkle)
+            }
+            BunnyArt(pose: celebration.pose)
+                .frame(height: h)
+                .shadow(color: .black.opacity(0.45), radius: 8, x: 0, y: 6)
+                .scaleEffect(x: celebration.fromLeft ? 1 : -1, y: 1)   // 面朝屏幕中间
+                .offset(y: offsetY)
+                .rotationEffect(.degrees(rotation))
+                .scaleEffect(scale)
+                .animation(reduceMotion ? nil : animation, value: beat)
+            if celebration.pose == .blowKiss {
+                ForEach(0..<4, id: \.self) { i in
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: h * 0.06))
+                        .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.55))
+                        .offset(x: (celebration.fromLeft ? 1 : -1) * h * (0.15 + 0.12 * CGFloat(i)) * (beat ? 1.6 : 0.6),
+                                y: -h * 0.25 - (beat ? h * 0.12 * CGFloat(i) : 0))
+                        .opacity(beat ? 0 : 1)
+                        .animation(.easeOut(duration: 1.2).repeatForever(autoreverses: false).delay(Double(i) * 0.2), value: beat)
+                }
+            }
+        }
+        .position(x: x, y: y)
+        .onAppear { beat = true; sparkle = true }
+    }
+
+    private var animation: Animation {
+        switch celebration.pose {
+        case .jump: return .easeOut(duration: 0.32).repeatForever(autoreverses: true)
+        case .cheer: return .easeInOut(duration: 0.4).repeatForever(autoreverses: true)
+        case .clap: return .easeInOut(duration: 0.18).repeatForever(autoreverses: true)
+        default: return .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+        }
+    }
+    private var offsetY: CGFloat {
+        guard beat else { return 0 }
+        switch celebration.pose {
+        case .jump: return -screen.height * 0.05
+        case .cheer: return -screen.height * 0.012
+        default: return 0
+        }
+    }
+    private var rotation: Double { beat && celebration.pose == .clap ? (celebration.fromLeft ? 3 : -3) : 0 }
+    private var scale: CGFloat { beat && celebration.pose == .cheer ? 1.04 : 1 }
 }

@@ -92,6 +92,9 @@ struct GameConstants {
     // 中奖金币雨（纯视觉，不计分）
     /// v11.7：中奖时最多这么多枚变成真的金币落下（其余直接入账），每枚间隔 rewardDropInterval 秒
     static let maxPhysicalReward = 40
+    /// v11.7 兔女郎庆祝：大奖（≥ 200 金币，即老虎机 BIG WIN）和 JACKPOT 时出现，约 2.6 秒
+    static let bigWinCelebrationThreshold = 200
+    static let celebrationSeconds: Double = 2.6
     static let rewardDropInterval: Double = 0.06
     static let coinRainSmallWin = 6
     static let coinRainBigWin = 15

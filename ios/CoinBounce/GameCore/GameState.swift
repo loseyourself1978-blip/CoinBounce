@@ -257,6 +257,7 @@ class GameState: ObservableObject {
         offeredCards = []
         pickedCard = nil
         jackpotPool = GameConstants.jackpotSeed
+        celebration = nil
         queuedSpins = 0
         dropQueue = 0
         pendingRewardDrops = 0
@@ -709,6 +710,8 @@ class GameState: ObservableObject {
     private(set) var freeSpinsGranted = 0
     /// 这一次是否快转（后面还有排队的转动时：先停 0.5 秒、每轴 0.12 秒，整次约 1.5 秒，排队不会越积越多）
     private(set) var spinIsTurbo = false
+    /// 调试 / 测试：下一次转动必出中间一行 5 个兔女郎
+    var forceUltimateJackpotNextSpin = false
 
     func spinSlot() {
         guard slotSpinState == .spinIdle else { return }
@@ -725,7 +728,8 @@ class GameState: ObservableObject {
         
         // 1. 生成 15 个物理格子结果 (5x3)：v11.6 按 slotWeights 抽；另有 1/1500 的机会直接出中间一行 5 个兔女郎（终极大奖）
         var results = (0..<15).map { _ in GameState.randomSymbolIndex(randomUnit()) }
-        if randomUnit() < GameConstants.ultimateJackpotChance {
+        if forceUltimateJackpotNextSpin || randomUnit() < GameConstants.ultimateJackpotChance {
+            forceUltimateJackpotNextSpin = false
             let bunny = SymbolType.allCases.firstIndex(of: .bunny)!
             for i in 5..<10 { results[i] = bunny }
         }
@@ -839,20 +843,50 @@ class GameState: ObservableObject {
         // v11.7：派出整个累积奖池（取整），奖池回到起始值
         let pay = Int(jackpotPool.rounded(.down))
         lastJackpotPayout = pay
+        jackpotExplosionAmount = pay
         jackpotPool = GameConstants.jackpotSeed
         payReward(pay, physical: GameConstants.coinRainJackpot * 3)
         addFloatingScore(text: "JACKPOT +\(pay)", x: layout.slotMachine.midX, y: layout.slotMachine.midY, color: .yellow, big: true)
+        celebrate(jackpot: true)
         spawnParticles(count: 200, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .pink, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
     }
+    // MARK: v11.7 大奖庆祝：兔女郎从一侧闪现，随机做一个动作（欢呼 / 拍手 / 飞吻 / 跳），约 2.6 秒，不挡操作
+    struct BunnyCelebration: Identifiable, Equatable {
+        let id = UUID()
+        let pose: BunnyPose
+        let fromLeft: Bool
+        let jackpot: Bool
+    }
+    @Published private(set) var celebration: BunnyCelebration?
+    /// 庆祝次数（测试用）
+    private(set) var celebrationCount = 0
+
+    /// 大奖（≥ bigWinCelebrationThreshold 金币）和 JACKPOT 时调用
+    func celebrate(jackpot: Bool) {
+        let pose = BunnyPose.celebrationPoses[Int(randomUnit() * Double(BunnyPose.celebrationPoses.count)) % BunnyPose.celebrationPoses.count]
+        let c = BunnyCelebration(pose: pose, fromLeft: randomUnit() < 0.5, jackpot: jackpot)
+        celebration = c
+        celebrationCount += 1
+        AudioManager.shared.play(.cheer)
+        AudioManager.shared.play(jackpot ? .jackpotFanfare : .applause)
+        DispatchQueue.main.asyncAfter(deadline: .now() + GameConstants.celebrationSeconds) { [weak self] in
+            if self?.celebration?.id == c.id { self?.celebration = nil }
+        }
+    }
+
+    /// JACKPOT 爆炸画面上显示的金额（老虎机 JACKPOT 500；兔女郎终极大奖是派出的整个奖池）
+    private(set) var jackpotExplosionAmount = GameConstants.slotJackpotReward
     /// 上一次终极大奖派出的金币（测试和庆祝动画用）
     private(set) var lastJackpotPayout = 0
     /// 终极大奖次数（测试和统计用）
     private(set) var ultimateJackpotCount = 0
 
     private func slotJackpot() {
+        jackpotExplosionAmount = GameConstants.slotJackpotReward
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
         HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow, big: true)
+        celebrate(jackpot: true)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -861,6 +895,7 @@ class GameState: ObservableObject {
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
         HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); payReward(GameConstants.slotBigWinReward, physical: GameConstants.coinRainBigWin); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange, big: true)
+        if GameConstants.slotBigWinReward >= GameConstants.bigWinCelebrationThreshold { celebrate(jackpot: false) }
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
