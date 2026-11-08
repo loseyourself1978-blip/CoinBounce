@@ -29,6 +29,10 @@ struct GameConstants {
     static let slotJackpotReward: Int = 500
     /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
     static let jackpotPool: Int = 10000
+    /// v11.7 累积奖池：起始值 10000（= jackpotPool），每投一枚金币有 2% 进奖池（在线老虎机常见 1–3%）。
+    /// 兔女郎终极大奖派出整个奖池（取整），然后回到起始值
+    static let jackpotSeed: Double = Double(jackpotPool)
+    static let jackpotContribution: Double = 0.02
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
     static let ultimateJackpotChance: Double = 1.0 / 1500
 
@@ -58,6 +62,9 @@ struct GameConstants {
     static let fallGravityBoost: Float = 0.1
     /// v11.6：多倍投币时相邻两枚之间的间隔（秒），金币跟着滑块依次落下
     static let batchDropInterval: Double = 0.18
+    /// v11.7 投币队列上限（两批 10 枚）、同时下落的金币上限（快速连点不会一下子灌满、卡顿）
+    static let maxQueuedDrops = 20
+    static let maxCoinsInFlight = 12
     /// BONUS 牌高度（参考像素，1206×2622 画面）：v11.5 用户要求比 95 高约 40%
     static let bonusPlaqueHeightPx: CGFloat = 135
     /// 参考录屏（60fps）里玩家的投币频率：9 秒 15 枚，约每 0.6 秒一枚（-autoplay 和验收测试用）
@@ -83,6 +90,9 @@ struct GameConstants {
     static let battleAttackCooldown: TimeInterval = 0.25
 
     // 中奖金币雨（纯视觉，不计分）
+    /// v11.7：中奖时最多这么多枚变成真的金币落下（其余直接入账），每枚间隔 rewardDropInterval 秒
+    static let maxPhysicalReward = 40
+    static let rewardDropInterval: Double = 0.06
     static let coinRainSmallWin = 6
     static let coinRainBigWin = 15
     static let coinRainJackpot = 40

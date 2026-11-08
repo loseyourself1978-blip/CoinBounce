@@ -62,6 +62,13 @@ struct CoinPusherView: View {
                     pinRadius: layout.slotPinRadius
                 )
                 .place(in: layout.slotMachine)
+                // v11.7：还要转几次（BONUS 连续命中排队的转动），显示在转轴窗口右上角
+                if gameState.queuedSpins > 0 {
+                    SpinQueueBadge(count: gameState.queuedSpins)
+                        .position(x: layout.slotReels.maxX - 6, y: layout.slotReels.minY + 4)
+                        .allowsHitTesting(false)
+                        .transition(.scale.combined(with: .opacity))
+                }
 
                 // ── COIN 滑块轨道 ──
                 coinSliderTrack(layout: layout)
@@ -171,6 +178,11 @@ struct CoinPusherView: View {
                 gameState.onDrop = { [pusher3D] coin in
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial)
                 }
+                // v11.7：中奖金币也是真的 3D 金币，从顶部随机位置落下（不触发战斗、水果、BONUS）
+                gameState.onRewardDrop = { [pusher3D] coin in
+                    pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true)
+                }
+                gameState.fallingCountProvider = { [pusher3D] in pusher3D.fallingCount }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
                 pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
                 pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
@@ -191,8 +203,10 @@ struct CoinPusherView: View {
     }
 
     private func dropOrHint() {
-        if gameState.dropBatch() {
-        } else {
+        switch gameState.dropBatch() {
+        case .queued, .queueFull:
+            break   // 队列满时这次点击不投（不是金币不足）
+        case .insufficient:
             AudioManager.shared.play(.noCoins)
             gameState.requestFreeCoins()
             showNoCoinsHint = true
@@ -329,9 +343,10 @@ struct CoinPusherView: View {
             // （iPhone 17 录屏实测灵动岛下沿约 47% 牌高，两行字从约 52% 牌高开始）
             // v11.6 性能：字是静态的（栅格化一次），闪光用 Core Animation 光带扫过（不再每秒重画 30 次）
             let glints = !reduceMotion && !PerfDebug.freezeUI
+            // v11.7：字加大；数字是累积奖池，每投一枚金币 +0.02，数字滚动上涨
             VStack(spacing: 0) {
-                GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
-                GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
+                GoldText3D(text: "JACKPOT", size: h * 0.125, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
+                RollingJackpotNumber(meter: gameState.jackpotMeter, size: h * 0.29, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .padding(.bottom, h * 0.05)
@@ -1524,5 +1539,52 @@ final class GlintBandView: UIView {
                          frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: Float(0)) { _ in Float(1) })
         installKeyframes(band, keyPath: "position.x", period: P,
                          frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(-0.3 * w + bw / 2)) { CGFloat(-0.3 * w + 1.3 * w * $0 + bw / 2) })
+    }
+}
+
+/// v11.7：排队的转动次数角标（金色圆牌，×N）
+struct SpinQueueBadge: View {
+    let count: Int
+    var body: some View {
+        Text(verbatim: "×\(count)")
+            .font(.system(size: 13, weight: .black, design: .rounded))
+            .foregroundStyle(Color(red: 0.3, green: 0.12, blue: 0.0))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule().stroke(Color(red: 0.45, green: 0.2, blue: 0.02), lineWidth: 1.2))
+            .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+            .accessibilityLabel(Text("\(count) spins left"))
+    }
+}
+
+/// v11.7 累积奖池数字：目标值变了就在 0.4 秒里分几步滚上去（每秒最多重画约 15 次，只有这块字）
+struct RollingJackpotNumber: View {
+    @ObservedObject var meter: JackpotMeter
+    let size: CGFloat
+    var glintStarts: [Double]?
+    @State private var shown: Double = GameConstants.jackpotSeed
+    @State private var rollTimer: Timer?
+
+    static func format(_ v: Double) -> String { String(format: "%.2f", v) }
+
+    var body: some View {
+        GoldText3D(text: RollingJackpotNumber.format(shown), size: size, tracking: 1, glintStarts: glintStarts)
+            .onAppear { shown = meter.value }
+            .onChange(of: meter.value) { target in roll(to: target) }
+            .accessibilityLabel(Text(verbatim: "JACKPOT \(RollingJackpotNumber.format(meter.value))"))
+    }
+
+    private func roll(to target: Double) {
+        rollTimer?.invalidate()
+        // 奖池派出后回到起始值：直接跳过去
+        guard target > shown else { shown = target; return }
+        let start = shown, steps = 6
+        var k = 0
+        rollTimer = Timer.scheduledTimer(withTimeInterval: 0.4 / Double(steps), repeats: true) { t in
+            k += 1
+            shown = k >= steps ? target : start + (target - start) * Double(k) / Double(steps)
+            if k >= steps { t.invalidate() }
+        }
     }
 }

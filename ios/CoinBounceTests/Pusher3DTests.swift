@@ -82,8 +82,10 @@ final class Pusher3DTests: XCTestCase {
                 XCTAssertEqual(r.maxY, py(y.upperBound), accuracy: tolY, "\(name) \(node) 下边", file: file, line: line)
             }
         }
-        box("postLeft", x: ReferenceBoxes.postLeftX, y: ReferenceBoxes.postY)
-        box("postRight", x: ReferenceBoxes.postRightX, y: ReferenceBoxes.postY)
+        // v11.7：推板两侧铜柱去掉了（斜坡前面那块平台会永远留住金币），改为检查它不在场景里
+        for name in ["postLeft", "postRight"] {
+            XCTAssertNil(pusher.scene.rootNode.childNode(withName: name, recursively: true), "\(name) 已去掉", file: file, line: line)
+        }
         box("lip", x: ReferenceBoxes.lipX, y: nil)
         // 台阶顶面：后沿、前沿
         let sz = g.shelfZ

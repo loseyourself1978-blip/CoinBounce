@@ -39,6 +39,10 @@
 		C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */; };
 		C05023BDDC0F0C704285337C /* sfx_bed_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */; };
 		C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */ = {isa = PBXBuildFile; fileRef = C065A216266C4D4C0CD3793D /* sfx_win_big.wav */; };
+		C197F86F2E10BF3D81FEB910 /* sfx_jackpot_fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */; };
+		C1A7A738123BFC80BBE8326C /* sfx_applause.wav in Resources */ = {isa = PBXBuildFile; fileRef = C11D4165DBFC06F8476B284C /* sfx_applause.wav */; };
+		C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */; };
+		C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */; };
 		C064F742390651D88B659F01 /* sfx_slot_spin.wav in Resources */ = {isa = PBXBuildFile; fileRef = C01A8C670299D69B11017774 /* sfx_slot_spin.wav */; };
 		C07516CB54148100DE592C7D /* sfx_fruit_lit.wav in Resources */ = {isa = PBXBuildFile; fileRef = C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */; };
 		C079D1C28017942DBAFC45E1 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A6513C75A7B7AA2979393A /* AudioManager.swift */; };
@@ -102,6 +106,10 @@
 		C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_fruit_lit.wav; sourceTree = "<group>"; };
 		C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_small.wav; sourceTree = "<group>"; };
 		C065A216266C4D4C0CD3793D /* sfx_win_big.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_big.wav; sourceTree = "<group>"; };
+		C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_jackpot_fanfare.wav; sourceTree = "<group>"; };
+		C11D4165DBFC06F8476B284C /* sfx_applause.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_applause.wav; sourceTree = "<group>"; };
+		C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_cheer.wav; sourceTree = "<group>"; };
+		C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = amb_crowd_loop.wav; sourceTree = "<group>"; };
 		C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeArt.swift; sourceTree = "<group>"; };
 		C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRewardTests.swift; sourceTree = "<group>"; };
 		C0A6513C75A7B7AA2979393A /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
@@ -250,6 +258,10 @@
 				C01A8C670299D69B11017774 /* sfx_slot_spin.wav */,
 				C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */,
 				C065A216266C4D4C0CD3793D /* sfx_win_big.wav */,
+				C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */,
+				C11D4165DBFC06F8476B284C /* sfx_applause.wav */,
+				C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */,
+				C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */,
 				C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */,
 			);
 			path = Audio;
@@ -356,6 +368,10 @@
 				C064F742390651D88B659F01 /* sfx_slot_spin.wav in Resources */,
 				C02B91ABF6D4853D700EE10E /* sfx_slot_stop.wav in Resources */,
 				C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */,
+				C197F86F2E10BF3D81FEB910 /* sfx_jackpot_fanfare.wav in Resources */,
+				C1A7A738123BFC80BBE8326C /* sfx_applause.wav in Resources */,
+				C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */,
+				C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */,
 				C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */,
 				C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */,
 				C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */,
