@@ -38,6 +38,7 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         // 自动化截图：跳过同意表单和 ATT，直接验证广告加载与发奖
         if ProcessInfo.processInfo.arguments.contains("-debugSkipConsent") {
             sdkStarted = true
+            Self.configureRequests()
             MobileAds.shared.start { [weak self] _ in
                 Self.log("SDK started (consent skipped for debug)")
                 self?.loadRewardedAd()
@@ -64,6 +65,7 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         guard ConsentInformation.shared.canRequestAds, !sdkStarted else { return }
         sdkStarted = true
         requestTrackingIfNeeded { [weak self] in
+            Self.configureRequests()
             MobileAds.shared.start { _ in
                 Self.log("SDK started")
                 self?.loadRewardedAd()
@@ -79,6 +81,11 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         ATTrackingManager.requestTrackingAuthorization { _ in
             DispatchQueue.main.async { next() }
         }
+    }
+
+    /// 1.0.0 上架（年龄分级 13+）：广告内容上限 Teen
+    static func configureRequests() {
+        MobileAds.shared.requestConfiguration.maxAdContentRating = .teen
     }
 
     // MARK: 加载 / 展示
