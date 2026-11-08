@@ -1,6 +1,34 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld spins left": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld spin left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld spins left"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还要转 %lld 次"
+          }
+        }
+      }
+    },
     "+100 Coins": {
       "extractionState": "manual",
       "localizations": {
@@ -107,6 +135,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "燃爆！x%lld"
+          }
+        }
+      }
+    },
+    "Bunny": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兔女郎"
           }
         }
       }

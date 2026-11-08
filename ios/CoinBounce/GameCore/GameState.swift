@@ -938,14 +938,16 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.winSmall)
     }
 
-    func finishCardPick() {
+    func finishCardPick(schedule: (TimeInterval, @escaping () -> Void) -> Void = { delay, work in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }) {
         showCardSelection = false
         offeredCards = []
         pickedCard = nil
         // v11.7：选卡后翻牌展示的 1.9 秒里，快速投币可能又把 7 个水果全点亮——那时弹卡被「已在显示」挡掉，
         // 之后再没有新的水果点亮去触发，水果灯就一直全亮。关闭时再检查一次
         if fruitsLit.allSatisfy({ $0 }) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            schedule(0.4) { [weak self] in
                 guard let self, !self.showCardSelection, self.fruitsLit.allSatisfy({ $0 }) else { return }
                 self.presentCardPick()
             }

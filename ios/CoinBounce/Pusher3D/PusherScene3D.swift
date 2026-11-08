@@ -602,6 +602,15 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         startPusher(multiplier: 1)
         // 后墙：推板顶面上方一道低矮的墙（推板收回时挡住顶面上的金币），红绒布
         _ = node("backWall", box: wide * 2, 0.35, 0.6, at: SCNVector3(0, h + 0.01 + 0.175, wallZ - 0.3), "backFelt")
+        // v11.7：后墙顶面是平的，弹上去的金币会一直停在上面（死角）。顶上加一道看不见的斜面（后高前低 35°），
+        // 落上去的金币滑回推板顶面
+        do {
+            let z0 = wallZ - 0.6, z1 = wallZ, top = h + 0.36
+            let dz = z1 - z0, dy = dz * tan(Float.pi * 35 / 180)
+            let len = (dz * dz + dy * dy).squareRoot()
+            orientedNode("backWallSlope", box: wide * 2, 0.06, len, at: SCNVector3(0, top + dy / 2 - 0.03, (z0 + z1) / 2),
+                         euler: SCNVector3(atan2(dy, dz), 0, 0), "invisible", friction: 0.1)
+        }
         // 后背板：竖直红绒布，从台面到 BONUS 区下沿，挡住后墙后面
         let panelTop = g.hitZ(g.cx, g.backPanelTopScreenY, z: g.backPanelZ).y
         _ = node("backPanel", box: wide * 2, panelTop, 0.2, at: SCNVector3(0, panelTop / 2, g.backPanelZ - 0.1), "backFelt", physics: true)
@@ -1246,7 +1255,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     // MARK: 性能统计
     /// v11.5：物理步长 180 → 120 Hz（真机上金币两两碰撞检测是主要开销，按步数线性增长；90 Hz 时下落变慢到 1.95 秒以上）
-    static let physicsTimeStep: TimeInterval = 1.0 / (UserDefaults.standard.object(forKey: "physicsHz") as? Double ?? 120.0) // TUNE
+    static let physicsTimeStep: TimeInterval = 1.0 / 120.0
     private var physicsStepStart: TimeInterval = 0
     private var physicsMsSum: Double = 0, physicsMsCount = 0
     /// 每帧从渲染器 update 到物理推进完的平均毫秒数（读取后清零）
@@ -1554,7 +1563,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             let hits = view.hitTest(sp, options: [.searchMode: SCNHitTestSearchMode.all.rawValue, .ignoreHiddenNodes: true])
             for hit in hits {
                 let n = hit.node
-                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") || (n.name ?? "").hasPrefix("sideLip") || n.name == "bonusPost" { continue }   // 看不见的碰撞体不算遮挡
+                if n === node || n.parent === node || coinIDs.contains(ObjectIdentifier(n)) || n.name == "coinVisual" || n.name == "peg" || n.name == "fieldWall" || n.name == "rampGuard" || n.name == "lipCollider" || (n.name ?? "").hasPrefix("pileWall") || (n.name ?? "").hasPrefix("screenWall") || (n.name ?? "").hasPrefix("rampCap") || (n.name ?? "").hasPrefix("sideLip") || n.name == "bonusPost" || n.name == "backWallSlope" { continue }   // 看不见的碰撞体不算遮挡
                 let w = hit.worldCoordinates
                 let d = ((w.x - cam.x) * (w.x - cam.x) + (w.y - cam.y) * (w.y - cam.y) + (w.z - cam.z) * (w.z - cam.z)).squareRoot()
                 if d < dist - config.coinRadius - 0.05 {

@@ -226,11 +226,18 @@ final class SettingsAudioTests: XCTestCase {
         // 翻牌展示的 1.9 秒里，快速投币把 7 个水果又全点亮
         for i in 0..<state.fruitsLit.count { state.fruitsLit[i] = true }
         state.presentCardPick()   // 被「正在显示」挡掉（原来的 bug：之后再也不弹）
-        state.finishCardPick()
+        var scheduled: [() -> Void] = []
+        state.finishCardPick(schedule: { _, work in scheduled.append(work) })
         XCTAssertFalse(state.showCardSelection)
-        let again = expectation(for: NSPredicate { _, _ in GameState.shared.showCardSelection }, evaluatedWith: nil)
-        wait(for: [again], timeout: 3)
-        state.finishCardPick()
+        XCTAssertEqual(scheduled.count, 1, "关闭时水果全亮：安排再弹一次")
+        scheduled.forEach { $0() }
+        XCTAssertTrue(state.showCardSelection, "再弹出选卡，水果灯不会一直全亮")
+        // 没有全亮时不再弹
+        var none: [() -> Void] = []
+        state.pickCard(state.offeredCards.first!.kind)
+        for i in 0..<state.fruitsLit.count { state.fruitsLit[i] = false }
+        state.finishCardPick(schedule: { _, work in none.append(work) })
+        XCTAssertTrue(none.isEmpty)
         state.resetForTesting()
     }
 
