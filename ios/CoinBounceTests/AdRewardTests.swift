@@ -158,4 +158,14 @@ final class AdRewardTests: XCTestCase {
         state.applySave(data)
         XCTAssertEqual(state.adRewardsClaimed, 0)
     }
+
+    // MARK: 1.0.0 上架：TestFlight 构建用测试广告
+    func test_testFlightBuild_usesTestAdUnit() {
+        let prod = "ca-app-pub-9469890002230148/1234567890"
+        XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: false, isTestFlight: true, production: prod), AppConfig.testRewardedAdUnitID, "TestFlight 用测试广告")
+        XCTAssertEqual(AppConfig.rewardedAdUnitID(isDebug: false, isTestFlight: false, production: prod), prod, "App Store 用正式广告")
+        XCTAssertTrue(AppConfig.isTestFlightReceipt(URL(fileURLWithPath: "/var/mobile/Containers/Data/Application/X/StoreKit/sandboxReceipt")))
+        XCTAssertFalse(AppConfig.isTestFlightReceipt(URL(fileURLWithPath: "/var/mobile/Containers/Data/Application/X/StoreKit/receipt")))
+        XCTAssertFalse(AppConfig.isTestFlightReceipt(nil))
+    }
 }
