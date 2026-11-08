@@ -332,6 +332,20 @@ struct CoinPusherView: View {
                 gameState.dropCoin()
             }
         }
+        // v11.7：10 COIN 快速连点（录屏 / 真机帧率）：每 0.12 秒点一次 10 COIN，选卡弹出时选第一张
+        if ProcessInfo.processInfo.arguments.contains("-autoplayBurst10") {
+            pusher3D.logsPhysicsStats = true
+            PerfDebug.monitor.start()
+            gameState.coinMultiplier = 10
+            Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { _ in
+                gameState.availableCoins = max(gameState.availableCoins, 1000)
+                if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
+                    gameState.pickCard(card.kind)
+                    gameState.finishCardPick()
+                }
+                _ = gameState.dropBatch()
+            }
+        }
         // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
         let autoDrop = UserDefaults.standard.integer(forKey: "debugAutoDrop")
         for i in 0..<autoDrop {

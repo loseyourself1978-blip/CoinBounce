@@ -602,7 +602,17 @@ extension Pusher3DTests {
         // v11.6：两边向外倾的边带（侧面掉币）
         for (name, sign) in [("tableEdgeLeft", Float(1)), ("tableEdgeRight", Float(-1))] {
             guard let n = pusher.scene.rootNode.childNode(withName: name, recursively: true) else { return XCTFail("缺少 \(name)") }
-            XCTAssertEqual(n.eulerAngles.z, sign * PusherScene3D.edgeStripTilt, accuracy: 1e-5, "\(name) 外侧向下")
+            // v11.7：梯形斜面（外沿跟着侧边凸边）；顶面 4 个点：内后、内前、外前、外后
+            guard let src = n.geometry?.sources(for: .vertex).first else { return XCTFail("\(name) 没有顶点") }
+            let top: [SCNVector3] = (0..<4).map { i in src.data.withUnsafeBytes { raw in
+                let o = src.dataOffset + i * src.dataStride
+                return SCNVector3(raw.load(fromByteOffset: o, as: Float.self), raw.load(fromByteOffset: o + 4, as: Float.self), raw.load(fromByteOffset: o + 8, as: Float.self))
+            } }
+            for (inner, outer) in [(top[0], top[3]), (top[1], top[2])] {
+                XCTAssertEqual((inner.y - outer.y) / abs(outer.x - inner.x), tan(PusherScene3D.edgeStripTilt), accuracy: 1e-4, "\(name) 外侧向下")
+                XCTAssertEqual(outer.x > inner.x, sign < 0, "\(name) 在外侧")
+            }
+            XCTAssertGreaterThan(abs(top[3].x), abs(top[2].x), "金币堆后面宽、前面窄：边带外沿跟着凸边收窄（凸边外不留小平台）")
             XCTAssertGreaterThan(PusherScene3D.edgeStripTilt, 0.12, "比金币和台面的摩擦角陡（0.3 × 0.4 = 0.12），金币会滑下去")
             XCTAssertEqual(n.physicsBody?.type, .static)
         }

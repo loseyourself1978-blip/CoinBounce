@@ -245,28 +245,55 @@ final class SettingsAudioTests: XCTestCase {
     func test_spinQueue_spinsEqualPasses_turbo_andStops() {
         let state = GameState.shared
         state.resetForTesting()
+        let soundWas = SettingsStore.shared.settings.soundEnabled
+        SettingsStore.shared.settings.soundEnabled = false
+        // 虚拟时钟：转轴停下、结算、接着转都排进这里，由测试按时间顺序执行（不受模拟器主线程卡顿影响）
+        var clock = 0.0
+        var pending: [(at: Double, seq: Int, work: () -> Void)] = []
+        var seq = 0
+        state.spinScheduler = { delay, work in seq += 1; pending.append((clock + delay, seq, work)) }
+        defer {
+            SettingsStore.shared.settings.soundEnabled = soundWas
+            state.spinScheduler = { delay, work in DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work) }
+            state.resetForTesting()
+        }
+        func advance(_ seconds: Double) {
+            let end = clock + seconds
+            while let next = pending.min(by: { ($0.at, $0.seq) < ($1.at, $1.seq) }), next.at <= end {
+                pending.removeAll { $0.seq == next.seq }
+                clock = next.at
+                next.work()
+            }
+            clock = end
+        }
         state.updateLayout(GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)))
-        // resetForTesting 已作废上一个测试留下的转动（不用等它停下）
         XCTAssertEqual(state.slotSpinState, .spinIdle)
         XCTAssertEqual(state.queuedSpins, 0)
         let triggers0 = state.bonusTriggerCount, spins0 = state.spinsStarted
         let gate = state.layout.bonusSliderCenter(offset: state.bonusSliderOffset).x
         for _ in 0..<4 { XCTAssertTrue(state.coinCrossedBonusLane(x: gate, radius: state.layout.coinRadius, gateX: gate)) }
-        XCTAssertEqual(state.queuedSpins, 3, "第一次马上转，另外 3 次排队")
-        // 第二次开始时后面还有排队：快转
-        let second = expectation(for: NSPredicate { _, _ in GameState.shared.spinsStarted - spins0 >= 2 }, evaluatedWith: nil)
-        wait(for: [second], timeout: 8)
-        XCTAssertTrue(state.spinIsTurbo, "后面有排队时快转")
-        let done = expectation(for: NSPredicate { _, _ in
-            GameState.shared.queuedSpins == 0 && GameState.shared.slotSpinState == .spinIdle && GameState.shared.spinsStarted - spins0 == 4
-        }, evaluatedWith: nil)
-        wait(for: [done], timeout: 15)
-        XCTAssertEqual(state.spinsStarted - spins0, state.bonusTriggerCount - triggers0, "转动次数 = 整枚穿过的次数")
-        // 排空后不再转
-        RunLoop.current.run(until: Date().addingTimeInterval(2))
-        XCTAssertEqual(state.spinsStarted - spins0, 4)
-        XCTAssertEqual(state.slotSpinState, .spinIdle)
-        state.resetForTesting()
+        XCTAssertEqual(state.spinsStarted - spins0, 1, "第一次马上转")
+        XCTAssertEqual(state.queuedSpins, 3, "另外 3 次排队")
+        XCTAssertFalse(state.spinIsTurbo, "第一次开始时后面还没有排队：普通速度")
+        // 普通转动约 4.2 秒；快转约 1.5 秒
+        advance(1.0)
+        XCTAssertEqual(state.spinsStarted - spins0, 1)
+        var startTimes: [Double] = [0]
+        var turbo: [Bool] = [false]
+        var last = state.spinsStarted
+        while clock < 30 {
+            advance(0.05)
+            if state.spinsStarted != last { last = state.spinsStarted; startTimes.append(clock); turbo.append(state.spinIsTurbo) }
+        }
+        XCTAssertEqual(state.spinsStarted - spins0, 4, "转动次数 = 整枚穿过的次数")
+        XCTAssertEqual(state.spinsStarted - spins0, state.bonusTriggerCount - triggers0)
+        XCTAssertEqual(state.queuedSpins, 0)
+        XCTAssertEqual(state.slotSpinState, .spinIdle, "排空后停止转动")
+        XCTAssertTrue(pending.isEmpty, "没有还没执行的转动回调")
+        let gaps = zip(startTimes.dropFirst(), startTimes).map { $0 - $1 }
+        XCTAssertEqual(turbo, [false, true, true, false], "后面还有排队的转动快转，最后一次普通速度")
+        XCTAssertEqual(gaps.first ?? 0, 4.2, accuracy: 0.06, "普通转动约 4.2 秒")
+        XCTAssertTrue(gaps.dropFirst().allSatisfy { $0 < 2.0 }, "快转约 1.5 秒一次：\(gaps)")
     }
 
     // MARK: v11.7 累积奖池

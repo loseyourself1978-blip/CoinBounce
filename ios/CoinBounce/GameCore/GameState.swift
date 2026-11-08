@@ -717,6 +717,10 @@ class GameState: ObservableObject {
 
     /// 每次转动的编号：resetForTesting 时加一，之前排好的停轴回调作废
     private var spinGeneration = 0
+    /// 转轴停下、结算、接着转的定时（测试可以换成虚拟时钟，不受主线程卡顿影响）
+    var spinScheduler: (Double, @escaping () -> Void) -> Void = { delay, work in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
 
     func spinSlot() {
         guard slotSpinState == .spinIdle else { return }
@@ -760,7 +764,7 @@ class GameState: ObservableObject {
         let firstStop = spinIsTurbo ? 0.5 : 1.2, step = spinIsTurbo ? 0.12 : 0.4
         let settle = spinIsTurbo ? 0.25 : 0.5, gap = spinIsTurbo ? 0.25 : 0.9
         for col in 0..<5 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + firstStop + Double(col) * step) { [weak self] in
+            spinScheduler(firstStop + Double(col) * step) { [weak self] in
                 guard let self = self, self.spinGeneration == generation else { return }
                 self.slotSpinState = .stopping(column: col) // 使用带 column 的枚举触发视图特定轴停止
                 self.stoppedColumns.insert(col)
@@ -768,13 +772,13 @@ class GameState: ObservableObject {
                 HapticManager.shared.slotStop()
                 AudioManager.shared.play(.slotStop)
                 if col == 4 { 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                    self.spinScheduler(settle) {
                         guard self.spinGeneration == generation else { return }
                         self.evaluateWin()
                         self.slotSpinState = .spinIdle
                         // 排队的转动（BONUS 连续命中、免费转动卡）稍等后接着转
                         if self.queuedSpins > 0 {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + gap) { self.startQueuedSpinIfIdle() }
+                            self.spinScheduler(gap) { self.startQueuedSpinIfIdle() }
                         }
 
                         // 中奖线显示 2.5 秒后熄灭
@@ -853,7 +857,7 @@ class GameState: ObservableObject {
         jackpotExplosionAmount = pay
         jackpotPool = GameConstants.jackpotSeed
         payReward(pay, physical: GameConstants.coinRainJackpot * 3)
-        addFloatingScore(text: "JACKPOT +\(pay)", x: layout.slotMachine.midX, y: layout.slotMachine.midY, color: .yellow, big: true)
+        // 金额由 JACKPOT 爆炸画面显示（v11.7 去掉重复的飘字，两行 JACKPOT 叠在一起看不清）
         celebrate(jackpot: true)
         spawnParticles(count: 200, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .pink, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -892,7 +896,7 @@ class GameState: ObservableObject {
     private func slotJackpot() {
         jackpotExplosionAmount = GameConstants.slotJackpotReward
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow, big: true)
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot)
         celebrate(jackpot: true)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
