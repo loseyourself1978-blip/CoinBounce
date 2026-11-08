@@ -16,12 +16,17 @@ enum AppConfig {
         #if DEBUG
         return rewardedAdUnitID(isDebug: true, production: productionRewardedAdUnitID)
         #else
-        return rewardedAdUnitID(isDebug: false, production: productionRewardedAdUnitID)
+        return rewardedAdUnitID(isDebug: false, isTestFlight: isTestFlight, production: productionRewardedAdUnitID)
         #endif
     }
 
-    static func rewardedAdUnitID(isDebug: Bool, production: String) -> String? {
-        if isDebug { return testRewardedAdUnitID }
+    /// TestFlight 安装的 App 用的是沙盒收据（appStoreReceiptURL 的文件名是 sandboxReceipt）：
+    /// TestFlight 构建一律用测试广告，自己测试时不会点到正式广告
+    static var isTestFlight: Bool { isTestFlightReceipt(Bundle.main.appStoreReceiptURL) }
+    static func isTestFlightReceipt(_ url: URL?) -> Bool { url?.lastPathComponent == "sandboxReceipt" }
+
+    static func rewardedAdUnitID(isDebug: Bool, isTestFlight: Bool = false, production: String) -> String? {
+        if isDebug || isTestFlight { return testRewardedAdUnitID }
         // 正式版绝不能用测试 ID、空值或占位值
         guard isValidProductionAdUnitID(production) else { return nil }
         return production

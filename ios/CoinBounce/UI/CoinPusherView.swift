@@ -11,6 +11,8 @@ struct CoinPusherView: View {
     @State private var arrowBounce = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showNoCoinsHint = false
+    /// 1.0.0：点领币按钮时没有广告（没网 / 还在加载）的提示
+    @State private var showAdUnavailableHint = false
     @State private var showSettings = false
     @State private var showHelp = false
     /// 下落区物理场景（SpriteKit），整屏透明覆盖在各区域之上
@@ -777,6 +779,19 @@ extension CoinPusherView {
                     .offset(x: min(w * 0.34, w / 2 - 75), y: buttonY)
             }
 
+            if showAdUnavailableHint {
+                Text("No ad available right now. Check your connection and try again.")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.black.opacity(0.75)))
+                    .frame(maxWidth: w * 0.8)
+                    .offset(y: buttonY - buttonSize * 0.7)
+                    .transition(.opacity)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
             // 金币用完提示
             if showNoCoinsHint {
                 Text("Not enough coins")
@@ -798,7 +813,14 @@ extension CoinPusherView {
     func adRewardButton(width: CGFloat, height: CGFloat) -> some View {
         Button {
             AudioManager.shared.play(.buttonTap)
-            gameState.requestFreeCoins()
+            if ads.isAdReady {
+                gameState.requestFreeCoins()
+            } else {
+                // 没有网络或广告还没加载好：提示一下、重新加载，不卡住
+                ads.loadRewardedAd()
+                showAdUnavailableHint = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { showAdUnavailableHint = false }
+            }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: ads.isAdReady ? "play.rectangle.fill" : "hourglass")
@@ -820,7 +842,6 @@ extension CoinPusherView {
             .overlay(Capsule().stroke(Color.white.opacity(0.7), lineWidth: 1.5))
             .opacity(ads.isAdReady ? 1 : 0.6)
         }
-        .disabled(!ads.isAdReady)
     }
 }
 

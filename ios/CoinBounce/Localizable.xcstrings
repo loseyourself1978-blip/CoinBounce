@@ -402,6 +402,16 @@
         }
       }
     },
+    "No ad available right now. Check your connection and try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时没有可用的广告，请检查网络后再试。"
+          }
+        }
+      }
+    },
     "Not enough coins": {
       "extractionState": "manual",
       "localizations": {
