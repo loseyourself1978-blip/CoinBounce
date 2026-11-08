@@ -258,6 +258,8 @@ class GameState: ObservableObject {
         pickedCard = nil
         jackpotPool = GameConstants.jackpotSeed
         celebration = nil
+        spinGeneration += 1
+        slotSpinState = .spinIdle
         queuedSpins = 0
         dropQueue = 0
         pendingRewardDrops = 0
@@ -713,9 +715,13 @@ class GameState: ObservableObject {
     /// 调试 / 测试：下一次转动必出中间一行 5 个兔女郎
     var forceUltimateJackpotNextSpin = false
 
+    /// 每次转动的编号：resetForTesting 时加一，之前排好的停轴回调作废
+    private var spinGeneration = 0
+
     func spinSlot() {
         guard slotSpinState == .spinIdle else { return }
         spinsStarted += 1
+        let generation = spinGeneration
         spinIsTurbo = queuedSpins > 0
         slotSpinState = .spinning
         stoppedColumns.removeAll()
@@ -755,7 +761,7 @@ class GameState: ObservableObject {
         let settle = spinIsTurbo ? 0.25 : 0.5, gap = spinIsTurbo ? 0.25 : 0.9
         for col in 0..<5 {
             DispatchQueue.main.asyncAfter(deadline: .now() + firstStop + Double(col) * step) { [weak self] in
-                guard let self = self else { return }
+                guard let self = self, self.spinGeneration == generation else { return }
                 self.slotSpinState = .stopping(column: col) // 使用带 column 的枚举触发视图特定轴停止
                 self.stoppedColumns.insert(col)
                 self.slotScrollOffsets[col] = 0
@@ -763,6 +769,7 @@ class GameState: ObservableObject {
                 AudioManager.shared.play(.slotStop)
                 if col == 4 { 
                     DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                        guard self.spinGeneration == generation else { return }
                         self.evaluateWin()
                         self.slotSpinState = .spinIdle
                         // 排队的转动（BONUS 连续命中、免费转动卡）稍等后接着转

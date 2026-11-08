@@ -246,9 +246,9 @@ final class SettingsAudioTests: XCTestCase {
         let state = GameState.shared
         state.resetForTesting()
         state.updateLayout(GameLayout(size: CGSize(width: 402, height: 874), safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)))
-        // 先等上一个测试留下的转动停下
-        let idle = expectation(for: NSPredicate { _, _ in GameState.shared.slotSpinState == .spinIdle && GameState.shared.queuedSpins == 0 }, evaluatedWith: nil)
-        wait(for: [idle], timeout: 10)
+        // resetForTesting 已作废上一个测试留下的转动（不用等它停下）
+        XCTAssertEqual(state.slotSpinState, .spinIdle)
+        XCTAssertEqual(state.queuedSpins, 0)
         let triggers0 = state.bonusTriggerCount, spins0 = state.spinsStarted
         let gate = state.layout.bonusSliderCenter(offset: state.bonusSliderOffset).x
         for _ in 0..<4 { XCTAssertTrue(state.coinCrossedBonusLane(x: gate, radius: state.layout.coinRadius, gateX: gate)) }

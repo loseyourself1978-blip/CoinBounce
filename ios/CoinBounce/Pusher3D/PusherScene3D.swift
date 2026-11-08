@@ -143,7 +143,8 @@ struct MachineGeometry {
     /// 斜坡前沿伸到下落平面前方，边上落下的金币一定落在斜坡上；内侧低端仍对准参考的屏幕位置 (415, 1965)
     var rampFrontZ: Float { fallPlaneZ + PusherScene3D.nominalCoinRadius + 0.25 }
     /// v11.7：斜坡向前延伸到铜柱前沿，盖住原来斜坡前面那块平台（推板两侧导轨的顶面、铜柱顶面），金币不会停在上面
-    var rampExtendedFrontZ: Float { max(rampFrontZ, postFrontZ) }
+    /// 延伸到金币堆台面开始处（铜柱前沿 − 0.3）：导轨也到这里为止，推板旁边从这里往前是看得见的台面
+    var rampExtendedFrontZ: Float { max(rampFrontZ, postFrontZ - 0.3) }
     var rampInnerHeight: Float { hitZ(sx(ReferenceBoxes.rampInnerX), sy(ReferenceBoxes.rampInnerTopY), z: rampFrontZ).y }
     var rampInnerX: Float { abs(hitZ(sx(ReferenceBoxes.rampInnerX), sy(ReferenceBoxes.rampInnerTopY), z: rampFrontZ).x) }
     var rampOuter: SCNVector3 { hitZ(sx(ReferenceBoxes.rampOuterX), sy(ReferenceBoxes.rampOuterTopY), z: rampFrontZ) }
@@ -575,8 +576,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             tableBox(side < 0 ? "tableFrontLeft" : "tableFrontRight", width: flatHalf,
                      top: SCNVector3(side * flatHalf / 2 * cos(crown), -flatHalf / 2 * sin(crown), 0), angle: a)
             let edgeY = -flatHalf * sin(crown)
-            // 边带比金币堆边多伸出 0.4，侧边凸边下面没有缝
-            let w = stripW + 0.4
+            // 边带比金币堆边多伸出 0.12：刚好伸到侧边凸边下面（不留缝），凸边外面不留能停住金币的小平台
+            let w = stripW + 0.12
             tableBox(side < 0 ? "tableEdgeLeft" : "tableEdgeRight", width: w,
                      top: SCNVector3(side * (flatHalf * cos(crown) + w / 2 * cos(tilt)), edgeY - w / 2 * sin(tilt), 0), angle: side * -tilt)
         }
@@ -675,7 +676,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         for side: Float in [-1, 1] {
             // 内侧面贴着推板侧面（不留缝，金币卡不进去、也不会被挤进导轨里；不伸进推板顶面，金币不会靠着它被推着走）
             let x0 = halfP, x1 = g.pileHalfWidth(atZ: g.postFrontZ) + 0.45
-            let z0 = g.backPanelZ, z1 = g.postFrontZ
+            // v11.7：导轨到斜坡前沿为止（不伸进金币堆台面：原来多出的 0.3 会把被挤过来的金币「吞」进导轨里，看不见）
+            let z0 = g.backPanelZ, z1 = g.rampExtendedFrontZ
             // 比推板顶面高一点、但在斜坡内端下面（斜坡盖住它，金币碰不到它的顶面）
             let gh = min(h + 0.3, g.rampInnerHeight - 0.06)
             _ = node(side < 0 ? "pusherGuideLeft" : "pusherGuideRight", box: x1 - x0, gh, z1 - z0,
