@@ -950,22 +950,18 @@ class GameState: ObservableObject {
         }
     }
 
+    /// v11.8：和真老虎机一样从最左边一轴开始连：前 4 个相同（百搭可代替）= BIG WIN
     private func checkFourMatch(row: [Int]) -> Bool {
-        for skip in 0..<5 {
-            var c = row; c.remove(at: skip)
-            let b = c[0] == 0 ? c[1] : c[0]
-            if c.allSatisfy({ $0 == b || $0 == 0 }) { return true }
-        }
-        return false
+        let c = Array(row[0..<4])
+        let b = c.first(where: { $0 != 0 }) ?? 0
+        return c.allSatisfy { $0 == b || $0 == 0 }
     }
 
+    /// v11.8：前 3 个相同（从最左边开始）= 小奖（原来任意连续 3 个都算，中奖太频繁、奖金又小）
     private func checkThreeMatch(row: [Int]) -> Bool {
-        for s in 0...2 {
-            let sl = Array(row[s..<s+3])
-            let b = sl[0] == 0 ? sl[1] : sl[0]
-            if sl.allSatisfy({ $0 == b || $0 == 0 }) { return true }
-        }
-        return false
+        let c = Array(row[0..<3])
+        let b = c.first(where: { $0 != 0 }) ?? 0
+        return c.allSatisfy { $0 == b || $0 == 0 }
     }
 
     /// v11.6 终极大奖：派出顶部 JACKPOT 奖池全部金币，满屏金币雨和粒子

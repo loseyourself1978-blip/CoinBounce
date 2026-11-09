@@ -51,17 +51,6 @@
         }
       }
     },
-    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row win coins; a full row is the JACKPOT.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币从 BONUS 滑块中间穿过会启动老虎机。中间一行连续 3 个以上相同符号赢金币，整行相同就是 JACKPOT。"
-          }
-        }
-      }
-    },
     "A coin passing through the middle of a fruit lights it. Light all 7 fruits to pick a reward card, then the fruits reset.": {
       "extractionState": "manual",
       "localizations": {
@@ -522,17 +511,6 @@
         }
       }
     },
-    "Coins crossing the battle hit the BOSS. Knock it out for 5 coins.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 5 金币。"
-          }
-        }
-      }
-    },
     "Glowing coins are special: each one pushed off pays 2 coins.": {
       "extractionState": "manual",
       "localizations": {
@@ -540,6 +518,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "发光的是特殊金币：每推落一枚得 2 金币。"
+          }
+        }
+      }
+    },
+    "Coins crossing the battle hit the BOSS. Knock it out for 8 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 8 金币。"
+          }
+        }
+      }
+    },
+    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
           }
         }
       }

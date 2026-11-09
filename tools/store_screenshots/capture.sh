@@ -16,7 +16,7 @@ COMMON=(-AppleLanguages "($LANG_)" -AppleLocale "$([ "$LANG_" = en ] && echo en_
 case $SCENE in
   1) ARGS=(-autoplayBurst10); WAIT=25 ;;
   2) ARGS=(-autoplay); WAIT=12 ;;
-  3) ARGS=(-autoplay -debugJackpotPool 12486.38 -debugJackpot); WAIT=6 ;;
+  3) ARGS=(-autoplayBurst10); WAIT=45 ;;     # v11.8: a full pile pouring over the front edge (no jackpot shot, guideline 2.3.8)
   4) ARGS=(-shotCardPick); WAIT=6 ;;
   5) ARGS=(-autoplay -shotBossKO); WAIT=8 ;;
   6) ARGS=(-autoplayBurst10); WAIT=4 ;;      # CPP "Satisfying Physics": first 10-COIN batches pouring from the top

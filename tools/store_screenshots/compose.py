@@ -15,9 +15,9 @@ FONT_EN = "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf"
 FONT_ZH = ("/System/Library/Fonts/Hiragino Sans GB.ttc", 1)   # W6
 
 CAPTIONS = {
-    "en": ["Push the pile,\ncatch the cascade", "Thread the BONUS gate\nto spin", "A JACKPOT that grows\nwith every coin",
+    "en": ["Push the pile,\ncatch the cascade", "Thread the BONUS gate\nto spin", "Watch the coins pour\nover the edge",
            "Light all seven,\npick your reward", "Knock out the BOSS\nfor bonus coins"],
-    "zh": ["推平金币堆\n接住金币雨", "穿过 BONUS\n转动滚轴", "奖池随每枚金币上涨", "点亮七果\n翻卡领奖", "击倒 BOSS\n赢额外金币"],
+    "zh": ["推平金币堆\n接住金币雨", "穿过 BONUS\n转动滚轴", "看金币哗哗落下", "点亮七果\n翻卡领奖", "击倒 BOSS\n赢额外金币"],
 }
 # candidate frames chosen by eye from the capture runs (capture.sh): scene → file stem
 PICKS = {

@@ -227,6 +227,6 @@ final class RewardCardTests: XCTestCase {
     }
 
     func test_bossKOReward_isFive() {
-        XCTAssertEqual(GameConstants.bossKOReward, 5, "v11.8：原来 20")
+        XCTAssertEqual(GameConstants.bossKOReward, 8, "v11.8：原来 20")
     }
 }

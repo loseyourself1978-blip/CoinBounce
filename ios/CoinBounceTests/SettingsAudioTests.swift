@@ -450,6 +450,24 @@ final class SettingsAudioTests: XCTestCase {
         state.resetForTesting()
     }
 
+    /// v11.8：从最左边一轴连起才算中奖
+    func test_slotWins_countFromLeftReel() {
+        let state = GameState.shared
+        state.resetForTesting()
+        func spin(_ row: [Int]) -> WinType? { for (i, v) in row.enumerated() { state.slotValues[5 + i] = v }; state.currentWin = .none; state.evaluateWin(); return state.currentWin }
+        let before = state.availableCoins + state.pendingRewardDrops
+        _ = spin([4, 3, 3, 3, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before, "中间连 3 个不算")
+        _ = spin([3, 3, 3, 4, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + GameConstants.slotSmallWinReward, "最左边连 3 个 = 小奖")
+        let mid = state.availableCoins + state.pendingRewardDrops
+        _ = spin([0, 3, 3, 3, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, mid + GameConstants.slotBigWinReward, "百搭在最左边也算：前 4 个 = BIG WIN")
+        XCTAssertGreaterThanOrEqual(GameConstants.slotSmallWinReward, 3, "中奖至少 3 枚，看得出是赢了")
+        state.pendingDrops.removeAll()
+        state.resetForTesting()
+    }
+
     func test_bunnyPoses_allSixAssetsBundled() {
         for pose in BunnyPose.allCases { XCTAssertNotNil(pose.image, pose.rawValue) }
     }
