@@ -634,3 +634,22 @@ enum PusherScene3DGateTiming {
     static let warmUp = 120
     static let window = 60
 }
+
+// MARK: - 上架素材：离屏 SCNRenderer 渲染推币机（仅在设置 CREATIVE_OUT 时运行）
+final class CreativeRenderTests: XCTestCase {
+    func test_renderMachineForCreative() throws {
+        guard let out = ProcessInfo.processInfo.environment["CREATIVE_OUT"] else { throw XCTSkip("CREATIVE_OUT not set") }
+        let size = CGSize(width: 402, height: 874)
+        let layout = GameLayout(size: size, safeArea: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0))
+        let pusher = PusherScene3D(viewSize: size)
+        pusher.fit(viewSize: size, layout: layout)
+        let renderer = SCNRenderer(device: MTLCreateSystemDefaultDevice(), options: nil)
+        pusher.scene.background.contents = UIColor.clear
+        renderer.scene = pusher.scene
+        renderer.pointOfView = pusher.cameraNode
+        let img = renderer.snapshot(atTime: 0, with: CGSize(width: size.width * 5, height: size.height * 5), antialiasingMode: .multisampling4X)
+        let data = try XCTUnwrap(img.pngData())
+        try data.write(to: URL(fileURLWithPath: out))
+        print("CREATIVE_RENDER \(img.size) scale=\(img.scale) -> \(out)")
+    }
+}

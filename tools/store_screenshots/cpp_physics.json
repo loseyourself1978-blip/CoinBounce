@@ -1,0 +1,34 @@
+{
+ "captions": {
+  "en": [
+   "Real 3D physics\non every coin",
+   "Push the pile,\nwatch it pour",
+   "Drop 10 coins\nat once",
+   "Feel every bounce\nwith haptics",
+   "No sign-up.\nPlay offline."
+  ],
+  "zh": [
+   "每一枚金币\n都是真实 3D 物理",
+   "推平金币堆\n看它倾泻而下",
+   "一次投 10 枚金币",
+   "每次弹跳\n都有触感反馈",
+   "免注册\n可离线畅玩"
+  ]
+ },
+ "picks": {
+  "en": [
+   "s1_en_19",
+   "s1_en_24",
+   "s6_en_03",
+   "s6_en_05",
+   "s7_en_2"
+  ],
+  "zh": [
+   "s1_zh-Hans_34",
+   "s1_zh-Hans_18",
+   "s6_zh-Hans_03",
+   "s6_zh-Hans_05",
+   "s7_zh-Hans_2"
+  ]
+ }
+}

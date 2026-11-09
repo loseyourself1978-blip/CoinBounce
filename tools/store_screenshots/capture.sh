@@ -1,7 +1,8 @@
 #!/bin/bash
 # App Store screenshots (v11.7): capture candidate frames on a 6.9" simulator (iPhone 17 Pro Max, 1320×2868).
 # usage: capture.sh <sim udid> <app path> <out dir> <scene> <lang: en|zh-Hans> [count] [interval]
-# scenes: 1 machine/cascade · 2 BONUS gate + spinning reels · 3 JACKPOT + progressive pool · 4 seven fruits + card pick · 5 BOSS K.O.
+# scenes: 1 machine/cascade (10 COIN) · 6 10-COIN drop from the top · 7 calm start screen ·
+#         1 machine/cascade · 2 BONUS gate + spinning reels · 3 JACKPOT + progressive pool · 4 seven fruits + card pick · 5 BOSS K.O.
 # Only DEBUG launch arguments that drive real game flows are used (autoplay coin drops, a realistic jackpot pool value,
 # forcing the real jackpot / card-pick / K.O. paths); no debug overlays are drawn.
 set -e
@@ -18,6 +19,8 @@ case $SCENE in
   3) ARGS=(-autoplay -debugJackpotPool 12486.38 -debugJackpot); WAIT=6 ;;
   4) ARGS=(-shotCardPick); WAIT=6 ;;
   5) ARGS=(-autoplay -shotBossKO); WAIT=8 ;;
+  6) ARGS=(-autoplayBurst10); WAIT=4 ;;      # CPP "Satisfying Physics": first 10-COIN batches pouring from the top
+  7) ARGS=(); WAIT=5 ;;                       # CPP: calm start screen, nothing autoplaying
 esac
 xcrun simctl launch "$U" $BID "${COMMON[@]}" "${ARGS[@]}" >/dev/null
 sleep $WAIT
