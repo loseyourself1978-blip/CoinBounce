@@ -244,6 +244,22 @@ struct CoinPusherView: View {
         if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
             gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
         }
+        // 商店截图用（v11.7）：-debugJackpotPool X 把奖池设成 X（玩得久的玩家能看到的值）；
+        // -shotCardPick 6 秒后点亮全部 7 个水果、弹出三选一；-shotBossKO 每 6 秒把 BOSS 血量设到最后一击（下一次攻击 K.O.）
+        if UserDefaults.standard.object(forKey: "debugJackpotPool") != nil {
+            gameState.debugSetJackpotPool(UserDefaults.standard.double(forKey: "debugJackpotPool"))
+        }
+        if ProcessInfo.processInfo.arguments.contains("-shotCardPick") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                gameState.fruitsLit = Array(repeating: true, count: gameState.fruitsLit.count)
+                gameState.checkAllFruitsLit()
+            }
+        }
+        if ProcessInfo.processInfo.arguments.contains("-shotBossKO") {
+            Timer.scheduledTimer(withTimeInterval: 6, repeats: true) { _ in
+                if gameState.bossHealth > GameConstants.bossDamagePerHit { gameState.bossHealth = GameConstants.bossDamagePerHit * 0.5 }
+            }
+        }
         // 截图用：-debugResetFruits 清空水果进度，不弹出卡牌
         if ProcessInfo.processInfo.arguments.contains("-debugResetFruits") {
             gameState.fruitsLit = Array(repeating: false, count: 7)

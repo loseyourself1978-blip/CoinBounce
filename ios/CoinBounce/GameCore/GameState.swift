@@ -558,7 +558,7 @@ class GameState: ObservableObject {
         if bossHealth == 0 {
             bossDefeatedCount += 1
             addCoins(GameConstants.bossKOReward)
-            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.maxX - layout.dropField.width * 0.13, y: layout.dropField.midY, color: .red, big: true)
+            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.midX, y: layout.dropField.midY, color: .red, big: true)   // v11.7：居中（原来偏右，大屏上「+20」被屏幕边切掉）
             HapticManager.shared.bigWin()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
                 withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
@@ -987,6 +987,11 @@ class GameState: ObservableObject {
         }
     }
     
+    #if DEBUG
+    /// 商店截图用：把奖池设成一个玩得久的玩家能看到的值
+    func debugSetJackpotPool(_ value: Double) { jackpotPool = value }
+    #endif
+
     func checkAllFruitsLit() {
         if fruitsLit.allSatisfy({ $0 }) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.presentCardPick(); HapticManager.shared.allFruitsLit() }
