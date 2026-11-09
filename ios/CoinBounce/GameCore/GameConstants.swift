@@ -29,6 +29,10 @@ struct GameConstants {
     static let slotJackpotReward: Int = 500
     /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
     static let jackpotPool: Int = 10000
+    /// v11.7 累积奖池：起始值 10000（= jackpotPool），每投一枚金币有 2% 进奖池（在线老虎机常见 1–3%）。
+    /// 兔女郎终极大奖派出整个奖池（取整），然后回到起始值
+    static let jackpotSeed: Double = Double(jackpotPool)
+    static let jackpotContribution: Double = 0.02
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
     static let ultimateJackpotChance: Double = 1.0 / 1500
 
@@ -56,8 +60,19 @@ struct GameConstants {
     static let fallLinearDamping: CGFloat = 0.0
     /// 下落平面里额外的向下加速度（重力的倍数）：v11.6 格挡钉变多、弹跳耗能，加这一点让投币口到落地约 2.0 秒（新参考）
     static let fallGravityBoost: Float = 0.1
-    /// v11.6：多倍投币时相邻两枚之间的间隔（秒），金币跟着滑块依次落下
-    static let batchDropInterval: Double = 0.18
+    /// 投币队列放币的间隔（秒）：多倍投币时金币一枚一枚跟着滑块依次落下，也是连点时持续投币的速度上限。
+    /// v11.7：0.18 → 0.30（约 3.3 枚 / 秒；原来 5.5 枚 / 秒，10 COIN 连点时台面上 170 多枚，真机主线程掉帧）
+    static let batchDropInterval: Double = 0.30
+    /// v11.7 台面上的金币多到 crowdedThreshold 枚时放币变慢（crowdedDropInterval，0.8 秒：比正常玩还慢一点，台面会慢慢变少），少于 crowdedResume 枚再恢复（两个门槛不同，不会来回跳）。
+    /// 真机：台面上 120 枚以内连点 54–56 fps，140 枚以上掉到 35 左右。点击照样排队（最多 20 枚），付了钱的金币一枚不少、按顺序落下
+    static let crowdedDropInterval: Double = 0.80
+    static let crowdedThreshold = 110
+    static let crowdedResume = 100
+    /// 台面拥挤时中奖金币最多落下几枚真的金币（其余直接入账），排着还没落下的也收到这个数
+    static let crowdedMaxPhysicalReward = 10
+    /// v11.7 投币队列上限（两批 10 枚）、同时下落的金币上限（快速连点不会一下子灌满、卡顿）
+    static let maxQueuedDrops = 20
+    static let maxCoinsInFlight = 12
     /// BONUS 牌高度（参考像素，1206×2622 画面）：v11.5 用户要求比 95 高约 40%
     static let bonusPlaqueHeightPx: CGFloat = 135
     /// 参考录屏（60fps）里玩家的投币频率：9 秒 15 枚，约每 0.6 秒一枚（-autoplay 和验收测试用）
@@ -83,6 +98,12 @@ struct GameConstants {
     static let battleAttackCooldown: TimeInterval = 0.25
 
     // 中奖金币雨（纯视觉，不计分）
+    /// v11.7：中奖时最多这么多枚变成真的金币落下（其余直接入账），每枚间隔 rewardDropInterval 秒
+    static let maxPhysicalReward = 40
+    /// v11.7 兔女郎庆祝：大奖（≥ 200 金币，即老虎机 BIG WIN）和 JACKPOT 时出现，约 2.6 秒
+    static let bigWinCelebrationThreshold = 200
+    static let celebrationSeconds: Double = 2.6
+    static let rewardDropInterval: Double = 0.06
     static let coinRainSmallWin = 6
     static let coinRainBigWin = 15
     static let coinRainJackpot = 40

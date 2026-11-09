@@ -105,6 +105,18 @@ struct FloatingScore: Identifiable {
 }
 
 // MARK: - GameState V8.0 - 超高性能物理驱动版
+final class FloatingScoreBoard: ObservableObject {
+    @Published var scores: [FloatingScore] = []
+    /// v11.7：台面拥挤时没有落下、直接入账的中奖金币：从老虎机飞到余额（看得见去了哪里，不是消失）
+    @Published var flights: [CoinFlight] = []
+}
+
+struct CoinFlight: Identifiable, Equatable {
+    let id = UUID()
+    let from: CGPoint
+    let amount: Int
+}
+
 final class SliderMotion: ObservableObject {
     @Published var coin: CGFloat = 0
     @Published var bonus: CGFloat = 0
@@ -116,7 +128,7 @@ class GameState: ObservableObject {
     // MARK: - 核心数值
     @Published var availableCoins: Int = GameConstants.initialCoins { didSet { scheduleSave() } }
     @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
-    @Published var currentLevel: Int = 3
+    /* v11.7：没有视图读它，不发布变化 */ var currentLevel: Int = 3
 
     // MARK: - 激励广告领币
     @Published var adRewardDay: String? = nil { didSet { scheduleSave() } }
@@ -148,8 +160,8 @@ class GameState: ObservableObject {
 
     // MARK: - 水果系统
     @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7) { didSet { scheduleSave() } }
-    @Published var litFruitIndex: Int? = nil
-    @Published var fruitBounceIndex: Int? = nil
+    /* v11.7：没有视图读它，不发布变化 */ var litFruitIndex: Int? = nil
+    /* v11.7：没有视图读它，不发布变化 */ var fruitBounceIndex: Int? = nil
     @Published var fruitPulseIndex: Int? = nil // V9.4: 命中的缩放效果
     
     // MARK: - 特效粒子 (Canvas 驱动)
@@ -175,19 +187,26 @@ class GameState: ObservableObject {
     // MARK: - 老虎机
     @Published var slotSpinState: SlotSpinState = .spinIdle
     @Published var slotReels: [[SlotSymbol]] = [] // V9.0: 用于 SlotMachineView 的精美符号
-    @Published var slotValues: [Int] = (0..<15).map { _ in Int.random(in: 0...8) }
-    @Published var slotScrollOffsets: [CGFloat] = Array(repeating: 0, count: 5)
+    /* v11.7：没有视图读它，不发布变化 */ var slotValues: [Int] = (0..<15).map { _ in Int.random(in: 0...8) }
+    /// 不是 @Published：没有视图读它，原来每帧（转动时一直在转）都让整个游戏画面重算（v11.7 真机连点掉帧）
+    var slotScrollOffsets: [CGFloat] = Array(repeating: 0, count: 5)
     @Published var stoppedColumns: Set<Int> = []
     @Published var currentWin: WinType = .none
-    @Published var slotFlashColumns: Set<Int> = []
+    /* v11.7：没有视图读它，不发布变化 */ var slotFlashColumns: Set<Int> = []
 
     var isSpinning: Bool { slotSpinState != .spinIdle }
 
     // MARK: - 特效
     @Published var combo: ComboData = ComboData()
-    @Published var showComboText: Bool = false
-    @Published var floatingScores: [FloatingScore] = []
-    @Published var baffleHitPositions: [(x: CGFloat, y: CGFloat, time: Date)] = []
+    /* v11.7：没有视图读它，不发布变化 */ var showComboText: Bool = false
+    /// v11.7：飞字放在自己的观察对象里，只有飞字层跟着刷新（每枚金币穿过水果 / 战斗都会加、淡出、删除各一次，
+    /// 原来每次都让整个游戏画面重算）
+    let floatingBoard = FloatingScoreBoard()
+    var floatingScores: [FloatingScore] {
+        get { floatingBoard.scores }
+        set { floatingBoard.scores = newValue }
+    }
+    /* v11.7：没有视图读它，不发布变化 */ var baffleHitPositions: [(x: CGFloat, y: CGFloat, time: Date)] = []
     
     /// 累计从推币台掉落得分的金币数
     private(set) var bedDropCount = 0
@@ -256,7 +275,16 @@ class GameState: ObservableObject {
         layout = .reference
         offeredCards = []
         pickedCard = nil
+        jackpotPool = GameConstants.jackpotSeed
+        celebration = nil
+        spinGeneration += 1
+        slotSpinState = .spinIdle
         queuedSpins = 0
+        dropQueue = 0
+        dropCrowded = false
+        creditedByFlight = 0
+        floatingBoard.flights = []
+        pendingRewardDrops = 0
         specialCoinsLeft = 0
         fastPusherUntil = nil
         wideMouthUntil = nil
@@ -276,7 +304,8 @@ class GameState: ObservableObject {
             fruitsLit: fruitsLit,
             hasDroppedFirstCoin: hasDroppedFirstCoin,
             adRewardDay: adRewardDay,
-            adRewardsClaimed: adRewardsClaimed
+            adRewardsClaimed: adRewardsClaimed,
+            jackpotPool: jackpotPool
         )
     }
 
@@ -287,6 +316,7 @@ class GameState: ObservableObject {
         hasDroppedFirstCoin = data.hasDroppedFirstCoin
         adRewardDay = data.adRewardDay
         adRewardsClaimed = max(0, data.adRewardsClaimed ?? 0)
+        jackpotPool = max(GameConstants.jackpotSeed, data.jackpotPool ?? GameConstants.jackpotSeed)
         showTutorialArrow = !data.hasDroppedFirstCoin
     }
 
@@ -365,6 +395,9 @@ class GameState: ObservableObject {
         updateCardEffects(now: Date())
         coinSliderOffset = layout.coinSliderTravel * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
         bonusSliderOffset = layout.bonusSliderTravel * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
+        updateDropCrowded()
+        releaseRewardDrops(dt: dt)
+        releaseQueuedDrops(dt: dt)
         
         
         // === 2. 粒子物理组件 (V9.4) ===
@@ -405,20 +438,49 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.buttonTap)
     }
     /// 余额够不够这一次投币（按当前倍数）
-    var canDropBatch: Bool { availableCoins >= coinMultiplier }
-    /// 按当前倍数投币：第一枚马上落下，其余每隔 batchDropInterval 秒一枚（每枚都按当时滑块的位置）。余额不够时一枚也不投、返回 false
-    /// schedule：延迟多少秒后执行（默认主线程 asyncAfter；测试里换成立即记录）
+    var canDropBatch: Bool { availableCoins - dropQueue >= coinMultiplier && dropQueue + coinMultiplier <= GameConstants.maxQueuedDrops }
+    enum DropBatchResult { case queued, queueFull, insufficient }
+
+    /// v11.7 投币队列：按当前倍数把金币放进队列（余额按队列预留），每隔 batchDropInterval 秒放出一枚、
+    /// 同时在下落的金币不超过 maxCoinsInFlight 枚。队列满（maxQueuedDrops）时这次点击不投，不提示金币不足
     @discardableResult
-    func dropBatch(schedule: (TimeInterval, @escaping () -> Void) -> Void = { delay, work in
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
-    }) -> Bool {
+    func dropBatch() -> DropBatchResult {
         let n = coinMultiplier
-        guard availableCoins >= n else { return false }
-        dropCoin()
-        for i in 1..<max(2, n) where i < n {
-            schedule(GameConstants.batchDropInterval * Double(i)) { [weak self] in self?.dropCoin() }
+        guard availableCoins - dropQueue >= n else { return .insufficient }
+        guard dropQueue + n <= GameConstants.maxQueuedDrops else { return .queueFull }
+        if dropQueue == 0 { dropQueueClock = CGFloat(GameConstants.batchDropInterval) }   // 第一枚马上落下
+        dropQueue += n
+        releaseQueuedDrops(dt: 0)
+        return .queued
+    }
+    /// 队列里还没放出的金币（已预留余额）
+    @Published private(set) var dropQueue = 0
+    private var dropQueueClock: CGFloat = 0
+    /// 正在下落的金币数（3D 推币机接上后提供；测试里可以替换）
+    var fallingCountProvider: (() -> Int)?
+    /// v11.7：台面上（不算下落中）的金币数，由 3D 场景按计数器提供（不逐帧遍历）
+    var tableCountProvider: (() -> Int)?
+    /// 台面拥挤：放币间隔从 batchDropInterval 变成 crowdedDropInterval（带回差）
+    private(set) var dropCrowded = false
+    var currentDropInterval: Double { dropCrowded ? GameConstants.crowdedDropInterval : GameConstants.batchDropInterval }
+    private func updateDropCrowded() {
+        // 正在下落的金币（最多 maxCoinsInFlight 枚）马上也会落到台面上，一起算
+        guard let table = tableCountProvider?() else { dropCrowded = false; return }
+        let n = table + (fallingCountProvider?() ?? 0)
+        if !dropCrowded, n >= GameConstants.crowdedThreshold { dropCrowded = true }
+        else if dropCrowded, n < GameConstants.crowdedResume { dropCrowded = false }
+    }
+
+    private func releaseQueuedDrops(dt: CGFloat) {
+        guard dropQueue > 0 else { dropQueueClock = 0; return }
+        dropQueueClock += dt
+        let interval = CGFloat(currentDropInterval)
+        while dropQueue > 0 && dropQueueClock >= interval {
+            if let f = fallingCountProvider?(), f >= GameConstants.maxCoinsInFlight { return }
+            dropQueueClock -= interval
+            dropQueue -= 1
+            dropCoin()
         }
-        return true
     }
 
     /// 重新显示首次投币引导（存档里记为未投过币）
@@ -427,9 +489,17 @@ class GameState: ObservableObject {
         showTutorialArrow = true
     }
 
+    // MARK: v11.7 累积奖池
+    /// 奖池（带小数：每枚 0.02）。只有 JACKPOT 牌的数字观察它（jackpotMeter），整个游戏画面不跟着重算
+    private(set) var jackpotPool: Double = GameConstants.jackpotSeed {
+        didSet { jackpotMeter.value = jackpotPool; scheduleSave() }
+    }
+    let jackpotMeter = JackpotMeter()
+
     func dropCoin(atX explicitX: CGFloat? = nil) {
         guard canDropCoin else { return }
         availableCoins -= 1
+        jackpotPool += GameConstants.jackpotContribution
         hasDroppedFirstCoin = true
         showTutorialArrow = false
         HapticManager.shared.coinDrop()
@@ -524,7 +594,7 @@ class GameState: ObservableObject {
         if bossHealth == 0 {
             bossDefeatedCount += 1
             addCoins(GameConstants.bossKOReward)
-            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.maxX - layout.dropField.width * 0.13, y: layout.dropField.midY, color: .red, big: true)
+            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.midX, y: layout.dropField.midY, color: .red, big: true)   // v11.7：居中（原来偏右，大屏上「+20」被屏幕边切掉）
             HapticManager.shared.bigWin()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
                 withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
@@ -570,6 +640,60 @@ class GameState: ObservableObject {
         NSLog("[Ads] granted %d coins, balance %d, today %d", GameConstants.adRewardCoins, availableCoins, adRewardsClaimed)
         #endif
         return true
+    }
+
+    // MARK: v11.7 中奖金币：一部分变成真的 3D 金币从顶部落下（经过格挡落到推板 / 金币堆，掉进接币槽才算钱），其余直接入账
+    /// 等着落下的奖励金币
+    private(set) var pendingRewardDrops = 0
+    /// 已放出的奖励金币（测试和统计用）
+    private(set) var rewardDropsReleased = 0
+    private var rewardDropClock: CGFloat = 0
+    /// 3D 推币机接上后由它生成奖励金币（不触发战斗、水果、BONUS）
+    var onRewardDrop: ((Active2DCoin) -> Void)?
+
+    /// 派奖：最多 maxPhysicalReward 枚变成真的金币落下，其余直接加到余额
+    func payReward(_ total: Int, physical: Int) {
+        updateDropCrowded()
+        let cap = dropCrowded ? GameConstants.crowdedMaxPhysicalReward : GameConstants.maxPhysicalReward
+        let p = max(0, min(physical, total, cap - pendingRewardDrops))
+        // 本来要变成真的金币、因为台面拥挤改成直接入账的部分：飞向余额
+        let wouldDrop = max(0, min(physical, total, GameConstants.maxPhysicalReward))
+        addCoins(total - p)
+        pendingRewardDrops += p
+        if wouldDrop > p { showCreditFlight(wouldDrop - p) }
+    }
+
+    /// v11.7：直接入账的中奖金币从老虎机飞到余额，余额数字滚动上涨（看得见，不像消失）
+    private(set) var creditedByFlight = 0
+    private func showCreditFlight(_ amount: Int) {
+        guard amount > 0 else { return }
+        creditedByFlight += amount
+        let flight = CoinFlight(from: CGPoint(x: layout.slotMachine.midX, y: layout.slotMachine.midY), amount: amount)
+        floatingBoard.flights.append(flight)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            self?.floatingBoard.flights.removeAll { $0.id == flight.id }
+        }
+    }
+
+    /// 每帧：按间隔放出奖励金币，从顶部随机位置落下
+    private func releaseRewardDrops(dt: CGFloat) {
+        guard pendingRewardDrops > 0 else { rewardDropClock = 0; return }
+        // v11.7：台面拥挤时，排着的中奖金币超过 crowdedMaxPhysicalReward 的部分直接入账（不再往台面上加）
+        if dropCrowded, pendingRewardDrops > GameConstants.crowdedMaxPhysicalReward {
+            let excess = pendingRewardDrops - GameConstants.crowdedMaxPhysicalReward
+            addCoins(excess)
+            pendingRewardDrops = GameConstants.crowdedMaxPhysicalReward
+            showCreditFlight(excess)
+        }
+        rewardDropClock += dt
+        while pendingRewardDrops > 0 && rewardDropClock >= CGFloat(GameConstants.rewardDropInterval) {
+            rewardDropClock -= CGFloat(GameConstants.rewardDropInterval)
+            pendingRewardDrops -= 1
+            rewardDropsReleased += 1
+            let coin = Active2DCoin(x: CGFloat.random(in: layout.fieldMinX...layout.fieldMaxX), y: layout.coinSpawnY,
+                                    vx: CGFloat.random(in: -40...40), vy: CGFloat.random(in: 60...90) * layout.fallScale)
+            onRewardDrop?(coin)
+        }
     }
 
     func addCoins(_ amount: Int) {
@@ -643,8 +767,26 @@ class GameState: ObservableObject {
     func spinSlotMachine() { spinSlot() }
     func triggerBonusSlot() { spinSlot() }
     
+    /// v11.7：开始转动的次数、免费转动卡给的次数（测试：转动次数 = 整枚穿过 BONUS 的次数 + 免费转动）
+    private(set) var spinsStarted = 0
+    private(set) var freeSpinsGranted = 0
+    /// 这一次是否快转（后面还有排队的转动时：先停 0.5 秒、每轴 0.12 秒，整次约 1.5 秒，排队不会越积越多）
+    private(set) var spinIsTurbo = false
+    /// 调试 / 测试：下一次转动必出中间一行 5 个兔女郎
+    var forceUltimateJackpotNextSpin = false
+
+    /// 每次转动的编号：resetForTesting 时加一，之前排好的停轴回调作废
+    private var spinGeneration = 0
+    /// 转轴停下、结算、接着转的定时（测试可以换成虚拟时钟，不受主线程卡顿影响）
+    var spinScheduler: (Double, @escaping () -> Void) -> Void = { delay, work in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
     func spinSlot() {
         guard slotSpinState == .spinIdle else { return }
+        spinsStarted += 1
+        let generation = spinGeneration
+        spinIsTurbo = queuedSpins > 0
         slotSpinState = .spinning
         stoppedColumns.removeAll()
         slotFlashColumns.removeAll()
@@ -656,7 +798,8 @@ class GameState: ObservableObject {
         
         // 1. 生成 15 个物理格子结果 (5x3)：v11.6 按 slotWeights 抽；另有 1/1500 的机会直接出中间一行 5 个兔女郎（终极大奖）
         var results = (0..<15).map { _ in GameState.randomSymbolIndex(randomUnit()) }
-        if randomUnit() < GameConstants.ultimateJackpotChance {
+        if forceUltimateJackpotNextSpin || randomUnit() < GameConstants.ultimateJackpotChance {
+            forceUltimateJackpotNextSpin = false
             let bunny = SymbolType.allCases.firstIndex(of: .bunny)!
             for i in 5..<10 { results[i] = bunny }
         }
@@ -677,22 +820,25 @@ class GameState: ObservableObject {
             slotReels[col] = newReel
         }
         
-        // 3. 驱动各轴停止
+        // 3. 驱动各轴停止（快转时更快）
+        let firstStop = spinIsTurbo ? 0.5 : 1.2, step = spinIsTurbo ? 0.12 : 0.4
+        let settle = spinIsTurbo ? 0.25 : 0.5, gap = spinIsTurbo ? 0.25 : 0.9
         for col in 0..<5 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2 + Double(col) * 0.4) { [weak self] in
-                guard let self = self else { return }
+            spinScheduler(firstStop + Double(col) * step) { [weak self] in
+                guard let self = self, self.spinGeneration == generation else { return }
                 self.slotSpinState = .stopping(column: col) // 使用带 column 的枚举触发视图特定轴停止
                 self.stoppedColumns.insert(col)
                 self.slotScrollOffsets[col] = 0
                 HapticManager.shared.slotStop()
                 AudioManager.shared.play(.slotStop)
                 if col == 4 { 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { 
+                    self.spinScheduler(settle) {
+                        guard self.spinGeneration == generation else { return }
                         self.evaluateWin()
                         self.slotSpinState = .spinIdle
                         // 排队的转动（BONUS 连续命中、免费转动卡）稍等后接着转
                         if self.queuedSpins > 0 {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { self.startQueuedSpinIfIdle() }
+                            self.spinScheduler(gap) { self.startQueuedSpinIfIdle() }
                         }
 
                         // 中奖线显示 2.5 秒后熄灭
@@ -765,18 +911,53 @@ class GameState: ObservableObject {
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
         ultimateJackpotCount += 1
         HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot)
-        addCoins(GameConstants.jackpotPool)
-        addFloatingScore(text: "JACKPOT +\(GameConstants.jackpotPool)", x: layout.slotMachine.midX, y: layout.slotMachine.midY, color: .yellow, big: true)
-        pendingCoinRain += GameConstants.coinRainJackpot * 3
+        // v11.7：派出整个累积奖池（取整），奖池回到起始值
+        let pay = Int(jackpotPool.rounded(.down))
+        lastJackpotPayout = pay
+        jackpotExplosionAmount = pay
+        jackpotPool = GameConstants.jackpotSeed
+        payReward(pay, physical: GameConstants.coinRainJackpot * 3)
+        // 金额由 JACKPOT 爆炸画面显示（v11.7 去掉重复的飘字，两行 JACKPOT 叠在一起看不清）
+        celebrate(jackpot: true)
         spawnParticles(count: 200, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .pink, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
     }
+    // MARK: v11.7 大奖庆祝：兔女郎从一侧闪现，随机做一个动作（欢呼 / 拍手 / 飞吻 / 跳），约 2.6 秒，不挡操作
+    struct BunnyCelebration: Identifiable, Equatable {
+        let id = UUID()
+        let pose: BunnyPose
+        let fromLeft: Bool
+        let jackpot: Bool
+    }
+    @Published private(set) var celebration: BunnyCelebration?
+    /// 庆祝次数（测试用）
+    private(set) var celebrationCount = 0
+
+    /// 大奖（≥ bigWinCelebrationThreshold 金币）和 JACKPOT 时调用
+    func celebrate(jackpot: Bool) {
+        let pose = BunnyPose.celebrationPoses[Int(randomUnit() * Double(BunnyPose.celebrationPoses.count)) % BunnyPose.celebrationPoses.count]
+        let c = BunnyCelebration(pose: pose, fromLeft: randomUnit() < 0.5, jackpot: jackpot)
+        celebration = c
+        celebrationCount += 1
+        AudioManager.shared.play(.cheer)
+        AudioManager.shared.play(jackpot ? .jackpotFanfare : .applause)
+        DispatchQueue.main.asyncAfter(deadline: .now() + GameConstants.celebrationSeconds) { [weak self] in
+            if self?.celebration?.id == c.id { self?.celebration = nil }
+        }
+    }
+
+    /// JACKPOT 爆炸画面上显示的金额（老虎机 JACKPOT 500；兔女郎终极大奖是派出的整个奖池）
+    private(set) var jackpotExplosionAmount = GameConstants.slotJackpotReward
+    /// 上一次终极大奖派出的金币（测试和庆祝动画用）
+    private(set) var lastJackpotPayout = 0
     /// 终极大奖次数（测试和统计用）
     private(set) var ultimateJackpotCount = 0
 
     private func slotJackpot() {
+        jackpotExplosionAmount = GameConstants.slotJackpotReward
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); addCoins(GameConstants.slotJackpotReward); addFloatingScore(text: "+\(GameConstants.slotJackpotReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .yellow, big: true); pendingCoinRain += GameConstants.coinRainJackpot
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot)
+        celebrate(jackpot: true)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.showJackpotExplosion = false; self.slotFlashColumns.removeAll() }
@@ -784,7 +965,8 @@ class GameState: ObservableObject {
 
     private func slotBigWin() {
         currentWin = .bigWin(coins: GameConstants.slotBigWinReward); slotFlashColumns = [0,1,2,3,4]
-        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); addCoins(GameConstants.slotBigWinReward); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange, big: true); pendingCoinRain += GameConstants.coinRainBigWin
+        HapticManager.shared.bigWin(); AudioManager.shared.play(.winBig); payReward(GameConstants.slotBigWinReward, physical: GameConstants.coinRainBigWin); addFloatingScore(text: "+\(GameConstants.slotBigWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .orange, big: true)
+        if GameConstants.slotBigWinReward >= GameConstants.bigWinCelebrationThreshold { celebrate(jackpot: false) }
         // V9.4 Particle Explosion
         spawnParticles(count: 50, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.orange, .yellow, .white])
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.slotFlashColumns.removeAll() }
@@ -792,7 +974,7 @@ class GameState: ObservableObject {
 
     private func slotSmallWin() {
         currentWin = .smallWin(coins: GameConstants.slotSmallWinReward); HapticManager.shared.smallWin(); AudioManager.shared.play(.winSmall)
-        addCoins(GameConstants.slotSmallWinReward); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green, big: true); pendingCoinRain += GameConstants.coinRainSmallWin
+        payReward(GameConstants.slotSmallWinReward, physical: GameConstants.coinRainSmallWin); addFloatingScore(text: "+\(GameConstants.slotSmallWinReward)", x: layout.slotMachine.midX, y: layout.slotMachine.maxY, color: .green, big: true)
     }
 
     // MARK: - 卡牌三选一
@@ -815,6 +997,7 @@ class GameState: ObservableObject {
         case .coins200: addCoins(200)
         case .freeSpins:
             // 连续自动转 3 次
+            freeSpinsGranted += CardPool.freeSpinCount
             queueSpins(CardPool.freeSpinCount)
         case .specialCoins: specialCoinsLeft += CardPool.specialCoinDrops
         case .fastPusher: fastPusherUntil = now.addingTimeInterval(CardPool.fastPusherSeconds)
@@ -826,10 +1009,20 @@ class GameState: ObservableObject {
         AudioManager.shared.play(.winSmall)
     }
 
-    func finishCardPick() {
+    func finishCardPick(schedule: (TimeInterval, @escaping () -> Void) -> Void = { delay, work in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }) {
         showCardSelection = false
         offeredCards = []
         pickedCard = nil
+        // v11.7：选卡后翻牌展示的 1.9 秒里，快速投币可能又把 7 个水果全点亮——那时弹卡被「已在显示」挡掉，
+        // 之后再没有新的水果点亮去触发，水果灯就一直全亮。关闭时再检查一次
+        if fruitsLit.allSatisfy({ $0 }) {
+            schedule(0.4) { [weak self] in
+                guard let self, !self.showCardSelection, self.fruitsLit.allSatisfy({ $0 }) else { return }
+                self.presentCardPick()
+            }
+        }
     }
 
     /// 计时效果到期检查（每帧调用）
@@ -854,12 +1047,22 @@ class GameState: ObservableObject {
         }
     }
     
+    #if DEBUG
+    /// 商店截图用：把奖池设成一个玩得久的玩家能看到的值
+    func debugSetJackpotPool(_ value: Double) { jackpotPool = value }
+    #endif
+
     func checkAllFruitsLit() {
         if fruitsLit.allSatisfy({ $0 }) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.presentCardPick(); HapticManager.shared.allFruitsLit() }
         }
     }
 
+}
+
+/// v11.7：奖池数字单独的观察对象（只让 JACKPOT 牌的数字刷新）
+final class JackpotMeter: ObservableObject {
+    @Published var value: Double = GameConstants.jackpotSeed
 }
 
 // MARK: - 颜色扩展

@@ -9,6 +9,8 @@ struct SaveData: Codable, Equatable {
     /// 激励广告领币：最近一次领取的本地日期（yyyy-MM-dd）和当天已领次数（旧存档没有这两项）
     var adRewardDay: String? = nil
     var adRewardsClaimed: Int? = nil
+    /// v11.7 累积奖池（旧存档没有：从起始值开始）
+    var jackpotPool: Double? = nil
 
     /// 首次安装的初始存档
     static let fresh = SaveData(

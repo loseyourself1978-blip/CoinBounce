@@ -1,5 +1,55 @@
 import SwiftUI
 import SpriteKit
+import Combine
+
+/// v11.7：飞字层单独观察 FloatingScoreBoard（飞字变化不让整个游戏画面重算）
+private struct FloatingScoreLayer: View {
+    @ObservedObject var board: FloatingScoreBoard
+    let balanceTarget: CGPoint
+    var body: some View {
+        ZStack {
+            ForEach(board.scores) { score in
+                FloatingScoreView(score: score)
+                    .position(x: score.x, y: score.y)
+            }
+            ForEach(board.flights) { flight in
+                CoinFlightView(flight: flight, to: balanceTarget)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// v11.7：台面拥挤时直接入账的中奖金币：一串金币从老虎机飞到余额，旁边「+N」
+private struct CoinFlightView: View {
+    let flight: CoinFlight
+    let to: CGPoint
+    @State private var go = false
+    var body: some View {
+        let n = min(8, max(3, flight.amount))
+        ZStack {
+            ForEach(0..<n, id: \.self) { i in
+                ArtCoin(size: 22)
+                    .position(go ? to : CGPoint(x: flight.from.x + CGFloat(i - n / 2) * 10, y: flight.from.y))
+                    .opacity(go ? 0.2 : 1)
+                    .animation(.easeIn(duration: 0.55).delay(Double(i) * 0.05), value: go)
+            }
+            Text("+\(flight.amount)")
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, Color.arcadeGold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
+                .position(x: (go ? to.x + 70 : flight.from.x), y: go ? to.y + 26 : flight.from.y - 30)
+                .opacity(go ? 0 : 1)
+                .animation(.easeOut(duration: 1.0), value: go)
+        }
+        .onAppear { go = true }
+    }
+}
+
+#if DEBUG
+/// 测帧率时统计每秒 GameState 变化次数（-autoplayLite / -autoplayBurst10）
+private var stateChangeCounter: AnyCancellable?
+#endif
 
 // MARK: - V20 稳定版 (基于V16结构)
 // 修复编译错误，使用正确的GameState属性
@@ -64,6 +114,13 @@ struct CoinPusherView: View {
                     pinRadius: layout.slotPinRadius
                 )
                 .place(in: layout.slotMachine)
+                // v11.7：还要转几次（BONUS 连续命中排队的转动），显示在转轴窗口右上角
+                if gameState.queuedSpins > 0 {
+                    SpinQueueBadge(count: gameState.queuedSpins)
+                        .position(x: layout.slotReels.maxX - 6, y: layout.slotReels.minY + 4)
+                        .allowsHitTesting(false)
+                        .transition(.scale.combined(with: .opacity))
+                }
 
                 // ── COIN 滑块轨道 ──
                 coinSliderTrack(layout: layout)
@@ -146,15 +203,20 @@ struct CoinPusherView: View {
                 #endif
 
                 // 飞分特效层
-                ForEach(gameState.floatingScores) { score in
-                    FloatingScoreView(score: score)
-                        .position(x: score.x, y: score.y)
-                }
+                FloatingScoreLayer(board: gameState.floatingBoard,
+                                   balanceTarget: { let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.minX + r.height * 0.6, y: r.midY) }())
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
-                    JackpotCelebrationView(amount: GameConstants.slotJackpotReward)
+                    JackpotCelebrationView(amount: gameState.jackpotExplosionAmount)
                         .frame(width: sw, height: sh)
+                }
+                // v11.7：大奖时兔女郎从一侧闪现（不挡操作）
+                if let c = gameState.celebration {
+                    BunnyCelebrationView(celebration: c, screen: CGSize(width: sw, height: sh))
+                        .id(c.id)
+                        .transition(.move(edge: c.fromLeft ? .leading : .trailing).combined(with: .opacity))
+                        .allowsHitTesting(false)
                 }
                 if gameState.showCardSelection {
                     CardSelectionView(cards: gameState.offeredCards, picked: gameState.pickedCard,
@@ -166,6 +228,7 @@ struct CoinPusherView: View {
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
             .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
+            .animation(.spring(response: 0.45, dampingFraction: 0.7), value: gameState.celebration)
             .onAppear {
                 gameState.updateLayout(layout)
                 dropScene.apply(layout: layout)
@@ -173,6 +236,12 @@ struct CoinPusherView: View {
                 gameState.onDrop = { [pusher3D] coin in
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial)
                 }
+                // v11.7：中奖金币也是真的 3D 金币，从顶部随机位置落下（不触发战斗、水果、BONUS）
+                gameState.onRewardDrop = { [pusher3D] coin in
+                    pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true)
+                }
+                gameState.fallingCountProvider = { [pusher3D] in pusher3D.fallingCount }
+                gameState.tableCountProvider = { [pusher3D] in pusher3D.tableCount }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
                 pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
                 pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
@@ -193,8 +262,10 @@ struct CoinPusherView: View {
     }
 
     private func dropOrHint() {
-        if gameState.dropBatch() {
-        } else {
+        switch gameState.dropBatch() {
+        case .queued, .queueFull:
+            break   // 队列满时这次点击不投（不是金币不足）
+        case .insufficient:
             AudioManager.shared.play(.noCoins)
             gameState.requestFreeCoins()
             showNoCoinsHint = true
@@ -221,6 +292,22 @@ struct CoinPusherView: View {
         // 截图用：-debugSetCoins N 把金币设为 N；-debugAutoAd 在广告加载好后自动点「看广告领金币」
         if UserDefaults.standard.object(forKey: "debugSetCoins") != nil {
             gameState.availableCoins = UserDefaults.standard.integer(forKey: "debugSetCoins")
+        }
+        // 商店截图用（v11.7）：-debugJackpotPool X 把奖池设成 X（玩得久的玩家能看到的值）；
+        // -shotCardPick 6 秒后点亮全部 7 个水果、弹出三选一；-shotBossKO 每 6 秒把 BOSS 血量设到最后一击（下一次攻击 K.O.）
+        if UserDefaults.standard.object(forKey: "debugJackpotPool") != nil {
+            gameState.debugSetJackpotPool(UserDefaults.standard.double(forKey: "debugJackpotPool"))
+        }
+        if ProcessInfo.processInfo.arguments.contains("-shotCardPick") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                gameState.fruitsLit = Array(repeating: true, count: gameState.fruitsLit.count)
+                gameState.checkAllFruitsLit()
+            }
+        }
+        if ProcessInfo.processInfo.arguments.contains("-shotBossKO") {
+            Timer.scheduledTimer(withTimeInterval: 6, repeats: true) { _ in
+                if gameState.bossHealth > GameConstants.bossDamagePerHit { gameState.bossHealth = GameConstants.bossDamagePerHit * 0.5 }
+            }
         }
         // 截图用：-debugResetFruits 清空水果进度，不弹出卡牌
         if ProcessInfo.processInfo.arguments.contains("-debugResetFruits") {
@@ -256,6 +343,15 @@ struct CoinPusherView: View {
         // 玩家模式不做逐帧画面验收；-autoplay 验收时打开。-autoplayLite：和 -autoplay 一样自动投币，但不做验收（测真实玩家负载下的帧率）
         let autoplayLite = ProcessInfo.processInfo.arguments.contains("-autoplayLite")
         pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
+        #if DEBUG
+        // 调试：-debugJackpot 每 8 秒强制一次终极大奖（检查兔女郎符号、奖池派奖、庆祝动画）
+        if ProcessInfo.processInfo.arguments.contains("-debugJackpot") {
+            Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { _ in
+                gameState.forceUltimateJackpotNextSpin = true
+                gameState.queueSpins(1)
+            }
+        }
+        #endif
         if autoplayLite {
             pusher3D.logsPhysicsStats = true
             PerfDebug.monitor.start()
@@ -301,6 +397,23 @@ struct CoinPusherView: View {
                 gameState.dropCoin()
             }
         }
+        // v11.7：10 COIN 快速连点（录屏 / 真机帧率）：每 0.12 秒点一次 10 COIN，选卡弹出时选第一张
+        if ProcessInfo.processInfo.arguments.contains("-autoplayBurst10") || autoplayLite {
+            stateChangeCounter = gameState.objectWillChange.sink { _ in PerfDebug.monitor.stateChanges += 1 }
+        }
+        if ProcessInfo.processInfo.arguments.contains("-autoplayBurst10") {
+            pusher3D.logsPhysicsStats = true
+            PerfDebug.monitor.start()
+            gameState.coinMultiplier = 10
+            Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { _ in
+                gameState.availableCoins = max(gameState.availableCoins, 1000)
+                if gameState.showCardSelection, let card = gameState.offeredCards.first, gameState.pickedCard == nil {
+                    gameState.pickCard(card.kind)
+                    gameState.finishCardPick()
+                }
+                _ = gameState.dropBatch()
+            }
+        }
         // 截图用：启动参数 -debugAutoDrop N 会自动投 N 枚币
         let autoDrop = UserDefaults.standard.integer(forKey: "debugAutoDrop")
         for i in 0..<autoDrop {
@@ -331,12 +444,13 @@ struct CoinPusherView: View {
             // （iPhone 17 录屏实测灵动岛下沿约 47% 牌高，两行字从约 52% 牌高开始）
             // v11.6 性能：字是静态的（栅格化一次），闪光用 Core Animation 光带扫过（不再每秒重画 30 次）
             let glints = !reduceMotion && !PerfDebug.freezeUI
+            // v11.7：字加大；数字是累积奖池，每投一枚金币 +0.02，数字滚动上涨
             VStack(spacing: 0) {
-                GoldText3D(text: "JACKPOT", size: h * 0.105, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
-                GoldText3D(text: "\(GameConstants.jackpotPool)", size: h * 0.25, tracking: 1, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
+                GoldText3D(text: "JACKPOT", size: h * 0.125, tracking: h * 0.03, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 1.6) : nil)
+                RollingJackpotNumber(meter: gameState.jackpotMeter, size: h * 0.29, glintStarts: glints ? GlintSchedule.bonusStarts(offset: 0) : nil)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, h * 0.05)
+            .padding(.bottom, h * 0.03)
         }
         .frame(height: h)
     }
@@ -1546,4 +1660,120 @@ final class GlintBandView: UIView {
         installKeyframes(band, keyPath: "position.x", period: P,
                          frames: glintKeyframes(starts: c.starts, period: P, duration: d, idle: CGFloat(-0.3 * w + bw / 2)) { CGFloat(-0.3 * w + 1.3 * w * $0 + bw / 2) })
     }
+}
+
+/// v11.7：排队的转动次数角标（金色圆牌，×N）
+struct SpinQueueBadge: View {
+    let count: Int
+    var body: some View {
+        Text(verbatim: "×\(count)")
+            .font(.system(size: 13, weight: .black, design: .rounded))
+            .foregroundStyle(Color(red: 0.3, green: 0.12, blue: 0.0))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule().stroke(Color(red: 0.45, green: 0.2, blue: 0.02), lineWidth: 1.2))
+            .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+            .accessibilityLabel(Text("\(count) spins left"))
+    }
+}
+
+/// v11.7 累积奖池数字：目标值变了就在 0.4 秒里分几步滚上去（每秒最多重画约 15 次，只有这块字）
+struct RollingJackpotNumber: View {
+    @ObservedObject var meter: JackpotMeter
+    let size: CGFloat
+    var glintStarts: [Double]?
+    @State private var shown: Double = GameConstants.jackpotSeed
+    @State private var rollTimer: Timer?
+
+    static func format(_ v: Double) -> String { String(format: "%.2f", v) }
+
+    var body: some View {
+        GoldText3D(text: RollingJackpotNumber.format(shown), size: size, tracking: 1, glintStarts: glintStarts)
+            .onAppear { shown = meter.value }
+            .onChange(of: meter.value) { target in roll(to: target) }
+            .accessibilityLabel(Text(verbatim: "JACKPOT \(RollingJackpotNumber.format(meter.value))"))
+    }
+
+    private func roll(to target: Double) {
+        rollTimer?.invalidate()
+        // 奖池派出后回到起始值：直接跳过去
+        guard target > shown else { shown = target; return }
+        let start = shown, steps = 6
+        var k = 0
+        rollTimer = Timer.scheduledTimer(withTimeInterval: 0.4 / Double(steps), repeats: true) { t in
+            k += 1
+            shown = k >= steps ? target : start + (target - start) * Double(k) / Double(steps)
+            if k >= steps { t.invalidate() }
+        }
+    }
+}
+
+/// v11.7 兔女郎庆祝：从一侧滑进来，按动作跳动 / 摇摆，周围闪光；飞吻时飘出爱心
+struct BunnyCelebrationView: View {
+    let celebration: GameState.BunnyCelebration
+    let screen: CGSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var beat = false
+    @State private var sparkle = false
+
+    var body: some View {
+        let h = screen.height * 0.42
+        let x = celebration.fromLeft ? screen.width * 0.2 : screen.width * 0.8
+        let y = screen.height * 0.6
+        ZStack {
+            // 闪光
+            ForEach(0..<8, id: \.self) { i in
+                let a = Double(i) / 8 * 2 * .pi
+                Image(systemName: "sparkle")
+                    .font(.system(size: h * (i.isMultiple(of: 2) ? 0.07 : 0.05), weight: .bold))
+                    .foregroundStyle(i.isMultiple(of: 3) ? Color.white : ArtPalette.goldLight)
+                    .shadow(color: ArtPalette.gold, radius: 4)
+                    .offset(x: cos(a) * h * 0.33, y: sin(a) * h * 0.45)
+                    .scaleEffect(sparkle ? 1.2 : 0.4)
+                    .opacity(sparkle ? 1 : 0.2)
+                    .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.07), value: sparkle)
+            }
+            BunnyArt(pose: celebration.pose)
+                .frame(height: h)
+                .shadow(color: .black.opacity(0.45), radius: 8, x: 0, y: 6)
+                .scaleEffect(x: celebration.fromLeft ? 1 : -1, y: 1)   // 面朝屏幕中间
+                .offset(y: offsetY)
+                .rotationEffect(.degrees(rotation))
+                .scaleEffect(scale)
+                .animation(reduceMotion ? nil : animation, value: beat)
+            if celebration.pose == .blowKiss {
+                ForEach(0..<4, id: \.self) { i in
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: h * 0.06))
+                        .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.55))
+                        .offset(x: (celebration.fromLeft ? 1 : -1) * h * (0.15 + 0.12 * CGFloat(i)) * (beat ? 1.6 : 0.6),
+                                y: -h * 0.25 - (beat ? h * 0.12 * CGFloat(i) : 0))
+                        .opacity(beat ? 0 : 1)
+                        .animation(.easeOut(duration: 1.2).repeatForever(autoreverses: false).delay(Double(i) * 0.2), value: beat)
+                }
+            }
+        }
+        .position(x: x, y: y)
+        .onAppear { beat = true; sparkle = true }
+    }
+
+    private var animation: Animation {
+        switch celebration.pose {
+        case .jump: return .easeOut(duration: 0.32).repeatForever(autoreverses: true)
+        case .cheer: return .easeInOut(duration: 0.4).repeatForever(autoreverses: true)
+        case .clap: return .easeInOut(duration: 0.18).repeatForever(autoreverses: true)
+        default: return .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+        }
+    }
+    private var offsetY: CGFloat {
+        guard beat else { return 0 }
+        switch celebration.pose {
+        case .jump: return -screen.height * 0.05
+        case .cheer: return -screen.height * 0.012
+        default: return 0
+        }
+    }
+    private var rotation: Double { beat && celebration.pose == .clap ? (celebration.fromLeft ? 3 : -3) : 0 }
+    private var scale: CGFloat { beat && celebration.pose == .cheer ? 1.04 : 1 }
 }

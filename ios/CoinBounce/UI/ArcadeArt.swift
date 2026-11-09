@@ -429,7 +429,9 @@ struct SlotSymbolArt: View {
             case .jokerBig, .jokerSmall:
                 jester(big: type == .jokerBig)
             case .bunny:
-                BunnyGirlIcon(size: size)
+                // v11.7：兔女郎头像（hj 提供的图片；缺图时用代码画的占位）
+                BunnyArt(pose: .headshot)
+                    .frame(width: size * 1.05, height: size * 1.05)
             }
         }
         .frame(width: size, height: size)
@@ -779,3 +781,38 @@ struct BowTieShape: Shape {
     }
 }
 
+
+
+// MARK: - v11.7 兔女郎角色系统
+
+/// 6 个图片槽位（Asset Catalog 里的同名图片集）。图片来源见 docs/ART_CREDITS.md；缺图时用代码画的占位
+enum BunnyPose: String, CaseIterable {
+    case headshot = "BunnyHeadshot"
+    case idle = "BunnyIdle"
+    case cheer = "BunnyCheer"
+    case clap = "BunnyClap"
+    case blowKiss = "BunnyBlowKiss"   // 目前的图是挥手（05_wave_alternative）
+    case jump = "BunnyJump"
+
+    /// 大奖时随机出现的动作
+    static let celebrationPoses: [BunnyPose] = [.cheer, .clap, .blowKiss, .jump]
+    var image: UIImage? { UIImage(named: rawValue) }
+}
+
+struct BunnyArt: View {
+    let pose: BunnyPose
+    var body: some View {
+        if let img = pose.image {
+            Image(uiImage: img)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                .accessibilityLabel(Text("Bunny"))
+        } else {
+            GeometryReader { geo in
+                BunnyGirlIcon(size: min(geo.size.width, geo.size.height))
+                    .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+    }
+}

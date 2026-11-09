@@ -174,13 +174,140 @@ def bgm():
     return (track + silence(total))[: int(RATE * total)]
 
 
+# ---------------------------------------------------------------------------
+# v11.7: casino crowd ambience, cheer, applause and a jackpot fanfare.
+# Separate fixed-seed RNG so the files above stay byte-identical.
+rng2 = random.Random(20261108)
+
+
+def lowpass(track, cutoff):
+    a = 1 - math.exp(-2 * math.pi * cutoff / RATE)
+    y, out = 0.0, []
+    for v in track:
+        y += a * (v - y)
+        out.append(y)
+    return out
+
+
+def highpass(track, cutoff):
+    low = lowpass(track, cutoff)
+    return [v - l for v, l in zip(track, low)]
+
+
+def vowel(f0, seconds, formants=(600, 1200), volume=0.1, glide=0.0):
+    """A short voice-like 'ah/oh': harmonics of f0 weighted by two formant bumps, smooth envelope."""
+    n = int(RATE * seconds)
+    harmonics = [k for k in range(1, 16) if f0 * k < 3500]
+    weights = [sum(math.exp(-((f0 * k - f) / 250) ** 2) for f in formants) + 0.05 for k in harmonics]
+    phases = [0.0] * len(harmonics)
+    out = []
+    for i in range(n):
+        x = i / n
+        f = f0 * (1 + glide * x)
+        env = math.sin(math.pi * x) ** 2
+        v = 0.0
+        for j, k in enumerate(harmonics):
+            phases[j] += 2 * math.pi * f * k / RATE
+            v += weights[j] * math.sin(phases[j])
+        out.append(v * env * volume / len(harmonics))
+    return out
+
+
+def babble(seconds, rate_per_s, pitch=(110, 240), volume=0.08, glide=(0.0, 0.0)):
+    total = int(RATE * seconds)
+    out = [0.0] * total
+    count = int(seconds * rate_per_s)
+    for _ in range(count):
+        d = rng2.uniform(0.15, 0.5)
+        v = vowel(rng2.uniform(*pitch), d, formants=(rng2.uniform(450, 800), rng2.uniform(1000, 1800)),
+                  volume=volume * rng2.uniform(0.5, 1.0), glide=rng2.uniform(*glide))
+        start = rng2.randrange(0, total)
+        for i, s_ in enumerate(v):
+            out[(start + i) % total] += s_          # wraps around: seamless loop
+    return out
+
+
+def crowd_loop():
+    """12 s seamless casino murmur: low filtered noise bed + distant babble."""
+    seconds = 12
+    bed = lowpass([rng2.uniform(-1, 1) for _ in range(int(RATE * seconds))], 500)
+    bed = [v * 0.6 for v in bed]
+    talk = lowpass(babble(seconds, 30, volume=0.25), 1800)
+    return mix(bed, talk)
+
+
+def cheer():
+    """2.4 s crowd cheer: a swell of bright noise, rising 'woo' voices and two whistles."""
+    seconds = 2.4
+    n = int(RATE * seconds)
+    swell = highpass(lowpass([rng2.uniform(-1, 1) for _ in range(n)], 2500), 300)
+    env = [min(1.0, (i / n) / 0.15) * math.exp(-1.6 * max(0.0, i / n - 0.25)) for i in range(n)]
+    swell = [v * e * 0.9 for v, e in zip(swell, env)]
+    woo = babble(seconds, 18, pitch=(220, 420), volume=0.5, glide=(0.15, 0.45))
+    woo = [v * e for v, e in zip(woo, env)]
+    whistles = mix(at(tone(1900, 0.5, "sine", attack=0.03, volume=0.25, freq_end=2700), 0.25),
+                   at(tone(2200, 0.4, "sine", attack=0.03, volume=0.2, freq_end=3000), 0.9))
+    return (mix(swell, woo, whistles) + silence(seconds))[:n]
+
+
+def applause():
+    """2.5 s applause: many short band-limited claps, dense at first then thinning out."""
+    seconds = 2.5
+    n = int(RATE * seconds)
+    out = [0.0] * n
+    for _ in range(140):
+        t = rng2.random() ** 1.6 * (seconds - 0.05)
+        clap = highpass(lowpass(noise(rng2.uniform(0.008, 0.02), decay=250, volume=rng2.uniform(0.4, 1.0)), rng2.uniform(1500, 3000)), 600)
+        start = int(t * RATE)
+        for i, v in enumerate(clap):
+            if start + i < n:
+                out[start + i] += v
+    return out
+
+
+def brass(freq, seconds, volume=0.3):
+    """Brass-like note: band-limited sawtooth with a soft attack and slight vibrato, lowpassed."""
+    n = int(RATE * seconds)
+    out, phase = [], 0.0
+    harmonics = [k for k in range(1, 12) if freq * k < 5000]
+    for i in range(n):
+        t = i / RATE
+        f = freq * (1 + 0.004 * math.sin(2 * math.pi * 5.5 * t))
+        phase += 2 * math.pi * f / RATE
+        v = sum(math.sin(phase * k) / k for k in harmonics)
+        env = min(1.0, t / 0.04) * (1.0 if t < seconds - 0.12 else max(0.0, (seconds - t) / 0.12))
+        out.append(v * env * volume)
+    return lowpass(out, 3000)
+
+
+def timpani(seconds=0.6, volume=0.8):
+    return mix(tone(70, seconds, "sine", attack=0.002, decay=6, volume=volume), lowpass(noise(seconds, decay=18, volume=0.5), 300))
+
+
+def fanfare():
+    """3 s jackpot fanfare: ta-ta-taaa on C major, then a held C major chord with timpani."""
+    beat = 0.16
+    lead = concat(brass(note("G4"), beat), brass(note("G4"), beat), brass(note("G4"), beat), brass(note("C5"), beat * 3),
+                  brass(note("E5"), beat * 2), brass(note("D5"), beat), brass(note("E5"), beat * 1.2))
+    chord_start = beat * 9.2
+    chord = mix(*[brass(note(nm), 1.4, volume=0.22) for nm in ("C4", "E4", "G4", "C5")])
+    hits = mix(at(timpani(), 0.0), at(timpani(), beat * 3), at(timpani(0.9, 1.0), chord_start))
+    return mix(lead, at(chord, chord_start), hits)
+
+
+EXTRA = {"cheer": cheer, "applause": applause, "jackpot_fanfare": fanfare}
+
+
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "ios", "CoinBounce", "Audio")
     os.makedirs(out_dir, exist_ok=True)
     for name, make in SFX.items():
         write(os.path.join(out_dir, f"sfx_{name}.wav"), make())
     write(os.path.join(out_dir, "bgm_loop.wav"), bgm(), peak=0.6)
-    print(f"wrote {len(SFX) + 1} files to {os.path.abspath(out_dir)}")
+    for name, make in EXTRA.items():
+        write(os.path.join(out_dir, f"sfx_{name}.wav"), make())
+    write(os.path.join(out_dir, "amb_crowd_loop.wav"), crowd_loop(), peak=0.5)
+    print(f"wrote {len(SFX) + len(EXTRA) + 2} files to {os.path.abspath(out_dir)}")
 
 
 if __name__ == "__main__":
