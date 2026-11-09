@@ -24,7 +24,15 @@ struct SaveData: Codable, Equatable {
 // MARK: - 存档读写 (UserDefaults + JSON)
 struct SaveStore {
     var defaults: UserDefaults = .standard
-    var key: String = "CoinBounce.SaveData.v1"
+    /// v11.8 起用 v2：1.0.0 上架前的所有安装（包括 TestFlight）都按首次安装重新开始（100 金币、奖池 1000）
+    var key: String = SaveStore.currentKey
+    static let currentKey = "CoinBounce.SaveData.v2"
+    static let legacyKeys = ["CoinBounce.SaveData.v1"]
+
+    /// 删掉旧版本的存档
+    func removeLegacySaves() {
+        for k in SaveStore.legacyKeys { defaults.removeObject(forKey: k) }
+    }
 
     func load() -> SaveData? {
         guard let data = defaults.data(forKey: key) else { return nil }

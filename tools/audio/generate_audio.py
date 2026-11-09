@@ -16,6 +16,8 @@ import struct
 import sys
 import wave
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 RATE = 22050
 rng = random.Random(20261026)  # fixed seed: identical output on every run
 
@@ -298,15 +300,197 @@ def fanfare():
 EXTRA = {"cheer": cheer, "applause": applause, "jackpot_fanfare": fanfare}
 
 
+
+# ---------------------------------------------------------------------------
+# v11.8: livelier casino floor. Upbeat 128 BPM loop (kick, clap, hats, walking
+# bass, brass stabs, lead) and a 20 s floor ambience (crowd, distant slot
+# jingles, bells, coin cascades). Own fixed-seed RNG; earlier files unchanged.
+rng3 = random.Random(20261109)
+
+
+def saw(freq, seconds, harmonics=8, attack=0.004, decay=None, volume=1.0):
+    """Band-limited saw built from sine harmonics (brassy stab)."""
+    return mix(*[tone(freq * k, seconds, "sine", attack=attack, decay=decay, volume=volume / k)
+                 for k in range(1, harmonics + 1) if freq * k < RATE / 2 - 500])
+
+
+def kick(volume=1.0):
+    return mix(tone(110, 0.22, "sine", attack=0.001, decay=18, volume=volume, freq_end=45),
+               noise(0.01, decay=500, volume=0.3 * volume))
+
+
+def clap(volume=0.5):
+    burst = [0.0] * int(RATE * 0.18)
+    for off in (0.0, 0.011, 0.022):
+        n = highpass(noise(0.15, decay=30, volume=volume), 900)
+        s0 = int(off * RATE)
+        for i, v in enumerate(n):
+            if s0 + i < len(burst):
+                burst[s0 + i] += v
+    return burst
+
+
+def hat(volume=0.18, open_=False):
+    return highpass(noise(0.12 if open_ else 0.04, decay=25 if open_ else 90, volume=volume), 5000)
+
+
+def place(track, clip, seconds, gain=1.0):
+    """Add clip into track at time seconds, wrapping around (seamless loops)."""
+    s0 = int(seconds * RATE)
+    n = len(track)
+    for i, v in enumerate(clip):
+        track[(s0 + i) % n] += v * gain
+
+
+def bgm_casino():
+    """8-bar 128 BPM loop: four-on-the-floor kick, claps on 2 and 4, 8th hats,
+    walking bass, brass stabs on the off-beats and a bright lead. Wraps cleanly."""
+    bpm = 128
+    beat = 60 / bpm
+    bars = 8
+    total = bars * 4 * beat
+    out = [0.0] * int(RATE * total)
+    prog = [("C", ["C4", "E4", "G4", "A#4"]), ("A", ["A3", "C#4", "E4", "G4"]),
+            ("D", ["D4", "F4", "A4", "C5"]), ("G", ["G3", "B3", "D4", "F4"])] * 2
+    walk = {"C": ["C2", "E2", "G2", "A2"], "A": ["A1", "C#2", "E2", "G2"],
+            "D": ["D2", "F2", "A2", "C3"], "G": ["G1", "B1", "D2", "F2"]}
+    lead = ["G5", "A#5", "C6", "A#5", "G5", "E5", "G5", "C6",
+            "E5", "G5", "A5", "C#6", "E6", "C#6", "A5", "G5",
+            "F5", "A5", "D6", "C6", "A5", "F5", "A5", "D6",
+            "B5", "D6", "F6", "D6", "B5", "G5", "F5", "D5"]
+    k, c, h, ho = kick(0.9), clap(0.45), hat(0.16), hat(0.12, True)
+    for bar, (root, chord) in enumerate(prog):
+        t0 = bar * 4 * beat
+        for b in range(4):
+            tb = t0 + b * beat
+            place(out, k, tb)
+            if b in (1, 3):
+                place(out, c, tb)
+            place(out, h, tb)
+            place(out, ho, tb + beat / 2)
+            place(out, tone(note(walk[root][b]), beat * 0.85, "triangle", attack=0.004, volume=0.5), tb)
+            # brass stab on the off-beat
+            stab = mix(*[saw(note(n), beat * 0.28, harmonics=6, attack=0.006, decay=9, volume=0.06) for n in chord])
+            place(out, lowpass(stab, 2600), tb + beat / 2)
+        # lead: one 8-bar phrase of quarter notes, every other bar answered by a fill
+        for q in range(4):
+            idx = (bar * 4 + q) % len(lead)
+            place(out, mix(tone(note(lead[idx]), beat * 0.7, "square", attack=0.004, decay=4, volume=0.07),
+                           tone(note(lead[idx]), beat * 0.7, "sine", attack=0.004, decay=3, volume=0.12)), t0 + q * beat)
+    # light swing shimmer: a coin clink at the end of every second bar
+    for bar in range(1, bars, 2):
+        place(out, clink(rng3.uniform(2600, 3200), 0.2, 0.25), (bar * 4 + 3.5) * beat)
+    return out
+
+
+def slot_jingle(volume=0.2):
+    seq = rng3.choice([["C6", "E6", "G6", "C7"], ["G5", "B5", "D6", "G6"], ["E6", "G6", "B6"], ["A5", "C#6", "E6", "A6"]])
+    out = []
+    for nm in seq * rng3.choice([1, 2]):
+        out += tone(note(nm), 0.07, "square", attack=0.002, decay=20, volume=volume)
+    return lowpass(out, 3000)
+
+
+def bell(freq, volume=0.2):
+    return mix(tone(freq, 1.4, "sine", attack=0.002, decay=3.5, volume=volume),
+               tone(freq * 2.76, 0.9, "sine", attack=0.002, decay=6, volume=volume * 0.5),
+               tone(freq * 5.4, 0.5, "sine", attack=0.002, decay=10, volume=volume * 0.25))
+
+
+def coin_cascade(volume=0.3):
+    n = rng3.randint(6, 16)
+    out = [0.0] * int(RATE * 1.4)
+    for _ in range(n):
+        c = clink(rng3.uniform(1900, 3400), 0.2, rng3.uniform(0.4, 1.0) * volume)
+        s0 = int(rng3.uniform(0, 1.1) * RATE)
+        for i, v in enumerate(c):
+            if s0 + i < len(out):
+                out[s0 + i] += v
+    return out
+
+
+def casino_floor_loop():
+    """20 s seamless casino floor: crowd murmur, distant slot jingles and bells, coin cascades, the odd 'woo'."""
+    seconds = 20
+    total = int(RATE * seconds)
+    bed = lowpass([rng3.uniform(-1, 1) for _ in range(total)], 450)
+    out = [v * 0.5 for v in bed]
+    talk = lowpass(babble(seconds, 55, volume=0.3), 1900)
+    for i, v in enumerate(talk):
+        out[i] += v
+    for _ in range(9):
+        place(out, slot_jingle(rng3.uniform(0.08, 0.18)), rng3.uniform(0, seconds))
+    for _ in range(4):
+        place(out, bell(note(rng3.choice(["C6", "E6", "G6", "A6"])), rng3.uniform(0.06, 0.12)), rng3.uniform(0, seconds))
+    for _ in range(5):
+        place(out, coin_cascade(rng3.uniform(0.15, 0.3)), rng3.uniform(0, seconds))
+    for _ in range(2):
+        place(out, lowpass(vowel(rng3.uniform(260, 340), 0.6, formants=(500, 900), volume=0.12, glide=0.3), 1500), rng3.uniform(0, seconds))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# v11.8 (2): casino floor bed with real CC0 recordings mixed in — Kenney "Casino Audio"
+# chip and card clatter and OpenGameArt bell dings (see tools/audio/cc0/README.md),
+# placed around a synthesized crowd murmur and distant slot jingles. 20 s seamless loop.
+CC0_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cc0")
+
+
+def load_clip(path):
+    """Decode any audio file to RATE mono floats with ffmpeg."""
+    import subprocess
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", str(RATE), "-f", "s16le", "-"],
+                         capture_output=True, check=True).stdout
+    return [v / 32768 for v in struct.unpack("<%dh" % (len(raw) // 2), raw)]
+
+
+def casino_floor_loop_cc0():
+    seconds = 20
+    out = casino_floor_loop()            # synth murmur, jingles, bells, coin cascades (rng3 sequence unchanged)
+    out = [v * 0.8 for v in out]
+    kenney = os.path.join(CC0_DIR, "kenney_casino_audio")
+    clatter = [load_clip(os.path.join(kenney, f)) for f in sorted(os.listdir(kenney)) if f.endswith(".ogg")]
+    bells = [load_clip(os.path.join(CC0_DIR, "oga_bell_dings", f)) for f in sorted(os.listdir(os.path.join(CC0_DIR, "oga_bell_dings")))]
+    rng4 = random.Random(20261110)
+    # table games around the room: chips and cards, some near, most far (quieter, darker)
+    for _ in range(26):
+        clip = rng4.choice(clatter)
+        far = rng4.random() < 0.7
+        c = lowpass(clip, 2500 if far else 6000)
+        place(out, c, rng4.uniform(0, seconds), gain=rng4.uniform(0.08, 0.16) if far else rng4.uniform(0.2, 0.32))
+    # a machine paying out somewhere: bell dings
+    for _ in range(5):
+        place(out, lowpass(rng4.choice(bells), 4000), rng4.uniform(0, seconds), gain=rng4.uniform(0.12, 0.22))
+    return out
+
+
 def main():
+    if "--ambience" in sys.argv:          # only rebuild the floor ambience loop
+        sys.argv.remove("--ambience")
+        out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "ios", "CoinBounce", "Audio")
+        path = os.path.join(out_dir, "amb_crowd_loop.wav")
+        write(path, casino_floor_loop_cc0(), peak=0.5)
+        import master_loops
+        master_loops.master(path, master_loops.TARGETS["amb_crowd_loop.wav"])
+        return
     out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "ios", "CoinBounce", "Audio")
     os.makedirs(out_dir, exist_ok=True)
     for name, make in SFX.items():
         write(os.path.join(out_dir, f"sfx_{name}.wav"), make())
-    write(os.path.join(out_dir, "bgm_loop.wav"), bgm(), peak=0.6)
+    # v11.8: the shipped music is "Catchy Swing" (CC0), rendered by make_music.sh; bgm_casino() stays as a fallback
+    if os.environ.get("SYNTH_MUSIC"):
+        write(os.path.join(out_dir, "bgm_loop.wav"), bgm_casino(), peak=0.6)
     for name, make in EXTRA.items():
         write(os.path.join(out_dir, f"sfx_{name}.wav"), make())
-    write(os.path.join(out_dir, "amb_crowd_loop.wav"), crowd_loop(), peak=0.5)
+    write(os.path.join(out_dir, "amb_crowd_loop.wav"), casino_floor_loop_cc0(), peak=0.5)
+    # v11.8: loudness-master the loops so the casino bed is clearly audible on a phone
+    import master_loops
+    for name, target in master_loops.TARGETS.items():
+        if name != "bgm_loop.wav" or os.environ.get("SYNTH_MUSIC"):
+            master_loops.master(os.path.join(out_dir, name), target)
+    subprocess_music = os.path.join(os.path.dirname(os.path.abspath(__file__)), "make_music.sh")
+    if not os.environ.get("SYNTH_MUSIC"):
+        os.system(f'"{subprocess_music}" "{out_dir}"')
     print(f"wrote {len(SFX) + len(EXTRA) + 2} files to {os.path.abspath(out_dir)}")
 
 

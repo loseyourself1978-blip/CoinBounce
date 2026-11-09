@@ -42,3 +42,4 @@ overlay_frames/
 *.refframe.png
 参考素材/
 视频对比*/
+ios/build_*/

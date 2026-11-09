@@ -67,7 +67,11 @@ struct FlipCard: View {
     }
 
     private var frameColors: [Color] {
-        card.rarity == .rare ? [ArtPalette.magenta, ArtPalette.magentaDeep] : [ArtPalette.teal, ArtPalette.tealDeep]
+        switch card.kind {
+        case .coins: return [ArtPalette.goldLight, ArtPalette.gold]
+        case .freeSpins: return [ArtPalette.teal, ArtPalette.tealDeep]
+        case .warriorStrike: return [ArtPalette.magenta, ArtPalette.magentaDeep]
+        }
     }
 
     private var back: some View {
@@ -80,17 +84,12 @@ struct FlipCard: View {
 
     private var front: some View {
         VStack(spacing: 6) {
-            Text(card.rarity == .rare ? LocalizedStringKey("RARE") : LocalizedStringKey("COMMON"))
-                .font(.system(size: 10, weight: .black, design: .rounded))
-                .foregroundColor(.white.opacity(0.9))
-                .padding(.horizontal, 8).padding(.vertical, 2)
-                .background(Capsule().fill(frameColors[0]))
-            CardIcon(kind: card.kind).frame(height: 48)
-            Text(card.kind.title)
+            CardIcon(kind: card.kind).frame(height: 52)
+            Text(card.title)
                 .font(.system(size: 17, weight: .black, design: .rounded))
                 .foregroundColor(.white)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(card.kind.detail)
+            Text(card.detail)
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(.white.opacity(0.85))
                 .multilineTextAlignment(.center)
@@ -108,38 +107,27 @@ struct CardIcon: View {
     let kind: CardKind
     var body: some View {
         switch kind {
-        case .coins100: ArtCoin(size: 40)
-        case .coins200: ZStack { ArtCoin(size: 36).offset(x: -8, y: 4); ArtCoin(size: 36).offset(x: 8, y: -4) }
+        case .coins: ZStack { ArtCoin(size: 36).offset(x: -8, y: 4); ArtCoin(size: 36).offset(x: 8, y: -4) }
         case .freeSpins: ReelsIcon(size: 56)
-        case .specialCoins: ArtCoin(size: 40).shadow(color: .white, radius: 8).saturation(0.4).brightness(0.15)
-        case .fastPusher: Image(systemName: "hare.fill").font(.system(size: 34, weight: .bold)).foregroundColor(ArtPalette.teal)
-        case .wideMouth: Image(systemName: "arrow.left.and.right").font(.system(size: 34, weight: .black)).foregroundColor(ArtPalette.gold)
-        case .lightFruits: HStack(spacing: -6) { FruitIcon(index: 3, size: 34); FruitIcon(index: 5, size: 34) }
+        case .warriorStrike: WarriorFigure(size: 46)
         }
     }
 }
 
-extension CardKind {
+extension RewardCard {
     var title: LocalizedStringKey {
-        switch self {
-        case .coins100: return "+100 Coins"
-        case .coins200: return "+200 Coins"
-        case .freeSpins: return "3 Free Spins"
-        case .specialCoins: return "Lucky Coins"
-        case .fastPusher: return "Turbo Pusher"
-        case .wideMouth: return "Easy Drop"
-        case .lightFruits: return "Fruit Head Start"
+        switch kind {
+        case .coins: return "+\(amount) Coins"
+        case .freeSpins: return "\(amount) Free Spins"
+        case .warriorStrike: return "Warrior Strike"
         }
     }
 
     var detail: LocalizedStringKey {
-        switch self {
-        case .coins100, .coins200: return "Added to your balance"
-        case .freeSpins: return "The slot spins 3 times"
-        case .specialCoins: return "Next 10 drops are glowing coins"
-        case .fastPusher: return "Pusher moves faster for 30s"
-        case .wideMouth: return "Coins slide off easier for 30s"
-        case .lightFruits: return "2 fruits start lit"
+        switch kind {
+        case .coins: return "Added to your balance"
+        case .freeSpins: return "The slot spins \(amount) times for free"
+        case .warriorStrike: return "BOSS loses \(amount)% HP"
         }
     }
 }

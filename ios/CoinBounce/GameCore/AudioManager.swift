@@ -26,6 +26,9 @@ enum SoundEffect: String, CaseIterable {
         case .cheer: return 0.7
         case .applause: return 0.6
         case .jackpotFanfare: return 0.85
+        // v11.8：高频金币声压低一点，不盖过背景的赌场氛围
+        case .coinDrop, .bedDrop: return 0.6
+        case .baffleHit: return 0.5
         default: return 1
         }
     }
@@ -36,6 +39,18 @@ enum SoundEffect: String, CaseIterable {
         case .baffleHit: return 0.08
         case .bedDrop: return 0.12
         case .coinDrop: return 0.05
+        default: return 0
+        }
+    }
+
+    /// v11.8：播放时把背景音乐和环境音压低多久（秒）；0 = 不压
+    var duckSeconds: Double {
+        switch self {
+        case .winBig: return 1.2
+        case .jackpot: return 2.8
+        case .cheer: return 2.2
+        case .applause: return 2.2
+        case .jackpotFanfare: return 3.4
         default: return 0
         }
     }
@@ -87,14 +102,14 @@ final class AudioManager {
         if let url = Bundle.main.url(forResource: "bgm_loop", withExtension: "wav") {
             musicPlayer = try? AVAudioPlayer(contentsOf: url)
             musicPlayer?.numberOfLoops = -1
-            musicPlayer?.volume = 0.35
+            musicPlayer?.volume = AudioManager.musicVolume
             musicPlayer?.prepareToPlay()
         }
-        // v11.7：赌场人群环境音（12 秒无缝循环），和背景音乐一起开关，音量压低
+        // 赌场环境音（v11.8：20 秒无缝循环，人声、远处老虎机叮当声、铃声、金币声），和背景音乐一起开关
         if let url = Bundle.main.url(forResource: "amb_crowd_loop", withExtension: "wav") {
             ambiencePlayer = try? AVAudioPlayer(contentsOf: url)
             ambiencePlayer?.numberOfLoops = -1
-            ambiencePlayer?.volume = 0.22
+            ambiencePlayer?.volume = AudioManager.ambienceVolume
             ambiencePlayer?.prepareToPlay()
         }
     }
@@ -114,7 +129,32 @@ final class AudioManager {
             player.currentTime = 0
             player.play()
         }
+        if effect.duckSeconds > 0 { duck(for: effect.duckSeconds, now: now) }
         return true
+    }
+
+    // MARK: v11.8 闪避（ducking）：中奖音效播放时背景音乐和环境音降到 30%，结束后 0.6 秒内恢复
+    // v11.8：音乐和环境音文件已按响度做过母带（约 -18 / -21 LUFS），满音量播放，合起来约 -16.5 LUFS
+    static let musicVolume: Float = 1.0
+    static let ambienceVolume: Float = 1.0
+    static let duckFactor: Float = 0.3
+    private(set) var duckedUntil: CFTimeInterval = 0
+    var isDucked: Bool { CACurrentMediaTime() < duckedUntil }
+
+    func duck(for seconds: Double, now: CFTimeInterval = CACurrentMediaTime()) {
+        let until = now + seconds
+        guard until > duckedUntil else { return }
+        let wasDucked = now < duckedUntil
+        duckedUntil = until
+        if !wasDucked {
+            musicPlayer?.setVolume(AudioManager.musicVolume * AudioManager.duckFactor, fadeDuration: 0.15)
+            ambiencePlayer?.setVolume(AudioManager.ambienceVolume * AudioManager.duckFactor, fadeDuration: 0.15)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            guard let self, CACurrentMediaTime() >= self.duckedUntil - 0.01 else { return }
+            self.musicPlayer?.setVolume(AudioManager.musicVolume, fadeDuration: 0.6)
+            self.ambiencePlayer?.setVolume(AudioManager.ambienceVolume, fadeDuration: 0.6)
+        }
     }
     private let playQueue = DispatchQueue(label: "coinbounce.audio.play", qos: .userInitiated)
 

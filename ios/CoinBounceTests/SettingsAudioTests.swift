@@ -477,7 +477,25 @@ final class SettingsAudioTests: XCTestCase {
         for i in 6..<10 { state.slotValues[i] = bunny }
         state.evaluateWin()
         XCTAssertLessThan(state.availableCoins, b2 + GameConstants.jackpotPool)
-        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 1500, accuracy: 1e-12, "约 1500 次转动出一次")
+        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 6000, accuracy: 1e-12, "约 6000 次转动出一次（v11.8）")
     }
 }
 
+
+// MARK: - v11.8 背景音乐闪避
+final class AudioDuckTests: XCTestCase {
+    func test_winSounds_duckMusic_otherSoundsDoNot() {
+        for e in [SoundEffect.winBig, .jackpot, .cheer, .applause, .jackpotFanfare] {
+            XCTAssertGreaterThan(e.duckSeconds, 0, "\(e) 播放时压低背景音乐")
+        }
+        for e in [SoundEffect.coinDrop, .baffleHit, .bedDrop, .buttonTap, .slotSpin] {
+            XCTAssertEqual(e.duckSeconds, 0, "\(e) 不压低背景音乐")
+        }
+    }
+
+    func test_duck_setsDuckedWindow() {
+        AudioManager.shared.duck(for: 0.5)
+        XCTAssertTrue(AudioManager.shared.isDucked)
+        XCTAssertLessThan(AudioManager.duckFactor, 0.5)
+    }
+}

@@ -217,6 +217,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// v11.6 BONUS 闸门：滑块当前偏移（点），每帧读一次，移动牌两侧的立柱碰撞体
     var bonusOffsetProvider: (() -> CGFloat)?
     static var bonusGateEnabled = !ProcessInfo.processInfo.arguments.contains("-debugNoBonusGate")
+    /// v11.8：两侧掉下的金币不算玩家的（返还率略低于 1）
+    static var sideDropsPay = false
     private var gateLayout: GameLayout?
     private var bonusPosts: [(node: SCNNode, side: CGFloat)] = []
     private var bonusPostBaseX: Float = 0, bonusPostScale: Float = 0
@@ -1276,7 +1278,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                 if track.isReward { rewardRemoved[reason, default: 0] += 1 }
                 logEvent("removed", detail: "\(reason) at \(p.x),\(p.z) first=\(track.firstLanding?.rawValue ?? "-") prefilled=\(track.prefilled) phase=\(track.phase.rawValue) age=\(String(format: "%.1f", now - track.born))")
                 tracks[id] = nil
-                if reason == "fellIntoTray" || reason == "fellSide" { removed.append(node.name == PusherScene3D.specialName) }
+                // v11.8：只有从前沿掉进接币槽的才算玩家的；从两侧掉下的进侧面回收槽（真实推币机的「抽水」），不计分
+                if reason == "fellIntoTray" || (reason == "fellSide" && PusherScene3D.sideDropsPay) { removed.append(node.name == PusherScene3D.specialName) }
                 node.removeFromParentNode()
                 return true
             }

@@ -18,38 +18,41 @@ struct GameConstants {
     static let coinAngularDamping: CGFloat = 0.8
 
     // Initial State
-    static let initialCoins: Int = 1000
+    static let initialCoins: Int = 100        // v11.8：首次安装 100 金币
     static let dailyLoginBonus: Int = 50
 
     // Rewards
     static let bedDropReward: Int = 1         // 每枚落下推币台的金币（推落 1 枚得 1 枚，奖励靠水果和老虎机）
-    static let fruitHitReward: Int = 10       // 首次点亮一个水果
-    static let slotSmallWinReward: Int = 30
-    static let slotBigWinReward: Int = 200
-    static let slotJackpotReward: Int = 500
+    static let fruitHitReward: Int = 0        // v11.8：点亮水果不再直接给金币（奖励在集齐 7 个后的卡里），原来 10
+    static let slotSmallWinReward: Int = 2      // v11.8 总返还率调到约 0.96：原来 30
+    static let slotBigWinReward: Int = 10       // 原来 200
+    static let slotJackpotReward: Int = 30      // 原来 500
     /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
-    static let jackpotPool: Int = 10000
+    static let jackpotPool: Int = 1000        // v11.8：奖池从 1000 起，派奖后回到 1000
     /// v11.7 累积奖池：起始值 10000（= jackpotPool），每投一枚金币有 2% 进奖池（在线老虎机常见 1–3%）。
     /// 兔女郎终极大奖派出整个奖池（取整），然后回到起始值
     static let jackpotSeed: Double = Double(jackpotPool)
-    static let jackpotContribution: Double = 0.02
+    static let jackpotContribution: Double = 0.01   // v11.8：每枚 1%（原来 2%）
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
-    static let ultimateJackpotChance: Double = 1.0 / 1500
+    static let ultimateJackpotChance: Double = 1.0 / 6000   // v11.8：原来 1/1500
 
     // 激励广告领币
     static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
-    static let adRewardCoinThreshold: Int = 10      // 金币低于这个数才显示领币按钮
-    static let adRewardDailyLimit: Int = 5          // 每天最多领取次数（按本地日期重置）
+    static let adRewardCoinThreshold: Int = 10      // 金币低于这个数时，在投币按钮旁边额外显示大号领币按钮（顶部的小按钮一直显示）
+    static let adRewardCooldown: TimeInterval = 90   // v11.8：两次看广告领币之间至少隔 90 秒
+    static let adRewardDailyLimit: Int = 10         // 每天最多领取次数（按本地日期重置；v11.8 从 5 次改为 10 次）
 
     // 特殊金币（发光）：投币时有一定概率出现，从推币台掉落时奖励更多（数值待确认）
-    static let specialCoinChance: Double = 0.05
-    static let specialCoinReward: Int = 10
+    static let specialCoinChance: Double = 0.005    // v11.8：原来 5%
+    static let specialCoinReward: Int = 2           // v11.8：原来 10
 
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
-    static let bossDamagePerHit: Double = 0.06
-    static let bossKOReward: Int = 20               // BOSS 被打倒奖励
+    static let bossDamagePerHit: Double = 0.006     // v11.8：约 170 次攻击（约 240 枚金币）打倒一次（原来 0.06，约 17 次）
+    static let bossKOReward: Int = 5                // BOSS 被打倒奖励（v11.8：原来 20）
     /// 水果灯命中区：金币中心离灯中心不超过「灯宽 × 该比例」才点亮（从灯中间穿过）
     static let fruitHitZoneFraction: CGFloat = 0.35
+    /// v11.8：正中穿过没亮的灯时点亮的机会（每次穿过都会闪一下）；约 200 枚集齐一轮，原来每次必亮、约 25 枚
+    static let fruitLightChance: Double = 0.12
 
     // 手感（v10.4 整体调快）
     static let dropFallSeconds: Double = 0.92      // 下落区自由落体时长；加上格挡弹跳后从投币口到推币台约 1.75 秒（见 referenceFallSeconds）
@@ -88,7 +91,7 @@ struct GameConstants {
     static let bonusSliderTravelFraction: CGFloat = 0.16
     /// v11.6 BONUS 闸门：参考视频里 BONUS 牌内框开口约 126 像素、金币直径约 78 像素（开口 ≈ 1.62 枚金币宽），
     /// 两侧边框立柱（红边 + 倒角）约 12 像素。按金币直径的比例换算（本作金币比参考大），开口两边余量与参考相同
-    static let bonusOpeningToCoinDiameter: CGFloat = 126.0 / 78.0
+    static let bonusOpeningToCoinDiameter: CGFloat = 87.0 / 78.0   // v11.8：从 126/78 收窄（余量 = 开口 − 金币直径，从 0.62 枚降到 0.12 枚），触发约减半（实测见 CHANGELOG）
     static let bonusPostToCoinDiameter: CGFloat = 12.0 / 78.0
     static let coinSliderPeriod: Double = 4.0
     static let bonusSliderPeriod: Double = 4.6
@@ -101,10 +104,10 @@ struct GameConstants {
     /// v11.7：中奖时最多这么多枚变成真的金币落下（其余直接入账），每枚间隔 rewardDropInterval 秒
     static let maxPhysicalReward = 40
     /// v11.7 兔女郎庆祝：大奖（≥ 200 金币，即老虎机 BIG WIN）和 JACKPOT 时出现，约 2.6 秒
-    static let bigWinCelebrationThreshold = 200
+    static let bigWinCelebrationThreshold = 10    // v11.8：大奖金额变小，庆祝门槛跟着改（原来 200）
     static let celebrationSeconds: Double = 2.6
     static let rewardDropInterval: Double = 0.06
-    static let coinRainSmallWin = 6
+    static let coinRainSmallWin = 3
     static let coinRainBigWin = 15
     static let coinRainJackpot = 40
 

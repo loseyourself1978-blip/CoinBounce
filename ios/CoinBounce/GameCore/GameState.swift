@@ -262,6 +262,7 @@ class GameState: ObservableObject {
 
 
     private init() {
+        saveStore.removeLegacySaves()
         applySave(saveStore.load() ?? .fresh)
         // 上次退出时水果已全亮但未选奖励：重新弹出选择
         if fruitsLit.allSatisfy({ $0 }) { presentCardPick() }
@@ -291,6 +292,7 @@ class GameState: ObservableObject {
         pusherSpeedMultiplier = 1
         wideMouthActive = false
         lastAttackTime = .distantPast
+        lastAdRewardAt = nil
         bossHealth = 1
         sliderTime = 0
         coinSliderOffset = 0
@@ -499,6 +501,7 @@ class GameState: ObservableObject {
     func dropCoin(atX explicitX: CGFloat? = nil) {
         guard canDropCoin else { return }
         availableCoins -= 1
+        econSpent += 1
         jackpotPool += GameConstants.jackpotContribution
         hasDroppedFirstCoin = true
         showTutorialArrow = false
@@ -530,6 +533,8 @@ class GameState: ObservableObject {
     // MARK: - 下落区事件（DropFieldScene 调用）
 
     /// 金币穿过水果灯排：按所在列点亮水果
+    /// 正中穿过但没点亮新灯的次数（统计用）
+    private(set) var fruitPings = 0
     func coinCrossedFruitRow(x: CGFloat) {
         // 规则：金币从某个水果灯的中间穿过就点亮它；已亮的保持；7 个全亮后弹出卡牌，选完全部熄灭开始新一轮
         guard let column = layout.fruitColumn(forX: x),
@@ -577,7 +582,7 @@ class GameState: ObservableObject {
     func coinFellOffPusher(isSpecial: Bool = false) {
         bedDropCount += 1
         let reward = isSpecial ? GameConstants.specialCoinReward : GameConstants.bedDropReward
-        addCoins(reward)
+        addCoins(reward, source: isSpecial ? .special : .tray)
         AudioManager.shared.play(.bedDrop)
         HapticManager.shared.coinFall()
         if isSpecial {
@@ -591,15 +596,31 @@ class GameState: ObservableObject {
         lastAttackTime = now
         warriorAttackCount += 1
         bossHealth = max(0, bossHealth - GameConstants.bossDamagePerHit)
-        if bossHealth == 0 {
-            bossDefeatedCount += 1
-            addCoins(GameConstants.bossKOReward)
-            addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.midX, y: layout.dropField.midY, color: .red, big: true)   // v11.7：居中（原来偏右，大屏上「+20」被屏幕边切掉）
-            HapticManager.shared.bigWin()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-                withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
-            }
+        if bossHealth == 0 { bossKnockedOut() }
+    }
+
+    /// BOSS 被打倒：发奖，1.2 秒后满血复活
+    private func bossKnockedOut() {
+        bossDefeatedCount += 1
+        addCoins(GameConstants.bossKOReward, source: .boss)
+        addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.midX, y: layout.dropField.midY, color: .red, big: true)   // v11.7：居中（原来偏右，大屏上「+20」被屏幕边切掉）
+        HapticManager.shared.bigWin()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
         }
+    }
+
+    /// v11.8 勇士重击卡：BOSS 立刻掉最大血量的 percent%（重击动画看 warriorStrikeCount），血量归零照常 K.O.
+    @Published private(set) var warriorStrikeCount = 0
+    private(set) var lastStrikePercent = 0
+    func warriorStrike(percent: Int) {
+        guard bossHealth > 0 else { return }
+        lastStrikePercent = percent
+        warriorStrikeCount += 1
+        bossHealth = max(0, bossHealth - Double(percent) / 100)
+        HapticManager.shared.bigWin()
+        addFloatingScore(text: "-\(percent)%", x: layout.dropField.minX + layout.dropField.width * 0.8, y: layout.dropField.midY, color: .red, big: true)
+        if bossHealth <= 0.0001 { bossHealth = 0; bossKnockedOut() }
     }
 
     /// 本地日期，用于每日次数重置
@@ -613,16 +634,30 @@ class GameState: ObservableObject {
         adRewardDay == GameState.dayKey(for: date) ? adRewardsClaimed : 0
     }
 
-    /// 是否显示「看广告领金币」：金币低于阈值且今天还有次数
-    func canOfferAdReward(now: Date = Date()) -> Bool {
-        adPresenter.adsEnabled
-            && availableCoins < GameConstants.adRewardCoinThreshold
-            && adRewardsUsed(on: now) < GameConstants.adRewardDailyLimit
+    /// v11.8：上次看完广告领币的时间（冷却用，不存档：重启 App 后冷却清零）
+    var lastAdRewardAt: Date?
+
+    /// 冷却还剩几秒（0 = 可以领）
+    func adRewardCooldownRemaining(now: Date = Date()) -> TimeInterval {
+        guard let last = lastAdRewardAt else { return 0 }
+        return max(0, GameConstants.adRewardCooldown - now.timeIntervalSince(last))
     }
 
-    /// 金币不足时的补币入口：播放激励广告，只有看完（SDK 发放奖励回调）才加金币
+    /// 现在能不能看广告领币：有广告单元、今天还有次数、不在冷却中（不看余额）
+    func canClaimAdReward(now: Date = Date()) -> Bool {
+        adPresenter.adsEnabled
+            && adRewardsUsed(on: now) < GameConstants.adRewardDailyLimit
+            && adRewardCooldownRemaining(now: now) == 0
+    }
+
+    /// 金币快用完时，投币按钮旁边额外显示的大号领币按钮
+    func canOfferAdReward(now: Date = Date()) -> Bool {
+        canClaimAdReward(now: now) && availableCoins < GameConstants.adRewardCoinThreshold
+    }
+
+    /// 看广告领金币：播放激励广告，只有看完（SDK 发放奖励回调）才加金币
     func requestFreeCoins() {
-        guard canOfferAdReward(), adPresenter.isAdReady else { return }
+        guard canClaimAdReward(), adPresenter.isAdReady else { return }
         adPresenter.showRewardedAd { [weak self] in
             self?.grantAdReward()
         }
@@ -635,7 +670,9 @@ class GameState: ObservableObject {
         guard used < GameConstants.adRewardDailyLimit else { return false }
         adRewardDay = GameState.dayKey(for: now)
         adRewardsClaimed = used + 1
-        addCoins(GameConstants.adRewardCoins)
+        lastAdRewardAt = now
+        addCoins(GameConstants.adRewardCoins, source: .ad)
+        addFloatingScore(text: "+\(GameConstants.adRewardCoins)", x: layout.topRow.minX + layout.topRow.width * 0.2, y: layout.topRow.maxY + 12, color: .yellow, big: true)
         #if DEBUG
         NSLog("[Ads] granted %d coins, balance %d, today %d", GameConstants.adRewardCoins, availableCoins, adRewardsClaimed)
         #endif
@@ -652,13 +689,14 @@ class GameState: ObservableObject {
     var onRewardDrop: ((Active2DCoin) -> Void)?
 
     /// 派奖：最多 maxPhysicalReward 枚变成真的金币落下，其余直接加到余额
-    func payReward(_ total: Int, physical: Int) {
+    func payReward(_ total: Int, physical: Int, source: CoinSource = .slot) {
         updateDropCrowded()
         let cap = dropCrowded ? GameConstants.crowdedMaxPhysicalReward : GameConstants.maxPhysicalReward
         let p = max(0, min(physical, total, cap - pendingRewardDrops))
         // 本来要变成真的金币、因为台面拥挤改成直接入账的部分：飞向余额
         let wouldDrop = max(0, min(physical, total, GameConstants.maxPhysicalReward))
-        addCoins(total - p)
+        addCoins(total - p, source: source)
+        econAwarded[source, default: 0] += total
         pendingRewardDrops += p
         if wouldDrop > p { showCreditFlight(wouldDrop - p) }
     }
@@ -681,7 +719,7 @@ class GameState: ObservableObject {
         // v11.7：台面拥挤时，排着的中奖金币超过 crowdedMaxPhysicalReward 的部分直接入账（不再往台面上加）
         if dropCrowded, pendingRewardDrops > GameConstants.crowdedMaxPhysicalReward {
             let excess = pendingRewardDrops - GameConstants.crowdedMaxPhysicalReward
-            addCoins(excess)
+            addCoins(excess, source: .slot)
             pendingRewardDrops = GameConstants.crowdedMaxPhysicalReward
             showCreditFlight(excess)
         }
@@ -696,13 +734,35 @@ class GameState: ObservableObject {
         }
     }
 
-    func addCoins(_ amount: Int) {
+    /// 收支来源（返还率统计用）
+    enum CoinSource: String, CaseIterable { case tray, special, fruit, slot, jackpot, card, boss, ad, other }
+    /// 累计投入（玩家投出的金币）和按来源的累计入账
+    private(set) var econSpent = 0
+    private(set) var econCredited: [CoinSource: Int] = [:]
+    /// payReward 的名义派奖（一部分变成真金币落到台面，最终经接币槽入账，记在 tray 里）
+    private(set) var econAwarded: [CoinSource: Int] = [:]
+    var econReturnRatio: Double { econSpent == 0 ? 0 : Double(econCredited.values.reduce(0, +)) / Double(econSpent) }
+    func econSummary() -> String {
+        "spent=\(econSpent) credited=\(econCredited.values.reduce(0, +)) ratio=\(String(format: "%.3f", econReturnRatio)) bonus=\(bonusTriggerCount) spins=\(spinsStarted) " +
+        CoinSource.allCases.map { "\($0.rawValue)=\(econCredited[$0] ?? 0)" }.joined(separator: " ") +
+        " awardedSlot=\(econAwarded[.slot] ?? 0) awardedJackpot=\(econAwarded[.jackpot] ?? 0) rewardReleased=\(rewardDropsReleased) pendingReward=\(pendingRewardDrops)"
+    }
+
+    func addCoins(_ amount: Int, source: CoinSource = .other) {
         availableCoins += amount
         totalCoinsWon += amount
+        econCredited[source, default: 0] += amount
     }
 
     private func triggerFruitHit(index: Int) {
         guard index < fruitsLit.count else { return }
+        // v11.8：每次正中穿过灯都会闪一下；没亮的灯按 fruitLightChance 的机会点亮（约 100 枚集齐一轮，原来约 25 枚）
+        if fruitsLit[index] || randomUnit() >= GameConstants.fruitLightChance {
+            fruitBounceIndex = index
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { if self.fruitBounceIndex == index { self.fruitBounceIndex = nil } }
+            fruitPings += 1
+            return
+        }
         if !fruitsLit[index] {
             fruitsLit[index] = true
             litFruitIndex = index
@@ -711,8 +771,10 @@ class GameState: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.fruitBounceIndex = nil }
             HapticManager.shared.fruitLit()
             AudioManager.shared.play(.fruitLit)
-            addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
-            addCoins(GameConstants.fruitHitReward)
+            if GameConstants.fruitHitReward > 0 {
+                addFloatingScore(text: "+\(GameConstants.fruitHitReward)", x: layout.fruitCenters[index].x, y: layout.fruitBar.minY, color: .yellow)
+                addCoins(GameConstants.fruitHitReward, source: .fruit)
+            }
             if fruitsLit.allSatisfy({ $0 }) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.presentCardPick() }
             }
@@ -916,7 +978,7 @@ class GameState: ObservableObject {
         lastJackpotPayout = pay
         jackpotExplosionAmount = pay
         jackpotPool = GameConstants.jackpotSeed
-        payReward(pay, physical: GameConstants.coinRainJackpot * 3)
+        payReward(pay, physical: GameConstants.coinRainJackpot * 3, source: .jackpot)
         // 金额由 JACKPOT 爆炸画面显示（v11.7 去掉重复的飘字，两行 JACKPOT 叠在一起看不清）
         celebrate(jackpot: true)
         spawnParticles(count: 200, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .pink, .white])
@@ -956,7 +1018,7 @@ class GameState: ObservableObject {
     private func slotJackpot() {
         jackpotExplosionAmount = GameConstants.slotJackpotReward
         currentWin = .jackpot; slotFlashColumns = [0,1,2,3,4]; showJackpotExplosion = true
-        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot)
+        HapticManager.shared.jackpot(); AudioManager.shared.play(.jackpot); payReward(GameConstants.slotJackpotReward, physical: GameConstants.coinRainJackpot, source: .jackpot)
         celebrate(jackpot: true)
         // V9.4 Particle Explosion
         spawnParticles(count: 100, x: layout.slotMachine.midX, y: layout.slotMachine.midY, colors: [.yellow, Color(red: 1.0, green: 0.84, blue: 0.0), .red])
@@ -979,33 +1041,30 @@ class GameState: ObservableObject {
 
     // MARK: - 卡牌三选一
 
-    /// 7 水果全亮：抽 3 张卡展示
+    /// 7 水果全亮：三张卡背面朝上展示（金币 / 免费转 / 勇士重击，顺序和金额随机）
     func presentCardPick() {
         guard !showCardSelection else { return }
-        offeredCards = CardPool.draw(3, random: randomUnit)
+        offeredCards = CardPool.draw(random: randomUnit)
         pickedCard = nil
         showCardSelection = true
     }
 
-    /// 选中一张卡：立即生效，水果重置；界面翻牌展示后调用 finishCardPick() 关闭
+    /// 选中一张卡：立即生效，水果重置；界面把三张一起翻开展示后调用 finishCardPick() 关闭
     func pickCard(_ kind: CardKind, now: Date = Date()) {
-        guard showCardSelection, pickedCard == nil, offeredCards.contains(where: { $0.kind == kind }) else { return }
+        guard showCardSelection, pickedCard == nil, let card = offeredCards.first(where: { $0.kind == kind }) else { return }
         pickedCard = kind
         fruitsLit = SaveData.fresh.fruitsLit
         switch kind {
-        case .coins100: addCoins(100)
-        case .coins200: addCoins(200)
+        case .coins:
+            addCoins(card.amount, source: .card)
+            addFloatingScore(text: "+\(card.amount)", x: layout.centerX, y: layout.slotMachine.maxY, color: .yellow, big: true)
         case .freeSpins:
-            // 连续自动转 3 次
-            freeSpinsGranted += CardPool.freeSpinCount
-            queueSpins(CardPool.freeSpinCount)
-        case .specialCoins: specialCoinsLeft += CardPool.specialCoinDrops
-        case .fastPusher: fastPusherUntil = now.addingTimeInterval(CardPool.fastPusherSeconds)
-        case .wideMouth: wideMouthUntil = now.addingTimeInterval(CardPool.wideMouthSeconds)
-        case .lightFruits:
-            for idx in (0..<fruitsLit.count).shuffled().prefix(CardPool.fruitsToLight) { fruitsLit[idx] = true }
+            // 免费转：排队自动转，不用穿过 BONUS，照常派奖
+            freeSpinsGranted += card.amount
+            queueSpins(card.amount)
+        case .warriorStrike:
+            warriorStrike(percent: card.amount)
         }
-        updateCardEffects(now: now)
         AudioManager.shared.play(.winSmall)
     }
 
@@ -1028,7 +1087,7 @@ class GameState: ObservableObject {
     /// 计时效果到期检查（每帧调用）
     func updateCardEffects(now: Date) {
         let fast = (fastPusherUntil ?? .distantPast) > now
-        let speed = fast ? CardPool.fastPusherSpeed : 1
+        let speed = fast ? 1.6 : 1   // v11.8 起没有加速卡，保留计时接口
         if pusherSpeedMultiplier != speed { pusherSpeedMultiplier = speed }
         let wide = (wideMouthUntil ?? .distantPast) > now
         if wideMouthActive != wide { wideMouthActive = wide }
