@@ -237,7 +237,11 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 场上的中奖金币、正在下落的金币（含还没生成的）：渲染线程每步更新，主线程只读（投币队列按下落数限流）
     private(set) var rewardInPlay = 0
     private(set) var fallingNow = 0
-    var fallingCount: Int { coinLock.lock(); defer { coinLock.unlock() }; return fallingNow + pendingSpawns.count }
+    /// v11.7 性能：主线程每帧都读它（投币队列限流）。不能用 coinLock：物理回调整个逐枚循环都拿着 coinLock，
+    /// 金币一多（10 COIN 连点 170 枚）主线程每帧都在等它，真机主线程掉到 20 fps。改用只护这两个数的小锁
+    var fallingCount: Int { spawnLock.lock(); defer { spawnLock.unlock() }; return fallingPublished + pendingSpawns.count }
+    private var fallingPublished = 0
+    private let spawnLock = NSLock()
     /// 陷进台面、被托回台面的次数
     private(set) var deckClamps = 0
     /// 屏幕上的事件线（点）：战斗区、水果排、BONUS 轨道（金币在 BONUS 线处解除平面约束，落向推板 / 斜坡）
@@ -971,9 +975,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 主线程调用时先排队，下一帧在渲染线程生成（物理回调也在渲染线程，避免两边同时改金币列表）
     /// reward：v11.7 中奖金币（真的 3D 金币，不触发战斗、水果、BONUS）
     func spawnFallingCoin(atScreen s: CGPoint, screenVelocity v: CGVector = .zero, special: Bool = false, reward: Bool = false) {
-        coinLock.lock()
+        spawnLock.lock()
         pendingSpawns.append((s, v, special, reward))
-        coinLock.unlock()
+        spawnLock.unlock()
     }
 
     @discardableResult
@@ -1134,10 +1138,12 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     }
 
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        coinLock.lock()
+        spawnLock.lock()
         let spawns = pendingSpawns
         pendingSpawns.removeAll()
-        coinLock.unlock()
+        // 生成出来的金币马上算进下落中（下面 makeFallingCoin 之后、下一次物理回调之前，限流不会少算）
+        fallingPublished += spawns.count
+        spawnLock.unlock()
         for (s, v, special, reward) in spawns { makeFallingCoin(atScreen: s, screenVelocity: v, special: special, reward: reward) }
         updateBonusGate()
         if logsPhysicsStats {
@@ -1201,6 +1207,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             var f = 0, r = 0
             for t in tracks.values { if t.falling { f += 1 }; if t.isReward { r += 1 } }
             fallingNow = f; rewardInPlay = r
+            spawnLock.lock(); fallingPublished = f; spawnLock.unlock()
         }
         _coins.removeAll { node in
             let id = ObjectIdentifier(node)
