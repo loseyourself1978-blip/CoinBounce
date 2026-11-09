@@ -97,5 +97,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         import json
         cfg = json.load(open(sys.argv[3], encoding="utf-8"))
-        CAPTIONS.update(cfg["captions"]); PICKS.update(cfg["picks"])
+        CAPTIONS.update(cfg.get("captions", {})); PICKS.update(cfg["picks"])
     main(sys.argv[1], sys.argv[2])

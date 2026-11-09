@@ -1,0 +1,18 @@
+{
+ "picks": {
+  "en": [
+   "s1_en_13",
+   "s2_en_18",
+   "s3_en_08",
+   "s4_en_06",
+   "s5_en_07"
+  ],
+  "zh": [
+   "s1_zh-Hans_13",
+   "s2_zh-Hans_18",
+   "s3_zh-Hans_08",
+   "s4_zh-Hans_06",
+   "s5_zh-Hans_37"
+  ]
+ }
+}
