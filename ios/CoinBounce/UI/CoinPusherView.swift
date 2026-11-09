@@ -1,5 +1,24 @@
 import SwiftUI
 import SpriteKit
+import Combine
+
+/// v11.7：飞字层单独观察 FloatingScoreBoard（飞字变化不让整个游戏画面重算）
+private struct FloatingScoreLayer: View {
+    @ObservedObject var board: FloatingScoreBoard
+    var body: some View {
+        ZStack {
+            ForEach(board.scores) { score in
+                FloatingScoreView(score: score)
+                    .position(x: score.x, y: score.y)
+            }
+        }
+    }
+}
+
+#if DEBUG
+/// 测帧率时统计每秒 GameState 变化次数（-autoplayLite / -autoplayBurst10）
+private var stateChangeCounter: AnyCancellable?
+#endif
 
 // MARK: - V20 稳定版 (基于V16结构)
 // 修复编译错误，使用正确的GameState属性
@@ -153,10 +172,7 @@ struct CoinPusherView: View {
                 #endif
 
                 // 飞分特效层
-                ForEach(gameState.floatingScores) { score in
-                    FloatingScoreView(score: score)
-                        .position(x: score.x, y: score.y)
-                }
+                FloatingScoreLayer(board: gameState.floatingBoard)
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
@@ -349,6 +365,9 @@ struct CoinPusherView: View {
             }
         }
         // v11.7：10 COIN 快速连点（录屏 / 真机帧率）：每 0.12 秒点一次 10 COIN，选卡弹出时选第一张
+        if ProcessInfo.processInfo.arguments.contains("-autoplayBurst10") || autoplayLite {
+            stateChangeCounter = gameState.objectWillChange.sink { _ in PerfDebug.monitor.stateChanges += 1 }
+        }
         if ProcessInfo.processInfo.arguments.contains("-autoplayBurst10") {
             pusher3D.logsPhysicsStats = true
             PerfDebug.monitor.start()

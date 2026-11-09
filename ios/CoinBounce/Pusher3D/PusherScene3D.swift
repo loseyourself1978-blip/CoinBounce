@@ -2117,6 +2117,8 @@ enum PerfDebug {
         private var link: CADisplayLink?
         private var last: CFTimeInterval = 0, windowStart: CFTimeInterval = 0, frames = 0, maxGap: CFTimeInterval = 0
         private var over33 = 0, over100 = 0
+        /// v11.7：每秒 GameState.objectWillChange 次数（整个游戏画面重算的次数）
+        var stateChanges = 0
         func start() {
             let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
             l.add(to: .main, forMode: .common)
@@ -2133,8 +2135,8 @@ enum PerfDebug {
             last = t; frames += 1
             if windowStart == 0 { windowStart = t }
             if t - windowStart >= 1 {
-                NSLog("MAIN_STATS fps=%.1f maxGapMs=%.1f over33=%d over100=%d", Double(frames) / (t - windowStart), maxGap * 1000, over33, over100)
-                frames = 0; maxGap = 0; windowStart = t; over33 = 0; over100 = 0
+                NSLog("MAIN_STATS fps=%.1f maxGapMs=%.1f over33=%d over100=%d stateChanges=%d", Double(frames) / (t - windowStart), maxGap * 1000, over33, over100, stateChanges)
+                frames = 0; maxGap = 0; windowStart = t; over33 = 0; over100 = 0; stateChanges = 0
             }
         }
     }

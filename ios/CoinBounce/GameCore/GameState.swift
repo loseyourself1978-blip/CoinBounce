@@ -105,6 +105,10 @@ struct FloatingScore: Identifiable {
 }
 
 // MARK: - GameState V8.0 - 超高性能物理驱动版
+final class FloatingScoreBoard: ObservableObject {
+    @Published var scores: [FloatingScore] = []
+}
+
 final class SliderMotion: ObservableObject {
     @Published var coin: CGFloat = 0
     @Published var bonus: CGFloat = 0
@@ -116,7 +120,7 @@ class GameState: ObservableObject {
     // MARK: - 核心数值
     @Published var availableCoins: Int = GameConstants.initialCoins { didSet { scheduleSave() } }
     @Published var totalCoinsWon: Int = 0 { didSet { scheduleSave() } }
-    @Published var currentLevel: Int = 3
+    /* v11.7：没有视图读它，不发布变化 */ var currentLevel: Int = 3
 
     // MARK: - 激励广告领币
     @Published var adRewardDay: String? = nil { didSet { scheduleSave() } }
@@ -148,8 +152,8 @@ class GameState: ObservableObject {
 
     // MARK: - 水果系统
     @Published var fruitsLit: [Bool] = Array(repeating: false, count: 7) { didSet { scheduleSave() } }
-    @Published var litFruitIndex: Int? = nil
-    @Published var fruitBounceIndex: Int? = nil
+    /* v11.7：没有视图读它，不发布变化 */ var litFruitIndex: Int? = nil
+    /* v11.7：没有视图读它，不发布变化 */ var fruitBounceIndex: Int? = nil
     @Published var fruitPulseIndex: Int? = nil // V9.4: 命中的缩放效果
     
     // MARK: - 特效粒子 (Canvas 驱动)
@@ -175,19 +179,26 @@ class GameState: ObservableObject {
     // MARK: - 老虎机
     @Published var slotSpinState: SlotSpinState = .spinIdle
     @Published var slotReels: [[SlotSymbol]] = [] // V9.0: 用于 SlotMachineView 的精美符号
-    @Published var slotValues: [Int] = (0..<15).map { _ in Int.random(in: 0...8) }
-    @Published var slotScrollOffsets: [CGFloat] = Array(repeating: 0, count: 5)
+    /* v11.7：没有视图读它，不发布变化 */ var slotValues: [Int] = (0..<15).map { _ in Int.random(in: 0...8) }
+    /// 不是 @Published：没有视图读它，原来每帧（转动时一直在转）都让整个游戏画面重算（v11.7 真机连点掉帧）
+    var slotScrollOffsets: [CGFloat] = Array(repeating: 0, count: 5)
     @Published var stoppedColumns: Set<Int> = []
     @Published var currentWin: WinType = .none
-    @Published var slotFlashColumns: Set<Int> = []
+    /* v11.7：没有视图读它，不发布变化 */ var slotFlashColumns: Set<Int> = []
 
     var isSpinning: Bool { slotSpinState != .spinIdle }
 
     // MARK: - 特效
     @Published var combo: ComboData = ComboData()
-    @Published var showComboText: Bool = false
-    @Published var floatingScores: [FloatingScore] = []
-    @Published var baffleHitPositions: [(x: CGFloat, y: CGFloat, time: Date)] = []
+    /* v11.7：没有视图读它，不发布变化 */ var showComboText: Bool = false
+    /// v11.7：飞字放在自己的观察对象里，只有飞字层跟着刷新（每枚金币穿过水果 / 战斗都会加、淡出、删除各一次，
+    /// 原来每次都让整个游戏画面重算）
+    let floatingBoard = FloatingScoreBoard()
+    var floatingScores: [FloatingScore] {
+        get { floatingBoard.scores }
+        set { floatingBoard.scores = newValue }
+    }
+    /* v11.7：没有视图读它，不发布变化 */ var baffleHitPositions: [(x: CGFloat, y: CGFloat, time: Date)] = []
     
     /// 累计从推币台掉落得分的金币数
     private(set) var bedDropCount = 0

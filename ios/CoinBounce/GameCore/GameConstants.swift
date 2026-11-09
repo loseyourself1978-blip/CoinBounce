@@ -60,8 +60,9 @@ struct GameConstants {
     static let fallLinearDamping: CGFloat = 0.0
     /// 下落平面里额外的向下加速度（重力的倍数）：v11.6 格挡钉变多、弹跳耗能，加这一点让投币口到落地约 2.0 秒（新参考）
     static let fallGravityBoost: Float = 0.1
-    /// v11.6：多倍投币时相邻两枚之间的间隔（秒），金币跟着滑块依次落下
-    static let batchDropInterval: Double = 0.18
+    /// 投币队列放币的间隔（秒）：多倍投币时金币一枚一枚跟着滑块依次落下，也是连点时持续投币的速度上限。
+    /// v11.7：0.18 → 0.30（约 3.3 枚 / 秒；原来 5.5 枚 / 秒，10 COIN 连点时台面上 170 多枚，真机主线程掉帧）
+    static let batchDropInterval: Double = 0.30
     /// v11.7 投币队列上限（两批 10 枚）、同时下落的金币上限（快速连点不会一下子灌满、卡顿）
     static let maxQueuedDrops = 20
     static let maxCoinsInFlight = 12
