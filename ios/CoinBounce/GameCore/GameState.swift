@@ -107,6 +107,14 @@ struct FloatingScore: Identifiable {
 // MARK: - GameState V8.0 - 超高性能物理驱动版
 final class FloatingScoreBoard: ObservableObject {
     @Published var scores: [FloatingScore] = []
+    /// v11.7：台面拥挤时没有落下、直接入账的中奖金币：从老虎机飞到余额（看得见去了哪里，不是消失）
+    @Published var flights: [CoinFlight] = []
+}
+
+struct CoinFlight: Identifiable, Equatable {
+    let id = UUID()
+    let from: CGPoint
+    let amount: Int
 }
 
 final class SliderMotion: ObservableObject {
@@ -273,6 +281,9 @@ class GameState: ObservableObject {
         slotSpinState = .spinIdle
         queuedSpins = 0
         dropQueue = 0
+        dropCrowded = false
+        creditedByFlight = 0
+        floatingBoard.flights = []
         pendingRewardDrops = 0
         specialCoinsLeft = 0
         fastPusherUntil = nil
@@ -384,6 +395,7 @@ class GameState: ObservableObject {
         updateCardEffects(now: Date())
         coinSliderOffset = layout.coinSliderTravel * CGFloat(sin(Double(sliderTime) * coinSliderSpeed))
         bonusSliderOffset = layout.bonusSliderTravel * CGFloat(sin(Double(sliderTime) * bonusSliderSpeed + .pi / 3))
+        updateDropCrowded()
         releaseRewardDrops(dt: dt)
         releaseQueuedDrops(dt: dt)
         
@@ -446,13 +458,26 @@ class GameState: ObservableObject {
     private var dropQueueClock: CGFloat = 0
     /// 正在下落的金币数（3D 推币机接上后提供；测试里可以替换）
     var fallingCountProvider: (() -> Int)?
+    /// v11.7：台面上（不算下落中）的金币数，由 3D 场景按计数器提供（不逐帧遍历）
+    var tableCountProvider: (() -> Int)?
+    /// 台面拥挤：放币间隔从 batchDropInterval 变成 crowdedDropInterval（带回差）
+    private(set) var dropCrowded = false
+    var currentDropInterval: Double { dropCrowded ? GameConstants.crowdedDropInterval : GameConstants.batchDropInterval }
+    private func updateDropCrowded() {
+        // 正在下落的金币（最多 maxCoinsInFlight 枚）马上也会落到台面上，一起算
+        guard let table = tableCountProvider?() else { dropCrowded = false; return }
+        let n = table + (fallingCountProvider?() ?? 0)
+        if !dropCrowded, n >= GameConstants.crowdedThreshold { dropCrowded = true }
+        else if dropCrowded, n < GameConstants.crowdedResume { dropCrowded = false }
+    }
 
     private func releaseQueuedDrops(dt: CGFloat) {
         guard dropQueue > 0 else { dropQueueClock = 0; return }
         dropQueueClock += dt
-        while dropQueue > 0 && dropQueueClock >= CGFloat(GameConstants.batchDropInterval) {
+        let interval = CGFloat(currentDropInterval)
+        while dropQueue > 0 && dropQueueClock >= interval {
             if let f = fallingCountProvider?(), f >= GameConstants.maxCoinsInFlight { return }
-            dropQueueClock -= CGFloat(GameConstants.batchDropInterval)
+            dropQueueClock -= interval
             dropQueue -= 1
             dropCoin()
         }
@@ -628,14 +653,38 @@ class GameState: ObservableObject {
 
     /// 派奖：最多 maxPhysicalReward 枚变成真的金币落下，其余直接加到余额
     func payReward(_ total: Int, physical: Int) {
-        let p = max(0, min(physical, total, GameConstants.maxPhysicalReward))
+        updateDropCrowded()
+        let cap = dropCrowded ? GameConstants.crowdedMaxPhysicalReward : GameConstants.maxPhysicalReward
+        let p = max(0, min(physical, total, cap - pendingRewardDrops))
+        // 本来要变成真的金币、因为台面拥挤改成直接入账的部分：飞向余额
+        let wouldDrop = max(0, min(physical, total, GameConstants.maxPhysicalReward))
         addCoins(total - p)
         pendingRewardDrops += p
+        if wouldDrop > p { showCreditFlight(wouldDrop - p) }
+    }
+
+    /// v11.7：直接入账的中奖金币从老虎机飞到余额，余额数字滚动上涨（看得见，不像消失）
+    private(set) var creditedByFlight = 0
+    private func showCreditFlight(_ amount: Int) {
+        guard amount > 0 else { return }
+        creditedByFlight += amount
+        let flight = CoinFlight(from: CGPoint(x: layout.slotMachine.midX, y: layout.slotMachine.midY), amount: amount)
+        floatingBoard.flights.append(flight)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            self?.floatingBoard.flights.removeAll { $0.id == flight.id }
+        }
     }
 
     /// 每帧：按间隔放出奖励金币，从顶部随机位置落下
     private func releaseRewardDrops(dt: CGFloat) {
         guard pendingRewardDrops > 0 else { rewardDropClock = 0; return }
+        // v11.7：台面拥挤时，排着的中奖金币超过 crowdedMaxPhysicalReward 的部分直接入账（不再往台面上加）
+        if dropCrowded, pendingRewardDrops > GameConstants.crowdedMaxPhysicalReward {
+            let excess = pendingRewardDrops - GameConstants.crowdedMaxPhysicalReward
+            addCoins(excess)
+            pendingRewardDrops = GameConstants.crowdedMaxPhysicalReward
+            showCreditFlight(excess)
+        }
         rewardDropClock += dt
         while pendingRewardDrops > 0 && rewardDropClock >= CGFloat(GameConstants.rewardDropInterval) {
             rewardDropClock -= CGFloat(GameConstants.rewardDropInterval)

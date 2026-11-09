@@ -5,13 +5,44 @@ import Combine
 /// v11.7：飞字层单独观察 FloatingScoreBoard（飞字变化不让整个游戏画面重算）
 private struct FloatingScoreLayer: View {
     @ObservedObject var board: FloatingScoreBoard
+    let balanceTarget: CGPoint
     var body: some View {
         ZStack {
             ForEach(board.scores) { score in
                 FloatingScoreView(score: score)
                     .position(x: score.x, y: score.y)
             }
+            ForEach(board.flights) { flight in
+                CoinFlightView(flight: flight, to: balanceTarget)
+            }
         }
+        .allowsHitTesting(false)
+    }
+}
+
+/// v11.7：台面拥挤时直接入账的中奖金币：一串金币从老虎机飞到余额，旁边「+N」
+private struct CoinFlightView: View {
+    let flight: CoinFlight
+    let to: CGPoint
+    @State private var go = false
+    var body: some View {
+        let n = min(8, max(3, flight.amount))
+        ZStack {
+            ForEach(0..<n, id: \.self) { i in
+                ArtCoin(size: 22)
+                    .position(go ? to : CGPoint(x: flight.from.x + CGFloat(i - n / 2) * 10, y: flight.from.y))
+                    .opacity(go ? 0.2 : 1)
+                    .animation(.easeIn(duration: 0.55).delay(Double(i) * 0.05), value: go)
+            }
+            Text("+\(flight.amount)")
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, Color.arcadeGold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
+                .position(x: (go ? to.x + 70 : flight.from.x), y: go ? to.y + 26 : flight.from.y - 30)
+                .opacity(go ? 0 : 1)
+                .animation(.easeOut(duration: 1.0), value: go)
+        }
+        .onAppear { go = true }
     }
 }
 
@@ -172,7 +203,8 @@ struct CoinPusherView: View {
                 #endif
 
                 // 飞分特效层
-                FloatingScoreLayer(board: gameState.floatingBoard)
+                FloatingScoreLayer(board: gameState.floatingBoard,
+                                   balanceTarget: { let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.minX + r.height * 0.6, y: r.midY) }())
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
@@ -209,6 +241,7 @@ struct CoinPusherView: View {
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true)
                 }
                 gameState.fallingCountProvider = { [pusher3D] in pusher3D.fallingCount }
+                gameState.tableCountProvider = { [pusher3D] in pusher3D.tableCount }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
                 pusher3D.onCrossFruit = { gameState.coinCrossedFruitRow(x: $0) }
                 pusher3D.onCrossBonus = { gameState.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }

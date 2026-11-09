@@ -369,17 +369,20 @@ extension Pusher3DTests {
         state.onDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial) }
         state.onRewardDrop = { coin in pusher.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true) }
         state.fallingCountProvider = { pusher.fallingCount }
+        state.tableCountProvider = { pusher.tableCount }
         pusher.bonusOffsetProvider = { state.bonusSliderOffset }
         pusher.onCrossBonus = { state.coinCrossedBonusLane(x: $0, radius: $1, gateX: $2) }
         state.coinMultiplier = 10
         let triggers0 = state.bonusTriggerCount, spins0 = state.spinsStarted, free0 = state.freeSpinsGranted
-        var maxQueue = 0, maxSpinQueue = 0, maxFalling = 0, taps = 0, accepted = 0
+        var maxQueue = 0, maxSpinQueue = 0, maxFalling = 0, taps = 0, accepted = 0, maxTable = 0, crowdedFrames = 0
         var tapping = true
         let stepTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in
             state.step(dt: 1.0 / 60)
             maxQueue = max(maxQueue, state.dropQueue)
             maxSpinQueue = max(maxSpinQueue, state.queuedSpins)
             maxFalling = max(maxFalling, pusher.fallingCount)
+            maxTable = max(maxTable, pusher.tableCount)
+            if state.dropCrowded { crowdedFrames += 1 }
         }
         // 快速连点：每 0.12 秒点一次 10 COIN；选卡弹出时马上选第一张（不挡投币）
         let tapTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { _ in
@@ -394,7 +397,7 @@ extension Pusher3DTests {
             stepTimer.invalidate(); tapTimer.invalidate()
             view.isPlaying = false
             window.isHidden = true
-            state.onDrop = nil; state.onRewardDrop = nil; state.fallingCountProvider = nil
+            state.onDrop = nil; state.onRewardDrop = nil; state.fallingCountProvider = nil; state.tableCountProvider = nil
             state.coinMultiplier = 1
             state.resetForTesting()
         }
@@ -408,7 +411,7 @@ extension Pusher3DTests {
         wait(for: [settled], timeout: 90)
         RunLoop.current.run(until: Date().addingTimeInterval(1.5))
         let spins = state.spinsStarted - spins0, triggers = state.bonusTriggerCount - triggers0, free = state.freeSpinsGranted - free0
-        print("BURST taps=\(taps) accepted=\(accepted) passes=\(pusher.bonusPasses) triggers=\(triggers) spins=\(spins) free=\(free) maxQueue=\(maxQueue) maxSpinQueue=\(maxSpinQueue) maxFalling=\(maxFalling) reward=\(pusher.rewardSpawned)/\(pusher.rewardRemoved) dead=\(pusher.deadZoneCount)")
+        print("BURST taps=\(taps) accepted=\(accepted) passes=\(pusher.bonusPasses) triggers=\(triggers) spins=\(spins) free=\(free) maxQueue=\(maxQueue) maxSpinQueue=\(maxSpinQueue) maxFalling=\(maxFalling) maxTable=\(maxTable) crowdedFrames=\(crowdedFrames) reward=\(pusher.rewardSpawned)/\(pusher.rewardRemoved) dead=\(pusher.deadZoneCount)")
         XCTAssertGreaterThan(triggers, 5, "60 秒里有足够多的整枚穿过")
         XCTAssertEqual(triggers, pusher.bonusPasses, "每次触发都对应一次整枚穿过")
         XCTAssertEqual(spins, triggers + free, "转动次数 = 整枚穿过次数（+ 免费转动卡）")
@@ -416,6 +419,7 @@ extension Pusher3DTests {
         XCTAssertLessThan(maxSpinQueue, 15, "转动排队不会越积越多")
         XCTAssertLessThanOrEqual(maxFalling, GameConstants.maxCoinsInFlight + GameConstants.maxPhysicalReward, "同时下落的金币有上限")
         XCTAssertEqual(state.slotSpinState, .spinIdle, "排空后停止转动")
+        XCTAssertLessThanOrEqual(maxTable, 135, "台面拥挤时放币变慢，台面上的金币不会越堆越多（真机 140 枚以上掉帧）")
         XCTAssertEqual(pusher.deadZoneCount, 0)
         XCTAssertEqual(pusher.rewardRemoved.filter { $0.key != "fellIntoTray" && $0.key != "fellSide" }.values.reduce(0, +), 0, "中奖金币没有凭空消失")
     }

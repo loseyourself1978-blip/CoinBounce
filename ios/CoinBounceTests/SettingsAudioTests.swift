@@ -197,6 +197,103 @@ final class SettingsAudioTests: XCTestCase {
         state.pendingDrops.removeAll()
     }
 
+    // MARK: v11.7 台面拥挤时放币变慢（带回差），付了钱的金币全部按顺序落下
+    func test_dropQueue_crowdedTable_slowsRelease_withHysteresis() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.onDrop = nil
+        state.fallingCountProvider = nil
+        var table = 100
+        state.tableCountProvider = { table }
+        defer { state.tableCountProvider = nil; state.coinMultiplier = 1; state.pendingDrops.removeAll(); state.resetForTesting() }
+        state.coinMultiplier = 10
+        state.availableCoins = 1000
+        state.pendingDrops.removeAll()
+        let base = GameConstants.batchDropInterval, slow = GameConstants.crowdedDropInterval
+        XCTAssertGreaterThan(slow, base)
+        XCTAssertLessThan(GameConstants.crowdedResume, GameConstants.crowdedThreshold, "回差：恢复门槛低于变慢门槛")
+        // 不拥挤：按基本间隔放
+        XCTAssertEqual(state.dropBatch(), .queued)
+        XCTAssertEqual(state.pendingDrops.count, 1)
+        state.step(dt: CGFloat(base) + 0.001)
+        XCTAssertEqual(state.pendingDrops.count, 2)
+        XCTAssertFalse(state.dropCrowded)
+        // 到变慢门槛：间隔变成 crowdedDropInterval
+        table = GameConstants.crowdedThreshold
+        state.step(dt: 0.001)
+        XCTAssertTrue(state.dropCrowded)
+        state.step(dt: CGFloat(base) + 0.001)
+        XCTAssertEqual(state.pendingDrops.count, 2, "拥挤时基本间隔到了也不放")
+        state.step(dt: CGFloat(slow - base))
+        XCTAssertEqual(state.pendingDrops.count, 3, "拥挤时按 crowdedDropInterval 放")
+        // 回差：降到两个门槛之间仍然慢；低于恢复门槛才恢复
+        table = (GameConstants.crowdedThreshold + GameConstants.crowdedResume) / 2
+        state.step(dt: 0.001)
+        XCTAssertTrue(state.dropCrowded, "在两个门槛之间保持变慢（不会来回跳）")
+        table = GameConstants.crowdedResume - 1
+        state.step(dt: 0.001)
+        XCTAssertFalse(state.dropCrowded)
+        // 排空：这一批 10 枚全部落下、一枚不少
+        for _ in 0..<200 { state.step(dt: 0.05) }
+        XCTAssertEqual(state.dropQueue, 0)
+        XCTAssertEqual(state.pendingDrops.count, 10, "付了钱的 10 枚全部落下")
+        XCTAssertEqual(state.availableCoins, 990)
+    }
+
+    func test_payReward_crowdedTable_fewerPhysicalCoins_restCredited() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.onRewardDrop = nil
+        var table = 50
+        state.tableCountProvider = { table }
+        defer { state.tableCountProvider = nil; state.resetForTesting() }
+        let before = state.availableCoins
+        let released0 = state.rewardDropsReleased
+        state.payReward(500, physical: 30)
+        XCTAssertEqual(state.pendingRewardDrops, 30, "不拥挤：照常落下")
+        // 台面变拥挤：排着的超出部分直接入账
+        table = GameConstants.crowdedThreshold
+        state.step(dt: 0.001)
+        XCTAssertTrue(state.dropCrowded)
+        XCTAssertEqual(state.rewardDropsReleased, released0, "这一步还没放出金币")
+        XCTAssertLessThanOrEqual(state.pendingRewardDrops, GameConstants.crowdedMaxPhysicalReward)
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + 500, "一枚不少：入账 + 还要落下的 = 奖金")
+        XCTAssertEqual(state.creditedByFlight, 30 - GameConstants.crowdedMaxPhysicalReward, "超出的部分飞向余额：飞的金额 = 直接入账的部分")
+        XCTAssertEqual(state.floatingBoard.flights.last?.amount, 30 - GameConstants.crowdedMaxPhysicalReward)
+        // 拥挤时再中奖：最多 crowdedMaxPhysicalReward 枚真的金币，其余飞向余额，总奖金不变
+        for _ in 0..<100 { state.step(dt: 0.1) }
+        let b2 = state.availableCoins, flown2 = state.creditedByFlight
+        state.payReward(300, physical: 30)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.crowdedMaxPhysicalReward)
+        XCTAssertEqual(state.availableCoins, b2 + 300 - GameConstants.crowdedMaxPhysicalReward)
+        XCTAssertEqual(state.creditedByFlight - flown2, 30 - GameConstants.crowdedMaxPhysicalReward, "没落下的那部分飞向余额")
+        XCTAssertEqual(state.availableCoins - b2 + state.pendingRewardDrops, 300, "总奖金不变：入账 + 还要落下的 = 300")
+    }
+
+    func test_dropQueue_crowdedThroughout_stillDrainsEveryPaidCoin() {
+        let state = GameState.shared
+        state.resetForTesting()
+        state.onDrop = nil
+        state.fallingCountProvider = nil
+        state.tableCountProvider = { 200 }
+        defer { state.tableCountProvider = nil; state.coinMultiplier = 1; state.pendingDrops.removeAll(); state.resetForTesting() }
+        state.coinMultiplier = 10
+        state.availableCoins = 1000
+        state.pendingDrops.removeAll()
+        XCTAssertEqual(state.dropBatch(), .queued)
+        XCTAssertEqual(state.dropBatch(), .queued)
+        XCTAssertEqual(state.dropBatch(), .queueFull, "队列上限不变")
+        // 20 枚：第一枚马上落，其余 19 枚每 crowdedDropInterval 一枚
+        let need = Double(19) * GameConstants.crowdedDropInterval
+        var t = 0.0
+        while t < need - 0.05 { state.step(dt: 0.05); t += 0.05 }
+        XCTAssertLessThan(state.pendingDrops.count, 20, "拥挤时不会提前放完")
+        for _ in 0..<20 { state.step(dt: 0.05) }
+        XCTAssertEqual(state.pendingDrops.count, 20, "拥挤时也全部落下")
+        XCTAssertEqual(state.dropQueue, 0)
+        XCTAssertEqual(state.availableCoins, 980)
+    }
+
     // MARK: v11.7 中奖金币
     func test_payReward_physicalCoinsPlusCredit() {
         let state = GameState.shared

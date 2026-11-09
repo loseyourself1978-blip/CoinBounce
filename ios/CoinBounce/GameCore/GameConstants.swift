@@ -63,6 +63,13 @@ struct GameConstants {
     /// 投币队列放币的间隔（秒）：多倍投币时金币一枚一枚跟着滑块依次落下，也是连点时持续投币的速度上限。
     /// v11.7：0.18 → 0.30（约 3.3 枚 / 秒；原来 5.5 枚 / 秒，10 COIN 连点时台面上 170 多枚，真机主线程掉帧）
     static let batchDropInterval: Double = 0.30
+    /// v11.7 台面上的金币多到 crowdedThreshold 枚时放币变慢（crowdedDropInterval，0.8 秒：比正常玩还慢一点，台面会慢慢变少），少于 crowdedResume 枚再恢复（两个门槛不同，不会来回跳）。
+    /// 真机：台面上 120 枚以内连点 54–56 fps，140 枚以上掉到 35 左右。点击照样排队（最多 20 枚），付了钱的金币一枚不少、按顺序落下
+    static let crowdedDropInterval: Double = 0.80
+    static let crowdedThreshold = 110
+    static let crowdedResume = 100
+    /// 台面拥挤时中奖金币最多落下几枚真的金币（其余直接入账），排着还没落下的也收到这个数
+    static let crowdedMaxPhysicalReward = 10
     /// v11.7 投币队列上限（两批 10 枚）、同时下落的金币上限（快速连点不会一下子灌满、卡顿）
     static let maxQueuedDrops = 20
     static let maxCoinsInFlight = 12

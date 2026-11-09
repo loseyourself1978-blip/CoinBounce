@@ -241,6 +241,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 金币一多（10 COIN 连点 170 枚）主线程每帧都在等它，真机主线程掉到 20 fps。改用只护这两个数的小锁
     var fallingCount: Int { spawnLock.lock(); defer { spawnLock.unlock() }; return fallingPublished + pendingSpawns.count }
     private var fallingPublished = 0
+    /// v11.7：台面上（不算下落中）的金币数：物理回调每步顺手更新（不另外遍历），主线程用它决定放币快慢
+    var tableCount: Int { spawnLock.lock(); defer { spawnLock.unlock() }; return tablePublished }
+    private var tablePublished = 0
     private let spawnLock = NSLock()
     /// 陷进台面、被托回台面的次数
     private(set) var deckClamps = 0
@@ -1152,7 +1155,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             if time - logWindowStart >= 1 {
                 let rms = takeRenderMs()
                 NSLog("RENDER_STATS renderMs=%.2f renderMaxMs=%.2f", rms.0, rms.1)
-                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f sunk=%d clamps=%d rewardSpawned=%d rewardTray=%d rewardSide=%d rewardOther=%d rewardInPlay=%d dead=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, PerfDebug.pileStats ? pileTiltShare() : 0, PerfDebug.pileStats ? pileFloatShare() : 0, tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare, lifecycleCounts["sunkBelowDeck"] ?? 0, deckClamps, rewardSpawned, rewardRemoved["fellIntoTray"] ?? 0, rewardRemoved["fellSide"] ?? 0, rewardRemoved.filter { $0.key != "fellIntoTray" && $0.key != "fellSide" }.values.reduce(0, +), rewardInPlay, deadZoneCount)
+                NSLog("PUSHER_STATS fps=%.1f total=%d fallen=%d rejected=%d thermal=%d physMs=%.2f bonusX=%d bonusPass=%d bonusStraddle=%d bonusOld=%d bonusPen=%.2f bonusFix=%d front=%d side=%d tilt20=%.3f float=%.3f round=%d vfloat=%.3f sunk=%d clamps=%d rewardSpawned=%d rewardTray=%d rewardSide=%d rewardOther=%d rewardInPlay=%d dead=%d table=%d", Double(logFrames) / (time - logWindowStart), coins.count, droppedCount, rejectedCount, ProcessInfo.processInfo.thermalState.rawValue, takePhysicsMs(), bonusCrossings, bonusPasses, bonusStraddles, bonusOldRuleHits, bonusMaxPenetration, bonusCorrections, removalReasons["fellIntoTray"] ?? 0, removalReasons["fellSide"] ?? 0, PerfDebug.pileStats ? pileTiltShare() : 0, PerfDebug.pileStats ? pileFloatShare() : 0, tracks.values.filter { $0.roundCollider && !$0.falling }.count, lastVisibleFloatShare, lifecycleCounts["sunkBelowDeck"] ?? 0, deckClamps, rewardSpawned, rewardRemoved["fellIntoTray"] ?? 0, rewardRemoved["fellSide"] ?? 0, rewardRemoved.filter { $0.key != "fellIntoTray" && $0.key != "fellSide" }.values.reduce(0, +), rewardInPlay, deadZoneCount, tablePublished)
                 logFrames = 0
                 logWindowStart = time
             }
@@ -1207,7 +1210,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             var f = 0, r = 0
             for t in tracks.values { if t.falling { f += 1 }; if t.isReward { r += 1 } }
             fallingNow = f; rewardInPlay = r
-            spawnLock.lock(); fallingPublished = f; spawnLock.unlock()
+            let table = _coins.count - f
+            spawnLock.lock(); fallingPublished = f; tablePublished = table; spawnLock.unlock()
         }
         _coins.removeAll { node in
             let id = ObjectIdentifier(node)
@@ -1411,7 +1415,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         if p.y < g.pusherHeight - 0.1 && p.z > pusherFrontZ - 0.1 { return .onPile }
         // v11.7：已经在推板前脸前面、叠在金币堆第二层上的金币（比推板顶面低一个半径以内）也算到了金币堆
         // （原来只认推板顶面以下的，掉到第二层上的金币一直算「空中」，推板顶面停留时间被算成十几秒）
-        if p.z > pusherFrontZ + config.coinRadius && p.y < g.pusherHeight + config.coinRadius { return .onPile }
+        // 圆心已过推板前脸、斜靠在前脸上的金币也算离开了推板顶面
+        if p.z > pusherFrontZ && p.y < g.pusherHeight + config.coinRadius { return .onPile }
         return .airborne
     }
 
