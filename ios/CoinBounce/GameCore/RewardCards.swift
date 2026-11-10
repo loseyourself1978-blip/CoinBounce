@@ -2,7 +2,8 @@ import Foundation
 
 // MARK: - 7 水果全亮：三张背面朝上的卡，玩家选一张，然后三张一起翻开（v11.8）
 // 三张卡固定是这三种奖励，顺序随机：
-//   金币 +10 / +20（随机）、老虎机免费转 3 次、勇士重击（BOSS 立刻掉最大血量的 10% / 20%，随机）
+//   金币 +3 / +5（随机）、老虎机免费转 3 次、勇士重击（BOSS 立刻掉最大血量的 5% / 10%，随机）
+//   （hj 2026-11-10 定：水果灯穿过就亮、约 25 枚一轮，卡的奖励相应调小；原来 +10/+20、10%/20%）
 
 enum CardKind: String, CaseIterable, Codable {
     case coins
@@ -19,9 +20,9 @@ struct RewardCard: Identifiable, Equatable {
 
 // MARK: - 卡池（可配置）
 enum CardPool {
-    static let coinAmounts = [10, 20]
+    static let coinAmounts = [3, 5]
     static let freeSpinCount = 3
-    static let strikePercents = [10, 20]
+    static let strikePercents = [5, 10]
 
     /// 三种奖励各一张，金额随机，顺序随机（卡背朝上，玩家不知道哪张是哪张）
     static func draw(random: () -> Double = { Double.random(in: 0..<1) }) -> [RewardCard] {

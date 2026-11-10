@@ -522,17 +522,6 @@
         }
       }
     },
-    "Coins crossing the battle hit the BOSS. Knock it out for 8 coins.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 8 金币。"
-          }
-        }
-      }
-    },
     "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.": {
       "extractionState": "manual",
       "localizations": {
@@ -540,6 +529,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
+          }
+        }
+      }
+    },
+    "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 4 金币。"
           }
         }
       }

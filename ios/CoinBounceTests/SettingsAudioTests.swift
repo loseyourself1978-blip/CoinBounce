@@ -495,7 +495,7 @@ final class SettingsAudioTests: XCTestCase {
         for i in 6..<10 { state.slotValues[i] = bunny }
         state.evaluateWin()
         XCTAssertLessThan(state.availableCoins, b2 + GameConstants.jackpotPool)
-        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 6000, accuracy: 1e-12, "约 6000 次转动出一次（v11.8）")
+        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 12000, accuracy: 1e-12, "约 12000 次转动出一次（v11.8）")
     }
 }
 

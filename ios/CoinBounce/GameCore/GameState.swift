@@ -133,6 +133,8 @@ class GameState: ObservableObject {
     // MARK: - 激励广告领币
     @Published var adRewardDay: String? = nil { didSet { scheduleSave() } }
     @Published var adRewardsClaimed: Int = 0 { didSet { scheduleSave() } }
+    /// v11.8：顶部看广告按钮点过一次后不再闪烁
+    @Published var adHintSeen = false { didSet { scheduleSave() } }
     /// 激励广告来源，测试里可替换
     var adPresenter: RewardedAdPresenting = AdsManager.shared
 
@@ -307,7 +309,8 @@ class GameState: ObservableObject {
             hasDroppedFirstCoin: hasDroppedFirstCoin,
             adRewardDay: adRewardDay,
             adRewardsClaimed: adRewardsClaimed,
-            jackpotPool: jackpotPool
+            jackpotPool: jackpotPool,
+            adHintSeen: adHintSeen
         )
     }
 
@@ -319,6 +322,7 @@ class GameState: ObservableObject {
         adRewardDay = data.adRewardDay
         adRewardsClaimed = max(0, data.adRewardsClaimed ?? 0)
         jackpotPool = max(GameConstants.jackpotSeed, data.jackpotPool ?? GameConstants.jackpotSeed)
+        adHintSeen = data.adHintSeen ?? false
         showTutorialArrow = !data.hasDroppedFirstCoin
     }
 
@@ -533,8 +537,6 @@ class GameState: ObservableObject {
     // MARK: - 下落区事件（DropFieldScene 调用）
 
     /// 金币穿过水果灯排：按所在列点亮水果
-    /// 正中穿过但没点亮新灯的次数（统计用）
-    private(set) var fruitPings = 0
     func coinCrossedFruitRow(x: CGFloat) {
         // 规则：金币从某个水果灯的中间穿过就点亮它；已亮的保持；7 个全亮后弹出卡牌，选完全部熄灭开始新一轮
         guard let column = layout.fruitColumn(forX: x),
@@ -756,13 +758,7 @@ class GameState: ObservableObject {
 
     private func triggerFruitHit(index: Int) {
         guard index < fruitsLit.count else { return }
-        // v11.8：每次正中穿过灯都会闪一下；没亮的灯按 fruitLightChance 的机会点亮（约 100 枚集齐一轮，原来约 25 枚）
-        if fruitsLit[index] || randomUnit() >= GameConstants.fruitLightChance {
-            fruitBounceIndex = index
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { if self.fruitBounceIndex == index { self.fruitBounceIndex = nil } }
-            fruitPings += 1
-            return
-        }
+        // 规则（hj 2026-10-28 定）：金币从灯的中间（±35% 灯宽）穿过就点亮，没有随机
         if !fruitsLit[index] {
             fruitsLit[index] = true
             litFruitIndex = index

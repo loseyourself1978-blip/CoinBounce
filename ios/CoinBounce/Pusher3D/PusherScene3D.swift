@@ -35,8 +35,9 @@ enum ReferenceBoxes {
     static let panelY: ClosedRange<CGFloat> = 2215...2400
     // 底部面板、金色标牌、六边形投币按钮、BONUS 轨道、两侧炮管
     static let bottomFrame = CGRect(x: 40, y: 2370, width: 1128, height: 210)
-    static let bottomLabel = CGRect(x: 150, y: 2410, width: 880, height: 130)
-    static let dropButton = CGRect(x: 603 - 95, y: 2470 - 107.5, width: 190, height: 215)
+    static let bottomLabel = CGRect(x: 163, y: 2410, width: 880, height: 130)   // v11.8：以屏幕中线（603）居中，投币按钮正好在标牌正中（原来 x 150，偏左 13 像素）
+    static let dropButton = CGRect(x: 603 - 95, y: 2475 - 107.5, width: 190, height: 215)   // v11.8：中心和金色标牌中心同一高度（2475）
+    static let dropButtonCenterY: CGFloat = 2475
     static let bonusBar = CGRect(x: 370, y: 1748, width: 490, height: 10)
     static let cannonLeft = CGRect(x: 40, y: 1690, width: 120, height: 140)
     static let cannonRight = CGRect(x: 1050, y: 1690, width: 120, height: 140)

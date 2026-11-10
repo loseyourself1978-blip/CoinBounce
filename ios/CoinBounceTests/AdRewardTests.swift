@@ -125,6 +125,21 @@ final class AdRewardTests: XCTestCase {
         XCTAssertEqual(state.availableCoins, 500 + GameConstants.adRewardCoins)
     }
 
+    /// v11.8：顶部看广告按钮点过一次后不再闪烁，记在存档里
+    func test_adHintSeen_isSaved() {
+        state.adHintSeen = false
+        state.saveNow()
+        XCTAssertEqual(state.saveStore.load()?.adHintSeen, false)
+        state.adHintSeen = true
+        state.saveNow()
+        let saved = state.saveStore.load()!
+        XCTAssertEqual(saved.adHintSeen, true)
+        state.adHintSeen = false
+        state.applySave(saved)
+        XCTAssertTrue(state.adHintSeen)
+        XCTAssertFalse(SaveData.fresh.adHintSeen ?? false, "首次安装要闪烁提示")
+    }
+
     /// v11.8：两次领币之间冷却 90 秒
     func test_cooldown_blocksSecondClaimFor90s() {
         let fake = FakeAdPresenter(completes: true)

@@ -24,7 +24,7 @@ struct GameConstants {
     // Rewards
     static let bedDropReward: Int = 1         // 每枚落下推币台的金币（推落 1 枚得 1 枚，奖励靠水果和老虎机）
     static let fruitHitReward: Int = 0        // v11.8：点亮水果不再直接给金币（奖励在集齐 7 个后的卡里），原来 10
-    static let slotSmallWinReward: Int = 4      // v11.8：从最左边连 3 个（约 1.7% 的转动），原来任意 3 连 30
+    static let slotSmallWinReward: Int = 3      // v11.8：从最左边连 3 个（约 1.7% 的转动），原来任意 3 连 30
     static let slotBigWinReward: Int = 15       // 从最左边连 4 个（约 0.2%），原来 200
     static let slotJackpotReward: Int = 60      // 整行 5 个（约 0.03%），原来 500
     /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
@@ -34,7 +34,7 @@ struct GameConstants {
     static let jackpotSeed: Double = Double(jackpotPool)
     static let jackpotContribution: Double = 0.01   // v11.8：每枚 1%（原来 2%）
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
-    static let ultimateJackpotChance: Double = 1.0 / 6000   // v11.8：原来 1/1500
+    static let ultimateJackpotChance: Double = 1.0 / 12000  // v11.8：原来 1/1500
 
     // 激励广告领币
     static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
@@ -43,16 +43,14 @@ struct GameConstants {
     static let adRewardDailyLimit: Int = 10         // 每天最多领取次数（按本地日期重置；v11.8 从 5 次改为 10 次）
 
     // 特殊金币（发光）：投币时有一定概率出现，从推币台掉落时奖励更多（数值待确认）
-    static let specialCoinChance: Double = 0.005    // v11.8：原来 5%
+    static let specialCoinChance: Double = 0.0025   // v11.8：原来 5%
     static let specialCoinReward: Int = 2           // v11.8：原来 10
 
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
     static let bossDamagePerHit: Double = 0.0032    // v11.8：约 310 次攻击（约 340 枚金币）打倒一次（原来 0.06，约 17 次）
-    static let bossKOReward: Int = 8                // BOSS 被打倒奖励（v11.8：原来 20）
+    static let bossKOReward: Int = 4                // BOSS 被打倒奖励（v11.8：原来 20）
     /// 水果灯命中区：金币中心离灯中心不超过「灯宽 × 该比例」才点亮（从灯中间穿过）
-    static let fruitHitZoneFraction: CGFloat = 0.35
-    /// v11.8：正中穿过没亮的灯时点亮的机会（每次穿过都会闪一下）；约 200 枚集齐一轮，原来每次必亮、约 25 枚
-    static let fruitLightChance: Double = 0.12
+    static let fruitHitZoneFraction: CGFloat = 0.35   // 从灯中间 ±35% 灯宽穿过就点亮（约 25 枚集齐一轮）
 
     // 手感（v10.4 整体调快）
     static let dropFallSeconds: Double = 0.92      // 下落区自由落体时长；加上格挡弹跳后从投币口到推币台约 1.75 秒（见 referenceFallSeconds）
@@ -107,7 +105,7 @@ struct GameConstants {
     static let bigWinCelebrationThreshold = 15    // v11.8：大奖金额变小，庆祝门槛跟着改（原来 200）
     static let celebrationSeconds: Double = 2.6
     static let rewardDropInterval: Double = 0.06
-    static let coinRainSmallWin = 4
+    static let coinRainSmallWin = 3
     static let coinRainBigWin = 15
     static let coinRainJackpot = 40
 

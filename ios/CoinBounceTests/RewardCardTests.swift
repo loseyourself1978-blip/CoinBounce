@@ -48,9 +48,9 @@ final class RewardCardTests: XCTestCase {
             XCTAssertEqual(Set(cards.map(\.kind)), Set(CardKind.allCases), "金币、免费转、勇士重击各一张")
             for c in cards {
                 switch c.kind {
-                case .coins: XCTAssertTrue([10, 20].contains(c.amount))
+                case .coins: XCTAssertTrue([3, 5].contains(c.amount))
                 case .freeSpins: XCTAssertEqual(c.amount, 3)
-                case .warriorStrike: XCTAssertTrue([10, 20].contains(c.amount))
+                case .warriorStrike: XCTAssertTrue([5, 10].contains(c.amount))
                 }
             }
         }
@@ -64,8 +64,8 @@ final class RewardCardTests: XCTestCase {
             coinAmounts.insert(cards.first { $0.kind == .coins }!.amount)
             strikeAmounts.insert(cards.first { $0.kind == .warriorStrike }!.amount)
         }
-        XCTAssertEqual(coinAmounts, [10, 20])
-        XCTAssertEqual(strikeAmounts, [10, 20])
+        XCTAssertEqual(coinAmounts, [3, 5])
+        XCTAssertEqual(strikeAmounts, [5, 10])
         XCTAssertEqual(firstKinds.count, 3, "顺序随机：每种都出现在第一张过")
     }
 
@@ -178,13 +178,12 @@ final class RewardCardTests: XCTestCase {
             state.showCardSelection = false
         }
         let average = Double(total) / Double(rounds)
-        XCTAssert((100...450).contains(average), "一轮平均 \(average) 枚，应在合理范围（v11.8：约 200 枚一轮）")
+        XCTAssert((15...90).contains(average), "一轮平均 \(average) 枚，应在合理范围")
         print("FRUIT_ROUND_AVERAGE \(average)")
     }
 
     /// 规则：从水果灯中间穿过才点亮（没有随机），擦边不亮
     func test_fruitLights_onlyWhenCrossingMiddle() {
-        state.randomUnit = { 0 }          // 点亮机会必中
         state.fruitsLit = Array(repeating: false, count: 7)
         let center = state.layout.fruitCenters[2].x
         let w = state.layout.fruitLampWidth
@@ -195,19 +194,14 @@ final class RewardCardTests: XCTestCase {
         XCTAssertEqual(state.fruitsLit.filter { $0 }.count, 1, "只点亮这一盏")
     }
 
-    /// v11.8：正中穿过时按 fruitLightChance 点亮；没中的只闪一下
-    func test_fruitLight_chance() {
+    /// 点亮水果不直接给金币（v11.8）
+    func test_fruitLight_noCoins() {
         state.fruitsLit = Array(repeating: false, count: 7)
-        let center = state.layout.fruitCenters[3].x
-        state.randomUnit = { GameConstants.fruitLightChance + 0.01 }
-        let pings = state.fruitPings
-        state.coinCrossedFruitRow(x: center)
-        XCTAssertFalse(state.fruitsLit[3], "没抽中不点亮")
-        XCTAssertEqual(state.fruitPings, pings + 1, "但灯会闪一下")
-        state.randomUnit = { GameConstants.fruitLightChance - 0.01 }
-        state.coinCrossedFruitRow(x: center)
-        XCTAssertTrue(state.fruitsLit[3])
-        XCTAssertEqual(GameConstants.fruitHitReward, 0, "点亮水果不直接给金币")
+        let before = state.availableCoins
+        state.coinCrossedFruitRow(x: state.layout.fruitCenters[3].x)
+        XCTAssertTrue(state.fruitsLit[3], "穿过就亮")
+        XCTAssertEqual(state.availableCoins, before)
+        XCTAssertEqual(GameConstants.fruitHitReward, 0)
     }
 
     /// 整排全亮后，选完卡全部熄灭
@@ -227,6 +221,6 @@ final class RewardCardTests: XCTestCase {
     }
 
     func test_bossKOReward_isFive() {
-        XCTAssertEqual(GameConstants.bossKOReward, 8, "v11.8：原来 20")
+        XCTAssertEqual(GameConstants.bossKOReward, 4, "v11.8：原来 20")
     }
 }

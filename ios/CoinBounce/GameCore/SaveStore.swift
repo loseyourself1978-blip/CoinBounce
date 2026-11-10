@@ -11,6 +11,8 @@ struct SaveData: Codable, Equatable {
     var adRewardsClaimed: Int? = nil
     /// v11.7 累积奖池（旧存档没有：从起始值开始）
     var jackpotPool: Double? = nil
+    /// v11.8：玩家点过顶部的看广告按钮（之后不再闪烁提示）
+    var adHintSeen: Bool? = nil
 
     /// 首次安装的初始存档
     static let fresh = SaveData(
