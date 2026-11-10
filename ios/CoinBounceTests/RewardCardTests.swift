@@ -48,7 +48,7 @@ final class RewardCardTests: XCTestCase {
             XCTAssertEqual(Set(cards.map(\.kind)), Set(CardKind.allCases), "金币、免费转、勇士重击各一张")
             for c in cards {
                 switch c.kind {
-                case .coins: XCTAssertTrue([3, 5].contains(c.amount))
+                case .coins: XCTAssertTrue(CardPool.coinAmounts.contains(c.amount))
                 case .freeSpins: XCTAssertEqual(c.amount, 3)
                 case .warriorStrike: XCTAssertTrue([5, 10].contains(c.amount))
                 }
@@ -64,7 +64,7 @@ final class RewardCardTests: XCTestCase {
             coinAmounts.insert(cards.first { $0.kind == .coins }!.amount)
             strikeAmounts.insert(cards.first { $0.kind == .warriorStrike }!.amount)
         }
-        XCTAssertEqual(coinAmounts, [3, 5])
+        XCTAssertEqual(coinAmounts, Set(CardPool.coinAmounts))
         XCTAssertEqual(strikeAmounts, [5, 10])
         XCTAssertEqual(firstKinds.count, 3, "顺序随机：每种都出现在第一张过")
     }

@@ -32,7 +32,7 @@ struct GameConstants {
     /// v11.7 累积奖池：起始值 10000（= jackpotPool），每投一枚金币有 2% 进奖池（在线老虎机常见 1–3%）。
     /// 兔女郎终极大奖派出整个奖池（取整），然后回到起始值
     static let jackpotSeed: Double = Double(jackpotPool)
-    static let jackpotContribution: Double = 0.01   // v11.8：每枚 1%（原来 2%）
+    static let jackpotContribution: Double = 0.005  // v11.8：每枚 0.5%（原来 2%），奖池仍然看得见在涨
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
     static let ultimateJackpotChance: Double = 1.0 / 12000  // v11.8：原来 1/1500
 
@@ -47,7 +47,7 @@ struct GameConstants {
     static let specialCoinReward: Int = 2           // v11.8：原来 10
 
     // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
-    static let bossDamagePerHit: Double = 0.0032    // v11.8：约 310 次攻击（约 340 枚金币）打倒一次（原来 0.06，约 17 次）
+    static let bossDamagePerHit: Double = 0.0027    // v11.8：约 370 次攻击（约 410 枚金币）打倒一次（原来 0.06，约 17 次）
     static let bossKOReward: Int = 4                // BOSS 被打倒奖励（v11.8：原来 20）
     /// 水果灯命中区：金币中心离灯中心不超过「灯宽 × 该比例」才点亮（从灯中间穿过）
     static let fruitHitZoneFraction: CGFloat = 0.35   // 从灯中间 ±35% 灯宽穿过就点亮（约 25 枚集齐一轮）
