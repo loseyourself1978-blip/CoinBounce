@@ -450,6 +450,24 @@ final class SettingsAudioTests: XCTestCase {
         state.resetForTesting()
     }
 
+    /// v11.8：从最左边一轴连起才算中奖
+    func test_slotWins_countFromLeftReel() {
+        let state = GameState.shared
+        state.resetForTesting()
+        func spin(_ row: [Int]) -> WinType? { for (i, v) in row.enumerated() { state.slotValues[5 + i] = v }; state.currentWin = .none; state.evaluateWin(); return state.currentWin }
+        let before = state.availableCoins + state.pendingRewardDrops
+        _ = spin([4, 3, 3, 3, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before, "中间连 3 个不算")
+        _ = spin([3, 3, 3, 4, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + GameConstants.slotSmallWinReward, "最左边连 3 个 = 小奖")
+        let mid = state.availableCoins + state.pendingRewardDrops
+        _ = spin([0, 3, 3, 3, 5])
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, mid + GameConstants.slotBigWinReward, "百搭在最左边也算：前 4 个 = BIG WIN")
+        XCTAssertGreaterThanOrEqual(GameConstants.slotSmallWinReward, 3, "中奖至少 3 枚，看得出是赢了")
+        state.pendingDrops.removeAll()
+        state.resetForTesting()
+    }
+
     func test_bunnyPoses_allSixAssetsBundled() {
         for pose in BunnyPose.allCases { XCTAssertNotNil(pose.image, pose.rawValue) }
     }
@@ -477,7 +495,25 @@ final class SettingsAudioTests: XCTestCase {
         for i in 6..<10 { state.slotValues[i] = bunny }
         state.evaluateWin()
         XCTAssertLessThan(state.availableCoins, b2 + GameConstants.jackpotPool)
-        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 1500, accuracy: 1e-12, "约 1500 次转动出一次")
+        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 12000, accuracy: 1e-12, "约 12000 次转动出一次（v11.8）")
     }
 }
 
+
+// MARK: - v11.8 背景音乐闪避
+final class AudioDuckTests: XCTestCase {
+    func test_winSounds_duckMusic_otherSoundsDoNot() {
+        for e in [SoundEffect.winBig, .jackpot, .cheer, .applause, .jackpotFanfare] {
+            XCTAssertGreaterThan(e.duckSeconds, 0, "\(e) 播放时压低背景音乐")
+        }
+        for e in [SoundEffect.coinDrop, .baffleHit, .bedDrop, .buttonTap, .slotSpin] {
+            XCTAssertEqual(e.duckSeconds, 0, "\(e) 不压低背景音乐")
+        }
+    }
+
+    func test_duck_setsDuckedWindow() {
+        AudioManager.shared.duck(for: 0.5)
+        XCTAssertTrue(AudioManager.shared.isDucked)
+        XCTAssertLessThan(AudioManager.duckFactor, 0.5)
+    }
+}

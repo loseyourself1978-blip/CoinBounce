@@ -2,7 +2,7 @@
 """App Store screenshots (v11.7): caption band on top, the game screenshot below it scaled down whole
 (no cropping, no retouching), gold frame. Output: exactly 1320×2868 RGB PNG (no alpha) + a contact sheet.
 
-usage: compose.py <candidates dir> <out dir>   (frame choices are in PICKS below)
+usage: compose.py <candidates dir> <out dir> [set.json]   (frame choices: PICKS below, or the set file)
 """
 import os, sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -15,9 +15,9 @@ FONT_EN = "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf"
 FONT_ZH = ("/System/Library/Fonts/Hiragino Sans GB.ttc", 1)   # W6
 
 CAPTIONS = {
-    "en": ["Push the pile,\ncatch the cascade", "Thread the BONUS gate\nto spin", "A JACKPOT that grows\nwith every coin",
+    "en": ["Push the pile,\ncatch the cascade", "Thread the BONUS gate\nto spin", "Watch the coins pour\nover the edge",
            "Light all seven,\npick your reward", "Knock out the BOSS\nfor bonus coins"],
-    "zh": ["推平金币堆\n接住金币雨", "穿过 BONUS\n转动滚轴", "奖池随每枚金币上涨", "点亮七果\n翻卡领奖", "击倒 BOSS\n赢额外金币"],
+    "zh": ["推平金币堆\n接住金币雨", "穿过 BONUS\n转动滚轴", "看金币哗哗落下", "点亮七果\n翻卡领奖", "击倒 BOSS\n赢额外金币"],
 }
 # candidate frames chosen by eye from the capture runs (capture.sh): scene → file stem
 PICKS = {
@@ -92,4 +92,10 @@ def main(cand, out_dir):
     sheet.save(os.path.join(out_dir, "总览.png"))
 
 if __name__ == "__main__":
+    # optional 3rd argument: a JSON file {"captions": {"en": [...5], "zh": [...5]}, "picks": {"en": [...5], "zh": [...5]}}
+    # for another set (for example a Custom Product Page); without it the main store set above is made
+    if len(sys.argv) > 3:
+        import json
+        cfg = json.load(open(sys.argv[3], encoding="utf-8"))
+        CAPTIONS.update(cfg.get("captions", {})); PICKS.update(cfg["picks"])
     main(sys.argv[1], sys.argv[2])

@@ -32,12 +32,14 @@ final class AdRewardTests: XCTestCase {
         state.availableCoins = 0
         state.adRewardDay = nil
         state.adRewardsClaimed = 0
+        state.lastAdRewardAt = nil
     }
 
     override func tearDown() {
         state.adPresenter = originalPresenter
         state.adRewardDay = nil
         state.adRewardsClaimed = 0
+        state.lastAdRewardAt = nil
         super.tearDown()
     }
 
@@ -111,13 +113,52 @@ final class AdRewardTests: XCTestCase {
         XCTAssertEqual(state.availableCoins, 0)
     }
 
-    func test_enoughCoins_doesNotShowAd() {
+    /// v11.8：顶部的领币按钮一直在，余额多少都能看广告领币
+    func test_enoughCoins_canStillWatchAd() {
         let fake = FakeAdPresenter(completes: true)
         state.adPresenter = fake
         state.availableCoins = 500
+        XCTAssertTrue(state.canClaimAdReward())
+        XCTAssertFalse(state.canOfferAdReward(), "余额充足时投币按钮旁不额外弹出大按钮")
         state.requestFreeCoins()
-        XCTAssertEqual(fake.shown, 0)
-        XCTAssertEqual(state.availableCoins, 500)
+        XCTAssertEqual(fake.shown, 1)
+        XCTAssertEqual(state.availableCoins, 500 + GameConstants.adRewardCoins)
+    }
+
+    /// v11.8：顶部看广告按钮点过一次后不再闪烁，记在存档里
+    func test_adHintSeen_isSaved() {
+        state.adHintSeen = false
+        state.saveNow()
+        XCTAssertEqual(state.saveStore.load()?.adHintSeen, false)
+        state.adHintSeen = true
+        state.saveNow()
+        let saved = state.saveStore.load()!
+        XCTAssertEqual(saved.adHintSeen, true)
+        state.adHintSeen = false
+        state.applySave(saved)
+        XCTAssertTrue(state.adHintSeen)
+        XCTAssertFalse(SaveData.fresh.adHintSeen ?? false, "首次安装要闪烁提示")
+    }
+
+    /// v11.8：两次领币之间冷却 90 秒
+    func test_cooldown_blocksSecondClaimFor90s() {
+        let fake = FakeAdPresenter(completes: true)
+        state.adPresenter = fake
+        XCTAssertTrue(state.grantAdReward(now: day1))
+        XCTAssertFalse(state.canClaimAdReward(now: day1.addingTimeInterval(30)), "30 秒内不能再领")
+        XCTAssertEqual(state.adRewardCooldownRemaining(now: day1.addingTimeInterval(30)), 60, accuracy: 0.001)
+        XCTAssertFalse(state.canClaimAdReward(now: day1.addingTimeInterval(89)))
+        XCTAssertTrue(state.canClaimAdReward(now: day1.addingTimeInterval(GameConstants.adRewardCooldown)), "90 秒后可以再领")
+        XCTAssertEqual(GameConstants.adRewardCooldown, 90)
+    }
+
+    func test_cooldown_requestFreeCoinsShowsNothing() {
+        let fake = FakeAdPresenter(completes: true)
+        state.adPresenter = fake
+        state.requestFreeCoins()
+        state.requestFreeCoins()
+        XCTAssertEqual(fake.shown, 1, "冷却中第二次点不放广告")
+        XCTAssertEqual(state.availableCoins, GameConstants.adRewardCoins)
     }
 
     func test_dailyLimit() {

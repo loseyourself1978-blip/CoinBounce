@@ -47,9 +47,19 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         }
         #endif
         let parameters = RequestParameters()
+        #if DEBUG
+        // 验证用：-debugUMPEEA 把地区模拟成欧洲经济区，检查同意表单会不会弹出（模拟器自动算测试设备）
+        if ProcessInfo.processInfo.arguments.contains("-debugUMPEEA") {
+            let debug = DebugSettings()
+            debug.geography = .EEA
+            parameters.debugSettings = debug
+            ConsentInformation.shared.reset()
+        }
+        #endif
         ConsentInformation.shared.requestConsentInfoUpdate(with: parameters) { [weak self] error in
             if let error { Self.log("consent info update failed: \(error.localizedDescription)") }
             Task { @MainActor in
+                Self.log("consent status=\(ConsentInformation.shared.consentStatus.rawValue) formAvailable=\(ConsentInformation.shared.formStatus.rawValue) canRequestAds=\(ConsentInformation.shared.canRequestAds)")
                 ConsentForm.loadAndPresentIfRequired(from: Self.topViewController()) { [weak self] formError in
                     if let formError { Self.log("consent form failed: \(formError.localizedDescription)") }
                     self?.updatePrivacyOptionsRequirement()
@@ -77,8 +87,10 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-debugSkipATT") { next(); return }
         #endif
+        Self.log("ATT status before request=\(ATTrackingManager.trackingAuthorizationStatus.rawValue) (0 notDetermined, 1 restricted, 2 denied, 3 authorized)")
         guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { next(); return }
-        ATTrackingManager.requestTrackingAuthorization { _ in
+        ATTrackingManager.requestTrackingAuthorization { status in
+            Self.log("ATT result=\(status.rawValue)")
             DispatchQueue.main.async { next() }
         }
     }

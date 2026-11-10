@@ -278,6 +278,30 @@ final class CoinBounceTests: XCTestCase {
         store.clear()
     }
 
+    /// v11.8：首次安装 100 金币、奖池 1000
+    func test_freshInstall_values() {
+        XCTAssertEqual(GameConstants.initialCoins, 100)
+        XCTAssertEqual(GameConstants.jackpotSeed, 1000)
+        XCTAssertEqual(SaveData.fresh.availableCoins, 100)
+        state.applySave(.fresh)
+        XCTAssertEqual(state.availableCoins, 100)
+        XCTAssertEqual(state.jackpotPool, 1000)
+    }
+
+    /// v11.8：存档键换成 v2，旧版本（含 TestFlight）的存档被删掉，按首次安装开始
+    func test_legacySave_isDiscarded() {
+        let d = UserDefaults(suiteName: "LegacySaveTest")!
+        d.removePersistentDomain(forName: "LegacySaveTest")
+        let old = SaveData(availableCoins: 52224, totalCoinsWon: 9, fruitsLit: Array(repeating: false, count: 7), hasDroppedFirstCoin: true)
+        d.set(try! JSONEncoder().encode(old), forKey: "CoinBounce.SaveData.v1")
+        let store = SaveStore(defaults: d)
+        XCTAssertEqual(store.key, "CoinBounce.SaveData.v2")
+        XCTAssertNil(store.load(), "新键下没有存档")
+        store.removeLegacySaves()
+        XCTAssertNil(d.data(forKey: "CoinBounce.SaveData.v1"), "旧存档已删除")
+        d.removePersistentDomain(forName: "LegacySaveTest")
+    }
+
     func test_gameState_saveAndRestore() {
         state.availableCoins = 777
         state.totalCoinsWon = 12
@@ -297,8 +321,8 @@ final class CoinBounceTests: XCTestCase {
         XCTAssertFalse(state.showTutorialArrow, "已投过币的存档不应再显示新手箭头")
     }
 
-    func test_freshSave_startsWith1000Coins() {
-        XCTAssertEqual(SaveData.fresh.availableCoins, 1000, "首次安装应有 1000 金币")
+    func test_freshSave_startsWith100Coins() {
+        XCTAssertEqual(SaveData.fresh.availableCoins, 100, "首次安装应有 100 金币（v11.8）")
         XCTAssertEqual(SaveData.fresh.fruitsLit.count, 7)
     }
 

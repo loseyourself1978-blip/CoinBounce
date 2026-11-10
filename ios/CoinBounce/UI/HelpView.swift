@@ -13,12 +13,12 @@ struct HelpView: View {
                     row("arrow.left.and.right", "The pusher moves back and forth. Coins pushed off the front edge are yours.")
                 }
                 Section("Rewards") {
-                    row("dollarsign.circle.fill", "Each coin pushed off the edge pays 1 coin.")
-                    row("rectangle.split.3x1.fill", "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row win coins; a full row is the JACKPOT.")
+                    row("dollarsign.circle.fill", "Each coin pushed off the front edge pays 1 coin. Coins that slide off the sides are lost.")
+                    row("rectangle.split.3x1.fill", "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.")
                     row("circle.grid.3x3.fill", "A coin passing through the middle of a fruit lights it. Light all 7 fruits to pick a reward card, then the fruits reset.")
-                    row("shield.fill", "Coins crossing the battle hit the BOSS. Knock it out for 20 coins.")
-                    row("sparkles", "Glowing coins are special: each one pushed off pays 10 coins.")
-                    row("play.rectangle.fill", "Out of coins? Watch a short ad for 50 coins, up to 5 times a day.")
+                    row("shield.fill", "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.")
+                    row("sparkles", "Glowing coins are special: each one pushed off pays 2 coins.")
+                    row("play.rectangle.fill", "Tap ▶ +50 at the top to watch a short ad for 50 coins, once every 90 seconds, up to 10 times a day.")
                 }
                 Section {
                     Text("Coins are virtual and have no real-world value.")

@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld Free Spins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免费转 %lld 次"
+          }
+        }
+      }
+    },
     "%lld spins left": {
       "localizations": {
         "en": {
@@ -29,57 +40,13 @@
         }
       }
     },
-    "+100 Coins": {
+    "+%lld Coins": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "+100 金币"
-          }
-        }
-      }
-    },
-    "+200 Coins": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+200 金币"
-          }
-        }
-      }
-    },
-    "2 fruits start lit": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新一轮预先点亮 2 个水果"
-          }
-        }
-      }
-    },
-    "3 Free Spins": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "免费转 3 次"
-          }
-        }
-      }
-    },
-    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row win coins; a full row is the JACKPOT.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币从 BONUS 滑块中间穿过会启动老虎机。中间一行连续 3 个以上相同符号赢金币，整行相同就是 JACKPOT。"
+            "value": "+%lld 金币"
           }
         }
       }
@@ -139,6 +106,17 @@
         }
       }
     },
+    "BOSS loses %lld%% HP": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BOSS 立即掉 %lld%% 血"
+          }
+        }
+      }
+    },
     "Bunny": {
       "localizations": {
         "zh-Hans": {
@@ -160,17 +138,6 @@
         }
       }
     },
-    "COMMON": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "普通"
-          }
-        }
-      }
-    },
     "Coins are virtual and have no real-world value.": {
       "extractionState": "manual",
       "localizations": {
@@ -178,17 +145,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币是虚拟的，没有现实价值。"
-          }
-        }
-      }
-    },
-    "Coins crossing the battle hit the BOSS. Knock it out for 20 coins.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS，打倒它奖励 20 枚金币。"
           }
         }
       }
@@ -204,17 +160,6 @@
         }
       }
     },
-    "Coins slide off easier for 30s": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "30 秒内金币更容易掉落"
-          }
-        }
-      }
-    },
     "Done": {
       "extractionState": "manual",
       "localizations": {
@@ -226,24 +171,13 @@
         }
       }
     },
-    "Each coin pushed off the edge pays 1 coin.": {
+    "Drop coins": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每推落一枚金币奖励 1 枚。"
-          }
-        }
-      }
-    },
-    "Easy Drop": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "轻松掉落"
+            "value": "投币"
           }
         }
       }
@@ -259,17 +193,6 @@
         }
       }
     },
-    "Fruit Head Start": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "水果预亮"
-          }
-        }
-      }
-    },
     "Get %lld coins": {
       "extractionState": "manual",
       "localizations": {
@@ -277,17 +200,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "领 %lld 金币"
-          }
-        }
-      }
-    },
-    "Glowing coins are special: each one pushed off pays 10 coins.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发光的是特殊金币：每推落一枚奖励 10 枚。"
           }
         }
       }
@@ -347,17 +259,6 @@
         }
       }
     },
-    "Lucky Coins": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "幸运金币"
-          }
-        }
-      }
-    },
     "MAX COMBO! x%lld": {
       "extractionState": "manual",
       "localizations": {
@@ -391,17 +292,6 @@
         }
       }
     },
-    "Next 10 drops are glowing coins": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "接下来 10 次投币都是发光金币"
-          }
-        }
-      }
-    },
     "No ad available right now. Check your connection and try again.": {
       "localizations": {
         "zh-Hans": {
@@ -423,17 +313,6 @@
         }
       }
     },
-    "Out of coins? Watch a short ad for 50 coins, up to 5 times a day.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币用完了？看一段短广告领 50 枚，每天最多 5 次。"
-          }
-        }
-      }
-    },
     "Privacy Policy": {
       "extractionState": "manual",
       "localizations": {
@@ -441,28 +320,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "隐私政策"
-          }
-        }
-      }
-    },
-    "Pusher moves faster for 30s": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "推板加速 30 秒"
-          }
-        }
-      }
-    },
-    "RARE": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "稀有"
           }
         }
       }
@@ -555,24 +412,13 @@
         }
       }
     },
-    "The slot spins 3 times": {
+    "The slot spins %lld times for free": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "老虎机连转 3 次"
-          }
-        }
-      }
-    },
-    "Turbo Pusher": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "推板加速"
+            "value": "老虎机免费转 %lld 次"
           }
         }
       }
@@ -610,6 +456,17 @@
         }
       }
     },
+    "Warrior Strike": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "勇士重击"
+          }
+        }
+      }
+    },
     "Watch ad": {
       "extractionState": "manual",
       "localizations": {
@@ -617,6 +474,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "看广告"
+          }
+        }
+      }
+    },
+    "Watch an ad for %lld free coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看广告免费领 %lld 金币"
+          }
+        }
+      }
+    },
+    "Tap ▶ +50 at the top to watch a short ad for 50 coins, once every 90 seconds, up to 10 times a day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点顶部的 ▶ +50 看一段短广告领 50 金币，每 90 秒一次，每天最多 10 次。"
+          }
+        }
+      }
+    },
+    "Each coin pushed off the front edge pays 1 coin. Coins that slide off the sides are lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从前沿推落的每枚金币得 1 枚；从两侧滑落的不算。"
+          }
+        }
+      }
+    },
+    "Glowing coins are special: each one pushed off pays 2 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发光的是特殊金币：每推落一枚得 2 金币。"
+          }
+        }
+      }
+    },
+    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
+          }
+        }
+      }
+    },
+    "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 4 金币。"
           }
         }
       }

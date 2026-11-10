@@ -255,7 +255,7 @@ final class GameLayoutTests: XCTestCase {
     func test_bonusGate_fullDiameterRule() {
         for (name, l) in screens {
             let gate: CGFloat = 200, r = l.coinRadius, half = l.bonusOpeningWidth / 2
-            XCTAssertEqual(l.bonusOpeningWidth / (2 * r), 126.0 / 78.0, accuracy: 0.01, "\(name) 开口 = 参考比例（126/78 枚金币宽）")
+            XCTAssertEqual(l.bonusOpeningWidth / (2 * r), 87.0 / 78.0, accuracy: 0.01, "\(name) 开口 = 87/78 枚金币宽（v11.8 收窄，原来 126/78）")
             XCTAssertEqual(l.bonusSliderWidth, l.bonusOpeningWidth + 2 * l.bonusPostWidth, accuracy: 0.001)
             XCTAssertGreaterThan(half, r, "\(name) 开口比金币宽")
             XCTAssertTrue(l.bonusFullyInside(x: gate, radius: r, gateX: gate), "\(name) 正中穿过")

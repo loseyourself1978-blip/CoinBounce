@@ -63,6 +63,9 @@ struct CoinPusherView: View {
     @State private var showNoCoinsHint = false
     /// 1.0.0：点领币按钮时没有广告（没网 / 还在加载）的提示
     @State private var showAdUnavailableHint = false
+    @State private var dropPressed = false
+    @State private var showLowCoinAd = false
+    @State private var strikeSlash = false
     @State private var showSettings = false
     @State private var showHelp = false
     /// 下落区物理场景（SpriteKit），整屏透明覆盖在各区域之上
@@ -366,6 +369,14 @@ struct CoinPusherView: View {
             Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [pusher3D] _ in
                 func avg(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
                 NSLog("LITE fallAvg=%.2f fallN=%d coins=%d", avg(pusher3D.fallTimes), pusher3D.fallTimes.count, pusher3D.coinCount)
+                NSLog("ECON %@ table=%d", gameState.econSummary(), pusher3D.coinCount)
+                // v11.8：同时写到 App 的 Documents/econ.log（模拟器上 log show 长时间会卡住）
+                let line = String(format: "%@ ECON %@ table=%d\n", ISO8601DateFormatter().string(from: Date()), gameState.econSummary(), pusher3D.coinCount)
+                if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                    let url = dir.appendingPathComponent("econ.log")
+                    if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
+                    else { try? Data(line.utf8).write(to: url) }
+                }
             }
         }
         if ProcessInfo.processInfo.arguments.contains("-autoplay") {
@@ -463,6 +474,13 @@ struct CoinPusherView: View {
         HStack(spacing: 0) {
             CoinBalanceView(coins: gameState.availableCoins, height: pill.height, width: pill.width)
             Spacer(minLength: 0)
+            // v11.8：一直显示的「看广告领金币」小按钮（▶ +50），在帮助按钮左边
+            if ads.adsEnabled {
+                AdHUDButton(ads: ads, gameState: gameState, showUnavailableHint: $showAdUnavailableHint)
+                    .scaleEffect(scale)
+                    .frame(width: AdHUDButton.size.width * scale, height: AdHUDButton.size.height * scale)
+                    .padding(.trailing, 8 * scale)
+            }
             // 帮助在设置左边
             HStack(spacing: 8) {
                 HelpButton { showHelp = true }
@@ -634,6 +652,17 @@ extension CoinPusherView {
                         .frame(width: figure, height: figure)
                     BossFigure(size: figure * 0.85)
                         .colorMultiply(bossFlash ? Color(red: 1, green: 0.45, blue: 0.45) : .white)
+                    // v11.8 勇士重击：两道白色斩击划过 BOSS
+                    if strikeSlash {
+                        ForEach(0..<2, id: \.self) { k in
+                            Capsule()
+                                .fill(LinearGradient(colors: [.white, .yellow, .white.opacity(0)], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: figure * 1.1, height: figure * 0.09)
+                                .rotationEffect(.degrees(k == 0 ? -35 : 35))
+                                .shadow(color: .orange, radius: 6)
+                        }
+                        .transition(.scale(scale: 0.2).combined(with: .opacity))
+                    }
                 }
                 .offset(x: bossShake)
                 .rotationEffect(.degrees(bossKO ? 80 : 0), anchor: .bottom)
@@ -659,6 +688,23 @@ extension CoinPusherView {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 withAnimation(.interpolatingSpring(stiffness: 600, damping: 8)) { bossShake = 0 }
                 bossFlash = false
+            }
+        }
+        // v11.8 勇士重击卡：勇士冲到 BOSS 面前、斩击、BOSS 大幅抖动
+        .onChange(of: gameState.warriorStrikeCount) { _ in
+            withAnimation(.easeOut(duration: 0.18)) { warriorLunge = w * 0.5 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                withAnimation(.easeOut(duration: 0.12)) { strikeSlash = true }
+                bossFlash = true
+                withAnimation(.interpolatingSpring(stiffness: 500, damping: 4)) { bossShake = 14 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                withAnimation(.interpolatingSpring(stiffness: 500, damping: 8)) { bossShake = 0 }
+                bossFlash = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.easeIn(duration: 0.2)) { strikeSlash = false }
+                withAnimation(.easeInOut(duration: 0.35)) { warriorLunge = 0 }
             }
         }
         // KO：BOSS 倒下，1.2 秒后站起
@@ -782,7 +828,7 @@ extension CoinPusherView {
         let screen = gameState.layout.size
         let band = gameState.layout.dropButton
         let buttonSize = ReferenceBoxes.x(190, screen)
-        let buttonY = ReferenceBoxes.y(2470, screen) - band.midY
+        let buttonY = ReferenceBoxes.y(ReferenceBoxes.dropButtonCenterY, screen) - band.midY
 
         ZStack {
             // 底部金色面板（参考取色 #fcc54f，深色外框 #14100a）：从台面前沿一直到屏幕底部，台面掉下的金币落到面板后面
@@ -803,37 +849,8 @@ extension CoinPusherView {
                         .accessibilityHidden(true)
                 }
 
-                // 六边形投币按钮（对齐参考App）
-                Hexagon()
-                    .fill(
-                        LinearGradient(
-                            // 参考：浅金外圈 + 深古铜内心
-                            colors: [
-                                Color(red: 1.0, green: 0.88, blue: 0.55),
-                                Color(red: 0.72, green: 0.52, blue: 0.18)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: buttonSize, height: buttonSize * Hexagon.heightRatio)   // 正六边形
-                    .overlay(
-                        Hexagon().stroke(Color(red: 0.98, green: 0.90, blue: 0.55), lineWidth: 3)
-                    )
-                    .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 6)
-                    .saturation(gameState.canDropCoin ? 1 : 0)
-                    .offset(y: buttonY)
-
-                Hexagon()
-                    .fill(LinearGradient(colors: [Color(red: 0.36, green: 0.26, blue: 0.10), Color(red: 0.18, green: 0.12, blue: 0.05)],
-                                         startPoint: .top, endPoint: .bottom))
-                    .frame(width: buttonSize * 0.74, height: buttonSize * 0.74 * Hexagon.heightRatio)
-                    .overlay(
-                        Text("$")
-                            .font(.system(size: buttonSize * 0.28, weight: .black, design: .rounded))
-                            .foregroundStyle(LinearGradient(colors: [.yellow, .white], startPoint: .top, endPoint: .bottom))
-                            .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
-                    )
+                // v11.8：圆形金币投币按钮（样式参考背景右侧喷管前的大金币：径向金色渐变、深金色外圈、压印的 $）
+                DropCoinButtonFace(size: buttonSize * 1.08, pressed: dropPressed, enabled: gameState.canDropCoin)
                     .offset(y: buttonY)
             }
             .opacity(gameState.canDropCoin ? 1 : 0.5)
@@ -841,6 +858,7 @@ extension CoinPusherView {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
+                        if !dropPressed { dropPressed = true }
                         guard holdDropTimer == nil else { return }
                         dropOrHint()
                         // 按住连投：每次投当前倍数的一批（一批落完再投下一批）
@@ -850,15 +868,18 @@ extension CoinPusherView {
                         }
                     }
                     .onEnded { _ in
+                        dropPressed = false
                         holdDropTimer?.invalidate()
                         holdDropTimer = nil
                     }
             )
 
             // 金币不足时：看激励广告领金币（广告没加载好时显示加载中，不影响游戏）
-            if gameState.canOfferAdReward() {
+            // v11.8：带回差，余额在 10 上下跳动时不会一闪一闪（低于 10 出现，回到 30 以上或领过之后才收起）
+            if showLowCoinAd && gameState.canClaimAdReward() {
                 adRewardButton(width: min(w * 0.3, 130), height: min(44, h * 0.5))
                     .offset(x: min(w * 0.34, w / 2 - 75), y: buttonY)
+                    .transition(.opacity)
             }
 
             if showAdUnavailableHint {
@@ -887,6 +908,113 @@ extension CoinPusherView {
             }
         }
         .frame(width: w, height: h)
+        .onAppear { showLowCoinAd = gameState.availableCoins < GameConstants.adRewardCoinThreshold }
+        .onChange(of: gameState.availableCoins) { coins in
+            if coins < GameConstants.adRewardCoinThreshold, !showLowCoinAd { withAnimation(.easeOut(duration: 0.25)) { showLowCoinAd = true } }
+            else if coins >= GameConstants.adRewardCoinThreshold * 3, showLowCoinAd { withAnimation(.easeOut(duration: 0.25)) { showLowCoinAd = false } }
+        }
+    }
+}
+
+/// v11.8 圆形投币按钮的外观：金币正面，按下时缩小、变暗，阴影变浅
+struct DropCoinButtonFace: View {
+    let size: CGFloat
+    let pressed: Bool
+    let enabled: Bool
+
+    var body: some View {
+        let rim = Color(red: 0.62, green: 0.36, blue: 0.04)
+        ZStack {
+            Circle()
+                .fill(RadialGradient(colors: [Color(red: 1, green: 0.9, blue: 0.45), Color(red: 0.98, green: 0.7, blue: 0.16), Color(red: 0.85, green: 0.5, blue: 0.06)],
+                                     center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.75))
+            Circle().stroke(rim, lineWidth: size * 0.065)
+            // 内圈压纹
+            Circle().stroke(Color(red: 0.75, green: 0.47, blue: 0.08).opacity(0.8), lineWidth: size * 0.02)
+                .padding(size * 0.12)
+            Circle().stroke(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.7), lineWidth: size * 0.012)
+                .padding(size * 0.135)
+            // 压印的 $：上亮下暗两层叠出凹凸感
+            Text(verbatim: "$")
+                .font(.system(size: size * 0.56, weight: .black, design: .rounded))
+                .foregroundColor(Color(red: 1, green: 0.95, blue: 0.7).opacity(0.85))
+                .offset(x: -size * 0.012, y: -size * 0.012)
+            Text(verbatim: "$")
+                .font(.system(size: size * 0.56, weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [Color(red: 0.86, green: 0.52, blue: 0.05), Color(red: 0.66, green: 0.37, blue: 0.03)],
+                                                startPoint: .top, endPoint: .bottom))
+        }
+        .frame(width: size, height: size)
+        .brightness(pressed ? -0.12 : 0)
+        .scaleEffect(pressed ? 0.92 : 1)
+        .shadow(color: .black.opacity(pressed ? 0.25 : 0.4), radius: pressed ? 4 : 10, x: 0, y: pressed ? 2 : 6)
+        .saturation(enabled ? 1 : 0)
+        .animation(.easeOut(duration: 0.08), value: pressed)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Circle())
+        .accessibilityLabel(Text("Drop coins"))
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// v11.8 顶部的「看广告领金币」按钮：电视图标 + 金币 + 「+50」，亮金绿渐变带光晕。
+/// 第一次点之前一直轻轻跳动发光（点过后存档，不再闪）；冷却中变暗显示倒计时；今天次数用完时变灰
+struct AdHUDButton: View {
+    static let size = CGSize(width: 112, height: 34)
+    @ObservedObject var ads: AdsManager
+    @ObservedObject var gameState: GameState
+    @Binding var showUnavailableHint: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = gameState.adRewardCooldownRemaining(now: context.date)
+            let usedUp = gameState.adRewardsUsed(on: context.date) >= GameConstants.adRewardDailyLimit
+            let ready = ads.isAdReady && remaining == 0 && !usedUp
+            let hint = ready && !gameState.adHintSeen
+            Button {
+                AudioManager.shared.play(.buttonTap)
+                if !gameState.adHintSeen { gameState.adHintSeen = true }
+                if ready {
+                    gameState.requestFreeCoins()
+                } else if remaining == 0 && !usedUp {
+                    ads.loadRewardedAd()
+                    showUnavailableHint = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { showUnavailableHint = false }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: remaining > 0 ? "clock.fill" : (ads.isAdReady ? "play.tv.fill" : "hourglass"))
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundColor(.white)
+                    if remaining > 0 {
+                        Text(verbatim: String(format: "%d:%02d", Int(remaining.rounded(.up)) / 60, Int(remaining.rounded(.up)) % 60))
+                            .font(.system(size: 16, weight: .black, design: .rounded)).monospacedDigit()
+                    } else {
+                        ArtCoin(size: 18)
+                        Text(verbatim: "+\(GameConstants.adRewardCoins)")
+                            .font(.system(size: 18, weight: .black, design: .rounded))
+                    }
+                }
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.5), radius: 1, y: 1)
+                .frame(width: Self.size.width, height: Self.size.height)
+                .background(Capsule().fill(LinearGradient(colors: ready
+                        ? [Color(red: 0.35, green: 0.9, blue: 0.4), Color(red: 0.1, green: 0.55, blue: 0.2)]
+                        : [Color(red: 0.35, green: 0.4, blue: 0.38), Color(red: 0.2, green: 0.24, blue: 0.22)],
+                        startPoint: .top, endPoint: .bottom)))
+                .overlay(Capsule().stroke(LinearGradient(colors: [Color(red: 1, green: 0.95, blue: 0.6), Color(red: 0.95, green: 0.7, blue: 0.2)],
+                                                         startPoint: .top, endPoint: .bottom), lineWidth: 2.5))
+                .shadow(color: ready ? Color(red: 1, green: 0.85, blue: 0.3).opacity(hint && pulse ? 0.95 : 0.55) : .clear, radius: hint && pulse ? 10 : 5)
+                .scaleEffect(hint && pulse ? 1.08 : 1)
+                .opacity(usedUp ? 0.45 : (ready ? 1 : 0.7))
+                .contentShape(Capsule())
+            }
+            .disabled(usedUp)
+            .accessibilityLabel(Text("Watch an ad for \(GameConstants.adRewardCoins) free coins"))
+        }
+        .onAppear { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { pulse = true } }
     }
 }
 
@@ -905,8 +1033,9 @@ extension CoinPusherView {
             }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: ads.isAdReady ? "play.rectangle.fill" : "hourglass")
+                Image(systemName: ads.isAdReady ? "play.tv.fill" : "hourglass")
                     .font(.system(size: height * 0.4, weight: .bold))
+                ArtCoin(size: height * 0.42)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(ads.isAdReady ? LocalizedStringKey("Watch ad") : LocalizedStringKey("Loading ad…"))
                         .font(.system(size: height * 0.27, weight: .bold, design: .rounded))
@@ -919,9 +1048,11 @@ extension CoinPusherView {
             .foregroundColor(.white)
             .padding(.horizontal, 10)
             .frame(width: width, height: height)
-            .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.2, green: 0.7, blue: 0.3), Color(red: 0.1, green: 0.45, blue: 0.2)],
+            .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.35, green: 0.9, blue: 0.4), Color(red: 0.1, green: 0.55, blue: 0.2)],
                                                       startPoint: .top, endPoint: .bottom)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.7), lineWidth: 1.5))
+            .overlay(Capsule().stroke(LinearGradient(colors: [Color(red: 1, green: 0.95, blue: 0.6), Color(red: 0.95, green: 0.7, blue: 0.2)],
+                                                     startPoint: .top, endPoint: .bottom), lineWidth: 2))
+            .shadow(color: Color(red: 1, green: 0.85, blue: 0.3).opacity(0.6), radius: 5)
             .opacity(ads.isAdReady ? 1 : 0.6)
         }
     }
@@ -1246,12 +1377,12 @@ struct BottomGoldPanel: View {
     let frameRect: CGRect
     let labelRect: CGRect
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(LinearGradient(colors: [Color(red: 0.12, green: 0.09, blue: 0.05), Color(red: 0.05, green: 0.04, blue: 0.03)],
                                      startPoint: .top, endPoint: .bottom))
                 .frame(width: frameRect.width, height: frameRect.height)
-                .offset(x: frameRect.minX, y: frameRect.minY)
+                .position(x: frameRect.midX, y: frameRect.midY)   // v11.8：按中心定位（原来 offset 时整块偏左约 2 pt）
             RoundedRectangle(cornerRadius: 6)
                 .fill(LinearGradient(colors: [Color(red: 0.99, green: 0.84, blue: 0.45), Color(red: 0.93, green: 0.70, blue: 0.27),
                                               Color(red: 0.80, green: 0.55, blue: 0.18)],
@@ -1264,7 +1395,7 @@ struct BottomGoldPanel: View {
                 )
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.55, green: 0.36, blue: 0.10), lineWidth: 2))
                 .frame(width: labelRect.width, height: labelRect.height)
-                .offset(x: labelRect.minX, y: labelRect.minY)
+                .position(x: labelRect.midX, y: labelRect.midY)
         }
     }
 }

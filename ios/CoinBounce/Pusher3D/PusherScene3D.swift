@@ -35,8 +35,9 @@ enum ReferenceBoxes {
     static let panelY: ClosedRange<CGFloat> = 2215...2400
     // 底部面板、金色标牌、六边形投币按钮、BONUS 轨道、两侧炮管
     static let bottomFrame = CGRect(x: 40, y: 2370, width: 1128, height: 210)
-    static let bottomLabel = CGRect(x: 150, y: 2410, width: 880, height: 130)
-    static let dropButton = CGRect(x: 603 - 95, y: 2470 - 107.5, width: 190, height: 215)
+    static let bottomLabel = CGRect(x: 163, y: 2410, width: 880, height: 130)   // v11.8：以屏幕中线（603）居中，投币按钮正好在标牌正中（原来 x 150，偏左 13 像素）
+    static let dropButton = CGRect(x: 603 - 95, y: 2475 - 107.5, width: 190, height: 215)   // v11.8：中心和金色标牌中心同一高度（2475）
+    static let dropButtonCenterY: CGFloat = 2475
     static let bonusBar = CGRect(x: 370, y: 1748, width: 490, height: 10)
     static let cannonLeft = CGRect(x: 40, y: 1690, width: 120, height: 140)
     static let cannonRight = CGRect(x: 1050, y: 1690, width: 120, height: 140)
@@ -217,6 +218,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// v11.6 BONUS 闸门：滑块当前偏移（点），每帧读一次，移动牌两侧的立柱碰撞体
     var bonusOffsetProvider: (() -> CGFloat)?
     static var bonusGateEnabled = !ProcessInfo.processInfo.arguments.contains("-debugNoBonusGate")
+    /// v11.8：两侧掉下的金币不算玩家的（返还率略低于 1）
+    static var sideDropsPay = false
     private var gateLayout: GameLayout?
     private var bonusPosts: [(node: SCNNode, side: CGFloat)] = []
     private var bonusPostBaseX: Float = 0, bonusPostScale: Float = 0
@@ -1276,7 +1279,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                 if track.isReward { rewardRemoved[reason, default: 0] += 1 }
                 logEvent("removed", detail: "\(reason) at \(p.x),\(p.z) first=\(track.firstLanding?.rawValue ?? "-") prefilled=\(track.prefilled) phase=\(track.phase.rawValue) age=\(String(format: "%.1f", now - track.born))")
                 tracks[id] = nil
-                if reason == "fellIntoTray" || reason == "fellSide" { removed.append(node.name == PusherScene3D.specialName) }
+                // v11.8：只有从前沿掉进接币槽的才算玩家的；从两侧掉下的进侧面回收槽（真实推币机的「抽水」），不计分
+                if reason == "fellIntoTray" || (reason == "fellSide" && PusherScene3D.sideDropsPay) { removed.append(node.name == PusherScene3D.specialName) }
                 node.removeFromParentNode()
                 return true
             }
