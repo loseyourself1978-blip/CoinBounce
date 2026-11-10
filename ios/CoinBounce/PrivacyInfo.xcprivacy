@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- App 自身的隐私清单。Google Mobile Ads / UMP SDK 自带各自的隐私清单，构建时由 Xcode 汇总。
-     不要写空的 NSPrivacyTrackingDomains 数组：App Store 会拒收（ITMS-91064，2026-11-10）。
+     NSPrivacyTracking 必须是 false：只要设成 true，App Store 就要求 NSPrivacyTrackingDomains 里至少有一个域名，
+     不填或填空数组都会被拒（ITMS-91064，构建 202611101354 和 202611102003）。App 自己的代码不连接任何追踪域名，
+     追踪由 Google SDK 完成。追踪在 App Store 隐私标签和 ATT 弹窗里声明。不要把广告域名写进来：用户拒绝 ATT 后，iOS 会拦截这些域名。
      数据类型说明与 App Store 隐私标签填写见 docs/PRIVACY_NOTES.md。 -->
 <plist version="1.0">
 <dict>
 	<key>NSPrivacyTracking</key>
-	<true/>
+	<false/>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>
