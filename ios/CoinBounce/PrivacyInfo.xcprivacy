@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- App 自身的隐私清单。Google Mobile Ads / UMP SDK 自带各自的隐私清单（含追踪域名），构建时由 Xcode 汇总。
+<!-- App 自身的隐私清单。Google Mobile Ads / UMP SDK 自带各自的隐私清单，构建时由 Xcode 汇总。
+     不要写空的 NSPrivacyTrackingDomains 数组：App Store 会拒收（ITMS-91064，2026-11-10）。
      数据类型说明与 App Store 隐私标签填写见 docs/PRIVACY_NOTES.md。 -->
 <plist version="1.0">
 <dict>
 	<key>NSPrivacyTracking</key>
 	<true/>
-	<key>NSPrivacyTrackingDomains</key>
-	<array/>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>

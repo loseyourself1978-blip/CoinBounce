@@ -35,7 +35,7 @@ App 本身不收集：联系信息、健康、财务、通讯录、用户内容�
 
 ## 隐私清单
 
-- `ios/CoinBounce/PrivacyInfo.xcprivacy`：`NSPrivacyTracking = true`，声明上表的数据类型和 UserDefaults 的 required reason。
+- `ios/CoinBounce/PrivacyInfo.xcprivacy`：`NSPrivacyTracking = true`，声明上表的数据类型和 UserDefaults 的 required reason。不写 `NSPrivacyTrackingDomains`：空数组会被 App Store 拒收（ITMS-91064，构建 202611101354）。
 - Google Mobile Ads / UMP 的 Swift 包自带隐私清单，里面包括它们的追踪域名，构建时由 Xcode 汇总，App 清单里不需要重复。
 
 ## 上架前待办
