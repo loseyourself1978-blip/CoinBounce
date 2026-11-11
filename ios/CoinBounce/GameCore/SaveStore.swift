@@ -13,6 +13,8 @@ struct SaveData: Codable, Equatable {
     var jackpotPool: Double? = nil
     /// v11.8：玩家点过顶部的看广告按钮（之后不再闪烁提示）
     var adHintSeen: Bool? = nil
+    /// v12.0：还没落下的奖励金币（旧存档没有：0）
+    var pendingRewardDrops: Int? = nil
 
     /// 首次安装的初始存档
     static let fresh = SaveData(

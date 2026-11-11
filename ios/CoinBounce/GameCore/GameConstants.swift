@@ -24,9 +24,10 @@ struct GameConstants {
     // Rewards
     static let bedDropReward: Int = 1         // 每枚落下推币台的金币（推落 1 枚得 1 枚，奖励靠水果和老虎机）
     static let fruitHitReward: Int = 0        // v11.8：点亮水果不再直接给金币（奖励在集齐 7 个后的卡里），原来 10
-    static let slotSmallWinReward: Int = 3      // v11.8：从最左边连 3 个（约 1.7% 的转动），原来任意 3 连 30
-    static let slotBigWinReward: Int = 15       // 从最左边连 4 个（约 0.2%），原来 200
-    static let slotJackpotReward: Int = 60      // 整行 5 个（约 0.03%），原来 500
+    // v12.0（hj 2026-11-11）：老虎机 3/15/60 → 2/10/40，省下来的给 BOSS K.O. +50（见 BossPlan）
+    static let slotSmallWinReward: Int = 2      // 从最左边连 3 个（约 1.7% 的转动）
+    static let slotBigWinReward: Int = 10       // 从最左边连 4 个（约 0.2%）
+    static let slotJackpotReward: Int = 40      // 整行 5 个（约 0.03%）
     /// v11.6 顶部 JACKPOT 奖池（终极大奖：中间一行 5 个兔女郎时整池派给玩家）
     static let jackpotPool: Int = 1000        // v11.8：奖池从 1000 起，派奖后回到 1000
     /// v11.7 累积奖池：起始值 10000（= jackpotPool），每投一枚金币有 2% 进奖池（在线老虎机常见 1–3%）。
@@ -34,7 +35,7 @@ struct GameConstants {
     static let jackpotSeed: Double = Double(jackpotPool)
     static let jackpotContribution: Double = 0.005  // v11.8：每枚 0.5%（原来 2%），奖池仍然看得见在涨
     /// v11.6 每次老虎机转动直接出终极大奖（中间一行 5 个兔女郎）的概率；另加自然出现的概率 0.02^5 ≈ 3×10⁻⁹，可忽略
-    static let ultimateJackpotChance: Double = 1.0 / 12000  // v11.8：原来 1/1500
+    static let ultimateJackpotChance: Double = 1.0 / 24000  // v12.0：原来 1/12000（v11.8），省下来的给 BOSS K.O.
 
     // 激励广告领币
     static let adRewardCoins: Int = 50              // 看完一次广告发放的金币
@@ -46,9 +47,11 @@ struct GameConstants {
     static let specialCoinChance: Double = 0.0025   // v11.8：原来 5%
     static let specialCoinReward: Int = 2           // v11.8：原来 10
 
-    // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 KO 并复活（目前只有动画，没有奖励，奖励待确认）
-    static let bossDamagePerHit: Double = 0.0027    // v11.8：约 370 次攻击（约 410 枚金币）打倒一次（原来 0.06，约 17 次）
-    static let bossKOReward: Int = 4                // BOSS 被打倒奖励（v11.8：原来 20）
+    // 战斗区：金币穿过时勇士攻击，BOSS 掉血；血量归零时 K.O.，奖励金币从顶部落下，然后满血复活
+    /// v12.0：BOSS 的 K.O. 奖励和血量只改这一行（三个方案和算术见 BossPlan）
+    static let bossPlan: BossPlan = .ko50per2000
+    static var bossDamagePerHit: Double { bossPlan.damagePerHit }
+    static var bossKOReward: Int { bossPlan.koReward }
     /// 水果灯命中区：金币中心离灯中心不超过「灯宽 × 该比例」才点亮（从灯中间穿过）
     static let fruitHitZoneFraction: CGFloat = 0.35   // 从灯中间 ±35% 灯宽穿过就点亮（约 25 枚集齐一轮）
 
@@ -69,8 +72,6 @@ struct GameConstants {
     static let crowdedDropInterval: Double = 0.80
     static let crowdedThreshold = 110
     static let crowdedResume = 100
-    /// 台面拥挤时中奖金币最多落下几枚真的金币（其余直接入账），排着还没落下的也收到这个数
-    static let crowdedMaxPhysicalReward = 10
     /// v11.7 投币队列上限（两批 10 枚）、同时下落的金币上限（快速连点不会一下子灌满、卡顿）
     static let maxQueuedDrops = 20
     static let maxCoinsInFlight = 12
@@ -98,16 +99,9 @@ struct GameConstants {
     static let pusherCoinFriction: CGFloat = 0.3          // 3D 金币摩擦（金币之间 0.3×0.3 = 0.09：薄金币被挤到两枚之上会滑下来，金币堆保持参考的 2 层）
     static let battleAttackCooldown: TimeInterval = 0.25
 
-    // 中奖金币雨（纯视觉，不计分）
-    /// v11.7：中奖时最多这么多枚变成真的金币落下（其余直接入账），每枚间隔 rewardDropInterval 秒
-    static let maxPhysicalReward = 40
     /// v11.7 兔女郎庆祝：大奖（≥ 200 金币，即老虎机 BIG WIN）和 JACKPOT 时出现，约 2.6 秒
-    static let bigWinCelebrationThreshold = 15    // v11.8：大奖金额变小，庆祝门槛跟着改（原来 200）
+    static let bigWinCelebrationThreshold = 10    // 跟着 BIG WIN 的金额走（v12.0：15 → 10）
     static let celebrationSeconds: Double = 2.6
-    static let rewardDropInterval: Double = 0.06
-    static let coinRainSmallWin = 3
-    static let coinRainBigWin = 15
-    static let coinRainJackpot = 40
 
     // RPG Battle
     static let coinsPerAttack: Int = 10
@@ -136,6 +130,55 @@ struct GameConstants {
     static let pusherFastInterval: ClosedRange<TimeInterval> = 5.0...8.0
 
     static let coinCompensationRatio: Int = 1
+}
+
+// MARK: - v12.0 BOSS 方案 + 返还率解析模型
+/// 奖励全部变成金币从顶部落下之后，每枚穿过场地的金币（玩家投的和奖励的一样）平均再带出 e 枚奖励金币，
+/// 返还率 r = 接币槽份额 × (1 + 只有玩家投币才有的奖励) / (1 − e)。目标 0.97–0.99。
+/// 频率来自 v11.8 的实测（docs/CHANGELOG.md v11.8.0），金额直接读 GameConstants / CardPool，改数值后模型跟着变
+struct BossPlan: Equatable {
+    /// K.O. 一次奖励的金币
+    let koReward: Int
+    /// 每次攻击掉的血（满血 = 1）
+    let damagePerHit: Double
+
+    /// hj 2026-11-11 定：K.O. +50，约 2000 枚一次。钱从老虎机（3/15/60 → 2/10/40）、终极大奖概率（1/12000 → 1/24000）、
+    /// 勇士重击卡（5%/10% → 2%/4%）里出。r ≈ 0.985
+    static let ko50per2000 = BossPlan(koReward: 50, damagePerHit: 0.000111)
+    /// 1.0.0 上架的数值（+4；配 1.0.0 的重击卡 5%/10% 时约 290 枚一次），留作对照
+    static let shipped100 = BossPlan(koReward: 4, damagePerHit: 0.0027)
+
+    /// 约 25 枚金币集齐一轮水果灯、出一次卡；三张卡背面朝上，选到每一种的机会 1/3
+    static let coinsPerCardRound = 25.0
+    /// 每 100 枚金币约 90 次攻击算数（其余在 0.25 秒攻击冷却里）：v11.8 实测 370 次攻击 ≈ 410 枚
+    static let hitsPerCoin = 0.9
+    /// 接币槽份额：每 100 枚约 92 枚从前沿掉下（两侧约 7 枚不算）
+    static let trayShare = 0.92
+    /// 每枚金币的老虎机转动次数：穿过 BONUS 约 0.085 + 免费转动卡
+    static var spinsPerCoin: Double { 0.085 + Double(CardPool.freeSpinCount) / coinsPerCardRound / 3 }
+    /// 每次转动的期望奖金：小奖 1.7%、BIG WIN 0.22%、整行 0.03%（40 万次模拟）+ 终极大奖的起始值
+    static var rewardPerSpin: Double {
+        0.017 * Double(GameConstants.slotSmallWinReward) + 0.0022 * Double(GameConstants.slotBigWinReward) + 0.0003 * Double(GameConstants.slotJackpotReward)
+            + GameConstants.ultimateJackpotChance * GameConstants.jackpotSeed
+    }
+    static func average(_ values: [Int]) -> Double { Double(values.reduce(0, +)) / Double(max(1, values.count)) }
+    /// 每枚穿过场地的金币带出的奖励（不算 BOSS）：金币卡 + 老虎机和终极大奖
+    static var otherRewardsPerCoin: Double { average(CardPool.coinAmounts) / coinsPerCardRound / 3 + spinsPerCoin * rewardPerSpin }
+    /// 勇士重击卡每枚金币折合几次 K.O.
+    static var strikeKOsPerCoin: Double { average(CardPool.strikePercents) / 100 / coinsPerCardRound / 3 }
+    /// 只有玩家投的金币才有：奖池每枚涨 0.005 + 特殊金币多出的 1 枚 × 0.0025
+    static var playerOnlyRewardsPerCoin: Double {
+        GameConstants.jackpotContribution + GameConstants.specialCoinChance * Double(GameConstants.specialCoinReward - GameConstants.bedDropReward)
+    }
+
+    var koPerCoin: Double { damagePerHit * BossPlan.hitsPerCoin + BossPlan.strikeKOsPerCoin }
+    var coinsPerKO: Double { 1 / koPerCoin }
+    /// 金币攻击打掉的血占多少（其余是勇士重击卡）
+    var hitShareOfDamage: Double { damagePerHit * BossPlan.hitsPerCoin / koPerCoin }
+    var analyticReturn: Double { BossPlan.analyticReturn(koReward: Double(koReward), koPerCoin: koPerCoin) }
+    static func analyticReturn(koReward: Double, koPerCoin: Double) -> Double {
+        trayShare * (1 + playerOnlyRewardsPerCoin) / (1 - otherRewardsPerCoin - koReward * koPerCoin)
+    }
 }
 
 extension UIColor {
