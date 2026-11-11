@@ -34,6 +34,9 @@ struct RouletteView: View {
             let rowH = min(62, max(30, (h - fixed) / 3))
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
+                // v12.3：赌桌上方的吊灯——一道宽光柱加转盘上的一圈光
+                LightShafts(strength: 0.06, beams: [(0.5, 0, 0.2), (0.1, 22, 0.07), (0.9, -22, 0.07)])
+                LightPool(strength: 0.14).frame(width: wheelD * 1.7, height: wheelD * 1.4).position(x: w / 2, y: 40 + wheelD * 0.62)
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, pad).padding(.top, 4)
                     // 转盘（左）+ 兔女郎荷官和气泡（右）
@@ -104,6 +107,7 @@ struct RouletteView: View {
                 }
             }
         }
+        .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
         .onAppear {
             say(String(localized: "Place your bets!"), pose: .blowKiss)
@@ -223,7 +227,7 @@ struct RouletteView: View {
                     .foregroundColor(Color(red: 0.25, green: 0.12, blue: 0.0))
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom)))
+                    .background(RoundedRectangle(cornerRadius: 14).fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom)).specularSweep(period: 5))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(ArtPalette.outline, lineWidth: 2))
             }
             .buttonStyle(PressScaleStyle())
