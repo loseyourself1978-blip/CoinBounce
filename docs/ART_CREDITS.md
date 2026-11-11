@@ -30,6 +30,18 @@
 - 生成脚本：`tools/art/draw_king_queen.py`（输出 SVG），`tools/art/render_svg.js`（Playwright 渲染成 PNG）。改姿势或表情只需改脚本重新渲染。
 - 同一角色各姿势用同一画布和比例，脚底在 y≈975（国王）和 y≈970（王后），方便对齐。
 
+## BOSS（v12 / 1.1 起使用）
+
+| 素材名 | 尺寸 | 用途 |
+|---|---|---|
+| `BossIdle` | 1024×1024 | BOSS 待机（朝左），狞笑、举着狼牙锤，替换代码绘制的 BOSS |
+| `BossHurt` | 1024×1024 | BOSS 受击（朝左），闭眼后仰、冒汗，每次命中时短暂显示 |
+| `BossKO` | 1024×1024 | BOSS 被击倒（朝左），坐地晕眩、螺旋眼、头顶星星、狼牙锤掉落 |
+
+- 来源：Claude 原创的矢量图，用代码绘制后渲染成透明 PNG，没有使用任何外部素材或图片生成模型。
+- 生成脚本：`tools/art/draw_king_queen.py` 里的 `boss(pose)` 和 `head_boss(...)`（输出 SVG），`tools/art/render_svg.js`（Playwright 渲染成 PNG）。
+- 设计：保留原 BOSS 的特征（品红色圆头、金色犄角、獠牙），画成和国王、王后同一画风的 Q 版魔王；头身比国王大约 1.2 倍。三个姿势用同一画布和比例，脚底在 y≈975。
+
 ## 其他图形
 
 金币、水果、老虎机符号、勇士、BOSS、机台、按钮等都是代码绘制的原创图形（SwiftUI / SceneKit），见 `docs/ASSET_LICENSES.md`。
