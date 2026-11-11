@@ -533,13 +533,343 @@
         }
       }
     },
-    "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.": {
+    "Coins crossing the battle hit the BOSS. Knock it out and 50 coins fall from the top.": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 4 金币。"
+            "value": "金币穿过战斗区会攻击 BOSS。打倒它，50 枚金币从顶部落下。"
+          }
+        }
+      }
+    },
+    "BET": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下注"
+          }
+        }
+      }
+    },
+    "Back to lobby": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回大厅"
+          }
+        }
+      }
+    },
+    "Better luck next time!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次好运！"
+          }
+        }
+      }
+    },
+    "Black": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑"
+          }
+        }
+      }
+    },
+    "CASINO": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "游戏大厅"
+          }
+        }
+      }
+    },
+    "COIN BOUNCE": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币勇士"
+          }
+        }
+      }
+    },
+    "COMING SOON": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "即将开放"
+          }
+        }
+      }
+    },
+    "Clear bets": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空下注"
+          }
+        }
+      }
+    },
+    "Coin Pusher": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推币机"
+          }
+        }
+      }
+    },
+    "Coins are falling at the pusher!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推币机正在掉金币哦！"
+          }
+        }
+      }
+    },
+    "EVEN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双"
+          }
+        }
+      }
+    },
+    "Feeling lucky today?": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天手气怎么样？"
+          }
+        }
+      }
+    },
+    "No more bets!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下注！"
+          }
+        }
+      }
+    },
+    "Number 35:1 · Dozen / Column 2:1 · Others 1:1": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个号码 35:1 · 打 / 列 2:1 · 其他 1:1"
+          }
+        }
+      }
+    },
+    "ODD": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单"
+          }
+        }
+      }
+    },
+    "Out of coins? Watch a short ad for 50.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币不够？看个短广告领 50。"
+          }
+        }
+      }
+    },
+    "Pachinko": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弹子机"
+          }
+        }
+      }
+    },
+    "Pachinko opens soon!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弹子机即将开放！"
+          }
+        }
+      }
+    },
+    "Place your bets!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请下注！"
+          }
+        }
+      }
+    },
+    "Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "红"
+          }
+        }
+      }
+    },
+    "Repeat last bet": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重复上一局"
+          }
+        }
+      }
+    },
+    "Roulette": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轮盘"
+          }
+        }
+      }
+    },
+    "Table limit: %lld coins per spin": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每局最多下注 %lld 枚"
+          }
+        }
+      }
+    },
+    "The roulette table is open!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轮盘开台啦！"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销"
+          }
+        }
+      }
+    },
+    "Welcome! Pick a game.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎光临！选一个游戏吧。"
+          }
+        }
+      }
+    },
+    "You win %lld!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赢了 %lld 枚！"
+          }
+        }
+      }
+    },
+    "Every prize falls from the top as real coins. They are yours once they drop off the front edge.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有奖励都变成真的金币从顶部落下，从前沿掉下来才算你的。"
+          }
+        }
+      }
+    },
+    "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选一个筹码，点台面下注，再点 SPIN。每局最多下注 50 枚金币。"
+          }
+        }
+      }
+    },
+    "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
           }
         }
       }
