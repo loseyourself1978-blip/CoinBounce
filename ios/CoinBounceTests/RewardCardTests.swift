@@ -50,7 +50,7 @@ final class RewardCardTests: XCTestCase {
                 switch c.kind {
                 case .coins: XCTAssertTrue(CardPool.coinAmounts.contains(c.amount))
                 case .freeSpins: XCTAssertEqual(c.amount, 3)
-                case .warriorStrike: XCTAssertTrue([5, 10].contains(c.amount))
+                case .warriorStrike: XCTAssertTrue([2, 4].contains(c.amount))
                 }
             }
         }
@@ -65,7 +65,7 @@ final class RewardCardTests: XCTestCase {
             strikeAmounts.insert(cards.first { $0.kind == .warriorStrike }!.amount)
         }
         XCTAssertEqual(coinAmounts, Set(CardPool.coinAmounts))
-        XCTAssertEqual(strikeAmounts, [5, 10])
+        XCTAssertEqual(strikeAmounts, [2, 4])
         XCTAssertEqual(firstKinds.count, 3, "顺序随机：每种都出现在第一张过")
     }
 
@@ -225,8 +225,8 @@ final class RewardCardTests: XCTestCase {
     }
 
     func test_bossKOReward_followsBossPlan() {
-        XCTAssertEqual(GameConstants.bossPlan, .ko8per600, "v12.0：约 600 枚 K.O. 一次、+8")
-        XCTAssertEqual(GameConstants.bossKOReward, 8)
-        XCTAssertEqual(GameConstants.bossDamagePerHit, 0.00074)
+        XCTAssertEqual(GameConstants.bossPlan, .ko50per2000, "v12.0（hj 2026-11-11）：约 2000 枚 K.O. 一次、+50")
+        XCTAssertEqual(GameConstants.bossKOReward, 50)
+        XCTAssertEqual(GameConstants.bossDamagePerHit, 0.000111)
     }
 }

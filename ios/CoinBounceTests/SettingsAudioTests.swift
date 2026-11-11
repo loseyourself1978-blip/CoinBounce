@@ -21,6 +21,7 @@ final class SettingsAudioTests: XCTestCase {
 
     override func tearDown() {
         SettingsStore.shared.settings = savedSettings
+        GameState.shared.clearRewardQueueForTesting()   // v12.0：中奖的金币排队落下，别留给后面的测试
         super.tearDown()
     }
 
@@ -415,7 +416,7 @@ final class SettingsAudioTests: XCTestCase {
         let mid = state.availableCoins + state.pendingRewardDrops
         _ = spin([0, 3, 3, 3, 5])
         XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, mid + GameConstants.slotBigWinReward, "百搭在最左边也算：前 4 个 = BIG WIN")
-        XCTAssertGreaterThanOrEqual(GameConstants.slotSmallWinReward, 3, "中奖至少 3 枚，看得出是赢了")
+        XCTAssertGreaterThanOrEqual(GameConstants.slotSmallWinReward, 2, "中奖至少 2 枚（v12.0：3/15/60 → 2/10/40）")
         state.pendingDrops.removeAll()
         state.resetForTesting()
     }
@@ -447,7 +448,7 @@ final class SettingsAudioTests: XCTestCase {
         for i in 6..<10 { state.slotValues[i] = bunny }
         state.evaluateWin()
         XCTAssertLessThan(state.availableCoins, b2 + GameConstants.jackpotPool)
-        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 12000, accuracy: 1e-12, "约 12000 次转动出一次（v11.8）")
+        XCTAssertEqual(GameConstants.ultimateJackpotChance, 1.0 / 24000, accuracy: 1e-12, "约 24000 次转动出一次（v12.0）")
     }
 }
 

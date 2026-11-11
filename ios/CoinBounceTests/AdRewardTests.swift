@@ -41,6 +41,7 @@ final class AdRewardTests: XCTestCase {
         state.adRewardDay = nil
         state.adRewardsClaimed = 0
         state.lastAdRewardAt = nil
+        state.clearRewardQueueForTesting()
         super.tearDown()
     }
 

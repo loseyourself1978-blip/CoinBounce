@@ -27,6 +27,7 @@ final class BattleEffectsTests: XCTestCase {
         state.onCoinToPusher = nil
         state.bossHealth = 1
         state.pendingCoinRain = 0
+        state.clearRewardQueueForTesting()
         super.tearDown()
     }
 

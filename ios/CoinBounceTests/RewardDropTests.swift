@@ -198,17 +198,23 @@ final class RewardDropTests: XCTestCase {
     }
 
     // MARK: BOSS 数值（解析模型，见 BossPlan）
-    func test_bossPlans_keepReturnBetween97And99Percent() {
-        for plan in [BossPlan.ko4per290, .ko8per600, .ko12per900] {
-            XCTAssertGreaterThanOrEqual(plan.analyticReturn, 0.97, "\(plan)")
-            XCTAssertLessThanOrEqual(plan.analyticReturn, 0.99, "\(plan)")
-        }
-        XCTAssertEqual(BossPlan.ko4per290.coinsPerKO, 290, accuracy: 5)
-        XCTAssertEqual(BossPlan.ko8per600.coinsPerKO, 600, accuracy: 5)
-        XCTAssertEqual(BossPlan.ko12per900.coinsPerKO, 900, accuracy: 10)
-        XCTAssertEqual(GameConstants.bossPlan.analyticReturn, 0.989, accuracy: 0.002)
-        // hj 提的「约 600 枚 K.O. 一次、+200」：每投 1 枚拿回 1.5 枚，金币只会越玩越多
+    func test_bossPlan_ko50per2000_returnBetween97And99Percent() {
+        let plan = GameConstants.bossPlan
+        XCTAssertEqual(plan, .ko50per2000)
+        XCTAssertEqual(plan.coinsPerKO, 2000, accuracy: 20, "金币攻击 + 勇士重击卡合起来约 2000 枚 K.O. 一次")
+        XCTAssertGreaterThanOrEqual(plan.analyticReturn, 0.97)
+        XCTAssertLessThanOrEqual(plan.analyticReturn, 0.99)
+        XCTAssertEqual(plan.analyticReturn, 0.985, accuracy: 0.003)
+        // 模型里的各项（改了金额这里会跟着变）
+        XCTAssertEqual(BossPlan.spinsPerCoin, 0.125, accuracy: 0.001)
+        XCTAssertEqual(BossPlan.rewardPerSpin, 0.068 + 1000.0 / 24000, accuracy: 0.001, "2/10/40 每次转动约 0.068 枚 + 终极大奖起始值")
+        XCTAssertEqual(BossPlan.otherRewardsPerCoin, 0.0337, accuracy: 0.0005)
+        XCTAssertEqual(BossPlan.strikeKOsPerCoin, 0.0004, accuracy: 1e-9, "重击卡 2% / 4%：自己约 2500 枚 K.O. 一次")
+        XCTAssertEqual(plan.hitShareOfDamage, 0.2, accuracy: 0.01, "金币攻击占 20% 的血，其余靠重击卡")
+        // hj 最初提的「约 600 枚 K.O. 一次、+200」：每投 1 枚拿回 1.4 枚以上，金币只会越玩越多
         XCTAssertGreaterThan(BossPlan.analyticReturn(koReward: 200, koPerCoin: 1.0 / 600), 1.4)
+        // 不减老虎机、终极大奖、重击卡的话，+50 / 2000 枚也装不下（见 CHANGELOG）
+        XCTAssertGreaterThan(Double(plan.koReward) * plan.koPerCoin, 0.02, "BOSS 每 100 枚发约 2.5 枚")
     }
 
     // MARK: 每一种奖励都走这条路

@@ -277,9 +277,10 @@ class GameState: ObservableObject {
         queuedSpins = 0
         dropQueue = 0
         dropCrowded = false
-        pendingRewardDrops = 0
+        clearRewardQueueForTesting()
         rewardDropsReleased = 0
         lastReleaseWasPlayer = false
+        showCardSelection = false   // 和 offeredCards / pickedCard 一起清（否则「正在显示」但没有卡）
         specialCoinsLeft = 0
         fastPusherUntil = nil
         wideMouthUntil = nil
@@ -704,6 +705,9 @@ class GameState: ObservableObject {
     private(set) var rewardDropsReleased = 0
     /// 3D 推币机接上后由它生成奖励金币
     var onRewardDrop: ((Active2DCoin) -> Void)?
+
+    /// 测试收尾用：清掉还没落下的奖励金币（测试宿主是真的 App，留在队列里的会落进它的 3D 场景、点亮水果灯，影响后面的测试）
+    func clearRewardQueueForTesting() { pendingRewardDrops = 0 }
 
     /// 派奖：total 枚全部排队，从顶部一枚一枚落下（见 releaseQueuedDrops）
     func payReward(_ total: Int, source: CoinSource = .slot) {
