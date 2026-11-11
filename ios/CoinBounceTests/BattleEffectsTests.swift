@@ -48,12 +48,15 @@ final class BattleEffectsTests: XCTestCase {
         XCTAssertEqual(flags, [true, false])
     }
 
+    /// v12.0：掉下来的那一枚入账，特殊金币多出来的部分变成奖励金币从顶部落下
     func test_specialCoinFallingOff_paysMore() {
         let before = state.availableCoins
         state.coinFellOffPusher(isSpecial: true)
-        XCTAssertEqual(state.availableCoins, before + GameConstants.specialCoinReward)
+        XCTAssertEqual(state.availableCoins, before + GameConstants.bedDropReward)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.specialCoinReward - GameConstants.bedDropReward)
         state.coinFellOffPusher()
-        XCTAssertEqual(state.availableCoins, before + GameConstants.specialCoinReward + GameConstants.bedDropReward)
+        XCTAssertEqual(state.availableCoins, before + 2 * GameConstants.bedDropReward)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.specialCoinReward - GameConstants.bedDropReward, "普通金币没有额外奖励")
     }
 
     // MARK: 战斗区
@@ -85,7 +88,8 @@ final class BattleEffectsTests: XCTestCase {
         }
         XCTAssertEqual(state.bossHealth, 0)
         XCTAssertEqual(state.bossDefeatedCount, kos + 1)
-        XCTAssertEqual(state.availableCoins, coinsBefore + GameConstants.bossKOReward, "KO 奖励计入余额")
+        XCTAssertEqual(state.availableCoins, coinsBefore, "v12.0：KO 奖励不直接入账")
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.bossKOReward, "KO 奖励变成金币从顶部落下")
         state.coinCrossedBattle(now: t)
         XCTAssertEqual(state.bossDefeatedCount, kos + 1, "KO 期间不再计算")
         let revived = expectation(description: "revive")
@@ -99,11 +103,6 @@ final class BattleEffectsTests: XCTestCase {
         state.floatingScores.removeAll()
         state.addFloatingScore(text: "+500", x: 0, y: 0, color: .yellow, big: true)
         XCTAssertTrue(state.floatingScores.last!.big)
-    }
-
-    func test_coinRainCounts_increaseWithWinSize() {
-        XCTAssertLessThan(GameConstants.coinRainSmallWin, GameConstants.coinRainBigWin)
-        XCTAssertLessThan(GameConstants.coinRainBigWin, GameConstants.coinRainJackpot)
     }
 
     // MARK: 下落不旋转

@@ -29,6 +29,7 @@ final class AdRewardTests: XCTestCase {
         state.saveStore = SaveStore(defaults: UserDefaults(suiteName: "AdRewardTests")!, key: "AdRewardTests.SaveData")
         state.saveStore.clear()
         originalPresenter = state.adPresenter
+        state.resetForTesting()   // v12.0：清掉还没落下的奖励金币
         state.availableCoins = 0
         state.adRewardDay = nil
         state.adRewardsClaimed = 0
@@ -92,7 +93,8 @@ final class AdRewardTests: XCTestCase {
         state.adPresenter = fake
         state.requestFreeCoins()
         XCTAssertEqual(fake.shown, 1)
-        XCTAssertEqual(state.availableCoins, GameConstants.adRewardCoins)
+        XCTAssertEqual(state.availableCoins, 0, "v12.0：不直接入账")
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.adRewardCoins, "50 枚从顶部落下")
     }
 
     func test_closedEarly_grantsNothing() {
@@ -100,7 +102,7 @@ final class AdRewardTests: XCTestCase {
         state.adPresenter = fake
         state.requestFreeCoins()
         XCTAssertEqual(fake.shown, 1)
-        XCTAssertEqual(state.availableCoins, 0, "没看完不发金币")
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, 0, "没看完不发金币")
         XCTAssertEqual(state.adRewardsUsed(), 0, "没看完不占用次数")
     }
 
@@ -110,7 +112,7 @@ final class AdRewardTests: XCTestCase {
         state.adPresenter = fake
         state.requestFreeCoins()
         XCTAssertEqual(fake.shown, 0)
-        XCTAssertEqual(state.availableCoins, 0)
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, 0)
     }
 
     /// v11.8：顶部的领币按钮一直在，余额多少都能看广告领币
@@ -122,7 +124,8 @@ final class AdRewardTests: XCTestCase {
         XCTAssertFalse(state.canOfferAdReward(), "余额充足时投币按钮旁不额外弹出大按钮")
         state.requestFreeCoins()
         XCTAssertEqual(fake.shown, 1)
-        XCTAssertEqual(state.availableCoins, 500 + GameConstants.adRewardCoins)
+        XCTAssertEqual(state.availableCoins, 500)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.adRewardCoins)
     }
 
     /// v11.8：顶部看广告按钮点过一次后不再闪烁，记在存档里
@@ -158,7 +161,7 @@ final class AdRewardTests: XCTestCase {
         state.requestFreeCoins()
         state.requestFreeCoins()
         XCTAssertEqual(fake.shown, 1, "冷却中第二次点不放广告")
-        XCTAssertEqual(state.availableCoins, GameConstants.adRewardCoins)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.adRewardCoins)
     }
 
     func test_dailyLimit() {
@@ -167,7 +170,7 @@ final class AdRewardTests: XCTestCase {
             XCTAssertTrue(state.grantAdReward(now: day1))
         }
         XCTAssertFalse(state.grantAdReward(now: day1), "超过每日上限不发")
-        XCTAssertEqual(state.availableCoins, GameConstants.adRewardCoins * GameConstants.adRewardDailyLimit)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.adRewardCoins * GameConstants.adRewardDailyLimit)
         state.availableCoins = 0
         XCTAssertFalse(state.canOfferAdReward(now: day1), "用完次数后不再显示领币按钮")
     }

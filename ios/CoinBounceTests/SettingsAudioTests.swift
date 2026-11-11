@@ -240,36 +240,6 @@ final class SettingsAudioTests: XCTestCase {
         XCTAssertEqual(state.availableCoins, 990)
     }
 
-    func test_payReward_crowdedTable_fewerPhysicalCoins_restCredited() {
-        let state = GameState.shared
-        state.resetForTesting()
-        state.onRewardDrop = nil
-        var table = 50
-        state.tableCountProvider = { table }
-        defer { state.tableCountProvider = nil; state.resetForTesting() }
-        let before = state.availableCoins
-        let released0 = state.rewardDropsReleased
-        state.payReward(500, physical: 30)
-        XCTAssertEqual(state.pendingRewardDrops, 30, "不拥挤：照常落下")
-        // 台面变拥挤：排着的超出部分直接入账
-        table = GameConstants.crowdedThreshold
-        state.step(dt: 0.001)
-        XCTAssertTrue(state.dropCrowded)
-        XCTAssertEqual(state.rewardDropsReleased, released0, "这一步还没放出金币")
-        XCTAssertLessThanOrEqual(state.pendingRewardDrops, GameConstants.crowdedMaxPhysicalReward)
-        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + 500, "一枚不少：入账 + 还要落下的 = 奖金")
-        XCTAssertEqual(state.creditedByFlight, 30 - GameConstants.crowdedMaxPhysicalReward, "超出的部分飞向余额：飞的金额 = 直接入账的部分")
-        XCTAssertEqual(state.floatingBoard.flights.last?.amount, 30 - GameConstants.crowdedMaxPhysicalReward)
-        // 拥挤时再中奖：最多 crowdedMaxPhysicalReward 枚真的金币，其余飞向余额，总奖金不变
-        for _ in 0..<100 { state.step(dt: 0.1) }
-        let b2 = state.availableCoins, flown2 = state.creditedByFlight
-        state.payReward(300, physical: 30)
-        XCTAssertEqual(state.pendingRewardDrops, GameConstants.crowdedMaxPhysicalReward)
-        XCTAssertEqual(state.availableCoins, b2 + 300 - GameConstants.crowdedMaxPhysicalReward)
-        XCTAssertEqual(state.creditedByFlight - flown2, 30 - GameConstants.crowdedMaxPhysicalReward, "没落下的那部分飞向余额")
-        XCTAssertEqual(state.availableCoins - b2 + state.pendingRewardDrops, 300, "总奖金不变：入账 + 还要落下的 = 300")
-    }
-
     func test_dropQueue_crowdedThroughout_stillDrainsEveryPaidCoin() {
         let state = GameState.shared
         state.resetForTesting()
@@ -292,24 +262,6 @@ final class SettingsAudioTests: XCTestCase {
         XCTAssertEqual(state.pendingDrops.count, 20, "拥挤时也全部落下")
         XCTAssertEqual(state.dropQueue, 0)
         XCTAssertEqual(state.availableCoins, 980)
-    }
-
-    // MARK: v11.7 中奖金币
-    func test_payReward_physicalCoinsPlusCredit() {
-        let state = GameState.shared
-        state.resetForTesting()
-        state.onRewardDrop = nil
-        let before = state.availableCoins
-        let released = state.rewardDropsReleased
-        state.payReward(30, physical: 6)
-        XCTAssertEqual(state.availableCoins, before + 24, "6 枚变成真的金币落下，其余直接入账")
-        XCTAssertEqual(state.pendingRewardDrops, 6)
-        for _ in 0..<10 { state.step(dt: 0.1) }
-        XCTAssertEqual(state.pendingRewardDrops, 0)
-        XCTAssertEqual(state.rewardDropsReleased - released, 6)
-        state.payReward(10000, physical: 120)
-        XCTAssertEqual(state.pendingRewardDrops, GameConstants.maxPhysicalReward, "最多 \(GameConstants.maxPhysicalReward) 枚真的金币")
-        state.resetForTesting()
     }
 
     // MARK: v11.7 水果灯：翻牌展示期间又全亮，关闭后再弹卡
@@ -409,7 +361,7 @@ final class SettingsAudioTests: XCTestCase {
         for i in 5..<10 { state.slotValues[i] = bunny }
         state.evaluateWin()
         XCTAssertEqual(state.lastJackpotPayout, pool)
-        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + pool, "派出整个奖池（一部分变成真的金币落下）")
+        XCTAssertEqual(state.availableCoins + state.pendingRewardDrops, before + pool, "派出整个奖池（全部变成真的金币落下）")
         XCTAssertEqual(state.jackpotPool, GameConstants.jackpotSeed, "派奖后回到起始值")
         XCTAssertNotNil(state.celebration, "终极大奖时兔女郎庆祝")
         XCTAssertEqual(state.celebration?.jackpot, true)
