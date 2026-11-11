@@ -247,6 +247,7 @@ struct CoinPusherView: View {
                 gameState.onRewardDrop = { [pusher3D] coin in
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true)
                 }
+                gameState.onPauseChanged = { [pusher3D] paused in pusher3D.setPaused(paused) }
                 gameState.fallingCountProvider = { [pusher3D] in pusher3D.fallingCount }
                 gameState.tableCountProvider = { [pusher3D] in pusher3D.tableCount }
                 pusher3D.onCrossBattle = { gameState.coinCrossedBattle() }
