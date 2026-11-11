@@ -69,6 +69,9 @@
 		C0DD55AFF7CE14562A88B26D /* ArcadeArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */; };
 		C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */; };
 		C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */; };
+		C2FA3A0381132776B3194A65 /* KOSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20338B8773C7C4F3BF12432 /* KOSequence.swift */; };
+		C27AE408551A0988D294654D /* RoyalArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */; };
+		C23BD4D77AAF63F41B15A3A5 /* KOSequenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -145,6 +148,9 @@
 		C0E2449189777C40043D660E /* sfx_coin_drop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_coin_drop.wav; sourceTree = "<group>"; };
 		C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_slot_stop.wav; sourceTree = "<group>"; };
 		C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		C20338B8773C7C4F3BF12432 /* KOSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequence.swift; sourceTree = "<group>"; };
+		C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoyalArt.swift; sourceTree = "<group>"; };
+		C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequenceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -167,6 +173,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C2F258B21F1D7DC7FA66831B /* Battle */ = {
+			isa = PBXGroup;
+			children = (
+				C20338B8773C7C4F3BF12432 /* KOSequence.swift */,
+				C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */,
+			);
+			path = Battle;
+			sourceTree = "<group>";
+		};
 		C1FBB204711EB7C21F10C1C5 /* Lobby */ = {
 			isa = PBXGroup;
 			children = (
@@ -208,6 +223,7 @@
 				C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */,
 				C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */,
 				C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */,
+				C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */,
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
@@ -282,6 +298,7 @@
 				B1A1E1B62C00000100000001 /* UI */,
 				C1FBB204711EB7C21F10C1C5 /* Lobby */,
 				C18347FAA09888791D99361F /* Roulette */,
+				C2F258B21F1D7DC7FA66831B /* Battle */,
 				B1A1E1F22C00000100000009 /* Assets.xcassets */,
 				C0D773A5B713E8706AF20636 /* Audio */,
 				C04022E061E3BAB702D507BB /* Info.plist */,
@@ -442,6 +459,7 @@
 				C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */,
 				C1CD9787636B62C3A30C977E /* RouletteTests.swift in Sources */,
 				C1A513140AF9032289CEDCAF /* LobbyTests.swift in Sources */,
+				C23BD4D77AAF63F41B15A3A5 /* KOSequenceTests.swift in Sources */,
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
@@ -477,6 +495,8 @@
 				C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */,
 				C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */,
 				C16EF850B6ED99EB87BF4A96 /* LobbyView.swift in Sources */,
+				C2FA3A0381132776B3194A65 /* KOSequence.swift in Sources */,
+				C27AE408551A0988D294654D /* RoyalArt.swift in Sources */,
 				C136A11EBBF5152682C8F496 /* RouletteModel.swift in Sources */,
 				C1BA5C5F6ABF98C700001858 /* RouletteWheelView.swift in Sources */,
 				C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */,

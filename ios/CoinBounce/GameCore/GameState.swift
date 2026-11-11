@@ -291,6 +291,8 @@ class GameState: ObservableObject {
         lastAttackTime = .distantPast
         lastAdRewardAt = nil
         bossHealth = 1
+        koSequenceStart = nil
+        koSequenceRun += 1
         sliderTime = 0
         coinSliderOffset = 0
         bonusSliderOffset = 0
@@ -626,24 +628,62 @@ class GameState: ObservableObject {
         }
     }
 
-    /// 金币穿过战斗区：勇士攻击、BOSS 掉血；血量归零时 KO，1.2 秒后满血复活
+    /// 金币穿过战斗区：国王攻击、BOSS 掉血；血量归零时 KO，过场结束前满血复活
     func coinCrossedBattle(now: Date = Date()) {
         guard now.timeIntervalSince(lastAttackTime) >= GameConstants.battleAttackCooldown, bossHealth > 0 else { return }
         lastAttackTime = now
         warriorAttackCount += 1
         bossHealth = max(0, bossHealth - GameConstants.bossDamagePerHit)
-        if bossHealth <= 0.0001 { bossHealth = 0; bossKnockedOut() }   // 和勇士重击一样留一点余量：一次掉血很小时浮点误差不会留下一丝血
+        if bossHealth <= 0.0001 { bossHealth = 0; bossKnockedOut(now: now) }   // 和勇士重击一样留一点余量：一次掉血很小时浮点误差不会留下一丝血
     }
 
-    /// BOSS 被打倒：发奖，1.2 秒后满血复活
-    private func bossKnockedOut() {
+    /// v12.2 K.O. 过场开始的时刻（nil = 没在播）。画面按 KOSequence 的时间轴画
+    @Published private(set) var koSequenceStart: Date?
+    private var koSequenceRun = 0
+
+    /// BOSS 被打倒：发奖（+50 照常变成金币从顶部落下），播 K.O. 过场；过场进入「复位」时 BOSS 满血复活
+    private func bossKnockedOut(now: Date = Date()) {
         bossDefeatedCount += 1
         payReward(GameConstants.bossKOReward, source: .boss)
-        addFloatingScore(text: "K.O.! +\(GameConstants.bossKOReward)", x: layout.dropField.midX, y: layout.dropField.midY, color: .red, big: true)   // v11.7：居中（原来偏右，大屏上「+20」被屏幕边切掉）
         HapticManager.shared.bigWin()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-            withAnimation(.easeOut(duration: 0.4)) { self?.bossHealth = 1 }
+        koSequenceStart = now
+        koSequenceRun += 1
+        let run = koSequenceRun
+        DispatchQueue.main.asyncAfter(deadline: .now() + KOSequence.start(of: .kiss)) { [weak self] in
+            guard let self, self.koSequenceRun == run, self.koSequenceStart != nil else { return }
+            AudioManager.shared.play(.cheer)
         }
+        DispatchQueue.main.asyncAfter(deadline: .now() + KOSequence.start(of: .reset)) { [weak self] in
+            guard let self, self.koSequenceRun == run else { return }
+            self.reviveBoss()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + KOSequence.total) { [weak self] in
+            guard let self, self.koSequenceRun == run else { return }
+            self.koSequenceStart = nil
+        }
+    }
+
+    private func reviveBoss() {
+        guard bossHealth <= 0 else { return }
+        withAnimation(.easeOut(duration: 0.4)) { bossHealth = 1 }
+    }
+
+    /// 过场播了 2 秒以后点一下跳过：直接从「复位」那一段接着播（BOSS 立刻满血）。太早或没在播返回 false
+    @discardableResult
+    func skipKOSequence(now: Date = Date()) -> Bool {
+        guard let start = koSequenceStart else { return false }
+        let t = now.timeIntervalSince(start)
+        guard KOSequence.canSkip(at: t), t < KOSequence.start(of: .reset) else { return false }
+        koSequenceRun += 1
+        let run = koSequenceRun
+        let resetLength = KOSequence.total - KOSequence.start(of: .reset)
+        koSequenceStart = now.addingTimeInterval(-KOSequence.start(of: .reset))
+        reviveBoss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + resetLength) { [weak self] in
+            guard let self, self.koSequenceRun == run else { return }
+            self.koSequenceStart = nil
+        }
+        return true
     }
 
     /// v11.8 勇士重击卡：BOSS 立刻掉最大血量的 percent%（重击动画看 warriorStrikeCount），血量归零照常 K.O.

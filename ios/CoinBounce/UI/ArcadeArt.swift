@@ -496,42 +496,8 @@ struct SlotSymbolArt: View {
     }
 }
 
-// MARK: - 角色
 
-struct WarriorFigure: View {
-    let size: CGFloat
-
-    var body: some View {
-        let line = max(1, size * 0.03)
-        ZStack {
-            // 羽饰
-            Capsule().fill(ArtPalette.magenta)
-                .overlay(Capsule().stroke(ArtPalette.outline, lineWidth: line))
-                .frame(width: size * 0.14, height: size * 0.32)
-                .offset(y: -size * 0.38)
-            // 头盔
-            Circle()
-                .fill(RadialGradient(colors: [Color.white, Color(red: 0.75, green: 0.8, blue: 0.88), Color(red: 0.45, green: 0.5, blue: 0.6)],
-                                     center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.35))
-                .overlay(Circle().stroke(ArtPalette.outline, lineWidth: line))
-                .frame(width: size * 0.56, height: size * 0.56)
-                .offset(y: -size * 0.12)
-            // 面罩缝
-            RoundedRectangle(cornerRadius: size * 0.02)
-                .fill(ArtPalette.outline)
-                .frame(width: size * 0.36, height: size * 0.07)
-                .offset(y: -size * 0.12)
-            // 盾牌
-            ShieldShape()
-                .fill(LinearGradient(colors: [ArtPalette.teal, ArtPalette.tealDeep], startPoint: .top, endPoint: .bottom))
-                .overlay(ShieldShape().stroke(ArtPalette.outline, lineWidth: line))
-                .overlay(StarShape().fill(ArtPalette.gold).overlay(StarShape().stroke(ArtPalette.outline, lineWidth: line * 0.7)).padding(size * 0.08))
-                .frame(width: size * 0.48, height: size * 0.52)
-                .offset(x: size * 0.18, y: size * 0.22)
-        }
-        .frame(width: size, height: size)
-    }
-}
+// MARK: - 角色（国王、王后是图片，见 Battle/RoyalArt.swift）
 
 struct BossFigure: View {
     let size: CGFloat

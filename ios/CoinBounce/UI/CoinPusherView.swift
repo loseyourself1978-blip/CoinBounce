@@ -78,7 +78,8 @@ struct CoinPusherView: View {
     @State private var warriorLunge: CGFloat = 0
     @State private var bossShake: CGFloat = 0
     @State private var bossFlash = false
-    @State private var bossKO = false
+    @State private var kingAttacking = false
+    @State private var kingAttackRun = 0
 
     var body: some View {
         // 外层不忽略安全区，才能读到真实的安全区边距；内容再铺满整屏
@@ -618,80 +619,15 @@ extension CoinPusherView {
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.7), lineWidth: 5).blur(radius: 3).clipShape(RoundedRectangle(cornerRadius: 8)))
             .padding(10)
 
-            // 左侧勇士
-            VStack(spacing: 2) {
-                ZStack {
-                    Circle()
-                        .fill(RadialGradient(colors: [.white.opacity(0.4), .clear], center: .center, startRadius: 0, endRadius: 20))
-                        .frame(width: figure, height: figure)
-                    WarriorFigure(size: figure * 0.85)
-                }
-                .offset(x: warriorLunge)
-                Text("Warrior")
-                    .font(.system(size: min(w * 0.035, h * 0.12), weight: .black))
-                    .foregroundColor(.white)
-                    .shadow(radius: 2)
-
-                // 血条
-                HealthBar(progress: 1, color: .green, width: w * 0.18)
+            // v12.2 人物：国王（左）、BOSS（右）、王后（BOSS 身后）。K.O. 过场按 KOSequence 的时间轴画，平时不刷新
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: gameState.koSequenceStart == nil)) { context in
+                battleActors(w: w, h: h, figure: figure, koTime: gameState.koSequenceStart.map { context.date.timeIntervalSince($0) })
             }
-            .position(x: w * 0.13, y: h * 0.5)
-
-            // 顶部中间：VS，连击时换成连击文字（格挡在它下方，不重叠）
-            if gameState.combo.isActive {
-                Text(gameState.combo.message)
-                    .font(.system(size: min(w * 0.05, h * 0.15), weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.red, .orange, .yellow], startPoint: .top, endPoint: .bottom))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .frame(width: w * 0.5)
-                    .position(x: w * 0.50, y: h * 0.14)
-            } else {
-                Text("VS")
-                    .font(.system(size: min(w * 0.08, h * 0.2), weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
-                    .italic()
-                    .shadow(color: .black, radius: 4)
-                    .position(x: w * 0.50, y: h * 0.14)
-            }
-
-            // 右侧敌人
-            VStack(spacing: 2) {
-                ZStack {
-                    Circle()
-                        .fill(RadialGradient(colors: [.red.opacity(0.3), .clear], center: .center, startRadius: 0, endRadius: 20))
-                        .frame(width: figure, height: figure)
-                    BossFigure(size: figure * 0.85)
-                        .colorMultiply(bossFlash ? Color(red: 1, green: 0.45, blue: 0.45) : .white)
-                    // v11.8 勇士重击：两道白色斩击划过 BOSS
-                    if strikeSlash {
-                        ForEach(0..<2, id: \.self) { k in
-                            Capsule()
-                                .fill(LinearGradient(colors: [.white, .yellow, .white.opacity(0)], startPoint: .leading, endPoint: .trailing))
-                                .frame(width: figure * 1.1, height: figure * 0.09)
-                                .rotationEffect(.degrees(k == 0 ? -35 : 35))
-                                .shadow(color: .orange, radius: 6)
-                        }
-                        .transition(.scale(scale: 0.2).combined(with: .opacity))
-                    }
-                }
-                .offset(x: bossShake)
-                .rotationEffect(.degrees(bossKO ? 80 : 0), anchor: .bottom)
-                .opacity(bossKO ? 0.3 : 1)
-                Text("BOSS")
-                    .font(.system(size: min(w * 0.030, h * 0.12), weight: .black))
-                    .foregroundColor(.white)
-                    .shadow(radius: 2)
-
-                // 血条
-                HealthBar(progress: CGFloat(gameState.bossHealth), color: .red, width: w * 0.18)
-                    .animation(.easeOut(duration: 0.25), value: gameState.bossHealth)
-            }
-            .position(x: w * 0.87, y: h * 0.5)
         }
         .frame(width: w, height: h)
         // 攻击：勇士向前冲、BOSS 抖动并闪红
         .onChange(of: gameState.warriorAttackCount) { _ in
+            showKingAttack(for: 0.28)
             withAnimation(.easeOut(duration: 0.1)) { warriorLunge = w * 0.08 }
             withAnimation(.easeIn(duration: 0.15).delay(0.12)) { warriorLunge = 0 }
             bossFlash = true
@@ -703,6 +639,7 @@ extension CoinPusherView {
         }
         // v11.8 勇士重击卡：勇士冲到 BOSS 面前、斩击、BOSS 大幅抖动
         .onChange(of: gameState.warriorStrikeCount) { _ in
+            showKingAttack(for: 0.6)
             withAnimation(.easeOut(duration: 0.18)) { warriorLunge = w * 0.5 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
                 withAnimation(.easeOut(duration: 0.12)) { strikeSlash = true }
@@ -718,13 +655,190 @@ extension CoinPusherView {
                 withAnimation(.easeInOut(duration: 0.35)) { warriorLunge = 0 }
             }
         }
-        // KO：BOSS 倒下，1.2 秒后站起
-        .onChange(of: gameState.bossDefeatedCount) { _ in
-            withAnimation(.easeIn(duration: 0.3)) { bossKO = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) { bossKO = false }
+        // K.O. 过场播了 2 秒后，点战斗区跳过
+        .contentShape(Rectangle())
+        .onTapGesture { gameState.skipKOSequence() }
+        .allowsHitTesting(gameState.koSequenceStart != nil)
+    }
+
+    /// 国王换成出剑的那张图，seconds 秒后换回来
+    private func showKingAttack(for seconds: Double) {
+        kingAttackRun += 1
+        let run = kingAttackRun
+        kingAttacking = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+            if kingAttackRun == run { kingAttacking = false }
+        }
+    }
+
+    /// 战斗区的人物和 K.O. 过场。koTime = 过场开始后的秒数（没在播是 nil）
+    func battleActors(w: CGFloat, h: CGFloat, figure: CGFloat, koTime: Double?) -> some View {
+        let t: Double = koTime ?? -1
+        let kiss: Double = KOSequence.kissOpacity(at: t)
+        let showSkip: Bool = KOSequence.canSkip(at: t) && t < KOSequence.start(of: .reset)
+        return ZStack {
+            kingActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
+            battleTitle(w: w, h: h, t: t).opacity(1 - kiss)
+            queenActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
+            bossActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
+            if kiss > 0 {
+                kissOverlay(w: w, h: h, t: t).opacity(kiss)
+            }
+            // 2 秒后可以点一下跳过
+            if showSkip {
+                Text("Tap to skip")
+                    .font(.system(size: min(w * 0.028, h * 0.1), weight: .semibold))
+                    .foregroundColor(.white.opacity(0.85))
+                    .shadow(color: .black, radius: 2)
+                    .position(x: w * 0.5, y: h - max(16, h * 0.1))
             }
         }
+        .frame(width: w, height: h)
+    }
+
+    private func battleNameSize(w: CGFloat, h: CGFloat) -> CGFloat { min(w * 0.035, h * 0.12) }
+    private func kingX(w: CGFloat) -> CGFloat { w * 0.13 }
+
+    /// 左侧国王（朝右）
+    private func kingActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
+        let cheers: Bool = KOSequence.kingCheers(at: t)
+        let asset: RoyalAsset = cheers ? .kingVictory : (kingAttacking ? .kingAttack : .kingIdle)
+        let hop: CGFloat = cheers ? -CGFloat(abs(sin(t * 9))) * figure * 0.12 : 0
+        return VStack(spacing: 2) {
+            ZStack(alignment: .bottom) {
+                Circle()
+                    .fill(RadialGradient(colors: [.white.opacity(0.4), .clear], center: .center, startRadius: 0, endRadius: 20))
+                    .frame(width: figure, height: figure)
+                RoyalSprite(asset: asset, height: figure * 1.15)
+                    .offset(y: hop)
+            }
+            .frame(width: figure, height: figure)
+            .offset(x: warriorLunge)
+            Text("King")
+                .font(.system(size: battleNameSize(w: w, h: h), weight: .black))
+                .foregroundColor(.white)
+                .shadow(radius: 2)
+            HealthBar(progress: 1, color: .green, width: w * 0.18)
+        }
+        .position(x: kingX(w: w), y: h * 0.5)
+    }
+
+    /// 顶部中间：VS，连击时换成连击文字（格挡在它下方，不重叠）；K.O. 过场里换成 K.O.!
+    @ViewBuilder
+    private func battleTitle(w: CGFloat, h: CGFloat, t: Double) -> some View {
+        if KOSequence.state(at: t) != nil {
+            let pop: CGFloat = 1 + 0.25 * CGFloat(max(0, 1 - t / 0.3))
+            koText(size: min(w * 0.09, h * 0.24))
+                .scaleEffect(pop)
+                .position(x: w * 0.50, y: h * 0.16)
+        } else if gameState.combo.isActive {
+            Text(gameState.combo.message)
+                .font(.system(size: min(w * 0.05, h * 0.15), weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [.red, .orange, .yellow], startPoint: .top, endPoint: .bottom))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .frame(width: w * 0.5)
+                .position(x: w * 0.50, y: h * 0.14)
+        } else {
+            Text("VS")
+                .font(.system(size: min(w * 0.08, h * 0.2), weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
+                .italic()
+                .shadow(color: .black, radius: 4)
+                .position(x: w * 0.50, y: h * 0.14)
+        }
+    }
+
+    private func koText(size: CGFloat) -> some View {
+        Text(verbatim: "K.O.!")
+            .font(.system(size: size, weight: .black, design: .rounded))
+            .foregroundStyle(LinearGradient(colors: [.yellow, .orange, .red], startPoint: .top, endPoint: .bottom))
+            .italic()
+            .shadow(color: .black, radius: 4)
+    }
+
+    /// 王后（朝左）：平时在 BOSS 身后哭，K.O. 后破涕为笑跑到国王身边。和国王同一种排版，脚才踩在同一条线上
+    private func queenActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
+        let pos: CGFloat = CGFloat(KOSequence.queenPosition(at: t))
+        let nearKing: CGFloat = kingX(w: w) + figure * 0.72
+        let x: CGFloat = nearKing + (w * 0.945 - nearKing) * pos
+        let running: Bool = KOSequence.phase(at: t) == .queenRuns
+        let hop: CGFloat = running ? -CGFloat(abs(sin(t * 12))) * figure * 0.07 : 0
+        let asset: RoyalAsset = KOSequence.queenIsHappy(at: t) ? .queenHappy : .queenCry
+        return VStack(spacing: 2) {
+            RoyalSprite(asset: asset, height: figure * 1.15)
+                .scaleEffect(1 - 0.16 * pos, anchor: .bottom)
+                .offset(y: hop)
+                .frame(width: figure, height: figure, alignment: .bottom)
+            Text("King").font(.system(size: battleNameSize(w: w, h: h), weight: .black)).hidden()
+            HealthBar(progress: 1, color: .green, width: w * 0.18).hidden()
+        }
+        .position(x: x, y: h * 0.5)
+    }
+
+    /// 右侧 BOSS
+    private func bossActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
+        let down: Double = KOSequence.bossDown(at: t)
+        return VStack(spacing: 2) {
+            ZStack {
+                Circle()
+                    .fill(RadialGradient(colors: [.red.opacity(0.3), .clear], center: .center, startRadius: 0, endRadius: 20))
+                    .frame(width: figure, height: figure)
+                BossFigure(size: figure * 0.85)
+                    .colorMultiply(bossFlash ? Color(red: 1, green: 0.45, blue: 0.45) : .white)
+                // v11.8 重击：两道白色斩击划过 BOSS
+                if strikeSlash {
+                    ForEach(0..<2, id: \.self) { k in
+                        Capsule()
+                            .fill(LinearGradient(colors: [.white, .yellow, .white.opacity(0)], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: figure * 1.1, height: figure * 0.09)
+                            .rotationEffect(.degrees(k == 0 ? -35 : 35))
+                            .shadow(color: .orange, radius: 6)
+                    }
+                    .transition(.scale(scale: 0.2).combined(with: .opacity))
+                }
+            }
+            .offset(x: bossShake)
+            .rotationEffect(.degrees(80 * down), anchor: .bottom)
+            .opacity(1 - 0.75 * down)
+            Text("BOSS")
+                .font(.system(size: min(w * 0.030, h * 0.12), weight: .black))
+                .foregroundColor(.white)
+                .shadow(radius: 2)
+            HealthBar(progress: CGFloat(gameState.bossHealth), color: .red, width: w * 0.18)
+                .animation(.easeOut(duration: 0.25), value: gameState.bossHealth)
+        }
+        .position(x: w * 0.84, y: h * 0.5)
+    }
+
+    /// 亲吻：大图、粉色光晕、代码画的爱心、「K.O.! +50」
+    private func kissOverlay(w: CGFloat, h: CGFloat, t: Double) -> some View {
+        let u: Double = KOSequence.kissTime(at: t) ?? 0
+        let kissH: CGFloat = min(h * 0.94, w * 0.34)
+        let pop: CGFloat = u < 0.3 ? CGFloat(0.7 + 0.3 * (u / 0.3)) : CGFloat(1 + 0.025 * sin((u - 0.3) * 4))
+        let rewardPop: CGFloat = u < 0.5 ? CGFloat(0.5 + u) : 1
+        let glow = RadialGradient(colors: [Color(red: 1, green: 0.62, blue: 0.78).opacity(0.85), .clear], center: .center, startRadius: 0, endRadius: kissH * 0.85)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.38)).padding(10)
+            Ellipse().fill(glow).frame(width: kissH * 1.9, height: kissH * 1.25)
+            RoyalSprite(asset: .kiss, height: kissH)
+                .scaleEffect(pop, anchor: .bottom)
+                .frame(width: kissH * 1.5, height: h, alignment: .bottom)
+                .offset(y: -(h - kissH) * 0.5)
+            KissHearts(u: u, width: kissH * 1.25, height: h)
+            koText(size: min(w * 0.085, h * 0.26))
+                .position(x: w * 0.17, y: h * 0.5)
+            HStack(spacing: 3) {
+                Text(verbatim: "+\(GameConstants.bossKOReward)")
+                    .font(.system(size: min(w * 0.095, h * 0.3), weight: .black, design: .rounded))
+                    .foregroundStyle(LinearGradient(colors: [.white, .yellow, .orange], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: .black, radius: 4)
+                ArtCoin(size: min(w * 0.07, h * 0.22))
+            }
+            .scaleEffect(rewardPop)
+            .position(x: w * 0.83, y: h * 0.5)
+        }
+        .frame(width: w, height: h)
     }
 
     struct HealthBar: View {
