@@ -533,13 +533,13 @@
         }
       }
     },
-    "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.": {
+    "Coins crossing the battle hit the BOSS. Knock it out and 50 coins fall from the top.": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS，打倒它得 4 金币。"
+            "value": "金币穿过战斗区会攻击 BOSS。打倒它，50 枚金币从顶部落下。"
           }
         }
       }
@@ -837,6 +837,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "赢了 %lld 枚！"
+          }
+        }
+      }
+    },
+    "Every prize falls from the top as real coins. They are yours once they drop off the front edge.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有奖励都变成真的金币从顶部落下，从前沿掉下来才算你的。"
+          }
+        }
+      }
+    },
+    "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选一个筹码，点台面下注，再点 SPIN。每局最多下注 50 枚金币。"
+          }
+        }
+      }
+    },
+    "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
           }
         }
       }

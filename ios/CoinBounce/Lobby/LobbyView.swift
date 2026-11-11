@@ -7,6 +7,7 @@ struct LobbyView: View {
     @ObservedObject private var ads = AdsManager.shared
     @State private var line: BunnyLine? = nil
     @State private var showSettings = false
+    @State private var showHelp = false
     @State private var showAdUnavailableHint = false
     @State private var glow = false
 
@@ -69,6 +70,7 @@ struct LobbyView: View {
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showHelp) { HelpView() }
         .onAppear {
             glow = true
             greet()
@@ -83,6 +85,7 @@ struct LobbyView: View {
                 AdHUDButton(ads: ads, gameState: gameState, showUnavailableHint: $showAdUnavailableHint)
                     .frame(width: AdHUDButton.size.width, height: AdHUDButton.size.height)
             }
+            HelpButton { showHelp = true }
             SettingsButton { showSettings = true }
         }
         .frame(height: 36)
