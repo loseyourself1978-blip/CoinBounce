@@ -675,7 +675,8 @@ extension CoinPusherView {
     func battleActors(w: CGFloat, h: CGFloat, figure: CGFloat, koTime: Double?) -> some View {
         let t: Double = koTime ?? -1
         let kiss: Double = KOSequence.kissOpacity(at: t)
-        let showSkip: Bool = KOSequence.canSkip(at: t) && t < KOSequence.start(of: .reset)
+        // 「点击跳过」的提示从亲吻开始显示（2 秒后就能跳，早半秒不提示：那时右下角还有 BOSS 的名字）
+        let showSkip: Bool = KOSequence.canSkip(at: t) && KOSequence.phase(at: t) == .kiss
         return ZStack {
             kingActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
             battleTitle(w: w, h: h, t: t).opacity(1 - kiss)
@@ -684,13 +685,13 @@ extension CoinPusherView {
             if kiss > 0 {
                 kissOverlay(w: w, h: h, t: t).opacity(kiss)
             }
-            // 2 秒后可以点一下跳过
+            // 2 秒后可以点一下跳过（提示放在「+50」下面，不挡亲吻图）
             if showSkip {
                 Text("Tap to skip")
                     .font(.system(size: min(w * 0.028, h * 0.1), weight: .semibold))
                     .foregroundColor(.white.opacity(0.85))
                     .shadow(color: .black, radius: 2)
-                    .position(x: w * 0.5, y: h - max(16, h * 0.1))
+                    .position(x: w * 0.83, y: h * 0.76)
             }
         }
         .frame(width: w, height: h)
@@ -709,7 +710,7 @@ extension CoinPusherView {
                 Circle()
                     .fill(RadialGradient(colors: [.white.opacity(0.4), .clear], center: .center, startRadius: 0, endRadius: 20))
                     .frame(width: figure, height: figure)
-                RoyalSprite(asset: asset, height: figure * 1.15)
+                RoyalSprite(asset: asset, height: figure * 1.3)
                     .offset(y: hop)
             }
             .frame(width: figure, height: figure)
@@ -726,7 +727,7 @@ extension CoinPusherView {
     /// 顶部中间：VS，连击时换成连击文字（格挡在它下方，不重叠）；K.O. 过场里换成 K.O.!
     @ViewBuilder
     private func battleTitle(w: CGFloat, h: CGFloat, t: Double) -> some View {
-        if KOSequence.state(at: t) != nil {
+        if let phase = KOSequence.phase(at: t), phase != .reset {
             let pop: CGFloat = 1 + 0.25 * CGFloat(max(0, 1 - t / 0.3))
             koText(size: min(w * 0.09, h * 0.24))
                 .scaleEffect(pop)
@@ -760,13 +761,13 @@ extension CoinPusherView {
     /// 王后（朝左）：平时在 BOSS 身后哭，K.O. 后破涕为笑跑到国王身边。和国王同一种排版，脚才踩在同一条线上
     private func queenActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
         let pos: CGFloat = CGFloat(KOSequence.queenPosition(at: t))
-        let nearKing: CGFloat = kingX(w: w) + figure * 0.72
-        let x: CGFloat = nearKing + (w * 0.945 - nearKing) * pos
+        let nearKing: CGFloat = kingX(w: w) + figure * 0.8
+        let x: CGFloat = nearKing + (w * 0.925 - nearKing) * pos
         let running: Bool = KOSequence.phase(at: t) == .queenRuns
         let hop: CGFloat = running ? -CGFloat(abs(sin(t * 12))) * figure * 0.07 : 0
         let asset: RoyalAsset = KOSequence.queenIsHappy(at: t) ? .queenHappy : .queenCry
         return VStack(spacing: 2) {
-            RoyalSprite(asset: asset, height: figure * 1.15)
+            RoyalSprite(asset: asset, height: figure * 1.3)
                 .scaleEffect(1 - 0.16 * pos, anchor: .bottom)
                 .offset(y: hop)
                 .frame(width: figure, height: figure, alignment: .bottom)
@@ -808,13 +809,13 @@ extension CoinPusherView {
             HealthBar(progress: CGFloat(gameState.bossHealth), color: .red, width: w * 0.18)
                 .animation(.easeOut(duration: 0.25), value: gameState.bossHealth)
         }
-        .position(x: w * 0.84, y: h * 0.5)
+        .position(x: w * 0.815, y: h * 0.5)
     }
 
     /// 亲吻：大图、粉色光晕、代码画的爱心、「K.O.! +50」
     private func kissOverlay(w: CGFloat, h: CGFloat, t: Double) -> some View {
         let u: Double = KOSequence.kissTime(at: t) ?? 0
-        let kissH: CGFloat = min(h * 0.94, w * 0.34)
+        let kissH: CGFloat = min(h * 0.78, w * 0.3)
         let pop: CGFloat = u < 0.3 ? CGFloat(0.7 + 0.3 * (u / 0.3)) : CGFloat(1 + 0.025 * sin((u - 0.3) * 4))
         let rewardPop: CGFloat = u < 0.5 ? CGFloat(0.5 + u) : 1
         let glow = RadialGradient(colors: [Color(red: 1, green: 0.62, blue: 0.78).opacity(0.85), .clear], center: .center, startRadius: 0, endRadius: kissH * 0.85)
@@ -823,8 +824,7 @@ extension CoinPusherView {
             Ellipse().fill(glow).frame(width: kissH * 1.9, height: kissH * 1.25)
             RoyalSprite(asset: .kiss, height: kissH)
                 .scaleEffect(pop, anchor: .bottom)
-                .frame(width: kissH * 1.5, height: h, alignment: .bottom)
-                .offset(y: -(h - kissH) * 0.5)
+                .frame(width: kissH * 1.5, height: kissH, alignment: .bottom)
             KissHearts(u: u, width: kissH * 1.25, height: h)
             koText(size: min(w * 0.085, h * 0.26))
                 .position(x: w * 0.17, y: h * 0.5)
@@ -836,7 +836,7 @@ extension CoinPusherView {
                 ArtCoin(size: min(w * 0.07, h * 0.22))
             }
             .scaleEffect(rewardPop)
-            .position(x: w * 0.83, y: h * 0.5)
+            .position(x: w * 0.83, y: h * 0.44)
         }
         .frame(width: w, height: h)
     }
