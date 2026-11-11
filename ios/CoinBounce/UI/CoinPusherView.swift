@@ -675,8 +675,6 @@ extension CoinPusherView {
     func battleActors(w: CGFloat, h: CGFloat, figure: CGFloat, koTime: Double?) -> some View {
         let t: Double = koTime ?? -1
         let kiss: Double = KOSequence.kissOpacity(at: t)
-        // 「点击跳过」的提示从亲吻开始显示（2 秒后就能跳，早半秒不提示：那时右下角还有 BOSS 的名字）
-        let showSkip: Bool = KOSequence.canSkip(at: t) && KOSequence.phase(at: t) == .kiss
         return ZStack {
             kingActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
             battleTitle(w: w, h: h, t: t).opacity(1 - kiss)
@@ -684,14 +682,6 @@ extension CoinPusherView {
             bossActor(w: w, h: h, figure: figure, t: t).opacity(1 - kiss)
             if kiss > 0 {
                 kissOverlay(w: w, h: h, t: t).opacity(kiss)
-            }
-            // 2 秒后可以点一下跳过（提示放在「+50」下面，不挡亲吻图）
-            if showSkip {
-                Text("Tap to skip")
-                    .font(.system(size: min(w * 0.028, h * 0.1), weight: .semibold))
-                    .foregroundColor(.white.opacity(0.85))
-                    .shadow(color: .black, radius: 2)
-                    .position(x: w * 0.83, y: h * 0.76)
             }
         }
         .frame(width: w, height: h)
@@ -837,6 +827,14 @@ extension CoinPusherView {
             }
             .scaleEffect(rewardPop)
             .position(x: w * 0.83, y: h * 0.44)
+            // 「点击跳过」的提示放在「+50」下面，和亲吻图一起淡入淡出（2 秒后就能跳；亲吻前那半秒不提示，那里还有 BOSS 的名字）
+            if KOSequence.phase(at: t) == .kiss {
+                Text("Tap to skip")
+                    .font(.system(size: min(w * 0.028, h * 0.1), weight: .semibold))
+                    .foregroundColor(.white.opacity(0.85))
+                    .shadow(color: .black, radius: 2)
+                    .position(x: w * 0.83, y: h * 0.76)
+            }
         }
         .frame(width: w, height: h)
     }

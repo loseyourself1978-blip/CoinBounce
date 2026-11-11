@@ -11,7 +11,11 @@ enum KOSequence {
     }
 
     /// 每一段的时长（秒）。合计 7 秒（hj：5–10 秒）
-    static let durations: [(phase: Phase, seconds: Double)] = [(.bossFalls, 1.0), (.queenRuns, 1.5), (.kiss, 3.5), (.reset, 1.0)]
+    /// 调试参数 -debugKOSlow：亲吻那一段拉长到 30 秒（截图、手动检查「点一下跳过」用）
+    static let durations: [(phase: Phase, seconds: Double)] = [
+        (.bossFalls, 1.0), (.queenRuns, 1.5),
+        (.kiss, ProcessInfo.processInfo.arguments.contains("-debugKOSlow") ? 30 : 3.5), (.reset, 1.0),
+    ]
     static var total: Double { durations.reduce(0) { $0 + $1.seconds } }
     /// 开始 2 秒后点一下可以跳过
     static let skippableAfter: Double = 2.0
