@@ -416,8 +416,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         ambient.light!.intensity = 350
         scene.rootNode.addChildNode(ambient)
         // 基于图像的环境光照（IBL）：金属铜件、金币的反射
-        scene.lightingEnvironment.contents = PusherScene3D.environmentImage()
-        scene.lightingEnvironment.intensity = 1.6
+        // v12.3：画面升级开着时换成代码画的赌场室内环境图（暗顶棚、暖色灯、霓虹灯带），金币和铜件才有东西可反射
+        scene.lightingEnvironment.contents = VisualFX.enabled ? PusherScene3D.casinoEnvironmentImage() : PusherScene3D.environmentImage()
+        scene.lightingEnvironment.intensity = VisualFX.enabled ? VisualFX.environmentIntensity : 1.6
 
         coinMaterial.lightingModel = .physicallyBased
         coinMaterial.diffuse.contents = PusherScene3D.reededEdgeImage()
@@ -2106,6 +2107,65 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         }
     }
 
+    /// v12.3 赌场室内的环境图（经纬展开，2:1）。上边是天顶，中间是地平线，下边是地面。
+    /// 只在启动时画一次，运行时没有开销。方位上基本对称（灯一圈一圈排），所以不用管相机朝哪边
+    static func casinoEnvironmentImage(width: Int = 1024) -> UIImage {
+        let w = CGFloat(width), h = w / 2
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: CGSize(width: w, height: h), format: format).image { ctx in
+            let cg = ctx.cgContext
+            let space = CGColorSpaceCreateDeviceRGB()
+            func y(_ elevation: CGFloat) -> CGFloat { (90 - elevation) / 180 * h }
+            // 1. 底色：顶棚中间一大片柔和的暖光（吊灯照亮的顶棚），往下变暗；地平线附近是暗红的墙，地面是深色地毯
+            let base = [UIColor(red: 0.64, green: 0.60, blue: 0.52, alpha: 1), UIColor(red: 0.36, green: 0.30, blue: 0.24, alpha: 1),
+                        UIColor(red: 0.20, green: 0.12, blue: 0.10, alpha: 1), UIColor(red: 0.30, green: 0.11, blue: 0.10, alpha: 1),
+                        UIColor(red: 0.16, green: 0.04, blue: 0.04, alpha: 1), UIColor(red: 0.06, green: 0.02, blue: 0.02, alpha: 1)].map(\.cgColor) as CFArray
+            let stops: [CGFloat] = [0, y(62) / h, y(30) / h, y(4) / h, y(-25) / h, 1]
+            cg.drawLinearGradient(CGGradient(colorsSpace: space, colors: base, locations: stops)!, start: .zero, end: CGPoint(x: 0, y: h), options: [])
+            // 2. 霓虹灯带：绕墙一圈的两条细线，各带一层光晕
+            func strip(elevation: CGFloat, color: UIColor) {
+                for (thickness, alpha) in [(h * 0.050, 0.10), (h * 0.022, 0.28), (h * 0.008, 1.0)] as [(CGFloat, CGFloat)] {
+                    cg.setFillColor(color.withAlphaComponent(alpha).cgColor)
+                    cg.fill(CGRect(x: 0, y: y(elevation) - thickness / 2, width: w, height: thickness))
+                }
+            }
+            strip(elevation: 13, color: UIColor(red: 1.0, green: 0.30, blue: 0.62, alpha: 1))
+            strip(elevation: 24, color: UIColor(red: 1.0, green: 0.78, blue: 0.30, alpha: 1))
+            // 3. 立柱上的壁灯：四根竖着的暖光条
+            for i in 0..<4 {
+                let x = (CGFloat(i) + 0.5) / 4 * w
+                let rect = CGRect(x: x - w * 0.012, y: y(34), width: w * 0.024, height: y(2) - y(34))
+                let colors = [UIColor(red: 1, green: 0.85, blue: 0.55, alpha: 0), UIColor(red: 1, green: 0.85, blue: 0.55, alpha: 0.85),
+                              UIColor(red: 1, green: 0.85, blue: 0.55, alpha: 0)].map(\.cgColor) as CFArray
+                cg.saveGState()
+                cg.clip(to: rect)
+                cg.drawLinearGradient(CGGradient(colorsSpace: space, colors: colors, locations: [0, 0.5, 1])!,
+                                      start: CGPoint(x: rect.minX, y: 0), end: CGPoint(x: rect.maxX, y: 0), options: [])
+                cg.restoreGState()
+            }
+            // 4. 顶棚上的灯：两圈暖白色的光点（越靠近天顶，在展开图上要画得越宽）
+            func lamp(azimuth: CGFloat, elevation: CGFloat, radiusDegrees: CGFloat, brightness: CGFloat) {
+                let cx = azimuth / 360 * w, cy = y(elevation)
+                let ry = radiusDegrees / 180 * h
+                let stretch = 1 / max(0.2, cos(elevation * .pi / 180))
+                let colors = [UIColor(red: 1, green: 0.99, blue: 0.95, alpha: brightness), UIColor(red: 1, green: 0.96, blue: 0.86, alpha: brightness * 0.9),
+                              UIColor(red: 1, green: 0.90, blue: 0.70, alpha: 0)].map(\.cgColor) as CFArray
+                let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 0.35, 1])!
+                for wrap in [-w, 0, w] {   // 跨过左右接缝的灯两边都画
+                    cg.saveGState()
+                    cg.translateBy(x: cx + wrap, y: cy)
+                    cg.scaleBy(x: stretch, y: 1)
+                    cg.drawRadialGradient(gradient, startCenter: .zero, startRadius: 0, endCenter: .zero, endRadius: ry, options: [])
+                    cg.restoreGState()
+                }
+            }
+            for i in 0..<8 { lamp(azimuth: CGFloat(i) * 45 + 10, elevation: 48, radiusDegrees: 7, brightness: 1) }
+            for i in 0..<5 { lamp(azimuth: CGFloat(i) * 72 + 30, elevation: 72, radiusDegrees: 9, brightness: 1) }
+        }
+    }
+
     static func environmentImage() -> UIImage {
         UIGraphicsImageRenderer(size: CGSize(width: 64, height: 256)).image { ctx in
             let colors = [UIColor(white: 1, alpha: 1).cgColor,
@@ -2161,7 +2221,9 @@ enum VisualFX {
     static let bloomIntensity = number("-fxBloom", 0.18)
     static let contrast = number("-fxContrast", 0.05)
     static let saturation = number("-fxSaturation", 1.02)
-    static let fallLightScale = number("-fxFallLight", 0.45)
+    static let fallLightScale = number("-fxFallLight", 0.38)
+    /// 赌场环境图的强度（旧的渐变图是 1.6）
+    static let environmentIntensity = number("-fxEnv", 2.3)
 }
 
 /// v11.6 真机测帧率用的调试开关和主线程卡顿监视（只有带对应启动参数时才生效）
