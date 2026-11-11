@@ -351,10 +351,35 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         keyLightNode.light?.shadowRadius = full ? 5 : 1
         keyLightNode.light?.shadowMapSize = full ? .zero : CGSize(width: 1024, height: 1024)
         cameraNode.camera?.screenSpaceAmbientOcclusionIntensity = full ? 1.2 : 0
+        if let camera = cameraNode.camera { applyVisualFX(to: camera, full: full) }
         if let view {
             view.antialiasingMode = full ? .multisampling2X : .none
             view.preferredFramesPerSecond = 60
         }
+    }
+
+    /// v12.3 画面升级：HDR 相机 + 泛光 + 电影色调曲线 + 轻微调色。发热降级（full = false）或 -fxOff 时全部关掉。
+    /// 3D 视图是透明的、盖在 2D 界面上，所以暗角和颗粒不放在相机里（只会作用在 3D 这一层），由 SwiftUI 的 FilmOverlay 画在最上面
+    private func applyVisualFX(to camera: SCNCamera, full: Bool) {
+        let on = VisualFX.enabled && full
+        camera.wantsHDR = on
+        guard on else {
+            camera.bloomIntensity = 0
+            camera.contrast = 0
+            camera.saturation = 1
+            return
+        }
+        camera.wantsExposureAdaptation = false
+        camera.exposureOffset = VisualFX.exposureOffset
+        camera.whitePoint = VisualFX.whitePoint
+        // 泛光只留给超过阈值的地方：金币的高光、发光的特殊金币和 BONUS 件；绿色台面、木头都在阈值下面
+        camera.bloomThreshold = VisualFX.bloomThreshold
+        camera.bloomIntensity = VisualFX.lowTier ? VisualFX.bloomIntensity * 0.7 : VisualFX.bloomIntensity
+        camera.bloomBlurRadius = VisualFX.lowTier ? 4 : 6
+        camera.bloomIterationCount = VisualFX.lowTier ? 1 : 2
+        camera.bloomIterationSpread = 0.4
+        camera.contrast = VisualFX.contrast
+        camera.saturation = VisualFX.saturation
     }
 
     // MARK: 灯光、材质、相机
@@ -369,6 +394,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         camera.zFar = 200
         camera.screenSpaceAmbientOcclusionIntensity = 1.2
         camera.screenSpaceAmbientOcclusionRadius = 0.3
+        applyVisualFX(to: camera, full: true)
         cameraNode.camera = camera
         scene.rootNode.addChildNode(cameraNode)
 
@@ -431,7 +457,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         // 上半区的金币和台面上的金币一样亮、一样有金色反光
         fallLightNode.light = SCNLight()
         fallLightNode.light!.type = .directional
-        fallLightNode.light!.intensity = PerfDebug.noFallLight ? 0 : PusherScene3D.fallLightIntensity
+        fallLightNode.light!.intensity = PerfDebug.noFallLight ? 0 : PusherScene3D.fallLightIntensity * (VisualFX.enabled ? VisualFX.fallLightScale : 1)   // HDR 下这盏灯太亮，下落的金币会糊成一团光
         fallLightNode.light!.color = UIColor(red: 1, green: 0.9, blue: 0.68, alpha: 1)
         fallLightNode.light!.categoryBitMask = PusherScene3D.fallLightMask
         scene.rootNode.addChildNode(fallLightNode)
@@ -2116,6 +2142,27 @@ final class CoinSpriteStore {
 
 
 
+
+/// v12.3 画面升级的开关和数值（调画面只改这里）
+enum VisualFX {
+    private static let args = ProcessInfo.processInfo.arguments
+    private static func number(_ flag: String, _ fallback: Double) -> CGFloat {
+        guard let i = args.firstIndex(of: flag), i + 1 < args.count, let v = Double(args[i + 1]) else { return CGFloat(fallback) }
+        return CGFloat(v)
+    }
+    /// -fxOff：全部关掉（前后对比截图、量帧率用）
+    static let enabled = !args.contains("-fxOff")
+    /// 小屏老机型（iPhone SE 这一档，或内存不到 4.5 GB）：泛光少一次迭代、弱三成
+    static let lowTier: Bool = args.contains("-fxLowTier") || ProcessInfo.processInfo.physicalMemory < 4_500_000_000
+    // 下面这些都能用启动参数临时改（-fxBloom 0.4 这样），方便对着截图调
+    static let exposureOffset = number("-fxExposure", 0.15)
+    static let whitePoint = number("-fxWhite", 1)
+    static let bloomThreshold = number("-fxThreshold", 1.0)
+    static let bloomIntensity = number("-fxBloom", 0.18)
+    static let contrast = number("-fxContrast", 0.05)
+    static let saturation = number("-fxSaturation", 1.02)
+    static let fallLightScale = number("-fxFallLight", 0.45)
+}
 
 /// v11.6 真机测帧率用的调试开关和主线程卡顿监视（只有带对应启动参数时才生效）
 enum PerfDebug {
