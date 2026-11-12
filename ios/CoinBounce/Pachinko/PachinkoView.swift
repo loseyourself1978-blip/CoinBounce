@@ -87,7 +87,15 @@ struct PachinkoView: View {
                         .position(x: w / 2, y: 84)
                 }
             }
-            .onAppear { makeScene() }
+            .onAppear {
+                // 有预热快照时，转场先用快照（便宜），0.3 秒后再建 3D 视图：
+                // 建 SCNView / Metal 层会卡主线程一下，放在转场里会让大厅先淡出、中间露出几帧黑底
+                if Pachinko3DScene.placeholder != nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { makeScene() }
+                } else {
+                    makeScene()
+                }
+            }
         }
         .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -237,11 +245,12 @@ struct PachinkoView: View {
             if let scene3D {
                 Pachinko3DView(scene3D: scene3D)
             }
-            if lcdRect.width > 10 {
+            let lcd = lcdRect.width > 10 ? lcdRect : placeholderLCD(w: w, h: h)
+            if lcd.width > 10 {
                 PachinkoReelView(machine: game.machine, spinStartedAt: game.spinStartedAt)
-                    .frame(width: lcdRect.width - 6, height: lcdRect.height - 6)
+                    .frame(width: lcd.width - 6, height: lcd.height - 6)
                     .rotation3DEffect(.radians(Double(-Pachinko3DScene.tilt) * 0.9), axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.35)
-                    .position(x: lcdRect.midX, y: lcdRect.midY)
+                    .position(x: lcd.midX, y: lcd.midY)
                     .allowsHitTesting(false)
             }
             ForEach(floaters) { f in
@@ -270,6 +279,15 @@ struct PachinkoView: View {
         }
         .frame(width: w, height: h)
         .accessibilityIdentifier("pachinkoBoard")
+    }
+
+    /// 3D 视图建好之前：按快照里液晶的位置摆数字盘（快照按 aspectFit 放在 w × h 里）
+    private func placeholderLCD(w: CGFloat, h: CGFloat) -> CGRect {
+        guard let img = Pachinko3DScene.placeholder, let r = Pachinko3DScene.placeholderLCD, img.size.height > 0 else { return .zero }
+        let scale = min(w / img.size.width, h / img.size.height)
+        let iw = img.size.width * scale, ih = img.size.height * scale
+        let ox = (w - iw) / 2, oy = (h - ih) / 2
+        return CGRect(x: ox + r.minX * iw, y: oy + r.minY * ih, width: r.width * iw, height: r.height * ih)
     }
 
     // MARK: 上皿、买珠、AUTO、手柄（金色亮面，和轮盘同一套）

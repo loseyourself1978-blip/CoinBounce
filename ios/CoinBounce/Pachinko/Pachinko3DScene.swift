@@ -430,7 +430,11 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
             guard let self, let a = self.project(B.lcdX0, B.lcdY1, z: 0.02), let b = self.project(B.lcdX1, B.lcdY0, z: 0.02),
                   let c = self.project(B.lcdX0, B.lcdY0, z: 0.02), let d = self.project(B.lcdX1, B.lcdY1, z: 0.02) else { return }
             let xs = [a.x, b.x, c.x, d.x], ys = [a.y, b.y, c.y, d.y]
-            self.onLCDRect?(CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!, height: ys.max()! - ys.min()!))
+            let r = CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!, height: ys.max()! - ys.min()!)
+            // 第一帧之前投影可能还不对：只接受落在视图里、宽度合理的结果
+            guard let vb = self.view?.bounds, vb.width > 10, vb.insetBy(dx: -2, dy: -2).contains(r),
+                  r.width > vb.width * 0.2, r.width < vb.width * 0.8 else { return }
+            self.onLCDRect?(r)
         }
     }
 
@@ -590,7 +594,10 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
         if !firstFrameLogged && game != nil {
             firstFrameLogged = true
             NSLog("PACHINKO_FIRST_FRAME ms=%.0f prewarmed=%d", (CACurrentMediaTime() - createdAt) * 1000, Self.prewarmed ? 1 : 0)
-            DispatchQueue.main.async { [weak self] in self?.onFirstFrame?(); self?.onFirstFrame = nil }
+            DispatchQueue.main.async { [weak self] in
+                self?.reportLCD()
+                self?.onFirstFrame?(); self?.onFirstFrame = nil
+            }
         }
         frames += 1
         if fpsWindow == 0 { fpsWindow = time }
@@ -610,6 +617,8 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
     private(set) static var prewarmed = false
     /// 预热时拍的一张机器快照
     private(set) static var placeholder: UIImage?
+    /// 快照里液晶的位置（占快照宽高的比例），3D 视图还没建好时数字盘先按它摆
+    private(set) static var placeholderLCD: CGRect?
     /// 第一帧画出来了（主线程回调，PachinkoView 撤掉快照）
     var onFirstFrame: (() -> Void)?
     private static var prewarmStarted = false
@@ -648,6 +657,12 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
                     prewarmed = true
                     // 进场时第一帧出来之前先显示这张（同一台机器、同一个相机）
                     placeholder = prewarmView?.snapshot()
+                    s.view = prewarmView
+                    typealias B = PachinkoBoard
+                    if let pv = prewarmView, let a = s.project(B.lcdX0, B.lcdY1, z: 0.02), let b = s.project(B.lcdX1, B.lcdY0, z: 0.02) {
+                        let vw = pv.bounds.width, vh = pv.bounds.height
+                        placeholderLCD = CGRect(x: min(a.x, b.x) / vw, y: min(a.y, b.y) / vh, width: abs(b.x - a.x) / vw, height: abs(b.y - a.y) / vh)
+                    }
                     NSLog("PACHINKO_PREWARM ok=1 ms=%.0f", (CACurrentMediaTime() - t0) * 1000)
                     prewarmView?.isPlaying = false
                     prewarmView?.removeFromSuperview()
