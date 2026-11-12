@@ -19,6 +19,15 @@ enum SoundEffect: String, CaseIterable {
     case cheer = "cheer"
     case applause = "applause"
     case jackpotFanfare = "jackpot_fanfare"
+    /// v12.5 弹子机（tools/audio/generate_audio.py --pachinko 合成）
+    case pkLaunch = "pk_launch"
+    case pkNail1 = "pk_nail_1"
+    case pkNail2 = "pk_nail_2"
+    case pkNail3 = "pk_nail_3"
+    case pkStart = "pk_start"
+    case pkReach = "pk_reach"
+    case pkAttacker = "pk_attacker"
+    case pkCount = "pk_count"
 
     /// 音量（和其他音效、背景音乐平衡）
     var volume: Float {
@@ -29,6 +38,8 @@ enum SoundEffect: String, CaseIterable {
         // v11.8：高频金币声压低一点，不盖过背景的赌场氛围
         case .coinDrop, .bedDrop: return 0.6
         case .baffleHit: return 0.5
+        case .pkNail1, .pkNail2, .pkNail3: return 0.35
+        case .pkLaunch: return 0.6
         default: return 1
         }
     }
@@ -39,6 +50,8 @@ enum SoundEffect: String, CaseIterable {
         case .baffleHit: return 0.08
         case .bedDrop: return 0.12
         case .coinDrop: return 0.05
+        case .pkNail1, .pkNail2, .pkNail3: return 0.03
+        case .pkLaunch: return 0.1
         default: return 0
         }
     }
@@ -59,6 +72,7 @@ enum SoundEffect: String, CaseIterable {
     var voices: Int {
         switch self {
         case .baffleHit, .coinDrop, .bedDrop: return 3
+        case .pkNail1, .pkNail2, .pkNail3: return 2
         default: return 1
         }
     }

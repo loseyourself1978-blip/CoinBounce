@@ -215,6 +215,11 @@ extension PachinkoLottery {
     /// 三格停下来的图案 [左, 中, 右]。只由票和结果决定（读档后重转也停在同一组）。
     /// 中奖：SUPER 7-7-7；ROYAL K-K-K 或 Q-Q-Q；BONUS 兔 / 冠 / 币 三连。
     /// 没中：リーチ时左右同图、中格不同；无リーチ时左右不同
+    /// 三格停下的时刻（占这一转时长的比例）[左, 中, 右]。リーチ时左右很快停，中格慢转到最后
+    static func stopFractions(reach: PachinkoReach) -> [Double] {
+        reach == .none ? [0.55, 1.0, 0.75] : [0.18, 1.0, 0.3]
+    }
+
     static func symbols(_ t: PachinkoTicket, hit: Bool, reach: PachinkoReach) -> [PachinkoSymbol] {
         let all = PachinkoSymbol.allCases
         if hit {

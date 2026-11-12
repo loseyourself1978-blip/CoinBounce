@@ -43,6 +43,74 @@ struct PachinkoSaveStore {
     func clear() { defaults.removeObject(forKey: key) }
 }
 
+/// 游戏层发给画面的事件：兔女郎台词、声音、触感、特效都从这里来（画面层订阅 `cues`）
+enum PachinkoCue: Equatable {
+    case enter
+    case launched
+    case firstShot
+    case foul
+    case tooHard
+    /// 第 count 次进始动口（这次进场累计）
+    case startHit(count: Int)
+    case tulipOpened
+    case smallWin
+    case spinStarted(reach: PachinkoReach)
+    /// 第 index 格停（0 左、1 中、2 右）
+    case reelStopped(index: Int)
+    /// 左右停成同图，进入リーチ
+    case reach(PachinkoReach)
+    case reachMissed
+    case jackpot(PachinkoJackpotKind, chain: Int)
+    case roundStarted(Int)
+    /// 大入赏口进第 count 球（本回合）
+    case attackerBall(count: Int)
+    case idleInRound
+    case jackpotEnded(coins: Int)
+    case modeEntered(PachinkoMode)
+    case modeEnded
+    case trayEmpty
+    case outOfCoins
+    case idle
+}
+
+/// 兔女郎台词（设计文档第 6 节）。姿势用这里的名字，画面层换成 BunnyPose（测试 target 里没有 UI）
+enum PachinkoScript {
+    enum Pose: Equatable { case idle, blowKiss, clap, cheer, jump, headshot, celebrate }
+    struct Line: Equatable { var text: String; var pose: Pose }
+
+    /// 这个事件兔女郎说什么；nil = 不说话（只有声音或特效）
+    static func line(for cue: PachinkoCue) -> Line? {
+        switch cue {
+        case .enter: return Line(text: String(localized: "Welcome to Pachinko! One coin, one ball."), pose: .idle)
+        case .firstShot: return Line(text: String(localized: "Round start! Aim for the center pocket."), pose: .blowKiss)
+        case .foul: return Line(text: String(localized: "Too soft! Turn it up a little."), pose: .idle)
+        case .tooHard: return Line(text: String(localized: "Too hard. Try the gold zone."), pose: .idle)
+        case .startHit(let n): return n % 5 == 0 ? Line(text: String(localized: "Nice shot!"), pose: .clap) : nil
+        case .tulipOpened: return Line(text: String(localized: "The tulip is open!"), pose: .clap)
+        case .reach(.superReach): return Line(text: String(localized: "SUPER REACH! This could be it!"), pose: .jump)
+        case .reach: return Line(text: String(localized: "Reach! Come on…"), pose: .cheer)
+        case .reachMissed: return Line(text: String(localized: "So close!"), pose: .idle)
+        case .jackpot(let kind, let chain):
+            if chain >= 2 { return Line(text: String(localized: "\(chain) in a row!"), pose: .celebrate) }
+            switch kind {
+            case .bonus: return Line(text: String(localized: "Bonus! 2 rounds!"), pose: .celebrate)
+            case .royal: return Line(text: String(localized: "Royal jackpot! 5 rounds!"), pose: .celebrate)
+            case .superJackpot: return Line(text: String(localized: "SEVENS! 10 rounds!"), pose: .jump)
+            }
+        case .roundStarted(let n): return Line(text: String(localized: "Round \(n)! Keep shooting!"), pose: .cheer)
+        case .idleInRound: return Line(text: String(localized: "The gate is open. Keep shooting!"), pose: .blowKiss)
+        case .jackpotEnded(let coins): return Line(text: String(localized: "You won \(coins) coins!"), pose: .celebrate)
+        case .modeEntered(.st): return Line(text: String(localized: "Fever time! 12 hot spins!"), pose: .jump)
+        case .modeEntered: return Line(text: String(localized: "Chance time! 12 quick spins."), pose: .clap)
+        case .modeEnded: return Line(text: String(localized: "Back to normal. Round over!"), pose: .idle)
+        case .trayEmpty: return Line(text: String(localized: "Out of balls. Add more?"), pose: .idle)
+        case .outOfCoins: return Line(text: String(localized: "Out of coins? Watch a short ad for 50."), pose: .blowKiss)
+        case .idle: return Line(text: String(localized: "Feeling lucky today?"), pose: .idle)
+        case .launched, .smallWin, .spinStarted, .reelStopped, .attackerBall: return nil
+        }
+    }
+}
+
 final class PachinkoGame: ObservableObject {
     enum BuyResult: Equatable { case added(Int), trayFull, insufficientCoins }
     enum Notice: Equatable { case outOfCoins, foul }
@@ -51,9 +119,9 @@ final class PachinkoGame: ObservableObject {
     @Published private(set) var tray = 0
     @Published var chip = 1 { didSet { dirty = true } }
     @Published var auto = false { didSet { dirty = true } }
-    @Published var power = PachinkoConstants.defaultPower { didSet { dirty = true } }
+    @Published var power = PachinkoConstants.defaultPower { didSet { dirty = true; sinceInput = 0 } }
     /// 手柄按着：连发
-    @Published var handleDown = false
+    @Published var handleDown = false { didSet { sinceInput = 0 } }
     /// 状态机快照：只在有事件或保留变化时更新（每帧更新会让 SwiftUI 整屏重算）
     @Published private(set) var machine: PachinkoMachine
     /// 这一转开始的时刻（数字盘动画用；读档时按剩余时间倒推）
@@ -68,6 +136,25 @@ final class PachinkoGame: ObservableObject {
     private(set) var physics: PachinkoPhysics
     /// 场景订阅：珠子落袋（画闪光、换郁金香花瓣）
     var onPocket: ((PachinkoPocket, PachinkoBall) -> Void)?
+    /// 场景订阅：珠子撞钉（撞击速度、位置），给声音和钉子闪光
+    var onNailHit: ((Double, Double, Double) -> Void)?
+    /// 画面订阅：兔女郎、声音、触感、特效
+    let cues = PassthroughSubject<PachinkoCue, Never>()
+    /// 测试用：记下所有发出的事件
+    var recordCues = false
+    private(set) var cueLog: [PachinkoCue] = []
+
+    private var startHits = 0
+    private var firedThisVisit = false
+    private var jackpotWin = 0
+    private var reelsStopped = 0
+    private var reachAnnounced = false
+    private var sinceInput = 0.0
+    private var sinceShot = 0.0
+    private var idleSaid = false
+    private var idleInRoundSaid = false
+    private var lastFoulCue = -100.0, lastTooHardCue = -100.0
+    private var clock = 0.0
 
     private var m: PachinkoMachine
     private var lottery: PachinkoRandom
@@ -111,8 +198,13 @@ final class PachinkoGame: ObservableObject {
     func buy() -> BuyResult {
         let cap = PachinkoConstants.trayCapacity
         guard tray < cap else { return .trayFull }
+        sinceInput = 0
         let affordable = wallet.balance() - tray
-        guard affordable > 0 else { notice = .outOfCoins; return .insufficientCoins }
+        guard affordable > 0 else {
+            if notice != .outOfCoins { emit(.outOfCoins) }
+            notice = .outOfCoins
+            return .insufficientCoins
+        }
         let n = min(chip, cap - tray, affordable)
         tray += n
         if notice == .outOfCoins { notice = nil }
@@ -120,6 +212,18 @@ final class PachinkoGame: ObservableObject {
     }
 
     func resetPower() { power = PachinkoConstants.defaultPower }
+
+    private func emit(_ c: PachinkoCue) {
+        if recordCues { cueLog.append(c) }
+        cues.send(c)
+    }
+
+    /// 进场：兔女郎打招呼（画面出现时调用）
+    func entered() {
+        firedThisVisit = false
+        startHits = 0
+        emit(.enter)
+    }
     func clearNotice() { notice = nil }
 
     // MARK: 每帧
@@ -146,9 +250,19 @@ final class PachinkoGame: ObservableObject {
             if auto && tray == 0 { autoRefill() }
             tryFire()
         }
+        clock += dt
+        sinceInput += dt
+        sinceShot += dt
+        if sinceInput >= 60 && !idleSaid && !auto { idleSaid = true; emit(.idle) }
+        if m.phase == .round && sinceShot >= 5 && balls.isEmpty && !idleInRoundSaid { idleInRoundSaid = true; emit(.idleInRound) }
         var i = 0
         while i < balls.count {
-            guard let p = physics.step(&balls[i]) else { i += 1; continue }
+            let p = physics.step(&balls[i])
+            if balls[i].lastHit > 0 {
+                if balls[i].lastHit > 0.25 { onNailHit?(balls[i].lastHit, balls[i].x, balls[i].y) }
+                balls[i].lastHit = 0
+            }
+            guard let p else { i += 1; continue }
             let b = balls[i]
             if pay(p, ball: b) { changed = true }
             physics.apply(p)
@@ -162,6 +276,7 @@ final class PachinkoGame: ObservableObject {
             changed = true
             for e in events { handle(e) }
         }
+        reelCues()
         return changed
     }
 
@@ -173,18 +288,29 @@ final class PachinkoGame: ObservableObject {
         guard tray > 0, balls.count < PachinkoConstants.maxBallsInFlight else { return }
         fireCooldown = PachinkoConstants.fireInterval
         // 回流：力度不够，珠子回上皿，不扣币
-        guard let b = physics.launch(power: power) else { notice = .foul; return }
+        guard let b = physics.launch(power: power) else {
+            notice = .foul
+            if clock - lastFoulCue > 8 { lastFoulCue = clock; emit(.foul) }
+            return
+        }
         guard wallet.spend(PachinkoConstants.coinsPerBall) else {
             tray = 0
             auto = false
             notice = .outOfCoins
+            emit(.outOfCoins)
             return
         }
         tray -= 1
         if notice == .foul { notice = nil }
         balls.append(b)
         stats.ballsFired += 1
+        sinceShot = 0
+        idleSaid = false
         dirty = true
+        emit(.launched)
+        if !firedThisVisit { firedThisVisit = true; emit(.firstShot) }
+        else if (0.7...0.8).contains(power) && clock - lastTooHardCue > 20 { lastTooHardCue = clock; emit(.tooHard) }
+        if tray == 0 && !auto { emit(.trayEmpty) }
     }
 
     /// 落袋入账。返回 true = 状态机变了（保留、回合）
@@ -197,14 +323,25 @@ final class PachinkoGame: ObservableObject {
         case .start:
             amount = c.startPayout
             if m.startEntered(PachinkoLottery.draw(&lottery)) { machineChanged = true }
-        case .tulipLeft, .tulipRight: amount = c.tulipPayout
-        case .side: amount = c.sidePayout
+            startHits += 1
+            emit(.startHit(count: startHits))
+        case .tulipLeft, .tulipRight:
+            amount = c.tulipPayout
+            let t = p == .tulipLeft ? 0 : 1
+            // apply() 在入账之后才翻转花瓣：现在是关着的 = 这一球会把它打开
+            if !physics.board.tulipOpen[t] { emit(.tulipOpened) } else { emit(.smallWin) }
+        case .side:
+            amount = c.sidePayout
+            emit(.smallWin)
         case .attacker:
             amount = c.attackerPayout
             if m.attackerOpen {
+                let count = m.roundBalls + 1
                 m.attackerEntered()
                 chainWin += amount
+                jackpotWin += amount
                 machineChanged = true
+                emit(.attackerBall(count: count))
             }
         case .stuck, .out: break
         }
@@ -220,19 +357,48 @@ final class PachinkoGame: ObservableObject {
 
     private func handle(_ e: PachinkoMachine.Event) {
         switch e {
-        case .spinStarted:
+        case .spinStarted(_, let reach):
             stats.spins += 1
             spinStartedAt = Date()
-        case .jackpot:
+            reelsStopped = 0
+            reachAnnounced = false
+            emit(.spinStarted(reach: reach))
+        case .spinLost:
+            if reelsStopped < 3 { reelsStopped = 3; emit(.reelStopped(index: 1)) }
+            if reachAnnounced { emit(.reachMissed) }
+        case .jackpot(let kind, _):
+            if reelsStopped < 3 { reelsStopped = 3; emit(.reelStopped(index: 1)) }
             stats.jackpots += 1
             stats.bestChain = max(stats.bestChain, m.chain)
+            jackpotWin = 0
+            emit(.jackpot(kind, chain: m.chain))
+        case .roundStarted(let n):
+            idleInRoundSaid = false
+            sinceShot = 0
+            emit(.roundStarted(n))
+        case .jackpotEnded(let mode):
+            stats.biggestWin = max(stats.biggestWin, chainWin)
+            emit(.jackpotEnded(coins: jackpotWin))
+            emit(.modeEntered(mode))
         case .modeEnded:
             stats.biggestWin = max(stats.biggestWin, chainWin)
             chainWin = 0
-        case .jackpotEnded, .roundStarted, .spinLost:
-            break
+            emit(.modeEnded)
         }
         dirty = true
+    }
+
+    /// 左、右两格按时间停；リーチ在右格停下的那一刻宣布。中格随转完（spinLost / jackpot）一起停
+    private func reelCues() {
+        guard let sp = m.spin, reelsStopped < 2 else { return }
+        let t = sp.duration - sp.timeLeft
+        let f = PachinkoLottery.stopFractions(reach: sp.reach)
+        if reelsStopped == 0 && t >= f[0] * sp.duration { reelsStopped = 1; emit(.reelStopped(index: 0)) }
+        if reelsStopped == 1 && t >= f[2] * sp.duration {
+            reelsStopped = 2
+            emit(.reelStopped(index: 2))
+            if sp.reach != .none { reachAnnounced = true; emit(.reach(sp.reach)) }
+        }
     }
 
     private func publish() {

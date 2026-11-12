@@ -464,7 +464,59 @@ def casino_floor_loop_cc0():
     return out
 
 
+
+# ---------- v12.5 pachinko (PACHINKO_DESIGN.md 7.1) ----------
+def pk_launch():
+    return mix(noise(0.06, decay=60, volume=0.6), tone(180, 0.12, decay=25, volume=0.8, freq_end=90))
+
+
+def pk_nail(freq):
+    return mix(tone(freq, 0.04, attack=0.001, decay=120, volume=0.9), tone(freq * 2.7, 0.03, attack=0.001, decay=160, volume=0.25))
+
+
+def pk_start():
+    return concat(tone(880, 0.07, "triangle", decay=30, volume=0.8), tone(1320, 0.07, "triangle", decay=30, volume=0.8), silence(0.04))
+
+
+def pk_reach():
+    # 5-note rising arpeggio, played twice, the second loop a semitone up
+    names = ["C5", "E5", "G5", "C6", "E6"]
+    out = []
+    for loop in range(2):
+        for n in names:
+            out += tone(note(n) * 2 ** (loop / 12), 0.08, "square", decay=18, volume=0.35)
+    return out
+
+
+def pk_attacker():
+    clang = mix(noise(0.12, decay=30, volume=0.5), tone(620, 0.12, "square", decay=35, volume=0.3), tone(930, 0.12, decay=40, volume=0.3))
+    thump = tone(70, 0.25, decay=14, volume=1.0, freq_end=45)
+    return mix(clang, thump)
+
+
+def pk_count():
+    return mix(tone(1760, 0.12, attack=0.002, decay=35, volume=0.8), tone(3520, 0.08, attack=0.002, decay=60, volume=0.2))
+
+
+PACHINKO = {
+    "pk_launch": (pk_launch, 0.8),
+    "pk_nail_1": (lambda: pk_nail(2800), 0.45),
+    "pk_nail_2": (lambda: pk_nail(3400), 0.45),
+    "pk_nail_3": (lambda: pk_nail(4100), 0.45),
+    "pk_start": (pk_start, 0.8),
+    "pk_reach": (pk_reach, 0.75),
+    "pk_attacker": (pk_attacker, 0.85),
+    "pk_count": (pk_count, 0.8),
+}
+
 def main():
+    if "--pachinko" in sys.argv:          # v12.5: only the pachinko effects
+        sys.argv.remove("--pachinko")
+        out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "ios", "CoinBounce", "Audio")
+        for name, (make, peak) in PACHINKO.items():
+            write(os.path.join(out_dir, f"sfx_{name}.wav"), make(), peak=peak)
+        print(f"wrote {len(PACHINKO)} pachinko files")
+        return
     if "--ambience" in sys.argv:          # only rebuild the floor ambience loop
         sys.argv.remove("--ambience")
         out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "ios", "CoinBounce", "Audio")

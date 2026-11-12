@@ -19,6 +19,11 @@ final class PachinkoScene: SKScene {
     private var shownWings: Bool?
     private var shownAttacker: Bool?
     private var shownTulips: [Bool] = []
+    private var shownMode: PachinkoMode?
+    private var backNode = SKShapeNode()
+    private var nailSoundsThisWindow = 0
+    private var nailWindowStart: TimeInterval = 0
+    private var now: TimeInterval = 0
 
     static let silver = UIColor(red: 0.86, green: 0.88, blue: 0.93, alpha: 1)
     static let gold = UIColor(red: 1.0, green: 0.80, blue: 0.20, alpha: 1)
@@ -34,6 +39,7 @@ final class PachinkoScene: SKScene {
         addChild(ballLayer)
         addChild(fxLayer)
         game.onPocket = { [weak self] p, b in self?.pocketHit(p, b) }
+        game.onNailHit = { [weak self] v, x, y in self?.nailHit(speed: v, x: x, y: y) }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
@@ -54,7 +60,7 @@ final class PachinkoScene: SKScene {
         boardLayer.removeAllChildren()
         ballLayer.removeAllChildren()
         ballNodes.removeAll()
-        shownWings = nil; shownAttacker = nil; shownTulips = []
+        shownWings = nil; shownAttacker = nil; shownTulips = []; shownMode = nil
         typealias B = PachinkoBoard
         let board = game.physics.board
 
@@ -72,6 +78,7 @@ final class PachinkoScene: SKScene {
         back.lineWidth = max(2, s * 0.008)
         back.glowWidth = 2
         boardLayer.addChild(back)
+        backNode = back
         // 中间一圈淡光，台面不是死黑
         let pool = SKShapeNode(ellipseOf: CGSize(width: s * 0.9, height: s * 0.7))
         pool.position = pt(0.5, 0.55)
@@ -189,6 +196,7 @@ final class PachinkoScene: SKScene {
     override func update(_ currentTime: TimeInterval) {
         let dt = lastTime.map { currentTime - $0 } ?? 0
         lastTime = currentTime
+        now = currentTime
         game.update(dt)
         syncBalls()
         syncParts(force: false)
@@ -230,6 +238,16 @@ final class PachinkoScene: SKScene {
         let mc = game.machine
         let wings = mc.wingsOpen, atk = mc.attackerOpen
         let tulips = game.physics.board.tulipOpen
+        // ST 品红、时短青色（大奖中保持原来的颜色）
+        let mode = mc.phase == .play ? mc.mode : .normal
+        if force || mode != shownMode {
+            shownMode = mode
+            switch mode {
+            case .normal: backNode.fillColor = Self.felt
+            case .st: backNode.fillColor = UIColor(red: 0.26, green: 0.05, blue: 0.24, alpha: 1)
+            case .jitan: backNode.fillColor = UIColor(red: 0.03, green: 0.18, blue: 0.24, alpha: 1)
+            }
+        }
         if force || wings != shownWings {
             shownWings = wings
             let p = CGMutablePath()
@@ -256,6 +274,25 @@ final class PachinkoScene: SKScene {
             }
             petalNode.path = p
         }
+    }
+
+    // MARK: 撞钉：火花 + 叮（同一时刻最多 4 个声音）
+    private func nailHit(speed: Double, x: Double, y: Double) {
+        if now - nailWindowStart > 0.06 { nailWindowStart = now; nailSoundsThisWindow = 0 }
+        if nailSoundsThisWindow < 4 {
+            nailSoundsThisWindow += 1
+            let fx: SoundEffect = speed > 1.2 ? .pkNail3 : (speed > 0.6 ? .pkNail2 : .pkNail1)
+            AudioManager.shared.play(fx)
+        }
+        guard speed > 0.5 else { return }
+        let spark = SKShapeNode(circleOfRadius: s * 0.007)
+        spark.position = pt(x, y)
+        spark.fillColor = Self.gold
+        spark.strokeColor = .clear
+        spark.glowWidth = 3
+        spark.blendMode = .add
+        fxLayer.addChild(spark)
+        spark.run(.sequence([.group([.scale(to: 1.6, duration: 0.12), .fadeOut(withDuration: 0.12)]), .removeFromParent()]))
     }
 
     // MARK: 落袋闪光和「+N」

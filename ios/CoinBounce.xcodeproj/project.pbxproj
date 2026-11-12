@@ -61,6 +61,14 @@
 		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
 		C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */; };
 		C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */ = {isa = PBXBuildFile; fileRef = C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */; };
+		14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */; };
+		2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */; };
+		D0AFF0D8B4521296A1B639D9 /* sfx_pk_nail_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */; };
+		8F82E9270F4CF5D68C3589EC /* sfx_pk_nail_3.wav in Resources */ = {isa = PBXBuildFile; fileRef = 55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */; };
+		A0A79905C9F9164917CCF72E /* sfx_pk_start.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1E437F0B110E73380F71621E /* sfx_pk_start.wav */; };
+		AD80C62908E864CA28E4919C /* sfx_pk_reach.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */; };
+		DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */ = {isa = PBXBuildFile; fileRef = D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */; };
+		D31E75F461607C878B536B2B /* sfx_pk_count.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1D84389FD89837773F507262 /* sfx_pk_count.wav */; };
 		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
 		C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */; };
 		C0C5FD123EB80F14316E31CC /* sfx_coin_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0E2449189777C40043D660E /* sfx_coin_drop.wav */; };
@@ -130,6 +138,14 @@
 		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
 		C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_fruit_lit.wav; sourceTree = "<group>"; };
 		C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_small.wav; sourceTree = "<group>"; };
+		9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_launch.wav; sourceTree = "<group>"; };
+		9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_1.wav; sourceTree = "<group>"; };
+		E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_2.wav; sourceTree = "<group>"; };
+		55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_3.wav; sourceTree = "<group>"; };
+		1E437F0B110E73380F71621E /* sfx_pk_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_start.wav; sourceTree = "<group>"; };
+		7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_reach.wav; sourceTree = "<group>"; };
+		D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_attacker.wav; sourceTree = "<group>"; };
+		1D84389FD89837773F507262 /* sfx_pk_count.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_count.wav; sourceTree = "<group>"; };
 		C065A216266C4D4C0CD3793D /* sfx_win_big.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_big.wav; sourceTree = "<group>"; };
 		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
 		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
@@ -346,6 +362,14 @@
 				C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */,
 				C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */,
 				C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */,
+				9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */,
+				9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */,
+				E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */,
+				55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */,
+				1E437F0B110E73380F71621E /* sfx_pk_start.wav */,
+				7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */,
+				D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */,
+				1D84389FD89837773F507262 /* sfx_pk_count.wav */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -487,6 +511,14 @@
 				C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */,
 				C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */,
 				C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */,
+				14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */,
+				2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */,
+				D0AFF0D8B4521296A1B639D9 /* sfx_pk_nail_2.wav in Resources */,
+				8F82E9270F4CF5D68C3589EC /* sfx_pk_nail_3.wav in Resources */,
+				A0A79905C9F9164917CCF72E /* sfx_pk_start.wav in Resources */,
+				AD80C62908E864CA28E4919C /* sfx_pk_reach.wav in Resources */,
+				DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */,
+				D31E75F461607C878B536B2B /* sfx_pk_count.wav in Resources */,
 				C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */,
 				C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */,
 				C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */,

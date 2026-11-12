@@ -43,6 +43,8 @@ struct PachinkoBall {
     /// 在ステージ上（从ワープ口进去，液晶下面不可见）
     var onStage = false
     var stageTimeLeft = 0.0
+    /// 最近一次撞钉 / 胶囊的法向速度（只给声音和钉子闪光用，物理不读它；读的人读完清零）
+    var lastHit = 0.0
 }
 
 /// 珠子落进了哪里
@@ -105,6 +107,7 @@ struct PachinkoPhysics {
         if vn < 0 {
             let rest = -vn < PachinkoConstants.restSpeed
             let ee = rest ? 0 : e
+            if !rest { b.lastHit = max(b.lastHit, -vn) }
             let tx = -ny, ty = nx
             var vt = b.vx * tx + b.vy * ty
             vt *= rest ? (1 - PachinkoConstants.rollDamping * dt) : (1 - PachinkoConstants.impactFriction)
