@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
+		22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
+		F8714687D110A5DC517E1DDA /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
+		CE7ADF35369A9CD3A12A119F /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
+		551D53120C98B6BC03E2CEB4 /* PachinkoSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */; };
 		2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
 		3595F337FB3825DB709C57B5 /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
 		362DF30DB3F6DE891986D9B6 /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
@@ -495,6 +500,11 @@
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
 				C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */,
 				691A974BE570C6713AA79B47 /* PachinkoTests.swift in Sources */,
+				87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */,
+				22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */,
+				F8714687D110A5DC517E1DDA /* PachinkoPhysics.swift in Sources */,
+				CE7ADF35369A9CD3A12A119F /* PachinkoModel.swift in Sources */,
+				551D53120C98B6BC03E2CEB4 /* PachinkoSimulator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

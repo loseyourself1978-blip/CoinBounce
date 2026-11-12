@@ -2,7 +2,7 @@ import XCTest
 @testable import CoinBounce
 
 /// v12.5 弹子机：台面、物理、抽选、状态机和经济（设计文档 9.4）。
-/// 弹子机内核的源文件也编进了测试 target，测试 target 用 -O 编译（Debug 的 App 是 -Onone，物理慢 30 倍）。
+/// 弹子机内核的 5 个源文件也编进了测试 target（本地定义优先于 @testable import 的同名类型），测试 target 用 -O 编译（Debug 的 App 是 -Onone，物理慢 30 倍）。
 /// 大样本（1000 万颗珠的完整模拟）在 tools/pachinko_sim/swift 里用 -O 跑，结果记在设计文档；这里的返还率门槛用快速模型。
 final class PachinkoTests: XCTestCase {
 
@@ -149,7 +149,7 @@ final class PachinkoTests: XCTestCase {
     }
 
     // MARK: 状态机
-    /// 走到状态变化为止，返回所有事件
+    /// 按 0.1 秒一步走 seconds 秒，返回所有事件。浮点累加会让 1.0 秒的转多走一步（1.1 秒）
     private func run(_ m: inout PachinkoMachine, seconds: Double) -> [PachinkoMachine.Event] {
         var all: [PachinkoMachine.Event] = []
         var ev: [PachinkoMachine.Event] = []
@@ -194,17 +194,25 @@ final class PachinkoTests: XCTestCase {
         XCTAssertTrue(m.wingsOpen)
 
         // ST 里第 12 转中 → 继续（这张票在普通状态不会中）
-        for _ in 0..<11 { m.startEntered(lose) }
+        // 保留最多 8 个，所以一转喂一张票
+        for _ in 0..<11 {
+            XCTAssertTrue(m.startEntered(lose))
+            _ = run(&m, seconds: PachinkoConstants.spinTimeSupport + 0.2)
+        }
+        XCTAssertEqual(m.modeSpinsLeft, 1)
         m.startEntered(stOnly)
-        _ = run(&m, seconds: 11 * PachinkoConstants.spinTimeSupport + PachinkoConstants.hitTimeSupport + 0.5)
+        _ = run(&m, seconds: PachinkoConstants.hitTimeSupport + 0.2)
         XCTAssertEqual(m.phase, .fanfare)
         XCTAssertEqual(m.chain, 2)
         finishRounds(&m)
         XCTAssertEqual(m.mode, .jitan, "BONUS 之后是时短")
 
         // 时短 12 转没中 → 回普通
-        for _ in 0..<12 { m.startEntered(lose) }
-        let ev2 = run(&m, seconds: 12 * PachinkoConstants.spinTimeSupport + 0.5)
+        var ev2: [PachinkoMachine.Event] = []
+        for _ in 0..<12 {
+            m.startEntered(lose)
+            ev2 += run(&m, seconds: PachinkoConstants.spinTimeSupport + 0.2)
+        }
         XCTAssertTrue(ev2.contains(.modeEnded))
         XCTAssertEqual(m.mode, .normal)
         XCTAssertEqual(m.chain, 0)
