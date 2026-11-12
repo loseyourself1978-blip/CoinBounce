@@ -884,6 +884,523 @@
           }
         }
       }
+    },
+    "Tray": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上皿"
+          }
+        }
+      }
+    },
+    "Not enough coins. Watch an ad for +50!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币不够了。看广告领 +50！"
+          }
+        }
+      }
+    },
+    "Too weak — the ball rolled back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度太小，珠子退回上皿了。"
+          }
+        }
+      }
+    },
+    "Power": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度"
+          }
+        }
+      }
+    },
+    "Welcome to Pachinko! One coin, one ball.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎来到弹子机！一枚金币一颗珠。"
+          }
+        }
+      }
+    },
+    "Round start! Aim for the center pocket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始啦！瞄准中间的口。"
+          }
+        }
+      }
+    },
+    "Too soft! Turn it up a little.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太轻了！再用点力。"
+          }
+        }
+      }
+    },
+    "Too hard. Try the gold zone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太重了，试试金色那一段。"
+          }
+        }
+      }
+    },
+    "Nice shot!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "进了！"
+          }
+        }
+      }
+    },
+    "The tulip is open!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "郁金香开了！"
+          }
+        }
+      }
+    },
+    "Reach! Come on…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "听牌！来呀……"
+          }
+        }
+      }
+    },
+    "SUPER REACH! This could be it!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超级听牌！这次有戏！"
+          }
+        }
+      }
+    },
+    "So close!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就差一点！"
+          }
+        }
+      }
+    },
+    "Bonus! 2 rounds!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中奖！2 回合！"
+          }
+        }
+      }
+    },
+    "Royal jackpot! 5 rounds!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皇家大奖！5 回合！"
+          }
+        }
+      }
+    },
+    "SEVENS! 10 rounds!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三个七！10 回合！"
+          }
+        }
+      }
+    },
+    "Round %lld! Keep shooting!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 回合！继续打！"
+          }
+        }
+      }
+    },
+    "The gate is open. Keep shooting!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大口开着呢，接着打！"
+          }
+        }
+      }
+    },
+    "You won %lld coins!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这一轮赢了 %lld 枚！"
+          }
+        }
+      }
+    },
+    "Fever time! 12 hot spins!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变！12 转高概率！"
+          }
+        }
+      }
+    },
+    "Chance time! 12 quick spins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短！12 转快转。"
+          }
+        }
+      }
+    },
+    "%lld in a row!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 连庄！"
+          }
+        }
+      }
+    },
+    "Back to normal. Round over!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到普通状态，这一轮结束！"
+          }
+        }
+      }
+    },
+    "Out of balls. Add more?": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "珠子打完了，再来点？"
+          }
+        }
+      }
+    },
+    "One coin buys one ball. Tap +1, +2, +5 or +10 to load balls, then hold the handle to shoot. Slide the handle to change strength; the gold zone works best. Balls that fall short come back for free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一枚金币买一颗珠。点 +1、+2、+5、+10 装珠，按住手柄发射。上下滑动手柄调力度，金色那一段最好打。太轻掉回来的珠子不扣币。"
+          }
+        }
+      }
+    },
+    "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 3 and open or close each time. Side pockets pay 2.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入赏口：中间的始动口赔 1 枚并转一次数字盘。郁金香赔 3 枚，每进一球开合一次。两边袖口赔 2 枚。"
+          }
+        }
+      }
+    },
+    "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大奖：三格同图，大入赏口张开 2、5 或 10 回合。每进一球赔 4 枚，进满 5 球算一回合。"
+          }
+        }
+      }
+    },
+    "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变（K、Q、7 之后）：12 转，中奖率 1/8。时短（其他大奖之后）：12 转快转，中奖率不变。"
+          }
+        }
+      }
+    },
+    "Odds: jackpot 1 in 22.2 per spin. Expected return is about 96% at the recommended strength and lower at other strengths.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概率：每转中奖率 1/22.2。推荐力度下的期望返还约 96%，其他力度更低。"
+          }
+        }
+      }
+    },
+    "Pachinko stats": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弹子机统计"
+          }
+        }
+      }
+    },
+    "Balls shot": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打出的珠数"
+          }
+        }
+      }
+    },
+    "Coins won": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赢得的金币"
+          }
+        }
+      }
+    },
+    "Return": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实际返还率"
+          }
+        }
+      }
+    },
+    "Jackpots": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大奖次数"
+          }
+        }
+      }
+    },
+    "Longest chain": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最长连庄"
+          }
+        }
+      }
+    },
+    "Best streak win": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单串最高赢取"
+          }
+        }
+      }
+    },
+    "%lld ROUNDS": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 回合"
+          }
+        }
+      }
+    },
+    "ROUND %lld/%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld/%lld 回合"
+          }
+        }
+      }
+    },
+    "FEVER  %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变  %lld"
+          }
+        }
+      }
+    },
+    "CHANCE  %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短  %lld"
+          }
+        }
+      }
+    },
+    "AUTO": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动"
+          }
+        }
+      }
+    },
+    "SUPER REACH": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超级听牌"
+          }
+        }
+      }
+    },
+    "REACH": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "听牌"
+          }
+        }
+      }
+    },
+    "SHOOT!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续打！"
+          }
+        }
+      }
+    },
+    "NEXT ROUND": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一回合"
+          }
+        }
+      }
+    },
+    "FEVER 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变 12"
+          }
+        }
+      }
+    },
+    "CHANCE 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短 12"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

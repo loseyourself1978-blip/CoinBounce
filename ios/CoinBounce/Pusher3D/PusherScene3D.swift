@@ -417,7 +417,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         scene.rootNode.addChildNode(ambient)
         // 基于图像的环境光照（IBL）：金属铜件、金币的反射
         // v12.3：画面升级开着时换成代码画的赌场室内环境图（暗顶棚、暖色灯、霓虹灯带），金币和铜件才有东西可反射
-        scene.lightingEnvironment.contents = VisualFX.enabled ? PusherScene3D.casinoEnvironmentImage() : PusherScene3D.environmentImage()
+        scene.lightingEnvironment.contents = VisualFX.enabled ? PusherScene3D.sharedCasinoEnvironment : PusherScene3D.environmentImage()
         scene.lightingEnvironment.intensity = VisualFX.enabled ? VisualFX.environmentIntensity : 1.6
 
         coinMaterial.lightingModel = .physicallyBased
@@ -2109,6 +2109,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     /// v12.3 赌场室内的环境图（经纬展开，2:1）。上边是天顶，中间是地平线，下边是地面。
     /// 只在启动时画一次，运行时没有开销。方位上基本对称（灯一圈一圈排），所以不用管相机朝哪边
+    /// v12.5：推币机和弹子机共用一张（只画一次；static let 是线程安全的懒加载，大厅里后台预热时就画好）
+    static let sharedCasinoEnvironment: UIImage = casinoEnvironmentImage()
+
     static func casinoEnvironmentImage(width: Int = 1024) -> UIImage {
         let w = CGFloat(width), h = w / 2
         let format = UIGraphicsImageRendererFormat()
