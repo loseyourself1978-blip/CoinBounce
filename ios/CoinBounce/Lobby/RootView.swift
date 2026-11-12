@@ -34,6 +34,10 @@ struct RootView: View {
                 RouletteView(onExit: { router.backToLobby() })
                     .transition(.opacity)
             }
+            if router.screen == .pachinko {
+                PachinkoView(onExit: { router.backToLobby() })
+                    .transition(.opacity)
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: router.screen)
     }

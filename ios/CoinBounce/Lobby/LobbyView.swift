@@ -42,8 +42,8 @@ struct LobbyView: View {
                             router.open(.roulette)
                         }
                         .accessibilityIdentifier("doorRoulette")
-                        LobbyDoor(title: String(localized: "Pachinko"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: true, width: doorW, height: doorH) {
-                            say(String(localized: "Pachinko opens soon!"), pose: .blowKiss)
+                        LobbyDoor(title: String(localized: "Pachinko"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
+                            router.open(.pachinko)
                         }
                         .accessibilityIdentifier("doorPachinko")
                     }

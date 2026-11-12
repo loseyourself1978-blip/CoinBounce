@@ -264,4 +264,148 @@ final class PachinkoTests: XCTestCase {
             XCTAssertLessThanOrEqual(st.returnRate, 0.975, "power \(pw): \(st.returnRate)")
         }
     }
+
+    // MARK: 数字盘图案
+    func test_reelSymbols_matchResult() {
+        var rng = PachinkoRandom(seed: 5)
+        for _ in 0..<100_000 {
+            let t = PachinkoLottery.draw(&rng)
+            for mode in [PachinkoMode.normal, .st] {
+                let hit = PachinkoLottery.isHit(t, mode: mode)
+                let reach = PachinkoLottery.reach(t, hit: hit, mode: mode)
+                let s = PachinkoLottery.symbols(t, hit: hit, reach: reach)
+                XCTAssertEqual(s.count, 3)
+                if hit {
+                    XCTAssertTrue(s[0] == s[1] && s[1] == s[2])
+                    switch PachinkoLottery.kind(t) {
+                    case .superJackpot: XCTAssertEqual(s[0], .seven)
+                    case .royal: XCTAssertTrue([.king, .queen].contains(s[0]))
+                    case .bonus: XCTAssertTrue([.bunny, .crown, .coin].contains(s[0]))
+                    }
+                } else if reach != .none {
+                    XCTAssertEqual(s[0], s[2], "リーチ：左右同图")
+                    XCTAssertNotEqual(s[1], s[0], "没中：中格不同")
+                } else {
+                    XCTAssertNotEqual(s[0], s[2], "无リーチ：左右不同")
+                }
+            }
+        }
+    }
+
+    // MARK: 游戏层：钱包、上皿、AUTO、存档（9.4 test_wallet / test_save_roundTrip）
+    private final class FakeWallet {
+        var coins: Int
+        var spent = 0, credited = 0
+        /// false：入账不加回余额（测 AUTO 在余额用完时停）
+        var creditToBalance = true
+        init(_ coins: Int) { self.coins = coins }
+        var wallet: PachinkoWallet {
+            PachinkoWallet(balance: { self.coins },
+                           spend: { n in
+                               guard self.coins >= n else { return false }
+                               self.coins -= n; self.spent += n; return true
+                           },
+                           credit: { n in
+                               self.credited += n
+                               if self.creditToBalance { self.coins += n }
+                           })
+        }
+    }
+
+    private func makeGame(_ w: FakeWallet, store: PachinkoSaveStore? = nil, seed: UInt64 = 1) -> PachinkoGame {
+        PachinkoGame(wallet: w.wallet, store: store, physicsRNG: PachinkoRandom(seed: seed), lotteryRNG: PachinkoRandom(seed: seed &+ 99))
+    }
+
+    private func play(_ g: PachinkoGame, seconds: Double) {
+        for _ in 0..<Int(seconds * 60) { g.update(1.0 / 60) }
+    }
+
+    func test_wallet() {
+        // 买珠不扣钱，上皿不超过余额
+        let w = FakeWallet(3)
+        let g = makeGame(w)
+        g.chip = 5
+        XCTAssertEqual(g.buy(), .added(3))
+        XCTAssertEqual(g.tray, 3)
+        XCTAssertEqual(g.buy(), .insufficientCoins)
+        XCTAssertEqual(w.coins, 3, "买珠不扣钱")
+        // 发射才扣，一颗 1 币
+        g.handleDown = true
+        play(g, seconds: 2.5)
+        XCTAssertEqual(w.spent, 3)
+        XCTAssertEqual(g.tray, 0)
+        XCTAssertEqual(g.stats.ballsFired, 3)
+        g.settleInFlight()
+        XCTAssertEqual(g.ballsInFlight, 0)
+        XCTAssertEqual(w.credited, g.stats.coinsWon, "每种口的赔付都入了钱包")
+        XCTAssertEqual(w.coins, 3 - 3 + w.credited)
+
+        // 回流不扣：power 0 多数回流，扣的币 = 真正打出去的珠
+        let w2 = FakeWallet(10)
+        let g2 = makeGame(w2, seed: 2)
+        g2.power = 0
+        g2.chip = 5
+        g2.buy()
+        g2.handleDown = true
+        play(g2, seconds: 4)
+        XCTAssertEqual(w2.spent, g2.stats.ballsFired)
+        XCTAssertEqual(g2.tray + g2.stats.ballsFired, 5, "回流的珠回上皿")
+        XCTAssertLessThan(g2.stats.ballsFired, 5)
+
+        // 余额 0：买不了，打不了
+        let w3 = FakeWallet(0)
+        let g3 = makeGame(w3)
+        XCTAssertEqual(g3.buy(), .insufficientCoins)
+        XCTAssertEqual(g3.notice, .outOfCoins)
+        g3.handleDown = true
+        play(g3, seconds: 1)
+        XCTAssertEqual(w3.spent, 0)
+
+        // AUTO：上皿空了按面值续买，余额不够就停
+        let w4 = FakeWallet(4)
+        w4.creditToBalance = false
+        let g4 = makeGame(w4)
+        g4.chip = 10
+        g4.auto = true
+        play(g4, seconds: 6)
+        XCTAssertEqual(w4.spent, 4)
+        XCTAssertFalse(g4.auto, "余额用完 AUTO 自动关")
+        XCTAssertEqual(g4.notice, .outOfCoins)
+    }
+
+    func test_save_roundTrip() {
+        let defaults = UserDefaults(suiteName: "PachinkoTests.save")!
+        let store = PachinkoSaveStore(defaults: defaults, key: "save")
+        store.clear()
+        let w = FakeWallet(100)
+        let a = makeGame(w, store: store)
+        a.power = 0.4
+        a.chip = 5
+        // ROYAL：超级リーチ 11 秒 + 开场 3 秒 → 进入第 1 回合
+        a.debugInsertTicket(PachinkoTicket(hit: 0, kind: 20, show: 0))
+        play(a, seconds: PachinkoConstants.superReachTime + PachinkoConstants.fanfareTime + 0.5)
+        XCTAssertEqual(a.machine.phase, .round)
+        XCTAssertEqual(a.machine.roundsLeft, 5)
+        // 再塞两张保留、打几颗在飞
+        a.debugInsertTicket(PachinkoTicket(hit: 60000, kind: 0, show: 999))
+        a.debugInsertTicket(PachinkoTicket(hit: 60000, kind: 0, show: 998))
+        a.buy()
+        a.handleDown = true
+        play(a, seconds: 1.3)
+        XCTAssertGreaterThan(a.ballsInFlight, 0)
+        a.settleInFlight()
+        XCTAssertEqual(a.ballsInFlight, 0, "在飞的珠子退出时已结算")
+        XCTAssertEqual(w.credited, a.stats.coinsWon)
+
+        let b = makeGame(w, store: store, seed: 7)
+        XCTAssertEqual(b.machine, a.machine, "剩余回合、保留、模式一致")
+        XCTAssertEqual(b.machine.holds.count, a.machine.holds.count)
+        XCTAssertEqual(b.machine.roundsLeft, a.machine.roundsLeft)
+        XCTAssertEqual(b.power, 0.4)
+        XCTAssertEqual(b.chip, 5)
+        XCTAssertEqual(b.stats, a.stats)
+        XCTAssertEqual(b.physics.board.tulipOpen, a.physics.board.tulipOpen)
+        XCTAssertEqual(b.tray, 0, "上皿不存")
+        store.clear()
+    }
 }

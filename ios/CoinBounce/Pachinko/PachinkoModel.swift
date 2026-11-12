@@ -205,3 +205,36 @@ struct PachinkoMachine: Codable, Equatable {
         }
     }
 }
+
+// MARK: - 数字盘图案（5.1 节）
+enum PachinkoSymbol: Int, CaseIterable, Codable {
+    case seven, king, queen, bunny, crown, coin, star
+}
+
+extension PachinkoLottery {
+    /// 三格停下来的图案 [左, 中, 右]。只由票和结果决定（读档后重转也停在同一组）。
+    /// 中奖：SUPER 7-7-7；ROYAL K-K-K 或 Q-Q-Q；BONUS 兔 / 冠 / 币 三连。
+    /// 没中：リーチ时左右同图、中格不同；无リーチ时左右不同
+    static func symbols(_ t: PachinkoTicket, hit: Bool, reach: PachinkoReach) -> [PachinkoSymbol] {
+        let all = PachinkoSymbol.allCases
+        if hit {
+            let s: PachinkoSymbol
+            switch kind(t) {
+            case .superJackpot: s = .seven
+            case .royal: s = t.show % 2 == 0 ? .king : .queen
+            case .bonus: s = [.bunny, .crown, .coin][t.show % 3]
+            }
+            return [s, s, s]
+        }
+        if reach != .none {
+            // 左右同图（不用凑数的星），中格差一格
+            let a = t.show % 6
+            let mid = (a + 1 + (t.show / 6) % 5) % 6
+            return [all[a], all[mid], all[a]]
+        }
+        let l = t.show % 7
+        let r = (l + 1 + (t.show / 7) % 6) % 7
+        let mid = (t.show / 42) % 7
+        return [all[l], all[mid], all[r]]
+    }
+}

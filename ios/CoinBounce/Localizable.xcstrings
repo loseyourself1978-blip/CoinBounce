@@ -884,6 +884,50 @@
           }
         }
       }
+    },
+    "Tray": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上皿"
+          }
+        }
+      }
+    },
+    "Not enough coins. Watch an ad for +50!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币不够了。看广告领 +50！"
+          }
+        }
+      }
+    },
+    "Too weak — the ball rolled back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度太小，珠子退回上皿了。"
+          }
+        }
+      }
+    },
+    "Power": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
