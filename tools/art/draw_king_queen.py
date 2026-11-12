@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CoinBounce v12 king / queen art. Original vector drawings, rendered to PNG."""
+"""CoinBounce v12 king / queen / boss art. Original vector drawings, rendered to PNG."""
 import sys, os
 OL = "#2E141A"
 SW = 11
@@ -24,6 +24,13 @@ DEFS = '''
  <linearGradient id="irisK" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A1C0E"/><stop offset=".55" stop-color="#8A4A1C"/><stop offset="1" stop-color="#E9A040"/></linearGradient>
  <linearGradient id="irisQ" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0C2A4A"/><stop offset=".55" stop-color="#1C78B8"/><stop offset="1" stop-color="#6FE0F0"/></linearGradient>
  <linearGradient id="tear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6F8FF"/><stop offset="1" stop-color="#7CCBF7"/></linearGradient>
+ <radialGradient id="bskin" cx="36%" cy="28%" r="85%"><stop offset="0" stop-color="#FFA6E4"/><stop offset=".55" stop-color="#EE4BB4"/><stop offset="1" stop-color="#B41C84"/></radialGradient>
+ <linearGradient id="bskind" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D836A0"/><stop offset="1" stop-color="#8E1468"/></linearGradient>
+ <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A9B1CC"/><stop offset=".5" stop-color="#666D8A"/><stop offset="1" stop-color="#3C405A"/></linearGradient>
+ <radialGradient id="ironball" cx="34%" cy="28%" r="80%"><stop offset="0" stop-color="#C9D0E6"/><stop offset=".5" stop-color="#6A7190"/><stop offset="1" stop-color="#34384E"/></radialGradient>
+ <linearGradient id="bcape" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A66BF0"/><stop offset=".5" stop-color="#6B34C0"/><stop offset="1" stop-color="#3A1678"/></linearGradient>
+ <linearGradient id="bhair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7E48D8"/><stop offset="1" stop-color="#3A1678"/></linearGradient>
+ <linearGradient id="irisB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6A0A12"/><stop offset=".5" stop-color="#F0481C"/><stop offset="1" stop-color="#FFE04A"/></linearGradient>
 </defs>'''
 
 def P(d, fill, sw=SW, stroke=OL, extra=""):
@@ -269,6 +276,190 @@ def queen(pose):
     g += head_queen(512, 410, R, pose, tilt={"cry": 3, "happy": -3, "kiss": 12}.get(pose, 0))
     return g + '</g>'
 
+
+# ---------- BOSS (magenta ogre demon-king; drawn facing right, flipped in build) ----------
+def eye_squint_l(x, y, w, hs=6.5):    # < shape
+    return L(f"M {x+w},{y-w*0.7} L {x-w*0.6},{y} L {x+w},{y+w*0.7}", sw=hs)
+def eye_spiral(x, y, r, hs=5.5, turns=2.4):
+    import math
+    pts = []
+    n = 44
+    for i in range(n + 1):
+        t = i / n
+        a = t * turns * 2 * math.pi
+        rr = 1.5 + (r - 1.5) * t
+        pts.append(f"{x + rr*math.cos(a):.1f},{y + rr*math.sin(a):.1f}")
+    return L("M " + " L ".join(pts), sw=hs)
+def star(x, y, r, rot=0, sw=5):
+    import math
+    pts = []
+    for i in range(10):
+        a = math.radians(rot - 90 + i * 36)
+        rr = r if i % 2 == 0 else r * 0.46
+        pts.append(f"{x + rr*math.cos(a):.1f},{y + rr*math.sin(a):.1f}")
+    return P("M " + " L ".join(pts) + " Z", "url(#gold)", sw=sw) + N(x - r*.18, y - r*.2, r*.16, r*.12, "#FFFFFF", 'opacity=".9"')
+
+def horn(hs):
+    k = .76
+    hs = hs / k
+    g = f'<g transform="translate(-64,-62) scale({k}) translate(64,62)">'
+    g += P("M -88,-40 C -132,-62 -146,-124 -116,-170 C -112,-130 -92,-102 -40,-84 C -52,-62 -68,-46 -88,-40 Z", "url(#gold)", sw=hs)
+    g += L("M -116,-84 Q -104,-96 -86,-98", sw=4, stroke="#B96C06") + L("M -124,-116 Q -114,-126 -102,-126", sw=4, stroke="#B96C06")
+    g += L("M -122,-150 Q -128,-126 -122,-100", sw=4, stroke="#FFFFFF", extra='opacity=".75"')
+    return g + '</g>'
+
+def head_boss(cx, cy, R, expr, tilt=0):
+    """expr: idle | hurt | ko. Head-local units, radius 100, facing right."""
+    hs = SW * 100 / R
+    g = f'<g transform="translate({cx},{cy}) rotate({tilt}) scale({R/100})">'
+    # pointed ear + gold ring
+    g += P("M -90,-12 C -112,-34 -134,-34 -146,-22 C -132,-12 -122,14 -92,38 Z", "url(#bskind)", sw=hs)
+    g += L("M -128,-20 Q -112,-12 -104,4", sw=3.5, stroke="#7A0E58", extra='opacity=".8"')
+    g += f'<circle cx="-112" cy="34" r="10" fill="none" stroke="{OL}" stroke-width="{hs+5}"/><circle cx="-112" cy="34" r="10" fill="none" stroke="#FFCC33" stroke-width="5"/>'
+    g += E(0, 0, 100, 95, "url(#bskin)", sw=hs)
+    # horns (near one, far one mirrored and nudged for the 3/4 view)
+    g += horn(hs) + '<g transform="translate(12,0) scale(-1,1)">' + horn(hs) + '</g>'
+    lid = "#E64AB0"
+    if expr == "idle":
+        g += N(-52, 48, 17, 10, "#FFC0E6", 'opacity=".5"') + N(80, 44, 11, 9, "#FFC0E6", 'opacity=".5"')
+        g += eye_open(-26, 14, 18, 22, "irisB", hs=5.5) + eye_open(54, 14, 15.5, 21, "irisB", hs=5.5)
+        g += '<clipPath id="bcl"><ellipse cx="-26" cy="14" rx="22" ry="27"/></clipPath><clipPath id="bcr"><ellipse cx="54" cy="14" rx="19" ry="26"/></clipPath>'
+        g += f'<path d="M -60,-27 L 0,3 L 0,-40 L -60,-40 Z" fill="{lid}" clip-path="url(#bcl)"/><path d="M 30,3 L 84,-27 L 84,-40 L 30,-40 Z" fill="{lid}" clip-path="url(#bcr)"/>'
+        g += L("M -54,-24 L -2,2", sw=10.5) + L("M 34,2 L 80,-24", sw=10.5)
+        # big fanged grin
+        g += P("M -30,42 Q 16,62 70,32 Q 72,84 22,88 Q -22,86 -30,42 Z", "#5A0A1E", sw=5.5)
+        g += N(22, 78, 20, 8, "#FF7A8A")
+        g += P("M -22,47 Q 16,64 64,38 L 60,50 Q 18,74 -18,58 Z", "#FFFFFF", sw=3.5)
+        g += P("M -22,46 L -12,76 L 0,55 Z", "#FFFFFF", sw=4) + P("M 46,48 L 58,72 L 66,38 Z", "#FFFFFF", sw=4)
+    elif expr == "hurt":
+        g += N(-52, 50, 18, 10, "#FFC0E6", 'opacity=".55"') + N(80, 46, 11, 9, "#FFC0E6", 'opacity=".55"')
+        g += eye_squint(-26, 14, 19, hs=8) + eye_squint_l(56, 14, 17, hs=8)
+        g += L("M -52,-16 Q -30,-32 -6,-28", sw=9) + L("M 36,-28 Q 60,-32 80,-16", sw=9)
+        g += P("M -22,48 Q 20,36 64,46 Q 70,78 22,80 Q -26,80 -22,48 Z", "#FFFFFF", sw=5.5)
+        g += L("M -20,63 Q 22,58 66,62", sw=3.5) + L("M 0,46 L 0,78 M 22,44 L 22,79 M 44,44 L 44,78", sw=3.5)
+        g += P("M -18,48 L -8,66 L 2,46 Z", "#FFFFFF", sw=3.5) + P("M 44,45 L 54,64 L 63,46 Z", "#FFFFFF", sw=3.5)
+        g += drop(-128, -40, 1.3, 50) + drop(-150, 62, .9, 60) + drop(120, -52, 1.05, -45)
+    else:  # ko
+        g += N(-52, 50, 18, 10, "#FFC0E6", 'opacity=".55"') + N(80, 46, 11, 9, "#FFC0E6", 'opacity=".55"')
+        g += eye_spiral(-26, 12, 21, hs=6) + eye_spiral(56, 12, 18, hs=6)
+        g += L("M -52,-30 Q -30,-36 -6,-26", sw=8) + L("M 36,-26 Q 60,-36 80,-28", sw=8)
+        g += P("M -14,50 Q 4,40 20,50 Q 36,40 56,50 Q 58,80 20,80 Q -16,80 -14,50 Z", "#5A0A1E", sw=5.5)
+        g += P("M -8,50 L 2,66 L 10,49 Z", "#FFFFFF", sw=3.5)
+        g += P("M 14,66 Q 34,60 48,68 Q 54,96 34,98 Q 14,96 14,66 Z", "#FF7A8A", sw=4.5) + L("M 32,72 L 33,86", sw=3, stroke="#C2405A")
+    # spiky tuft between the horns
+    g += P("M -38,-84 L -34,-122 L -14,-100 L 2,-140 L 20,-100 L 42,-124 L 48,-84 Q 6,-100 -38,-84 Z", "url(#bhair)", sw=hs)
+    g += L("M -2,-124 L -6,-104", sw=4, stroke="#C9A6FF", extra='opacity=".8"')
+    if expr == "ko":
+        g += f'<ellipse cx="8" cy="-158" rx="96" ry="18" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-dasharray="10 12" opacity=".7"/>'
+        g += star(-86, -160, 21, -15, sw=hs) + star(12, -178, 25, 8, sw=hs) + star(102, -154, 19, 20, sw=hs)
+    return g + '</g>'
+
+def mace(hx, hy, ang, length=215):
+    import math
+    g = f'<g transform="translate({hx},{hy}) rotate({ang})">'
+    g += P(f"M -15,58 L -17,{-length+30} L 17,{-length+30} L 15,58 Z", "url(#boot)")
+    g += L(f"M -6,40 L -7,{-length+60}", sw=4, stroke="#C08A5A", extra='opacity=".7"')
+    g += E(0, 66, 21, 19, "url(#gold)")
+    g += P(f"M -24,{-length+62} L 24,{-length+62} L 22,{-length+40} L -22,{-length+40} Z", "url(#gold)", sw=8)
+    for a in range(0, 360, 45):
+        g += f'<g transform="translate(0,{-length}) rotate({a+22})">' + P("M -19,-56 L 0,-102 L 19,-56 Z", "url(#gold)", sw=9) + '</g>'
+    g += E(0, -length, 68, 68, "url(#ironball)")
+    g += P(f"M -17,{-length+4} L 0,{-length-24} L 17,{-length+4} L 0,{-length+20} Z", "url(#gold)", sw=7)
+    g += L(f"M -44,{-length-22} Q -34,{-length-46} -10,{-length-52}", sw=5, stroke="#FFFFFF", extra='opacity=".7"')
+    return g + '</g>'
+
+def blimb(x1, y1, x2, y2, fill, w=74, hand=42, handfill="url(#bskin)", bracer=True):
+    import math
+    g = f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{OL}" stroke-width="{w+2*SW}" stroke-linecap="round"/>'
+    g += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{fill}" stroke-width="{w}" stroke-linecap="round"/>'
+    if bracer:
+        d = math.hypot(x2 - x1, y2 - y1) or 1
+        ux, uy = (x2 - x1) / d, (y2 - y1) / d
+        a, b = d - hand - 44, d - hand + 4
+        ax, ay, bx, by = x1 + ux*a, y1 + uy*a, x1 + ux*b, y1 + uy*b
+        g += f'<line x1="{ax-ux*SW/2:.1f}" y1="{ay-uy*SW/2:.1f}" x2="{bx+ux*SW/2:.1f}" y2="{by+uy*SW/2:.1f}" stroke="{OL}" stroke-width="{w+10+2*SW}"/>'
+        g += f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" y2="{by:.1f}" stroke="#666D8A" stroke-width="{w+10}"/>'
+        g += f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" y2="{by:.1f}" stroke="#FFCC33" stroke-width="{w+10}" stroke-dasharray="9 39" stroke-dashoffset="-20"/>'
+    g += E(x2, y2, hand, hand, handfill)
+    return g
+
+def pauldron(x, y, side):
+    """side -1 = back shoulder (spike points back), +1 = front."""
+    g = P(f"M {x+side*26},{y-30} L {x+side*86},{y-52} L {x+side*50},{y+4} Z", "url(#gold)", sw=9)
+    g += E(x, y, 56, 46, "url(#iron)")
+    g += L(f"M {x-34},{y-14} Q {x-10},{y-34} {x+22},{y-30}", sw=5, stroke="#FFFFFF", extra='opacity=".6"')
+    g += E(x + side*4, y + 14, 9, 9, "#FFCC33", sw=5)
+    return g
+
+def boss_torso():
+    g = P("M 336,838 L 322,896 L 366,876 L 398,912 L 440,884 L 482,918 L 522,886 L 562,916 L 604,884 L 644,908 L 672,874 L 708,892 L 692,838 Z", "url(#bcape)")
+    g += P("M 396,668 Q 512,632 628,668 C 690,740 702,800 692,850 Q 512,900 332,850 C 322,800 334,740 396,668 Z", "url(#bskin)")
+    g += N(546, 756, 92, 62, "#FFC6EC", 'opacity=".5"')
+    g += L("M 520,712 Q 546,724 574,710", sw=5, stroke="#B41C84", extra='opacity=".7"')
+    g += P("M 329,796 Q 512,846 695,796 L 695,846 Q 512,898 329,846 Z", "url(#iron)", sw=9)
+    g += L("M 346,812 Q 512,860 680,812", sw=4, stroke="#FFFFFF", extra='opacity=".45"')
+    g += E(538, 852, 33, 33, "url(#gold)", sw=8) + E(538, 852, 19, 19, "#FFE680", sw=5) + N(531, 845, 6, 5, "#FFFFFF", 'opacity=".9"')
+    for x, y in ((392, 836), (446, 850), (628, 848), (668, 836)):
+        g += E(x, y, 7, 7, "#FFCC33", sw=4)
+    # spiked collar
+    g += P("M 384,680 C 386,640 470,632 512,636 C 560,632 638,642 640,680 C 642,714 570,722 512,718 C 456,722 382,714 384,680 Z", "url(#iron)")
+    for x, y in ((420, 698), (468, 708), (556, 708), (604, 698)):
+        g += P(f"M {x-11},{y-8} L {x+11},{y-8} L {x},{y+16} Z", "url(#gold)", sw=5)
+    return g
+
+def boot_stand(x):
+    g = P(f"M {x+8},866 L {x},975 L {x+120},975 Q {x+122},938 {x+86},928 L {x+88},866 Z", "url(#iron)")
+    g += P(f"M {x+70},975 L {x+120},975 Q {x+122},944 {x+96},934 Q {x+72},944 {x+70},975 Z", "url(#gold)", sw=8)
+    g += L(f"M {x+6},898 L {x+87},898", sw=6)
+    return g
+
+def boss(pose):
+    """Right-facing boss, head centre (512,430) R=250, feet y=975. pose: idle | hurt | ko."""
+    R = 250
+    g = '<g>'
+    if pose in ("idle", "hurt"):
+        lean = {"idle": 0, "hurt": -6}[pose]
+        g += boot_stand(392) + boot_stand(524)
+        g += f'<g transform="rotate({lean} 512 900)">'
+        if pose == "idle":
+            g += P("M 404,668 C 300,700 236,820 204,962 L 252,932 L 288,970 L 328,932 L 366,968 L 400,936 L 442,962 L 620,690 Z", "url(#bcape)")
+        else:
+            g += P("M 404,668 C 300,664 210,740 150,872 L 190,860 L 206,908 L 250,878 L 280,922 L 330,892 L 372,930 L 620,690 Z", "url(#bcape)")
+        g += L("M 372,740 C 330,800 306,860 296,920", sw=5, stroke="#2A0E5C", extra='opacity=".6"')
+        # back arm
+        if pose == "idle":
+            g += blimb(398, 716, 340, 826, "#C22A8E")
+        else:
+            g += blimb(398, 716, 286, 668, "#C22A8E")
+        g += boss_torso()
+        g += pauldron(392, 694, -1)
+        if pose == "idle":
+            g += mace(800, 742, 17)
+            g += blimb(636, 714, 796, 744, "#EE4BB4")
+        else:
+            g += mace(806, 640, 42)
+            g += blimb(636, 714, 800, 644, "#EE4BB4")
+        g += pauldron(640, 694, 1)
+        g += head_boss(512, 430 if pose == "idle" else 444, R, pose, tilt={"idle": 0, "hurt": -4}[pose])
+        g += '</g>'
+    else:
+        # sitting dazed like a dropped plush: leaning back, soles forward, mace on the ground
+        g += '<clipPath id="bko"><rect x="-100" y="-100" width="1300" height="1078"/></clipPath><g clip-path="url(#bko)">'
+        sit = '<g transform="rotate(-9 470 975)"><g transform="translate(0,64)">'
+        g += P("M 380,760 C 250,800 150,880 96,968 L 470,972 L 560,760 Z", "url(#bcape)")
+        g += sit + blimb(398, 716, 304, 826, "#C22A8E") + boss_torso() + pauldron(392, 694, -1) + '</g></g>'
+        for x, rot in ((432, -14), (648, 12)):
+            g += f'<g transform="translate({x},914) rotate({rot})">'
+            g += E(0, 0, 66, 55, "url(#iron)")
+            g += P("M -58,-24 C -44,-66 44,-66 58,-24 C 26,-40 -26,-40 -58,-24 Z", "url(#gold)", sw=8)
+            g += E(0, 10, 36, 26, "#3C405A", sw=6) + L("M -22,4 L 22,4 M -24,18 L 24,18", sw=5)
+            g += '</g>'
+        g += mace(744, 922, 72, length=172)
+        g += sit + blimb(636, 714, 742, 836, "#EE4BB4") + pauldron(640, 694, 1) + '</g>'
+        g += head_boss(512, 552, R, "ko", tilt=-7)
+        g += '</g></g>'
+    return g + '</g>'
+
 def svg(w, h, body):
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">{DEFS}{body}</svg>'
 
@@ -283,6 +474,9 @@ def build(out):
             f'<g transform="translate(110,30)">{king("kiss")}</g>'
             f'<g transform="translate(1464,-10) scale(-1,1)">{queen("kiss")}</g>'),
         "KingVictory": svg(1024, 1024, f'<g transform="translate(-30,30)">{king("victory")}</g>'),
+        "BossIdle": svg(1024, 1024, f'<g transform="translate(1054,0) scale(-1,1)">{boss("idle")}</g>'),
+        "BossHurt": svg(1024, 1024, f'<g transform="translate(1054,0) scale(-1,1)">{boss("hurt")}</g>'),
+        "BossKO": svg(1024, 1024, f'<g transform="translate(1054,0) scale(-1,1)">{boss("ko")}</g>'),
     }
     for k, v in files.items():
         open(os.path.join(out, k + ".svg"), "w").write(v)

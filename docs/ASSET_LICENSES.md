@@ -32,7 +32,7 @@
 | 内容 | 来源 |
 |---|---|
 | App 图标 `AppIcon.appiconset/AppIcon.png`（1024×1024，无透明通道） | `tools/icon/make_icon.swift` 用 CoreGraphics 绘制生成（`swift tools/icon/make_icon.swift` 可重新生成）；替换了来源不明的 `app_logo.jpg` |
-| 金币、7 种水果、9 种老虎机符号、勇士、BOSS、SPIN 图标、Jackpot 标题框 | `ios/CoinBounce/UI/ArcadeArt.swift`，SwiftUI 矢量形状 + 渐变 |
+| 金币、7 种水果、9 种老虎机符号、勇士、SPIN 图标、Jackpot 标题框 | `ios/CoinBounce/UI/ArcadeArt.swift`，SwiftUI 矢量形状 + 渐变 |
 | 推币台、老虎机外框、战斗区、按钮等界面元素 | SwiftUI 代码绘制 |
 
 - 作者：CoinBounce 项目（由 Claude Code 编写）
