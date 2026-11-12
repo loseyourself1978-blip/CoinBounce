@@ -44,4 +44,4 @@
 
 ## 其他图形
 
-金币、水果、老虎机符号、勇士、BOSS、机台、按钮等都是代码绘制的原创图形（SwiftUI / SceneKit），见 `docs/ASSET_LICENSES.md`。
+金币、水果、老虎机符号、勇士、机台、按钮等都是代码绘制的原创图形（SwiftUI / SceneKit；BOSS 自 v12.4 起改用上面的图片），见 `docs/ASSET_LICENSES.md`。
