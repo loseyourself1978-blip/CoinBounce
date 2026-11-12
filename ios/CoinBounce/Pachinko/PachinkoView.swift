@@ -29,11 +29,11 @@ struct PachinkoView: View {
             let bh = bw * CGFloat(PachinkoConstants.boardAspect)
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
-                LightPool(strength: 0.12).frame(width: bw * 1.2, height: bh).position(x: w / 2, y: 36 + bh / 2)
+                LightPool(strength: 0.12).frame(width: bw * 1.2, height: bh).position(x: w / 2, y: 50 + bh / 2)
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, pad).padding(.top, 4)
-                    Spacer(minLength: 0)
-                    board(width: bw, height: bh)
+                    // 台面贴着顶栏；大屏多出来的高度留在台面和手柄之间（下一步放兔女郎）
+                    board(width: bw, height: bh).padding(.top, 4)
                     Spacer(minLength: 0)
                     controls
                         .frame(height: controlsH)
@@ -49,7 +49,7 @@ struct PachinkoView: View {
                         .background(Capsule().fill(Color.black.opacity(0.82)))
                         .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.8), lineWidth: 1))
                         .frame(maxWidth: w - 40)
-                        .position(x: w / 2, y: 36 + bh * 0.06 + 24)
+                        .position(x: w / 2, y: 50 + bh * 0.06 + 24)
                         .transition(.opacity)
                         .accessibilityIdentifier("pachinkoNotice")
                 }
@@ -86,7 +86,8 @@ struct PachinkoView: View {
         scene = PachinkoScene(game: game, size: CGSize(width: bw, height: bh))
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-pachinkoDemo") {
-            // 截图：上皿装满，AUTO 连发
+            // 截图：余额补到 200，上皿装满，AUTO 连发
+            if gameState.availableCoins < 200 { gameState.addCoins(200 - gameState.availableCoins, source: .other) }
             game.chip = 10
             for _ in 0..<5 { game.buy() }
             game.auto = true
