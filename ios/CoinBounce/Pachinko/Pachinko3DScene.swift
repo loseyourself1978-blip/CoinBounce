@@ -50,13 +50,19 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
     private var fpsWindow: CFTimeInterval = 0
     private let statsLock = NSLock()
 
-    init(game: PachinkoGame) {
+    /// 从创建到第一帧画出来的时间（首次进入的等待，PACHINKO_FIRST_FRAME）
+    private let createdAt = CACurrentMediaTime()
+    private var firstFrameLogged = false
+
+    /// game = nil：大厅里后台预热用（只搭场景、编译着色器，不接游戏）
+    init(game: PachinkoGame?) {
         self.game = game
         super.init()
         buildScene()
         buildMachine()
-        game.onPocket = { [weak self] p, b in self?.pocketHit(p, b) }
-        game.onNailHit = { [weak self] v, x, y in self?.nailHit(speed: v, x: x, y: y) }
+        if game != nil { NSLog("PACHINKO_BUILD ms=%.0f", (CACurrentMediaTime() - createdAt) * 1000) }
+        game?.onPocket = { [weak self] p, b in self?.pocketHit(p, b) }
+        game?.onNailHit = { [weak self] v, x, y in self?.nailHit(speed: v, x: x, y: y) }
     }
 
     deinit { displayLink?.invalidate() }
@@ -110,7 +116,7 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
         amb.light!.type = .ambient
         amb.light!.intensity = 220
         scene.rootNode.addChildNode(amb)
-        scene.lightingEnvironment.contents = on ? PusherScene3D.casinoEnvironmentImage(width: lowTier ? 512 : 1024) : PusherScene3D.environmentImage()
+        scene.lightingEnvironment.contents = on ? PusherScene3D.sharedCasinoEnvironment : PusherScene3D.environmentImage()
         scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity : 1.6
 
         root.eulerAngles = SCNVector3(Self.tilt, 0, 0)
@@ -581,6 +587,11 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
     // MARK: 帧率（渲染线程）
     func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
         statsLock.lock(); defer { statsLock.unlock() }
+        if !firstFrameLogged && game != nil {
+            firstFrameLogged = true
+            NSLog("PACHINKO_FIRST_FRAME ms=%.0f prewarmed=%d", (CACurrentMediaTime() - createdAt) * 1000, Self.prewarmed ? 1 : 0)
+            DispatchQueue.main.async { [weak self] in self?.onFirstFrame?(); self?.onFirstFrame = nil }
+        }
         frames += 1
         if fpsWindow == 0 { fpsWindow = time }
         if time - fpsWindow >= 2 {
@@ -589,6 +600,72 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
             fpsWindow = time
             let balls = game?.ballsInFlight ?? 0
             NSLog("PACHINKO_STATS fps=%.1f balls=%d lowTier=%d", fps, balls, VisualFX.lowTier ? 1 : 0)
+        }
+    }
+
+    // MARK: 大厅里预热（v12.5）
+    /// 第一次进弹子机原来要等好几秒：环境图、台面画在主线程现画，着色器在第一帧同步编译。
+    /// 大厅空闲时在后台把这些都做掉：搭一个不接游戏的场景，用离屏 SCNView.prepare 编译着色器、上传贴图。
+    /// SceneKit 按材质配置缓存编译好的管线，之后真正进场时新建的场景直接复用。
+    private(set) static var prewarmed = false
+    /// 预热时拍的一张机器快照
+    private(set) static var placeholder: UIImage?
+    /// 第一帧画出来了（主线程回调，PachinkoView 撤掉快照）
+    var onFirstFrame: (() -> Void)?
+    private static var prewarmStarted = false
+    private static var prewarmView: SCNView?
+
+    static func prewarmOnce() {
+        guard !prewarmStarted, !ProcessInfo.processInfo.arguments.contains("-noPachinkoPrewarm") else { return }
+        prewarmStarted = true
+        DispatchQueue.global(qos: .utility).async {
+            _ = PusherScene3D.sharedCasinoEnvironment
+            for m in [PachinkoMode.normal, .st, .jitan] { _ = boardArt(mode: m) }
+            let s = Pachinko3DScene(game: nil)
+            DispatchQueue.main.async {
+                // 离屏 prepare 在模拟器上要十几秒、还和真正进场抢 GPU；改成在窗口里放一个几乎看不见的视图真画几帧，
+                // 用和游戏一样的视图设置（透明、抗锯齿、HDR），编出来的管线和进场时一样
+                guard let window = UIApplication.shared.connectedScenes.compactMap({ ($0 as? UIWindowScene)?.keyWindow }).first else { return }
+                let w = window.bounds.width
+                let v = SCNView(frame: CGRect(x: 0, y: window.bounds.height - 2, width: w, height: w / 0.8), options: nil)
+                v.antialiasingMode = VisualFX.lowTier ? .none : .multisampling2X
+                v.backgroundColor = .clear
+                v.isOpaque = false
+                v.alpha = 0.011
+                v.isUserInteractionEnabled = false
+                v.scene = s.scene
+                v.pointOfView = s.cameraNode
+                v.preferredFramesPerSecond = 30
+                s.fit(viewSize: v.bounds.size)
+                let probe = PrewarmProbe()
+                v.delegate = probe
+                prewarmProbe = probe
+                window.addSubview(v)
+                v.isPlaying = true
+                prewarmView = v
+                let t0 = CACurrentMediaTime()
+                probe.onFrames = {
+                    prewarmed = true
+                    // 进场时第一帧出来之前先显示这张（同一台机器、同一个相机）
+                    placeholder = prewarmView?.snapshot()
+                    NSLog("PACHINKO_PREWARM ok=1 ms=%.0f", (CACurrentMediaTime() - t0) * 1000)
+                    prewarmView?.isPlaying = false
+                    prewarmView?.removeFromSuperview()
+                    prewarmView = nil
+                    prewarmProbe = nil
+                }
+            }
+        }
+    }
+    private static var prewarmProbe: PrewarmProbe?
+
+    /// 预热视图画满 5 帧就收工
+    private final class PrewarmProbe: NSObject, SCNSceneRendererDelegate {
+        var onFrames: (() -> Void)?
+        private var n = 0
+        func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
+            n += 1
+            if n == 5 { DispatchQueue.main.async { self.onFrames?(); self.onFrames = nil } }
         }
     }
 
@@ -612,8 +689,10 @@ final class Pachinko3DScene: NSObject, SCNSceneRendererDelegate {
     }
 
     private static var artCache: [PachinkoMode: UIImage] = [:]
+    private static let artLock = NSLock()
     /// 台面画：深色底 + 从液晶放射的金线 + 星点 + 底部的霓虹弧。ST 品红、时短青色
     static func boardArt(mode: PachinkoMode) -> UIImage {
+        artLock.lock(); defer { artLock.unlock() }
         if let c = artCache[mode] { return c }
         let size = CGSize(width: 512, height: 640)
         let (top, bottom): (UIColor, UIColor) = {

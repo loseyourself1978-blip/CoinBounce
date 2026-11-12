@@ -25,6 +25,25 @@ struct HelpView: View {
                     row("circle.circle.fill", "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.")
                     row("list.number", "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.")
                 }
+                Section("Pachinko") {
+                    row("circle.fill", "One coin buys one ball. Tap +1, +2, +5 or +10 to load balls, then hold the handle to shoot. Slide the handle to change strength; the gold zone works best. Balls that fall short come back for free.")
+                    row("target", "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 3 and open or close each time. Side pockets pay 2.")
+                    row("star.circle.fill", "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.")
+                    row("flame.fill", "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.")
+                    row("percent", "Odds: jackpot 1 in 22.2 per spin. Expected return is about 96% at the recommended strength and lower at other strengths.")
+                }
+                if let st = PachinkoSaveStore().load()?.stats, st.ballsFired > 0 {
+                    Section("Pachinko stats") {
+                        stat("Balls shot", "\(st.ballsFired)")
+                        stat("Coins won", "\(st.coinsWon)")
+                        if st.ballsFired >= 1000 {
+                            stat("Return", String(format: "%.1f%%", 100 * Double(st.coinsWon) / Double(st.ballsFired)))
+                        }
+                        stat("Jackpots", "\(st.jackpots)")
+                        stat("Longest chain", "\(st.bestChain)")
+                        stat("Best streak win", "\(st.biggestWin)")
+                    }
+                }
                 Section {
                     Text("Coins are virtual and have no real-world value.")
                         .font(.footnote)
@@ -40,6 +59,14 @@ struct HelpView: View {
             }
         }
         .tint(Color(red: 0.85, green: 0.6, blue: 0.1))
+    }
+
+    private func stat(_ title: LocalizedStringKey, _ value: String) -> some View {
+        HStack {
+            Text(title).font(.subheadline)
+            Spacer()
+            Text(value).font(.subheadline.monospacedDigit()).foregroundColor(.secondary)
+        }
     }
 
     private func row(_ icon: String, _ text: LocalizedStringKey) -> some View {

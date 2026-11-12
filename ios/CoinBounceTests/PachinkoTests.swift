@@ -408,4 +408,57 @@ final class PachinkoTests: XCTestCase {
         XCTAssertEqual(b.tray, 0, "上皿不存")
         store.clear()
     }
+
+    // MARK: 演出（第 6 节台词、リーチ时序、事件顺序）
+    func test_script_linesAndPoses() {
+        typealias S = PachinkoScript
+        XCTAssertEqual(S.line(for: .enter)?.pose, .idle)
+        XCTAssertEqual(S.line(for: .firstShot)?.pose, .blowKiss)
+        XCTAssertNil(S.line(for: .startHit(count: 3)), "进始动口每 5 次才说一次")
+        XCTAssertEqual(S.line(for: .startHit(count: 5))?.pose, .clap)
+        XCTAssertEqual(S.line(for: .reach(.normal))?.pose, .cheer)
+        XCTAssertEqual(S.line(for: .reach(.superReach))?.pose, .jump)
+        XCTAssertEqual(S.line(for: .jackpot(.superJackpot, chain: 1))?.pose, .jump)
+        XCTAssertEqual(S.line(for: .jackpot(.bonus, chain: 1))?.pose, .celebrate)
+        XCTAssertTrue(S.line(for: .jackpot(.royal, chain: 3))?.text.contains("3") ?? false, "连庄第 2 次起报连庄数")
+        XCTAssertTrue(S.line(for: .jackpotEnded(coins: 120))?.text.contains("120") ?? false)
+        XCTAssertTrue(S.line(for: .roundStarted(4))?.text.contains("4") ?? false)
+        XCTAssertEqual(S.line(for: .modeEntered(.st))?.pose, .jump)
+        XCTAssertEqual(S.line(for: .modeEntered(.jitan))?.pose, .clap)
+        for silent in [PachinkoCue.launched, .smallWin, .spinStarted(reach: .none), .reelStopped(index: 0), .attackerBall(count: 1)] {
+            XCTAssertNil(S.line(for: silent))
+        }
+    }
+
+    func test_stopFractions_reachStopsSidesFirst() {
+        for r in [PachinkoReach.none, .normal, .superReach] {
+            let f = PachinkoLottery.stopFractions(reach: r)
+            XCTAssertLessThan(f[0], f[2], "左格先停")
+            XCTAssertLessThan(f[2], f[1], "中格最后")
+            XCTAssertEqual(f[1], 1.0)
+        }
+        XCTAssertLessThan(PachinkoLottery.stopFractions(reach: .superReach)[2], 0.5, "リーチ：左右很快停，中格慢转")
+    }
+
+    func test_cues_jackpotSequence() {
+        let w = FakeWallet(100)
+        let g = makeGame(w)
+        g.recordCues = true
+        // ROYAL，普通リーチ（show ≥ 700）
+        g.debugInsertTicket(PachinkoTicket(hit: 0, kind: 20, show: 800))
+        play(g, seconds: PachinkoConstants.reachTime + PachinkoConstants.fanfareTime + 0.5)
+        let order = g.cueLog.filter {
+            switch $0 { case .spinStarted, .reelStopped, .reach, .jackpot, .roundStarted: return true; default: return false }
+        }
+        XCTAssertEqual(order, [.spinStarted(reach: .normal), .reelStopped(index: 0), .reelStopped(index: 2), .reach(.normal),
+                               .reelStopped(index: 1), .jackpot(.royal, chain: 1), .roundStarted(1)])
+        // 没中的超级リーチ → reachMissed
+        let g2 = makeGame(FakeWallet(100))
+        g2.recordCues = true
+        g2.debugInsertTicket(PachinkoTicket(hit: 60000, kind: 0, show: 5))
+        play(g2, seconds: PachinkoConstants.superReachTime + 0.3)
+        XCTAssertTrue(g2.cueLog.contains(.reach(.superReach)))
+        XCTAssertTrue(g2.cueLog.contains(.reachMissed))
+        XCTAssertFalse(g2.cueLog.contains { if case .jackpot = $0 { return true } else { return false } })
+    }
 }

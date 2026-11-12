@@ -43,7 +43,7 @@ struct PachinkoReelView: View {
                                 .transition(.move(edge: .leading))
                         }
                         if reach != .none {
-                            Text(reach == .superReach ? "SUPER REACH" : "REACH")
+                            Text(LocalizedStringKey(reach == .superReach ? "SUPER REACH" : "REACH"))
                                 .font(.system(size: max(9, h * 0.1), weight: .black, design: .rounded))
                                 .foregroundColor(ArtPalette.magenta)
                                 .shadow(color: .white.opacity(0.8), radius: 0, x: 1, y: 1)
@@ -92,11 +92,11 @@ struct PachinkoReelView: View {
                             .frame(width: h * 0.09, height: h * 0.09)
                     }
                 }
-                Text(machine.phase == .round ? "SHOOT!" : "NEXT ROUND")
+                Text(LocalizedStringKey(machine.phase == .round ? "SHOOT!" : "NEXT ROUND"))
                     .font(.system(size: h * 0.08, weight: .heavy, design: .rounded))
                     .foregroundColor(ArtPalette.magenta.opacity(0.6 + 0.4 * pulse))
             default:
-                Text(kind.nextMode == .st ? "FEVER 12" : "CHANCE 12")
+                Text(LocalizedStringKey(kind.nextMode == .st ? "FEVER 12" : "CHANCE 12"))
                     .font(.system(size: h * 0.14, weight: .black, design: .rounded))
                     .foregroundColor(kind.nextMode == .st ? ArtPalette.magenta : ArtPalette.teal)
             }

@@ -21,6 +21,13 @@ struct PachinkoView: View {
     @State private var floaters: [Floater] = []
     @State private var showAdUnavailableHint = false
     @State private var showSettings = false
+    @State private var line: BunnyLine?
+    @State private var lineAt = Date.distantPast
+    @State private var dimmed = false
+    @State private var flash = false
+    @State private var coinFlyToken = 0
+    @State private var firstFrame = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     struct Floater: Identifiable { let id = UUID(); let point: CGPoint; let amount: Int }
 
@@ -36,6 +43,8 @@ struct PachinkoView: View {
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
                 LightPool(strength: 0.14).frame(width: w * 1.1, height: cabH).position(x: w / 2, y: 40 + cabH / 2)
+                let spare = max(0, h - 36 - controlsH - 22 - cabH)
+                let bunnyH = min(190, max(150, spare + 70))
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, pad).padding(.top, 4)
                     cabinet(width: w, height: cabH)
@@ -44,6 +53,15 @@ struct PachinkoView: View {
                         .frame(height: controlsH)
                         .padding(.horizontal, pad + 4)
                         .padding(.bottom, 4)
+                }
+                // 兔女郎：站在操作区上方左侧，气泡朝右上（大屏在机器下面的空位里，SE 压在机器左下角）
+                BunnyHostess(line: line, height: bunnyH, bubbleOnRight: true, bubbleWidth: 150)
+                    .frame(width: bunnyH * 1.4, height: bunnyH, alignment: .bottomLeading)
+                    .position(x: 4 + bunnyH * 0.7, y: h - controlsH - 6 - bunnyH / 2)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("pachinkoBunny")
+                if flash && !reduceMotion {
+                    ArtPalette.goldLight.opacity(0.55).ignoresSafeArea().allowsHitTesting(false)
                 }
                 if let text = noticeText {
                     Text(text)
@@ -82,12 +100,74 @@ struct PachinkoView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: game.notice)
+        .animation(.easeInOut(duration: 0.3), value: dimmed)
+        .onReceive(game.cues) { handle($0) }
+    }
+
+    // MARK: 事件 → 兔女郎、声音、触感、特效
+    private func handle(_ cue: PachinkoCue) {
+        let audio = AudioManager.shared, haptic = HapticManager.shared
+        switch cue {
+        case .launched: audio.play(.pkLaunch)
+        case .startHit: audio.play(.pkStart); haptic.coinFall()
+        case .tulipOpened, .smallWin: audio.play(.winSmall)
+        case .spinStarted: audio.play(.slotSpin); dimmed = false
+        case .reelStopped: audio.play(.slotStop); haptic.slotColumnStop()
+        case .reach(let r):
+            audio.play(.pkReach)
+            if r == .superReach { dimmed = !reduceMotion; haptic.slotStart() }
+        case .reachMissed: dimmed = false
+        case .jackpot(let kind, _):
+            dimmed = false
+            audio.play(kind == .bonus ? .winBig : .jackpotFanfare)
+            audio.play(.cheer)
+            if kind == .bonus { haptic.bigWin() } else { haptic.jackpot() }
+            flash = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { flash = false }
+        case .roundStarted: audio.play(.pkAttacker); haptic.bonusTriggered()
+        case .attackerBall: audio.play(.pkCount); haptic.coinFall(); coinFlyToken += 1
+        case .jackpotEnded: audio.play(.applause)
+        case .outOfCoins: audio.play(.noCoins)
+        default: break
+        }
+        guard let l = PachinkoScript.line(for: cue) else { return }
+        // 进口、郁金香这种高频小事不打断正在说的话
+        let minor: Bool = {
+            switch cue {
+            case .startHit, .tulipOpened, .foul, .tooHard, .trayEmpty, .idle: return true
+            default: return false
+            }
+        }()
+        if minor, line != nil, Date().timeIntervalSince(lineAt) < 3 { return }
+        say(l)
+    }
+
+    private func say(_ l: PachinkoScript.Line) {
+        let pose: BunnyPose
+        switch l.pose {
+        case .idle: pose = .idle
+        case .blowKiss: pose = .blowKiss
+        case .clap: pose = .clap
+        case .cheer: pose = .cheer
+        case .jump: pose = .jump
+        case .headshot: pose = .headshot
+        case .celebrate: pose = BunnyPose.celebrationPoses.randomElement() ?? .cheer
+        }
+        let new = BunnyLine(text: l.text, pose: pose)
+        line = new
+        lineAt = Date()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+            if line?.id == new.id { line = nil }
+        }
     }
 
     private func makeScene() {
         guard scene3D == nil else { return }
+        // 等 onReceive 订阅上了再打招呼
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { game.entered() }
         let s = Pachinko3DScene(game: game)
         s.onLCDRect = { r in lcdRect = r }
+        s.onFirstFrame = { firstFrame = true }
         s.onPayout = { pt, amount in
             let f = Floater(point: pt, amount: amount)
             floaters.append(f)
@@ -104,6 +184,9 @@ struct PachinkoView: View {
             for _ in 0..<5 { game.buy() }
             game.auto = true
             if args.contains("-pachinkoStress") { game.debugStress = true }
+            // 录屏 / 截图：-pachinkoJackpot 塞一张 ROYAL 中奖票（普通リーチ 7 秒）；-pachinkoReach 塞一张没中的超级リーチ
+            if args.contains("-pachinkoJackpot") { game.debugInsertTicket(PachinkoTicket(hit: 0, kind: 20, show: 800)) }
+            if args.contains("-pachinkoReach") { game.debugInsertTicket(PachinkoTicket(hit: 60000, kind: 0, show: 5)) }
         }
         #endif
     }
@@ -144,6 +227,12 @@ struct PachinkoView: View {
     // MARK: 3D 机器 + 液晶数字盘 + 飘字
     private func cabinet(width w: CGFloat, height h: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
+            // 第一帧出来之前：大厅预热时拍的机器快照（第一次进来不会看到空白）
+            if !firstFrame, let img = Pachinko3DScene.placeholder {
+                Image(uiImage: img).resizable().aspectRatio(contentMode: .fit)
+                    .frame(width: w, height: h)
+                    .allowsHitTesting(false)
+            }
             if let scene3D {
                 Pachinko3DView(scene3D: scene3D)
             }
@@ -157,6 +246,24 @@ struct PachinkoView: View {
             ForEach(floaters) { f in
                 FloatingPayout(amount: f.amount)
                     .position(f.point)
+                    .allowsHitTesting(false)
+            }
+            if dimmed {
+                // 超级リーチ：整块台面压暗 40%，只留液晶亮
+                Rectangle()
+                    .fill(Color.black.opacity(0.4))
+                    .mask(
+                        Rectangle()
+                            .overlay(RoundedRectangle(cornerRadius: 6).frame(width: lcdRect.width + 8, height: lcdRect.height + 8)
+                                .position(x: lcdRect.midX, y: lcdRect.midY).blendMode(.destinationOut))
+                            .compositingGroup()
+                    )
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+            if coinFlyToken > 0, let from = scene3D?.project(0.5, PachinkoBoard.attackerY1) {
+                WinCoinFly(from: from, to: CGPoint(x: 70, y: -24))
+                    .id(coinFlyToken)
                     .allowsHitTesting(false)
             }
         }
@@ -342,6 +449,6 @@ struct PachinkoHandle: View {
                 }
         )
         .accessibilityLabel(Text("Power"))
-        .accessibilityValue(Text("\(Int((power * 100).rounded()))%"))
+        .accessibilityValue(Text(verbatim: "\(Int((power * 100).rounded()))%"))
     }
 }

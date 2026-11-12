@@ -79,6 +79,15 @@ struct LobbyView: View {
         .onAppear {
             glow = true
             greet()
+            // v12.5：大厅空闲时后台预热弹子机的 3D 场景（第一次进去不用等）
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { Pachinko3DScene.prewarmOnce() }
+            #if DEBUG
+            // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-debugEnterPachinkoAfter"), i + 1 < args.count, let t = Double(args[i + 1]) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + t) { router.open(.pachinko) }
+            }
+            #endif
         }
     }
 
