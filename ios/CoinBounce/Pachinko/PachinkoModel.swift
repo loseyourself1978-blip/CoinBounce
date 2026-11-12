@@ -68,11 +68,11 @@ enum PachinkoLottery {
     }
 
     /// 这一转数字盘转多久。holdsAfter = 取出这张票之后保留里还剩几个
-    static func spinDuration(hit: Bool, reach: PachinkoReach, mode: PachinkoMode, holdsAfter: Int) -> Double {
+    static func spinDuration(hit: Bool, reach: PachinkoReach, mode: PachinkoMode, holdsAfter: Int, reduceMotion: Bool = false) -> Double {
         let c = PachinkoConstants.self
         if mode != .normal { return hit ? c.hitTimeSupport : c.spinTimeSupport }
         switch reach {
-        case .superReach: return c.superReachTime
+        case .superReach: return reduceMotion ? c.superReachTimeReduced : c.superReachTime
         case .normal: return c.reachTime
         case .none: return holdsAfter >= 4 ? c.spinTimeVeryFast : (holdsAfter >= 2 ? c.spinTimeFast : c.spinTime)
         }
@@ -116,6 +116,12 @@ struct PachinkoMachine: Codable, Equatable {
     private(set) var roundBalls = 0
     /// 这一串连了几次大奖（回普通状态时清零）
     private(set) var chain = 0
+    /// 系统「减少动态效果」：超级リーチ缩到 3 秒（7.2 节）。不存档，进场时由画面设置
+    var reduceMotion = false
+
+    private enum CodingKeys: String, CodingKey {
+        case mode, modeSpinsLeft, phase, phaseTimeLeft, holds, spin, jackpotKind, roundsLeft, roundNumber, roundBalls, chain
+    }
 
     var wingsOpen: Bool { mode != .normal && phase == .play }
     var attackerOpen: Bool { phase == .round }
@@ -199,7 +205,7 @@ struct PachinkoMachine: Codable, Equatable {
             let t = holds.removeFirst()
             let hit = PachinkoLottery.isHit(t, mode: mode)
             let reach = PachinkoLottery.reach(t, hit: hit, mode: mode)
-            let d = PachinkoLottery.spinDuration(hit: hit, reach: reach, mode: mode, holdsAfter: holds.count)
+            let d = PachinkoLottery.spinDuration(hit: hit, reach: reach, mode: mode, holdsAfter: holds.count, reduceMotion: reduceMotion)
             spin = Spin(ticket: t, hit: hit, reach: reach, timeLeft: d, duration: d)
             events.append(.spinStarted(hit: hit, reach: reach))
         }

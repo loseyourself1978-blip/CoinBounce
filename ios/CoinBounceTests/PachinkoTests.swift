@@ -461,4 +461,21 @@ final class PachinkoTests: XCTestCase {
         XCTAssertTrue(g2.cueLog.contains(.reachMissed))
         XCTAssertFalse(g2.cueLog.contains { if case .jackpot = $0 { return true } else { return false } })
     }
+
+    func test_reduceMotion_shortensSuperReachOnly() {
+        typealias L = PachinkoLottery
+        XCTAssertEqual(L.spinDuration(hit: false, reach: .superReach, mode: .normal, holdsAfter: 0), PachinkoConstants.superReachTime)
+        XCTAssertEqual(L.spinDuration(hit: false, reach: .superReach, mode: .normal, holdsAfter: 0, reduceMotion: true), 3.0)
+        XCTAssertEqual(L.spinDuration(hit: true, reach: .normal, mode: .normal, holdsAfter: 0, reduceMotion: true), PachinkoConstants.reachTime)
+        var m = PachinkoMachine()
+        m.reduceMotion = true
+        m.startEntered(PachinkoTicket(hit: 60000, kind: 0, show: 5))
+        var ev: [PachinkoMachine.Event] = []
+        m.advance(0.01, events: &ev)
+        XCTAssertEqual(m.spin?.reach, .superReach)
+        XCTAssertEqual(m.spin?.duration, 3.0)
+        // 不存档：读回来是 false
+        let data = try! JSONEncoder().encode(m)
+        XCTAssertFalse(try! JSONDecoder().decode(PachinkoMachine.self, from: data).reduceMotion)
+    }
 }

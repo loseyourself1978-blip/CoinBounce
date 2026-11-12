@@ -213,6 +213,12 @@ final class PachinkoGame: ObservableObject {
 
     func resetPower() { power = PachinkoConstants.defaultPower }
 
+    /// 系统「减少动态效果」：超级リーチ缩短（画面在进场时设置）
+    var reduceMotion: Bool {
+        get { m.reduceMotion }
+        set { m.reduceMotion = newValue }
+    }
+
     private func emit(_ c: PachinkoCue) {
         if recordCues { cueLog.append(c) }
         cues.send(c)

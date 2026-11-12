@@ -41,6 +41,8 @@ enum PachinkoConstants {
     static let spinTime = 3.0, spinTimeFast = 1.5, spinTimeVeryFast = 0.8   // 保留 <2 / ≥2 / ≥4
     static let spinTimeSupport = 1.0, hitTimeSupport = 4.0
     static let reachTime = 7.0, superReachTime = 11.0
+    /// 「减少动态效果」打开时超级リーチ的时长
+    static let superReachTimeReduced = 3.0
     static let reachOnLosePermille = 100, superOnLosePermille = 15, superOnHitPermille = 700
     static let fanfareTime = 3.0, roundGapTime = 0.8, endingTime = 2.0
     // 目标

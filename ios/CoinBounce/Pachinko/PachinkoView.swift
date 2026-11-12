@@ -163,6 +163,7 @@ struct PachinkoView: View {
 
     private func makeScene() {
         guard scene3D == nil else { return }
+        game.reduceMotion = reduceMotion
         // 等 onReceive 订阅上了再打招呼
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { game.entered() }
         let s = Pachinko3DScene(game: game)
