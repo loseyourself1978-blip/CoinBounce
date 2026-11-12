@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		306AFDF2F1D67499F88E5B6F /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
 		BAE88F5A7D8ABB71D3C088F6 /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
-		41FF1AA6BDF412624D5BE4B4 /* PachinkoScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE823216B1A80F11C76B25B0 /* PachinkoScene.swift */; };
+		41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */; };
 		6A899AEB6DB1EC1EBA022400 /* PachinkoReelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */; };
 		53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA22958088F526918E564A6 /* PachinkoView.swift */; };
 		87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
@@ -190,7 +190,7 @@
 		E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoConstants.swift; sourceTree = "<group>"; };
 		F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoSimulator.swift; sourceTree = "<group>"; };
 		505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoGame.swift; sourceTree = "<group>"; };
-		DE823216B1A80F11C76B25B0 /* PachinkoScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoScene.swift; sourceTree = "<group>"; };
+		DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pachinko3DScene.swift; sourceTree = "<group>"; };
 		4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoReelView.swift; sourceTree = "<group>"; };
 		5DA22958088F526918E564A6 /* PachinkoView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoView.swift; sourceTree = "<group>"; };
 		F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoPhysics.swift; sourceTree = "<group>"; };
@@ -226,7 +226,7 @@
 				FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */,
 				F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */,
 				505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */,
-				DE823216B1A80F11C76B25B0 /* PachinkoScene.swift */,
+				DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */,
 				4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */,
 				5DA22958088F526918E564A6 /* PachinkoView.swift */,
 			);
@@ -596,7 +596,7 @@
 				3595F337FB3825DB709C57B5 /* PachinkoModel.swift in Sources */,
 				48C463B98F14D59677E797A5 /* PachinkoSimulator.swift in Sources */,
 				306AFDF2F1D67499F88E5B6F /* PachinkoGame.swift in Sources */,
-				41FF1AA6BDF412624D5BE4B4 /* PachinkoScene.swift in Sources */,
+				41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */,
 				6A899AEB6DB1EC1EBA022400 /* PachinkoReelView.swift in Sources */,
 				53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */,
 			);

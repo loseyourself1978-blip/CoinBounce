@@ -1,5 +1,5 @@
 import SwiftUI
-import SpriteKit
+import SceneKit
 
 // MARK: - v12.5 弹子机整屏：顶栏、台面 + 液晶、上皿、买珠、AUTO、手柄
 extension PachinkoWallet {
@@ -16,24 +16,29 @@ struct PachinkoView: View {
     @ObservedObject private var gameState = GameState.shared
     @ObservedObject private var ads = AdsManager.shared
     @Environment(\.scenePhase) private var scenePhase
-    @State private var scene: PachinkoScene?
+    @State private var scene3D: Pachinko3DScene?
+    @State private var lcdRect: CGRect = .zero
+    @State private var floaters: [Floater] = []
     @State private var showAdUnavailableHint = false
     @State private var showSettings = false
+
+    struct Floater: Identifiable { let id = UUID(); let point: CGPoint; let amount: Int }
+
+    /// 机器（含外框）的宽高比：相机按这个比例把整台机器放进 3D 视图
+    static let cabinetAspect: CGFloat = 0.8
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             let pad: CGFloat = 10
             let controlsH: CGFloat = 112
-            let bw = max(100, min(w - pad * 2, (h - 36 - controlsH - 24) / CGFloat(PachinkoConstants.boardAspect)))
-            let bh = bw * CGFloat(PachinkoConstants.boardAspect)
+            let cabH = max(200, min(h - 36 - controlsH - 22, w / Self.cabinetAspect))
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
-                LightPool(strength: 0.12).frame(width: bw * 1.2, height: bh).position(x: w / 2, y: 50 + bh / 2)
+                LightPool(strength: 0.14).frame(width: w * 1.1, height: cabH).position(x: w / 2, y: 40 + cabH / 2)
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, pad).padding(.top, 4)
-                    // 台面贴着顶栏；大屏多出来的高度留在台面和手柄之间（下一步放兔女郎）
-                    board(width: bw, height: bh).padding(.top, 4)
+                    cabinet(width: w, height: cabH)
                     Spacer(minLength: 0)
                     controls
                         .frame(height: controlsH)
@@ -49,7 +54,7 @@ struct PachinkoView: View {
                         .background(Capsule().fill(Color.black.opacity(0.82)))
                         .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.8), lineWidth: 1))
                         .frame(maxWidth: w - 40)
-                        .position(x: w / 2, y: 50 + bh * 0.06 + 24)
+                        .position(x: w / 2, y: 40 + cabH * 0.1)
                         .transition(.opacity)
                         .accessibilityIdentifier("pachinkoNotice")
                 }
@@ -64,8 +69,7 @@ struct PachinkoView: View {
                         .position(x: w / 2, y: 84)
                 }
             }
-            .onAppear { makeScene(bw: bw, bh: bh) }
-            .onChange(of: bw) { _ in scene?.size = CGSize(width: bw, height: bh) }
+            .onAppear { makeScene() }
         }
         .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -74,23 +78,32 @@ struct PachinkoView: View {
             if phase != .active {
                 leave()
             } else {
-                scene?.resetClock()
-                scene?.isPaused = false
+                scene3D?.start()
             }
         }
         .animation(.easeInOut(duration: 0.2), value: game.notice)
     }
 
-    private func makeScene(bw: CGFloat, bh: CGFloat) {
-        guard scene == nil else { return }
-        scene = PachinkoScene(game: game, size: CGSize(width: bw, height: bh))
+    private func makeScene() {
+        guard scene3D == nil else { return }
+        let s = Pachinko3DScene(game: game)
+        s.onLCDRect = { r in lcdRect = r }
+        s.onPayout = { pt, amount in
+            let f = Floater(point: pt, amount: amount)
+            floaters.append(f)
+            if floaters.count > 8 { floaters.removeFirst(floaters.count - 8) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { floaters.removeAll { $0.id == f.id } }
+        }
+        scene3D = s
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-pachinkoDemo") {
-            // 截图：余额补到 200，上皿装满，AUTO 连发
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-pachinkoDemo") || args.contains("-pachinkoStress") {
+            // 截图 / 量帧率：余额补到 200，上皿装满，AUTO 连发
             if gameState.availableCoins < 200 { gameState.addCoins(200 - gameState.availableCoins, source: .other) }
             game.chip = 10
             for _ in 0..<5 { game.buy() }
             game.auto = true
+            if args.contains("-pachinkoStress") { game.debugStress = true }
         }
         #endif
     }
@@ -99,7 +112,7 @@ struct PachinkoView: View {
     private func leave() {
         game.settleInFlight()
         gameState.saveNow()
-        scene?.isPaused = true
+        scene3D?.stop()
     }
 
     private var noticeText: String? {
@@ -128,26 +141,30 @@ struct PachinkoView: View {
         .frame(height: 36)
     }
 
-    // MARK: 台面 + 液晶
-    private func board(width bw: CGFloat, height bh: CGFloat) -> some View {
-        typealias B = PachinkoBoard
-        let lw = CGFloat(B.lcdX1 - B.lcdX0) * bw, lh = CGFloat(B.lcdY1 - B.lcdY0) * bw
-        let lx = CGFloat(B.lcdX0) * bw + lw / 2
-        let ly = (CGFloat(PachinkoConstants.boardAspect) - CGFloat(B.lcdY1)) * bw + lh / 2
-        return ZStack {
-            if let scene {
-                SpriteView(scene: scene, preferredFramesPerSecond: 60, options: [.allowsTransparency])
+    // MARK: 3D 机器 + 液晶数字盘 + 飘字
+    private func cabinet(width w: CGFloat, height h: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            if let scene3D {
+                Pachinko3DView(scene3D: scene3D)
             }
-            PachinkoReelView(machine: game.machine, spinStartedAt: game.spinStartedAt)
-                .frame(width: lw - 4, height: lh - 4)
-                .position(x: lx, y: ly)
-                .allowsHitTesting(false)
+            if lcdRect.width > 10 {
+                PachinkoReelView(machine: game.machine, spinStartedAt: game.spinStartedAt)
+                    .frame(width: lcdRect.width - 6, height: lcdRect.height - 6)
+                    .rotation3DEffect(.radians(Double(-Pachinko3DScene.tilt) * 0.9), axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.35)
+                    .position(x: lcdRect.midX, y: lcdRect.midY)
+                    .allowsHitTesting(false)
+            }
+            ForEach(floaters) { f in
+                FloatingPayout(amount: f.amount)
+                    .position(f.point)
+                    .allowsHitTesting(false)
+            }
         }
-        .frame(width: bw, height: bh)
+        .frame(width: w, height: h)
         .accessibilityIdentifier("pachinkoBoard")
     }
 
-    // MARK: 上皿、买珠、AUTO、手柄
+    // MARK: 上皿、买珠、AUTO、手柄（金色亮面，和轮盘同一套）
     private var controls: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 10) {
@@ -159,16 +176,17 @@ struct PachinkoView: View {
                 HStack(spacing: 8) {
                     ForEach(PachinkoConstants.chips, id: \.self) { v in
                         Button {
-                            AudioManager.shared.play(.buttonTap)
+                            AudioManager.shared.play(.coinDrop)
                             game.chip = v
                             game.buy()
                         } label: {
                             Text("+\(v)")
                                 .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundColor(.white)
-                                .frame(width: 48, height: 40)
-                                .background(Capsule().fill(LinearGradient(colors: [ArtPalette.magenta, ArtPalette.magentaDeep], startPoint: .top, endPoint: .bottom)))
-                                .overlay(Capsule().stroke(ArtPalette.goldLight, lineWidth: game.chip == v ? 2.5 : 1))
+                                .foregroundColor(Color(red: 0.35, green: 0.18, blue: 0.0))
+                                .frame(width: 50, height: 40)
+                                .background(GoldGloss(shape: Capsule()))
+                                .overlay(Capsule().stroke(game.chip == v ? Color.white : ArtPalette.goldDeep, lineWidth: game.chip == v ? 2.5 : 1))
+                                .shadow(color: .black.opacity(0.45), radius: 3, y: 2)
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("pachinkoBuy_\(v)")
@@ -176,7 +194,7 @@ struct PachinkoView: View {
                 }
             }
             Spacer(minLength: 0)
-            PachinkoHandle(power: $game.power, isDown: $game.handleDown, size: 96)
+            PachinkoHandle(power: $game.power, isDown: $game.handleDown, size: 100)
                 .accessibilityIdentifier("pachinkoHandle")
         }
     }
@@ -184,8 +202,8 @@ struct PachinkoView: View {
     private var trayBadge: some View {
         HStack(spacing: 5) {
             Circle()
-                .fill(RadialGradient(colors: [.white, Color(white: 0.6)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 9))
-                .frame(width: 14, height: 14)
+                .fill(RadialGradient(colors: [.white, Color(white: 0.55), Color(white: 0.25)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 9))
+                .frame(width: 15, height: 15)
             Text("Tray")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundColor(.white.opacity(0.75))
@@ -195,8 +213,8 @@ struct PachinkoView: View {
                 .foregroundColor(ArtPalette.goldLight)
         }
         .padding(.horizontal, 10).frame(height: 32)
-        .background(Capsule().fill(Color.black.opacity(0.55)))
-        .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.6), lineWidth: 1))
+        .background(Capsule().fill(Color.black.opacity(0.6)))
+        .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.7), lineWidth: 1))
         .accessibilityIdentifier("pachinkoTray")
     }
 
@@ -211,9 +229,11 @@ struct PachinkoView: View {
         } label: {
             Text("AUTO")
                 .font(.system(size: 13, weight: .black, design: .rounded))
-                .foregroundColor(game.auto ? .black : .white)
-                .padding(.horizontal, 12).frame(height: 32)
-                .background(Capsule().fill(game.auto ? ArtPalette.gold : Color.black.opacity(0.55)))
+                .foregroundColor(game.auto ? Color(red: 0.35, green: 0.18, blue: 0.0) : ArtPalette.goldLight)
+                .padding(.horizontal, 14).frame(height: 32)
+                .background(Group {
+                    if game.auto { GoldGloss(shape: Capsule()) } else { Capsule().fill(Color.black.opacity(0.6)) }
+                })
                 .overlay(Capsule().stroke(ArtPalette.gold, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -221,7 +241,32 @@ struct PachinkoView: View {
     }
 }
 
-/// 发射手柄（2.2 节）：按住连发，上下拖改力度；外圈金色一段是推荐区
+/// 金色亮面（按钮底）
+struct GoldGloss<S: Shape>: View {
+    let shape: S
+    var body: some View {
+        shape
+            .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+            .overlay(shape.fill(LinearGradient(colors: [Color.white.opacity(0.55), .clear], startPoint: .top, endPoint: .center)).padding(2))
+    }
+}
+
+/// 落袋时飘起的「+N」
+struct FloatingPayout: View {
+    let amount: Int
+    @State private var go = false
+    var body: some View {
+        Text("+\(amount)")
+            .font(.system(size: 17, weight: .black, design: .rounded))
+            .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+            .shadow(color: ArtPalette.outline, radius: 0, x: 1.2, y: 1.2)
+            .offset(y: go ? -34 : -8)
+            .opacity(go ? 0 : 1)
+            .onAppear { withAnimation(.easeOut(duration: 0.75)) { go = true } }
+    }
+}
+
+/// 发射手柄（2.2 节）：镀铬旋钮，按住连发，上下拖改力度；外圈金色一段是推荐区
 struct PachinkoHandle: View {
     @Binding var power: Double
     @Binding var isDown: Bool
@@ -233,30 +278,52 @@ struct PachinkoHandle: View {
 
     var body: some View {
         ZStack {
+            // 外圈底座：黑色烤漆 + 刻度槽
             Circle()
-                .fill(RadialGradient(colors: [Color(white: 0.35), Color(white: 0.08)], center: UnitPoint(x: 0.4, y: 0.35), startRadius: 0, endRadius: size * 0.6))
+                .fill(RadialGradient(colors: [Color(white: 0.22), Color(white: 0.04)], center: .center, startRadius: size * 0.3, endRadius: size * 0.52))
+                .shadow(color: .black.opacity(0.6), radius: 6, y: 4)
             Circle()
                 .trim(from: 0, to: 0.75)
-                .stroke(Color.white.opacity(0.18), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .stroke(Color.white.opacity(0.14), style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(135))
-                .padding(4)
+                .padding(5)
             Circle()
                 .trim(from: PachinkoConstants.sweetZone.lowerBound * 0.75, to: PachinkoConstants.sweetZone.upperBound * 0.75)
-                .stroke(ArtPalette.gold, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .stroke(ArtPalette.gold, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .shadow(color: ArtPalette.gold.opacity(0.9), radius: 4)
                 .rotationEffect(.degrees(135))
-                .padding(4)
-            Capsule()
-                .fill(isDown ? ArtPalette.gold : ArtPalette.goldLight)
-                .frame(width: 8, height: size * 0.34)
-                .offset(y: -size * 0.17)
-                .rotationEffect(angle(power))
+                .padding(5)
             Circle()
-                .fill(isDown ? ArtPalette.magenta : ArtPalette.magentaDeep)
-                .frame(width: size * 0.3, height: size * 0.3)
-                .overlay(Circle().stroke(ArtPalette.goldLight, lineWidth: 1.5))
+                .trim(from: 0, to: power * 0.75)
+                .stroke(ArtPalette.magenta.opacity(0.85), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .rotationEffect(.degrees(135))
+                .padding(12)
+            // 镀铬旋钮：锥形渐变做出金属拉丝反光，顶上一块高光
+            ZStack {
+                Circle()
+                    .fill(AngularGradient(colors: [Color(white: 0.95), Color(white: 0.45), Color(white: 0.9), Color(white: 0.35), Color(white: 0.98), Color(white: 0.5), Color(white: 0.95)], center: .center))
+                Circle()
+                    .stroke(LinearGradient(colors: [.white, Color(white: 0.3)], startPoint: .top, endPoint: .bottom), lineWidth: 2)
+                Ellipse()
+                    .fill(LinearGradient(colors: [Color.white.opacity(0.85), .clear], startPoint: .top, endPoint: .bottom))
+                    .frame(width: size * 0.38, height: size * 0.2)
+                    .offset(y: -size * 0.14)
+                // 指针
+                Capsule()
+                    .fill(LinearGradient(colors: [ArtPalette.magenta, ArtPalette.magentaDeep], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 7, height: size * 0.22)
+                    .offset(y: -size * 0.13)
+                    .rotationEffect(angle(power))
+                Circle()
+                    .fill(RadialGradient(colors: [isDown ? ArtPalette.goldLight : Color(white: 0.9), isDown ? ArtPalette.gold : Color(white: 0.5)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.1))
+                    .frame(width: size * 0.16, height: size * 0.16)
+            }
+            .frame(width: size * 0.66, height: size * 0.66)
+            .shadow(color: .black.opacity(0.5), radius: 3, y: 2)
+            .scaleEffect(isDown ? 0.96 : 1)
         }
         .frame(width: size, height: size)
-        .shadow(color: isDown ? ArtPalette.gold.opacity(0.6) : .clear, radius: 8)
+        .shadow(color: isDown ? ArtPalette.gold.opacity(0.6) : .clear, radius: 10)
         .contentShape(Circle())
         .gesture(
             DragGesture(minimumDistance: 0)

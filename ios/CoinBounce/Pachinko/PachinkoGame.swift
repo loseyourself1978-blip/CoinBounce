@@ -284,9 +284,19 @@ final class PachinkoGame: ObservableObject {
         if case .insufficientCoins = buy() { auto = false }
     }
 
+    #if DEBUG
+    /// 量帧率：连发更快、同时在飞最多 40 颗（经济常量不变，只在 -pachinkoStress 时开）
+    var debugStress = false
+    private var maxInFlight: Int { debugStress ? 40 : PachinkoConstants.maxBallsInFlight }
+    private var fireInterval: Double { debugStress ? 0.08 : PachinkoConstants.fireInterval }
+    #else
+    private var maxInFlight: Int { PachinkoConstants.maxBallsInFlight }
+    private var fireInterval: Double { PachinkoConstants.fireInterval }
+    #endif
+
     private func tryFire() {
-        guard tray > 0, balls.count < PachinkoConstants.maxBallsInFlight else { return }
-        fireCooldown = PachinkoConstants.fireInterval
+        guard tray > 0, balls.count < maxInFlight else { return }
+        fireCooldown = fireInterval
         // 回流：力度不够，珠子回上皿，不扣币
         guard let b = physics.launch(power: power) else {
             notice = .foul
