@@ -31,6 +31,31 @@ struct PachinkoBoard {
     static let attackerX0 = 0.35, attackerY0 = 0.195, attackerY1 = 0.22
     static let startY0 = 0.412, startY1 = 0.436, startHalfWidth = 0.013, wingHalfWidth = 0.10
     static let outY = 0.03
+    // v12.6 幸运杯：アウト口缺口里、出界线上面的一条感应带
+    static let catcherY0 = 0.03, catcherY1 = 0.052
+    static func catcherX(time: Double) -> Double {
+        0.5 + PachinkoConstants.catcherAmplitude * sin(2 * .pi * time / PachinkoConstants.catcherPeriod)
+    }
+    // v12.6 发射轨道：右墙外侧一条竖直通道，上端绕到拱顶外侧，过单向挡片后贴着拱顶内侧走。
+    // 只是演出用的路径（珠子到脱轨点才交给物理），不参与碰撞
+    static let laneRadius = 0.5175, laneBottomY = 0.045
+    static let laneX = archCenterX + laneRadius
+    static let flapStart = 14.0 * Double.pi / 180, flapEnd = 26.0 * Double.pi / 180
+    static let laneStraight = archCenterY - laneBottomY
+    private static let laneArcRadius = 0.485
+    /// 从拉杆顶到「仰角 elevation（从右侧水平线逆时针量，弧度）」的路径长度
+    static func laneLength(toElevation e: Double) -> Double { laneStraight + max(0, e) * laneArcRadius }
+    /// 路径上走了 s 的位置
+    static func lanePoint(_ s: Double) -> (x: Double, y: Double) {
+        if s <= laneStraight { return (laneX, laneBottomY + max(0, s)) }
+        let phi = (s - laneStraight) / laneArcRadius
+        let inner = archRadius - PachinkoConstants.ballRadius
+        var u = (phi - flapStart) / (flapEnd - flapStart)
+        u = min(1, max(0, u))
+        u = u * u * (3 - 2 * u)
+        let r = laneRadius + (inner - laneRadius) * u
+        return (archCenterX + r * cos(phi), archCenterY + r * sin(phi))
+    }
     // 空间网格
     static let gridW = 16, gridH = 20, gridCellCap = 24
 

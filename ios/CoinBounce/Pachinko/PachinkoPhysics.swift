@@ -45,11 +45,15 @@ struct PachinkoBall {
     var stageTimeLeft = 0.0
     /// 最近一次撞钉 / 胶囊的法向速度（只给声音和钉子闪光用，物理不读它；读的人读完清零）
     var lastHit = 0.0
+    /// v12.6 金珠雨里的赠送珠（画成金色；规则和普通珠一样）
+    var bonus = false
 }
 
 /// 珠子落进了哪里
 enum PachinkoPocket: Equatable {
     case out, start, tulipLeft, tulipRight, side, attacker, stuck
+    /// v12.6 幸运杯
+    case catcher
 }
 
 struct PachinkoPhysics {
@@ -59,6 +63,9 @@ struct PachinkoPhysics {
     /// 大入赏口（回合中）
     var attackerOpen = false
     var rng: PachinkoRandom
+    /// v12.6 台面时钟（幸运杯的位置由它决定）。每个定步长由调用方走一次 tick()
+    var time = 0.0
+    mutating func tick() { time += Self.dt }
 
     init(rng: PachinkoRandom) { self.rng = rng }
 
@@ -91,6 +98,22 @@ struct PachinkoPhysics {
             b.vx = -sp * sin(th) * (0.6 + 0.8 * rng.uniform())
             b.vy = -sp * cos(th) * (0.6 + 0.8 * rng.uniform())
         }
+        // v12.6：发射轨道搬到右边（弹簧拉杆在右下角）。台面左右对称，把脱轨状态镜像过去，进球率不变
+        b.x = 1 - b.x
+        b.vx = -b.vx
+        return b
+    }
+
+    /// v12.6 金珠雨：从拱顶下面随机位置掉一颗赠送珠
+    mutating func showerBall() -> PachinkoBall {
+        var b = PachinkoBall()
+        b.bonus = true
+        b.x = 0.16 + 0.68 * rng.uniform()
+        let dx = b.x - PachinkoBoard.archCenterX
+        let top = PachinkoBoard.archCenterY + (PachinkoBoard.archRadius * PachinkoBoard.archRadius - dx * dx).squareRoot()
+        b.y = min(1.19, top - 0.04)
+        b.vx = (rng.uniform() - 0.5) * 0.3
+        b.vy = -0.2
         return b
     }
 
@@ -187,6 +210,8 @@ struct PachinkoPhysics {
             }
         }
         // 感应区（按珠心）
+        if b.y < B.catcherY1 && b.y > B.catcherY0 && b.vy < 0
+            && abs(b.x - B.catcherX(time: time)) < PachinkoConstants.catcherHalfWidth { return .catcher }
         if b.y < B.outY { return .out }
         if b.y > B.startY0 && b.y < B.startY1 && abs(b.x - 0.5) < B.startHalfWidth { return .start }
         if wingsOpen && b.y > B.startY0 && b.y < B.startY0 + 0.024 && abs(b.x - 0.5) < B.wingHalfWidth { return .start }
@@ -224,6 +249,7 @@ struct PachinkoPhysics {
     /// 退出或切后台时把在飞的珠子快进到落袋（4.5 节）。最多模拟 stuckRemoveAge + ステージ时间
     mutating func fastForward(_ b: inout PachinkoBall) -> PachinkoPocket {
         while true {
+            tick()
             if let p = step(&b) { return p }
         }
     }

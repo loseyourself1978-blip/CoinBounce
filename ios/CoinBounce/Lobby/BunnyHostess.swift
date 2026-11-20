@@ -37,50 +37,77 @@ struct BunnyHostess: View {
     var showBubble = true
     /// 气泡最大宽度（默认身高的 0.62；弹子机里兔女郎小，气泡要宽一点）
     var bubbleWidth: CGFloat? = nil
+    /// v12.6：脚下一块落在地上的影子（大厅里站在地毯上用；原来像浮着）
+    var groundShadow = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var beat = false
+    /// 换动作时轻轻弹一下（代替两张图互相淡入淡出）
+    @State private var pop = false
 
     var body: some View {
         let pose = line?.pose ?? .idle
         ZStack(alignment: bubbleOnRight ? .topLeading : .topTrailing) {
-            BunnyArt(pose: pose)
-                .frame(height: height)
-                .shadow(color: .black.opacity(0.5), radius: 6, x: 0, y: 4)
-                .offset(y: beat ? lift(pose) : 0)
-                .rotationEffect(.degrees(beat ? tilt(pose) : -tilt(pose)), anchor: .bottom)
-                .animation(reduceMotion ? nil : rhythm(pose), value: beat)
+            // v12.6：两张不同姿势的图一起淡入淡出会出现重影。换图不做任何过渡（.id + 关掉动画），
+            // 摇摆由时钟算出来（不再用隐式动画，换动作时不会把位移、角度和换图搅在一起）
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
+                let m = Self.motion(pose, height: height, time: reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate)
+                BunnyArt(pose: pose)
+                    .id(pose)
+                    .transition(.identity)
+                    .frame(height: height)
+                    .shadow(color: .black.opacity(0.45), radius: 6, x: 0, y: 4)
+                    .offset(y: m.lift)
+                    .rotationEffect(.degrees(m.tilt), anchor: .bottom)
+            }
+            // 宽度按这张图的比例定死：TimelineView 自己会把给它的宽度全占掉，把旁边的东西挤出屏幕
+            .frame(width: height * Self.aspect(pose), height: height)
+            .background(alignment: .bottom) {
+                if groundShadow {
+                    Ellipse()
+                        .fill(RadialGradient(colors: [Color.black.opacity(0.5), .clear], center: .center, startRadius: 0, endRadius: height * 0.19))
+                        .frame(width: height * 0.38, height: height * 0.06)
+                        .offset(y: height * 0.018)
+                }
+            }
+            .scaleEffect(pop ? 1.035 : 1, anchor: .bottom)
+            .transaction { $0.animation = nil }
             if let line, showBubble {
                 SpeechBubble(text: line.text, tailOnLeft: bubbleOnRight)
                     .frame(maxWidth: bubbleWidth ?? height * 0.62)
                     .offset(x: (bubbleOnRight ? 1 : -1) * height * 0.26, y: -height * 0.02)
                     .id(line.id)
-                    .transition(.scale(scale: 0.6, anchor: bubbleOnRight ? .bottomLeading : .bottomTrailing).combined(with: .opacity))
+                    // 旧气泡直接消失、新气泡弹出来：两个气泡一起淡入淡出，字会叠在一起
+                    .transition(.asymmetric(insertion: .scale(scale: 0.6, anchor: bubbleOnRight ? .bottomLeading : .bottomTrailing).combined(with: .opacity),
+                                            removal: .identity))
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: line?.id)
-        .onAppear { beat = true }
+        .onChange(of: pose) { _ in
+            guard !reduceMotion else { return }
+            pop = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) { pop = false }
+        }
     }
 
-    private func lift(_ pose: BunnyPose) -> CGFloat {
-        switch pose {
-        case .jump: return -height * 0.06
-        case .cheer: return -height * 0.025
-        default: return -height * 0.008
-        }
+    /// 这个姿势的图的宽高比
+    static func aspect(_ pose: BunnyPose) -> CGFloat {
+        guard let img = pose.image, img.size.height > 0 else { return 0.4 }
+        return img.size.width / img.size.height
     }
-    private func tilt(_ pose: BunnyPose) -> Double {
+
+    /// 某一时刻的抬起高度（向上为负）和倾斜角。纯函数，测试直接调
+    static func motion(_ pose: BunnyPose, height: CGFloat, time: TimeInterval) -> (lift: CGFloat, tilt: Double) {
+        let period: Double, lift: CGFloat, tilt: Double
         switch pose {
-        case .blowKiss, .clap: return 1.6
-        case .cheer: return 2.2
-        default: return 0.6
+        case .jump: period = 0.68; lift = height * 0.06; tilt = 0.6
+        case .cheer: period = 0.9; lift = height * 0.025; tilt = 2.2
+        case .clap: period = 0.9; lift = height * 0.008; tilt = 1.6
+        case .blowKiss: period = 2.8; lift = height * 0.008; tilt = 1.6
+        default: period = 2.8; lift = height * 0.008; tilt = 0.6
         }
-    }
-    private func rhythm(_ pose: BunnyPose) -> Animation {
-        switch pose {
-        case .jump: return .easeOut(duration: 0.34).repeatForever(autoreverses: true)
-        case .cheer, .clap: return .easeInOut(duration: 0.45).repeatForever(autoreverses: true)
-        default: return .easeInOut(duration: 1.4).repeatForever(autoreverses: true)
-        }
+        let ph = time.truncatingRemainder(dividingBy: period) / period * 2 * .pi
+        // 跳：|sin| 像落地弹起；其余：平滑来回
+        let up = pose == .jump ? abs(sin(ph)) : (1 - cos(ph)) / 2
+        return (-lift * CGFloat(up), tilt * sin(ph))
     }
 }
 

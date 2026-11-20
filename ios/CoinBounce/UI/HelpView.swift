@@ -26,11 +26,12 @@ struct HelpView: View {
                     row("list.number", "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.")
                 }
                 Section("Pachinko") {
-                    row("circle.fill", "One coin buys one ball. Tap +1, +2, +5 or +10 to load balls, then hold the handle to shoot. Slide the handle to change strength; the gold zone works best. Balls that fall short come back for free.")
-                    row("target", "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 3 and open or close each time. Side pockets pay 2.")
+                    row("circle.fill", "One coin buys one ball. Drag the spring launcher down and let go to shoot; AUTO keeps shooting at your last strength. Pull into the gold zone for the best shots. Balls that fall short come back for free.")
+                    row("target", "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 2 and open or close each time. Side pockets pay 1. The lucky cup sliding along the bottom pays 2.")
+                    row("lightbulb.fill", "Lucky lamps: every ball in a tulip or the lucky cup lights one fruit lamp. Light all 7 and 6 free golden balls rain down from the top.")
                     row("star.circle.fill", "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.")
                     row("flame.fill", "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.")
-                    row("percent", "Odds: jackpot 1 in 22.2 per spin. Expected return is about 96% at the recommended strength and lower at other strengths.")
+                    row("percent", "Odds: jackpot 1 in 21.2 per spin. Expected return is about 96% in the gold zone and lower at other strengths.")
                 }
                 if let st = PachinkoSaveStore().load()?.stats, st.ballsFired > 0 {
                     Section("Pachinko stats") {
