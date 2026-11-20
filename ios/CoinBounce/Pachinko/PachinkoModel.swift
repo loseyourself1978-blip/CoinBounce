@@ -79,6 +79,54 @@ enum PachinkoLottery {
     }
 }
 
+// MARK: - v12.6 水果灯 → 金珠雨
+/// 郁金香、幸运杯每进一球点亮一盏水果灯；7 盏全亮，从拱顶下面掉一阵赠送的金珠（不扣币，规则和普通珠一样）。
+/// 游戏层和模拟器共用这一份，返还率测的就是线上的规则
+struct PachinkoFeatures: Codable, Equatable {
+    private(set) var lamps = 0
+    /// 还没掉下来的赠送珠
+    private(set) var showerQueue = 0
+    private(set) var showerTimer = 0.0
+    private(set) var showers = 0
+
+    /// 这个口点不点灯
+    static func lights(_ p: PachinkoPocket) -> Bool {
+        p == .tulipLeft || p == .tulipRight || p == .catcher
+    }
+
+    /// 落袋。返回 (点亮了一盏, 这一盏凑满了 → 开始金珠雨)
+    @discardableResult
+    mutating func pocket(_ p: PachinkoPocket) -> (lit: Bool, shower: Bool) {
+        guard Self.lights(p) else { return (false, false) }
+        lamps += 1
+        if lamps >= PachinkoConstants.lampCount {
+            lamps = 0
+            showers += 1
+            showerQueue += PachinkoConstants.showerBalls
+            return (true, true)
+        }
+        return (true, false)
+    }
+
+    /// 时间前进。返回 true = 现在掉一颗赠送珠
+    mutating func advance(_ dt: Double) -> Bool {
+        guard showerQueue > 0 else { return false }
+        showerTimer -= dt
+        guard showerTimer <= 0 else { return false }
+        showerTimer = PachinkoConstants.showerInterval
+        showerQueue -= 1
+        return true
+    }
+
+    /// 退出时把排队的赠送珠一次取完
+    mutating func drainShower() -> Int {
+        let n = showerQueue
+        showerQueue = 0
+        showerTimer = 0
+        return n
+    }
+}
+
 /// 状态机：保留、数字盘计时、回合、ST / 时短
 struct PachinkoMachine: Codable, Equatable {
     enum Phase: String, Codable {

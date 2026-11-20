@@ -12,6 +12,28 @@
         }
       }
     },
+    "%lld ROUNDS": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 回合"
+          }
+        }
+      }
+    },
+    "%lld in a row!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 连庄！"
+          }
+        }
+      }
+    },
     "%lld spins left": {
       "localizations": {
         "en": {
@@ -51,6 +73,17 @@
         }
       }
     },
+    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
+          }
+        }
+      }
+    },
     "A coin passing through the middle of a fruit lights it. Light all 7 fruits to pick a reward card, then the fruits reset.": {
       "extractionState": "manual",
       "localizations": {
@@ -58,6 +91,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币从水果灯中间穿过会点亮它。7 个水果全部点亮后可以选一张奖励卡，然后水果全部熄灭，开始新一轮。"
+          }
+        }
+      }
+    },
+    "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
+          }
+        }
+      }
+    },
+    "AUTO": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动"
           }
         }
       }
@@ -95,6 +150,28 @@
         }
       }
     },
+    "All lamps lit! Golden shower!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果灯全亮！金珠雨来啦！"
+          }
+        }
+      }
+    },
+    "BET": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下注"
+          }
+        }
+      }
+    },
     "BLAZING! x%lld": {
       "extractionState": "manual",
       "localizations": {
@@ -117,12 +194,133 @@
         }
       }
     },
+    "Back to lobby": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回大厅"
+          }
+        }
+      }
+    },
+    "Back to normal. Round over!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到普通状态，这一轮结束！"
+          }
+        }
+      }
+    },
+    "Balls shot": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打出的珠数"
+          }
+        }
+      }
+    },
+    "Best streak win": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单串最高赢取"
+          }
+        }
+      }
+    },
+    "Better luck next time!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次好运！"
+          }
+        }
+      }
+    },
+    "Black": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑"
+          }
+        }
+      }
+    },
+    "Bonus! 2 rounds!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中奖！2 回合！"
+          }
+        }
+      }
+    },
     "Bunny": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "兔女郎"
+          }
+        }
+      }
+    },
+    "CASINO": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "游戏大厅"
+          }
+        }
+      }
+    },
+    "CHANCE  %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短  %lld"
+          }
+        }
+      }
+    },
+    "CHANCE 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短 12"
+          }
+        }
+      }
+    },
+    "COIN BOUNCE": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币勇士"
           }
         }
       }
@@ -138,6 +336,61 @@
         }
       }
     },
+    "COMING SOON": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "即将开放"
+          }
+        }
+      }
+    },
+    "Chance time! 12 quick spins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时短！12 转快转。"
+          }
+        }
+      }
+    },
+    "Clear bets": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空下注"
+          }
+        }
+      }
+    },
+    "Coin Pusher": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推币机"
+          }
+        }
+      }
+    },
+    "Coins are falling at the pusher!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推币机正在掉金币哦！"
+          }
+        }
+      }
+    },
     "Coins are virtual and have no real-world value.": {
       "extractionState": "manual",
       "localizations": {
@@ -145,6 +398,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币是虚拟的，没有现实价值。"
+          }
+        }
+      }
+    },
+    "Coins crossing the battle make the King hit the BOSS. Knock it out to free the Queen, and 50 coins fall from the top. Tap the battle to skip the celebration.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币穿过战斗区，国王就攻击 BOSS。打倒它救出王后，50 枚金币从顶部落下。点一下战斗区可以跳过庆祝动画。"
           }
         }
       }
@@ -160,6 +424,17 @@
         }
       }
     },
+    "Coins won": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赢得的金币"
+          }
+        }
+      }
+    },
     "Done": {
       "extractionState": "manual",
       "localizations": {
@@ -167,6 +442,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "完成"
+          }
+        }
+      }
+    },
+    "Drag down and release to shoot a ball": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "往下拖再松手，发射一颗珠"
           }
         }
       }
@@ -182,6 +468,61 @@
         }
       }
     },
+    "EVEN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双"
+          }
+        }
+      }
+    },
+    "Each coin pushed off the front edge pays 1 coin. Coins that slide off the sides are lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从前沿推落的每枚金币得 1 枚；从两侧滑落的不算。"
+          }
+        }
+      }
+    },
+    "Every prize falls from the top as real coins. They are yours once they drop off the front edge.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有奖励都变成真的金币从顶部落下，从前沿掉下来才算你的。"
+          }
+        }
+      }
+    },
+    "FEVER  %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变  %lld"
+          }
+        }
+      }
+    },
+    "FEVER 12": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变 12"
+          }
+        }
+      }
+    },
     "FEVER! x5": {
       "extractionState": "manual",
       "localizations": {
@@ -193,6 +534,50 @@
         }
       }
     },
+    "Feeling lucky today?": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天手气怎么样？"
+          }
+        }
+      }
+    },
+    "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变（K、Q、7 之后）：12 转，中奖率 1/8。时短（其他大奖之后）：12 转快转，中奖率不变。"
+          }
+        }
+      }
+    },
+    "Fever time! 12 hot spins!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确变！12 转高概率！"
+          }
+        }
+      }
+    },
+    "GOLDEN SHOWER!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金珠雨！"
+          }
+        }
+      }
+    },
     "Get %lld coins": {
       "extractionState": "manual",
       "localizations": {
@@ -200,6 +585,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "领 %lld 金币"
+          }
+        }
+      }
+    },
+    "Glowing coins are special: each one pushed off pays 2 coins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发光的是特殊金币：每推落一枚得 2 金币。"
           }
         }
       }
@@ -248,199 +644,24 @@
         }
       }
     },
-    "Loading ad…": {
+    "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "广告加载中"
+            "value": "大奖：三格同图，大入赏口张开 2、5 或 10 回合。每进一球赔 4 枚，进满 5 球算一回合。"
           }
         }
       }
     },
-    "MAX COMBO! x%lld": {
+    "Jackpots": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "超级连击！x%lld"
-          }
-        }
-      }
-    },
-    "Music": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "背景音乐"
-          }
-        }
-      }
-    },
-    "NICE! x2": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "漂亮！x2"
-          }
-        }
-      }
-    },
-    "No ad available right now. Check your connection and try again.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂时没有可用的广告，请检查网络后再试。"
-          }
-        }
-      }
-    },
-    "Not enough coins": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币不足"
-          }
-        }
-      }
-    },
-    "Privacy Policy": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "隐私政策"
-          }
-        }
-      }
-    },
-    "Reward unlocked!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "奖励到手！"
-          }
-        }
-      }
-    },
-    "Rewards": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "奖励规则"
-          }
-        }
-      }
-    },
-    "Settings": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置"
-          }
-        }
-      }
-    },
-    "Sound & Vibration": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "声音与震动"
-          }
-        }
-      }
-    },
-    "Sound Effects": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "音效"
-          }
-        }
-      }
-    },
-    "Support": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "支持"
-          }
-        }
-      }
-    },
-    "Tap the $ button to drop a coin. Hold it to keep dropping.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点击 $ 按钮投一枚金币，按住不放可以连续投币。"
-          }
-        }
-      }
-    },
-    "The pusher moves back and forth. Coins pushed off the front edge are yours.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "推板前后往复，被推出前沿掉下去的金币都归你。"
-          }
-        }
-      }
-    },
-    "The slot spins %lld times for free": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "老虎机免费转 %lld 次"
-          }
-        }
-      }
-    },
-    "Version": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "版本"
-          }
-        }
-      }
-    },
-    "Vibration": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "震动"
+            "value": "大奖次数"
           }
         }
       }
@@ -467,211 +688,144 @@
         }
       }
     },
-    "Watch ad": {
+    "LUCKY LAMPS": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "看广告"
+            "value": "幸运灯"
           }
         }
       }
     },
-    "Watch an ad for %lld free coins": {
+    "Light all 7 for a golden shower": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "看广告免费领 %lld 金币"
+            "value": "7 盏全亮 下金珠雨"
           }
         }
       }
     },
-    "Tap ▶ +50 at the top to watch a short ad for 50 coins, once every 90 seconds, up to 10 times a day.": {
+    "Loading ad…": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点顶部的 ▶ +50 看一段短广告领 50 金币，每 90 秒一次，每天最多 10 次。"
+            "value": "广告加载中"
           }
         }
       }
     },
-    "Each coin pushed off the front edge pays 1 coin. Coins that slide off the sides are lost.": {
+    "Longest chain": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "从前沿推落的每枚金币得 1 枚；从两侧滑落的不算。"
+            "value": "最长连庄"
           }
         }
       }
     },
-    "Glowing coins are special: each one pushed off pays 2 coins.": {
+    "Lucky cup! Nice catch!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "发光的是特殊金币：每推落一枚得 2 金币。"
+            "value": "幸运杯接住啦！"
           }
         }
       }
     },
-    "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.": {
+    "Lucky lamps": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
+            "value": "幸运灯"
           }
         }
       }
     },
-    "Coins crossing the battle make the King hit the BOSS. Knock it out to free the Queen, and 50 coins fall from the top. Tap the battle to skip the celebration.": {
+    "Lucky lamps: every ball in a tulip or the lucky cup lights one fruit lamp. Light all 7 and 6 free golden balls rain down from the top.": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币穿过战斗区，国王就攻击 BOSS。打倒它救出王后，50 枚金币从顶部落下。点一下战斗区可以跳过庆祝动画。"
+            "value": "幸运灯：珠子每进一次郁金香或幸运杯，点亮一盏水果灯。7 盏全亮，顶上落下 6 颗免费的金珠。"
           }
         }
       }
     },
-    "BET": {
+    "MAX COMBO! x%lld": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "下注"
+            "value": "超级连击！x%lld"
           }
         }
       }
     },
-    "Back to lobby": {
+    "Music": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回大厅"
+            "value": "背景音乐"
           }
         }
       }
     },
-    "Better luck next time!": {
+    "NEXT ROUND": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "下次好运！"
+            "value": "下一回合"
           }
         }
       }
     },
-    "Black": {
+    "NICE! x2": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "黑"
+            "value": "漂亮！x2"
           }
         }
       }
     },
-    "CASINO": {
+    "Nice shot!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "游戏大厅"
+            "value": "进了！"
           }
         }
       }
     },
-    "COIN BOUNCE": {
-      "extractionState": "manual",
+    "No ad available right now. Check your connection and try again.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币勇士"
-          }
-        }
-      }
-    },
-    "COMING SOON": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "即将开放"
-          }
-        }
-      }
-    },
-    "Clear bets": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清空下注"
-          }
-        }
-      }
-    },
-    "Coin Pusher": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "推币机"
-          }
-        }
-      }
-    },
-    "Coins are falling at the pusher!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "推币机正在掉金币哦！"
-          }
-        }
-      }
-    },
-    "EVEN": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双"
-          }
-        }
-      }
-    },
-    "Feeling lucky today?": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今天手气怎么样？"
+            "value": "暂时没有可用的广告，请检查网络后再试。"
           }
         }
       }
@@ -683,6 +837,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "停止下注！"
+          }
+        }
+      }
+    },
+    "Not enough coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币不足"
+          }
+        }
+      }
+    },
+    "Not enough coins. Watch an ad for +50!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币不够了。看广告领 +50！"
           }
         }
       }
@@ -709,6 +885,50 @@
         }
       }
     },
+    "Odds: jackpot 1 in 21.2 per spin. Expected return is about 96% in the gold zone and lower at other strengths.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概率：每转中奖率 1/21.2。金色区下的期望返还约 96%，其他力度更低。"
+          }
+        }
+      }
+    },
+    "One coin buys one ball. Drag the spring launcher down and let go to shoot; AUTO keeps shooting at your last strength. Pull into the gold zone for the best shots. Balls that fall short come back for free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一枚金币买一颗珠。把弹簧拉杆往下拉、松手就发射；「自动」会按上一发的力度连续打。拉到金色那一段最好打。太轻掉回来的珠子不扣币。"
+          }
+        }
+      }
+    },
+    "One more fruit lamp!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再亮一盏水果灯就满了！"
+          }
+        }
+      }
+    },
+    "Out of balls. Add more?": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "珠子打完了，再来点？"
+          }
+        }
+      }
+    },
     "Out of coins? Watch a short ad for 50.": {
       "extractionState": "manual",
       "localizations": {
@@ -716,6 +936,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币不够？看个短广告领 50。"
+          }
+        }
+      }
+    },
+    "PULL": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下拉"
           }
         }
       }
@@ -742,6 +973,28 @@
         }
       }
     },
+    "Pachinko stats": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弹子机统计"
+          }
+        }
+      }
+    },
+    "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选一个筹码，点台面下注，再点 SPIN。每局最多下注 50 枚金币。"
+          }
+        }
+      }
+    },
     "Place your bets!": {
       "extractionState": "manual",
       "localizations": {
@@ -749,6 +1002,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "请下注！"
+          }
+        }
+      }
+    },
+    "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 2 and open or close each time. Side pockets pay 1. The lucky cup sliding along the bottom pays 2.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入口：中间的始动口赔 1 币并转一次数字盘。郁金香赔 2 币，每进一球开合一次。两侧袖口赔 1 币。底部来回滑动的幸运杯赔 2 币。"
+          }
+        }
+      }
+    },
+    "Power": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度"
+          }
+        }
+      }
+    },
+    "Privacy Policy": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私政策"
+          }
+        }
+      }
+    },
+    "REACH": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "听牌"
+          }
+        }
+      }
+    },
+    "ROUND %lld/%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld/%lld 回合"
+          }
+        }
+      }
+    },
+    "Reach! Come on…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "听牌！来呀……"
           }
         }
       }
@@ -775,6 +1094,39 @@
         }
       }
     },
+    "Return": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实际返还率"
+          }
+        }
+      }
+    },
+    "Reward unlocked!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奖励到手！"
+          }
+        }
+      }
+    },
+    "Rewards": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奖励规则"
+          }
+        }
+      }
+    },
     "Roulette": {
       "extractionState": "manual",
       "localizations": {
@@ -786,156 +1138,13 @@
         }
       }
     },
-    "Table limit: %lld coins per spin": {
+    "Round %lld! Keep shooting!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每局最多下注 %lld 枚"
-          }
-        }
-      }
-    },
-    "The roulette table is open!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "轮盘开台啦！"
-          }
-        }
-      }
-    },
-    "Undo": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撤销"
-          }
-        }
-      }
-    },
-    "Welcome! Pick a game.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "欢迎光临！选一个游戏吧。"
-          }
-        }
-      }
-    },
-    "You win %lld!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "赢了 %lld 枚！"
-          }
-        }
-      }
-    },
-    "Every prize falls from the top as real coins. They are yours once they drop off the front edge.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "所有奖励都变成真的金币从顶部落下，从前沿掉下来才算你的。"
-          }
-        }
-      }
-    },
-    "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选一个筹码，点台面下注，再点 SPIN。每局最多下注 50 枚金币。"
-          }
-        }
-      }
-    },
-    "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
-          }
-        }
-      }
-    },
-    "Tap to skip": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点击跳过"
-          }
-        }
-      }
-    },
-    "Tray": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "上皿"
-          }
-        }
-      }
-    },
-    "Not enough coins. Watch an ad for +50!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金币不够了。看广告领 +50！"
-          }
-        }
-      }
-    },
-    "Too weak — the ball rolled back.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "力度太小，珠子退回上皿了。"
-          }
-        }
-      }
-    },
-    "Power": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "力度"
-          }
-        }
-      }
-    },
-    "Welcome to Pachinko! One coin, one ball.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "欢迎来到弹子机！一枚金币一颗珠。"
+            "value": "第 %lld 回合！继续打！"
           }
         }
       }
@@ -947,94 +1156,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "开始啦！瞄准中间的口。"
-          }
-        }
-      }
-    },
-    "Too soft! Turn it up a little.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "太轻了！再用点力。"
-          }
-        }
-      }
-    },
-    "Too hard. Try the gold zone.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "太重了，试试金色那一段。"
-          }
-        }
-      }
-    },
-    "Nice shot!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "进了！"
-          }
-        }
-      }
-    },
-    "The tulip is open!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "郁金香开了！"
-          }
-        }
-      }
-    },
-    "Reach! Come on…": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "听牌！来呀……"
-          }
-        }
-      }
-    },
-    "SUPER REACH! This could be it!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "超级听牌！这次有戏！"
-          }
-        }
-      }
-    },
-    "So close!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "就差一点！"
-          }
-        }
-      }
-    },
-    "Bonus! 2 rounds!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "中奖！2 回合！"
           }
         }
       }
@@ -1061,277 +1182,13 @@
         }
       }
     },
-    "Round %lld! Keep shooting!": {
+    "SHOOT!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "第 %lld 回合！继续打！"
-          }
-        }
-      }
-    },
-    "The gate is open. Keep shooting!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大口开着呢，接着打！"
-          }
-        }
-      }
-    },
-    "You won %lld coins!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这一轮赢了 %lld 枚！"
-          }
-        }
-      }
-    },
-    "Fever time! 12 hot spins!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确变！12 转高概率！"
-          }
-        }
-      }
-    },
-    "Chance time! 12 quick spins.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "时短！12 转快转。"
-          }
-        }
-      }
-    },
-    "%lld in a row!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 连庄！"
-          }
-        }
-      }
-    },
-    "Back to normal. Round over!": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "回到普通状态，这一轮结束！"
-          }
-        }
-      }
-    },
-    "Out of balls. Add more?": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "珠子打完了，再来点？"
-          }
-        }
-      }
-    },
-    "One coin buys one ball. Tap +1, +2, +5 or +10 to load balls, then hold the handle to shoot. Slide the handle to change strength; the gold zone works best. Balls that fall short come back for free.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一枚金币买一颗珠。点 +1、+2、+5、+10 装珠，按住手柄发射。上下滑动手柄调力度，金色那一段最好打。太轻掉回来的珠子不扣币。"
-          }
-        }
-      }
-    },
-    "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 3 and open or close each time. Side pockets pay 2.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "入赏口：中间的始动口赔 1 枚并转一次数字盘。郁金香赔 3 枚，每进一球开合一次。两边袖口赔 2 枚。"
-          }
-        }
-      }
-    },
-    "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大奖：三格同图，大入赏口张开 2、5 或 10 回合。每进一球赔 4 枚，进满 5 球算一回合。"
-          }
-        }
-      }
-    },
-    "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确变（K、Q、7 之后）：12 转，中奖率 1/8。时短（其他大奖之后）：12 转快转，中奖率不变。"
-          }
-        }
-      }
-    },
-    "Odds: jackpot 1 in 22.2 per spin. Expected return is about 96% at the recommended strength and lower at other strengths.": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "概率：每转中奖率 1/22.2。推荐力度下的期望返还约 96%，其他力度更低。"
-          }
-        }
-      }
-    },
-    "Pachinko stats": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "弹子机统计"
-          }
-        }
-      }
-    },
-    "Balls shot": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打出的珠数"
-          }
-        }
-      }
-    },
-    "Coins won": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "赢得的金币"
-          }
-        }
-      }
-    },
-    "Return": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "实际返还率"
-          }
-        }
-      }
-    },
-    "Jackpots": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大奖次数"
-          }
-        }
-      }
-    },
-    "Longest chain": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最长连庄"
-          }
-        }
-      }
-    },
-    "Best streak win": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "单串最高赢取"
-          }
-        }
-      }
-    },
-    "%lld ROUNDS": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 回合"
-          }
-        }
-      }
-    },
-    "ROUND %lld/%lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "第 %lld/%lld 回合"
-          }
-        }
-      }
-    },
-    "FEVER  %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确变  %lld"
-          }
-        }
-      }
-    },
-    "CHANCE  %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "时短  %lld"
-          }
-        }
-      }
-    },
-    "AUTO": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动"
+            "value": "继续打！"
           }
         }
       }
@@ -1347,57 +1204,321 @@
         }
       }
     },
-    "REACH": {
+    "SUPER REACH! This could be it!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "听牌"
+            "value": "超级听牌！这次有戏！"
           }
         }
       }
     },
-    "SHOOT!": {
+    "Settings": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "继续打！"
+            "value": "设置"
           }
         }
       }
     },
-    "NEXT ROUND": {
+    "So close!": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "下一回合"
+            "value": "就差一点！"
           }
         }
       }
     },
-    "FEVER 12": {
+    "Sound & Vibration": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确变 12"
+            "value": "声音与震动"
           }
         }
       }
     },
-    "CHANCE 12": {
+    "Sound Effects": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "时短 12"
+            "value": "音效"
+          }
+        }
+      }
+    },
+    "Spring launcher": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弹簧拉杆"
+          }
+        }
+      }
+    },
+    "Support": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持"
+          }
+        }
+      }
+    },
+    "Table limit: %lld coins per spin": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每局最多下注 %lld 枚"
+          }
+        }
+      }
+    },
+    "Tap the $ button to drop a coin. Hold it to keep dropping.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击 $ 按钮投一枚金币，按住不放可以连续投币。"
+          }
+        }
+      }
+    },
+    "Tap to skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击跳过"
+          }
+        }
+      }
+    },
+    "Tap ▶ +50 at the top to watch a short ad for 50 coins, once every 90 seconds, up to 10 times a day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点顶部的 ▶ +50 看一段短广告领 50 金币，每 90 秒一次，每天最多 10 次。"
+          }
+        }
+      }
+    },
+    "The gate is open. Keep shooting!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大口开着呢，接着打！"
+          }
+        }
+      }
+    },
+    "The pusher moves back and forth. Coins pushed off the front edge are yours.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推板前后往复，被推出前沿掉下去的金币都归你。"
+          }
+        }
+      }
+    },
+    "The roulette table is open!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轮盘开台啦！"
+          }
+        }
+      }
+    },
+    "The slot spins %lld times for free": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "老虎机免费转 %lld 次"
+          }
+        }
+      }
+    },
+    "The tulip is open!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "郁金香开了！"
+          }
+        }
+      }
+    },
+    "Too hard. Try the gold zone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太重了，试试金色那一段。"
+          }
+        }
+      }
+    },
+    "Too soft! Pull the spring further.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太轻了！弹簧再拉多一点。"
+          }
+        }
+      }
+    },
+    "Too weak — the ball rolled back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度太小，珠子退回上皿了。"
+          }
+        }
+      }
+    },
+    "Tray": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上皿"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销"
+          }
+        }
+      }
+    },
+    "Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本"
+          }
+        }
+      }
+    },
+    "Vibration": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "震动"
+          }
+        }
+      }
+    },
+    "Watch ad": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看广告"
+          }
+        }
+      }
+    },
+    "Watch an ad for %lld free coins": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看广告免费领 %lld 金币"
+          }
+        }
+      }
+    },
+    "Welcome to Pachinko! Pull the spring and let go.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎来到弹子机！往下拉弹簧，松手发射。"
+          }
+        }
+      }
+    },
+    "Welcome! Pick a game.": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎光临！选一个游戏吧。"
+          }
+        }
+      }
+    },
+    "You win %lld!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赢了 %lld 枚！"
+          }
+        }
+      }
+    },
+    "You won %lld coins!": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这一轮赢了 %lld 枚！"
           }
         }
       }

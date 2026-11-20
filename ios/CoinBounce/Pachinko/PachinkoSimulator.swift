@@ -10,14 +10,20 @@ enum PachinkoSimulator {
         var start = 0.0, wingsStart = 0.0, tulip = 0.0, side = 0.0, attacker = 0.0
         var warp = 0.0, foul = 0.0, stuck = 0.0
         var meanFlight = 0.0, maxFlight = 0.0
+        /// v12.6 幸运杯
+        var catcher = 0.0
+        /// v12.6 金珠雨里一颗赠送珠的进球率 [始动口, 翼片开着时的始动口, 郁金香, 袖口, 大入赏口, 幸运杯]
+        var shower: [Double] = [0, 0, 0, 0, 0, 0]
 
-        /// 参考模拟器的数字（设计文档 3.3 / 5.5，power 0.25）
-        static let reference = PocketRates(start: 0.0757, wingsStart: 0.2188, tulip: 0.0889, side: 0.1283, attacker: 0.399, warp: 0.105)
+        /// 参考模拟器的数字（设计文档 3.3 / 5.5，power 0.25）；幸运杯和金珠雨是 v12.6 用 Swift 内核测的（pks rates）
+        static let reference = PocketRates(start: 0.0757, wingsStart: 0.2188, tulip: 0.0889, side: 0.1283, attacker: 0.399, warp: 0.105,
+                                            catcher: 0.0569, shower: [0.0547, 0.2013, 0.0852, 0.1312, 0.4073, 0.0588])
     }
 
     struct Stats {
         var fired = 0, paid = 0, fouls = 0
         var payStart = 0, payTulip = 0, paySide = 0, payAttacker = 0
+        var payCatcher = 0, showers = 0, bonusBalls = 0
         var startIn = 0, startOverflow = 0, spins = 0, reaches = 0
         var jackpots = 0, firstHits = 0, stuck = 0
         var maxInFlight = 0, maxFlight = 0.0, time = 0.0
@@ -28,6 +34,7 @@ enum PachinkoSimulator {
 
         mutating func add(_ o: Stats) {
             fired += o.fired; paid += o.paid; fouls += o.fouls
+            payCatcher += o.payCatcher; showers += o.showers; bonusBalls += o.bonusBalls
             payStart += o.payStart; payTulip += o.payTulip; paySide += o.paySide; payAttacker += o.payAttacker
             startIn += o.startIn; startOverflow += o.startOverflow; spins += o.spins; reaches += o.reaches
             jackpots += o.jackpots; firstHits += o.firstHits; stuck += o.stuck
@@ -37,17 +44,24 @@ enum PachinkoSimulator {
     }
 
     // MARK: 进球率（台面状态固定，一颗一颗打）
-    static func pocketRates(power: Double, balls: Int, wings: Bool, attacker: Bool, seed: UInt64) -> PocketRates {
+    static func pocketRates(power: Double, balls: Int, wings: Bool, attacker: Bool, seed: UInt64, shower: Bool = false) -> PocketRates {
         var ph = PachinkoPhysics(rng: PachinkoRandom(seed: seed))
         ph.wingsOpen = wings
         ph.attackerOpen = attacker
-        var start = 0, tulip = 0, side = 0, atk = 0, warp = 0, foul = 0, stuck = 0, landed = 0
+        var start = 0, tulip = 0, side = 0, atk = 0, warp = 0, foul = 0, stuck = 0, landed = 0, cup = 0
         var tsum = 0.0, tmax = 0.0
         for _ in 0..<balls {
-            guard var b = ph.launch(power: power) else { foul += 1; continue }
+            var b: PachinkoBall
+            if shower {
+                b = ph.showerBall()
+            } else {
+                guard let l = ph.launch(power: power) else { foul += 1; continue }
+                b = l
+            }
             var warped = false
             var pocket: PachinkoPocket?
             while pocket == nil {
+                ph.tick()
                 pocket = ph.step(&b)
                 if b.onStage { warped = true }
             }
@@ -61,6 +75,7 @@ enum PachinkoSimulator {
             case .side: side += 1
             case .attacker: atk += 1
             case .stuck: stuck += 1
+            case .catcher: cup += 1
             case .out: break
             }
             ph.apply(pocket!)
@@ -72,6 +87,7 @@ enum PachinkoSimulator {
         r.tulip = Double(tulip) / n
         r.side = Double(side) / n
         r.attacker = Double(atk) / n
+        r.catcher = Double(cup) / n
         r.warp = Double(warp) / n
         r.foul = Double(foul) / Double(max(balls, 1))
         r.stuck = Double(stuck) / n
@@ -85,6 +101,10 @@ enum PachinkoSimulator {
         var r = pocketRates(power: power, balls: ballsEach, wings: false, attacker: false, seed: seed)
         r.wingsStart = pocketRates(power: power, balls: ballsEach, wings: true, attacker: false, seed: seed).start
         r.attacker = pocketRates(power: power, balls: ballsEach, wings: false, attacker: true, seed: seed).attacker
+        let s0 = pocketRates(power: power, balls: ballsEach, wings: false, attacker: false, seed: seed &+ 1, shower: true)
+        let s1 = pocketRates(power: power, balls: ballsEach, wings: true, attacker: false, seed: seed &+ 1, shower: true)
+        let s2 = pocketRates(power: power, balls: ballsEach, wings: false, attacker: true, seed: seed &+ 1, shower: true)
+        r.shower = [s0.start, s1.start, s0.tulip, s0.side, s2.attacker, s0.catcher]
         return r
     }
 
@@ -93,6 +113,7 @@ enum PachinkoSimulator {
         var ph = PachinkoPhysics(rng: PachinkoRandom(seed: seed))
         var lottery = PachinkoRandom(seed: seed &* 7919 &+ 12345)
         var m = PachinkoMachine()
+        var f = PachinkoFeatures()
         var st = Stats()
         var events: [PachinkoMachine.Event] = []
         events.reserveCapacity(4)
@@ -120,12 +141,18 @@ enum PachinkoSimulator {
                     fireT = 0
                 }
             }
+            ph.tick()
+            if f.advance(dt) {
+                flying.append(ph.showerBall())
+                st.bonusBalls += 1
+            }
             // 珠子
             var i = 0
             while i < flying.count {
                 guard let p = ph.step(&flying[i]) else { i += 1; continue }
                 st.maxFlight = max(st.maxFlight, flying[i].age)
                 pay(p, machine: &m, lottery: &lottery, stats: &st)
+                if f.pocket(p).shower { st.showers += 1 }
                 ph.apply(p)
                 ph.attackerOpen = m.attackerOpen
                 flying.swapAt(i, flying.count - 1)
@@ -136,8 +163,8 @@ enum PachinkoSimulator {
             m.advance(dt, events: &events)
             for e in events { count(e, &st) }
             st.time += dt
-            if st.fired >= maxBalls && flying.isEmpty && m.spin == nil && m.holds.isEmpty && m.phase == .play { break }
-            if st.fired >= maxBalls && flying.isEmpty && m.phase == .round { break }
+            if st.fired >= maxBalls && flying.isEmpty && f.showerQueue == 0 && m.spin == nil && m.holds.isEmpty && m.phase == .play { break }
+            if st.fired >= maxBalls && flying.isEmpty && f.showerQueue == 0 && m.phase == .round { break }
         }
         return st
     }
@@ -147,10 +174,12 @@ enum PachinkoSimulator {
     static func runFast(balls maxBalls: Int, rates: PocketRates, seed: UInt64) -> Stats {
         var rng = PachinkoRandom(seed: seed)
         var m = PachinkoMachine()
+        var f = PachinkoFeatures()
         var st = Stats()
         var events: [PachinkoMachine.Event] = []
         events.reserveCapacity(4)
         let dt = 0.1
+        var bonusPending = 0
         var sub = 0
         while st.fired < maxBalls {
             if sub == 0 {
@@ -162,8 +191,34 @@ enum PachinkoSimulator {
                 if u < ps { p = .start }
                 else if u < ps + rates.tulip { p = .tulipLeft }
                 else if u < ps + rates.tulip + rates.side { p = .side }
-                else if m.attackerOpen && u < ps + rates.tulip + rates.side + rates.attacker { p = .attacker }
+                else {
+                    // 幸运杯只接「本来要出界」的珠：翼片、大入赏口开着时出界的少了，接到的也按比例少
+                    let pa = m.attackerOpen ? rates.attacker : 0
+                    let base = ps + rates.tulip + rates.side
+                    let cup = rates.catcher * max(0, 1 - base - pa) / max(1e-9, 1 - rates.start - rates.tulip - rates.side)
+                    if u < base + pa { p = .attacker } else if u < base + pa + cup { p = .catcher }
+                }
                 pay(p, machine: &m, lottery: &rng, stats: &st)
+                if f.pocket(p).shower { st.showers += 1; bonusPending += f.drainShower() }
+            } else if bonusPending > 0 {
+                // 赠送珠：一步一颗，按金珠雨的进球率抽
+                bonusPending -= 1
+                st.bonusBalls += 1
+                let sr = rates.shower
+                let u = rng.uniform()
+                let ps = m.wingsOpen ? sr[1] : sr[0]
+                var p: PachinkoPocket = .out
+                if u < ps { p = .start }
+                else if u < ps + sr[2] { p = .tulipLeft }
+                else if u < ps + sr[2] + sr[3] { p = .side }
+                else {
+                    let pa = m.attackerOpen ? sr[4] : 0
+                    let base = ps + sr[2] + sr[3]
+                    let cup = sr[5] * max(0, 1 - base - pa) / max(1e-9, 1 - sr[0] - sr[2] - sr[3])
+                    if u < base + pa { p = .attacker } else if u < base + pa + cup { p = .catcher }
+                }
+                pay(p, machine: &m, lottery: &rng, stats: &st)
+                if f.pocket(p).shower { st.showers += 1; bonusPending += f.drainShower() }
             }
             sub = (sub + 1) % 6
             events.removeAll(keepingCapacity: true)
@@ -188,6 +243,8 @@ enum PachinkoSimulator {
         case .attacker:
             st.payAttacker += c.attackerPayout; st.paid += c.attackerPayout
             m.attackerEntered()
+        case .catcher:
+            st.payCatcher += c.catcherPayout; st.paid += c.catcherPayout
         case .stuck:
             st.stuck += 1
         case .out:
