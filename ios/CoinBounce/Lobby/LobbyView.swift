@@ -10,6 +10,11 @@ struct LobbyView: View {
     @State private var showHelp = false
     @State private var showAdUnavailableHint = false
     @State private var glow = false
+    @State private var hallReady = false
+    @State private var doorRects: [CGRect] = []
+    @State private var signRect: CGRect = .zero
+    @State private var placeholderGone = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { geo in
@@ -17,41 +22,51 @@ struct LobbyView: View {
             let side = w * 0.045 + 10   // 两侧立柱里面再留一点
             let doorW = min((w - side * 2 - 6 * 3) / 4, 150)
             let doorH = min(doorW * 2.1, h * 0.3)
-            let bunnyH = min(h * 0.42, 380)
+            // v12.9：大厅是一个 3D 场景（-fxOff 时退回原来的 2D 画法）
+            let use3D = VisualFX.enabled
+            let bunnyH = use3D ? min(h * 0.38, 340) : min(h * 0.42, 380)
             ZStack {
                 LobbyBackdrop().ignoresSafeArea()
-                // v12.3：吊灯照下来的光柱，招牌和地毯中间各一圈光
-                LightShafts()
-                LightPool(strength: 0.16).frame(width: w * 1.1, height: h * 0.22).position(x: w / 2, y: h * 0.16)
-                LightPool(strength: 0.14).frame(width: w * 0.9, height: h * 0.2).position(x: w / 2, y: h * 0.86)
+                if use3D {
+                    // 3D 画面第一帧出来之前，下面的 2D 背景先顶着；出来以后淡入
+                    hall3D(topInset: geo.safeAreaInsets.top + 46)
+                        .ignoresSafeArea()
+                } else {
+                    // v12.3：吊灯照下来的光柱，招牌和地毯中间各一圈光
+                    LightShafts()
+                    LightPool(strength: 0.16).frame(width: w * 1.1, height: h * 0.22).position(x: w / 2, y: h * 0.16)
+                    LightPool(strength: 0.14).frame(width: w * 0.9, height: h * 0.2).position(x: w / 2, y: h * 0.86)
+                }
                 VStack(spacing: 0) {
                     topBar(width: w - side * 2)
                         .padding(.horizontal, side)
                         .padding(.top, 6)
-                    LobbySign(glow: glow)
-                        .frame(height: min(h * 0.13, 110))
-                        .padding(.horizontal, 22)
-                        .padding(.top, h * 0.02)
-                    Spacer(minLength: 8)
-                    HStack(alignment: .bottom, spacing: 6) {
-                        LobbyDoor(title: String(localized: "Coin Pusher"), tint: ArtPalette.gold, icon: .pusher, locked: false, width: doorW, height: doorH) {
-                            router.open(.pusher)
+                    if !use3D {
+                        LobbySign(glow: glow)
+                            .frame(height: min(h * 0.13, 110))
+                            .padding(.horizontal, 22)
+                            .padding(.top, h * 0.02)
+                        Spacer(minLength: 8)
+                        HStack(alignment: .bottom, spacing: 6) {
+                            LobbyDoor(title: String(localized: "Coin Pusher"), tint: ArtPalette.gold, icon: .pusher, locked: false, width: doorW, height: doorH) {
+                                router.open(.pusher)
+                            }
+                            .accessibilityIdentifier("doorPusher")
+                            LobbyDoor(title: String(localized: "Roulette"), tint: Color(red: 0.2, green: 0.75, blue: 0.45), icon: .roulette, locked: false, width: doorW, height: doorH) {
+                                router.open(.roulette)
+                            }
+                            .accessibilityIdentifier("doorRoulette")
+                            // v12.7：第三扇门换成弹球台（弹子机的代码还在，-startPachinko 能进）
+                            LobbyDoor(title: String(localized: "Pinball"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
+                                router.open(.pinball)
+                            }
+                            .accessibilityIdentifier("doorPachinko")
+                            // v12.8：第四扇门，老虎机
+                            LobbyDoor(title: String(localized: "Slots"), tint: Color(red: 0.85, green: 0.3, blue: 0.75), icon: .slots, locked: false, width: doorW, height: doorH) {
+                                router.open(.slots)
+                            }
+                            .accessibilityIdentifier("doorSlots")
                         }
-                        .accessibilityIdentifier("doorPusher")
-                        LobbyDoor(title: String(localized: "Roulette"), tint: Color(red: 0.2, green: 0.75, blue: 0.45), icon: .roulette, locked: false, width: doorW, height: doorH) {
-                            router.open(.roulette)
-                        }
-                        .accessibilityIdentifier("doorRoulette")
-                        // v12.7：第三扇门换成弹球台（弹子机的代码还在，-startPachinko 能进）
-                        LobbyDoor(title: String(localized: "Pinball"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
-                            router.open(.pinball)
-                        }
-                        .accessibilityIdentifier("doorPachinko")
-                        // v12.8：第四扇门，老虎机
-                        LobbyDoor(title: String(localized: "Slots"), tint: Color(red: 0.85, green: 0.3, blue: 0.75), icon: .slots, locked: false, width: doorW, height: doorH) {
-                            router.open(.slots)
-                        }
-                        .accessibilityIdentifier("doorSlots")
                     }
                     Spacer(minLength: 8)
                     // 兔女郎迎宾：点她换一句话、换一个动作
@@ -60,7 +75,7 @@ struct LobbyView: View {
                             .contentShape(Rectangle())
                             .onTapGesture { greet() }
                             .accessibilityIdentifier("lobbyBunny")
-                            .padding(.leading, w * 0.12)
+                            .padding(.leading, use3D ? w * 0.04 : w * 0.12)
                         Spacer(minLength: 0)
                     }
                     .frame(height: bunnyH)
@@ -82,11 +97,10 @@ struct LobbyView: View {
         .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(isPresented: $showHelp) { HelpView() }
+        .onReceive(MotionParallax.shared.$offset) { Lobby3DScene.shared.setTilt($0) }
         .onAppear {
             glow = true
             greet()
-            // v12.5：大厅空闲时后台预热弹子机的 3D 场景（第一次进去不用等）
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { Pachinko3DScene.prewarmOnce() }
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
@@ -94,10 +108,82 @@ struct LobbyView: View {
             if args.contains("-lobbyBunnyCycle") {
                 Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in greet() }
             }
+            // -debugLobbyReturn：3 秒后进老虎机、再过 3 秒回大厅（检查回来以后 3D 大厅还在）
+            if args.contains("-debugLobbyReturn") && !Self.debugReturned {
+                Self.debugReturned = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { router.open(.slots) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6) { router.backToLobby() }
+            }
             if let i = args.firstIndex(of: "-debugEnterPachinkoAfter"), i + 1 < args.count, let t = Double(args[i + 1]) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + t) { router.open(.pachinko) }
             }
             #endif
+        }
+    }
+
+    private static var debugReturned = false
+    /// 调试：-debugLobbyRects 把四扇门的点按区域用绿框画出来
+    private static let debugRects = ProcessInfo.processInfo.arguments.contains("-debugLobbyRects")
+
+    /// v12.9 3D 大厅 + 四扇门的点按区域（透明按钮，位置是从 3D 场景里投影出来的）。
+    /// 3D 画面的第一帧要等着色器编译（模拟器上几秒，真机不到一秒）：这段时间先在同样的位置画 2D 的招牌和门，
+    /// 门马上就能点；3D 出来以后原地淡入盖住它们
+    private func hall3D(topInset: CGFloat) -> some View {
+        let scene = Lobby3DScene.shared
+        let refresh = {
+            doorRects = scene.doorRects()
+            signRect = scene.signRect()
+        }
+        return ZStack(alignment: .topLeading) {
+            if !placeholderGone {
+                if signRect.width > 10 {
+                    LobbySign(glow: glow)
+                        .frame(width: signRect.width, height: signRect.height)
+                        .position(x: signRect.midX, y: signRect.midY)
+                }
+                ForEach(Array(scene.doors.enumerated()), id: \.offset) { i, door in
+                    if i < doorRects.count {
+                        let r = doorRects[i]
+                        LobbyDoor(title: door.title, tint: Color(door.tint), icon: Self.icon(for: door.screen), locked: false, width: r.width - 6, height: r.height) {}
+                            .allowsHitTesting(false)
+                            .position(x: r.midX, y: r.midY)
+                    }
+                }
+            }
+            Lobby3DView(topInset: topInset, reduceMotion: reduceMotion,
+                        onLayout: { DispatchQueue.main.async { refresh() } },
+                        onFirstFrame: {
+                            refresh()
+                            withAnimation(.easeOut(duration: 0.35)) { hallReady = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { placeholderGone = true }
+                        })
+                .opacity(hallReady ? 1 : 0)
+            ForEach(Array(scene.doors.enumerated()), id: \.offset) { i, door in
+                if i < doorRects.count {
+                    let r = doorRects[i]
+                    Button {
+                        AudioManager.shared.play(.buttonTap)
+                        scene.pulse(door.screen)
+                        router.open(door.screen)
+                    } label: {
+                        Color.clear.contentShape(Rectangle())
+                    }
+                    .frame(width: r.width, height: r.height)
+                    .border(Self.debugRects ? Color.green : Color.clear, width: 2)
+                    .accessibilityIdentifier(door.identifier)
+                    .accessibilityLabel(Text(verbatim: door.title))
+                    .position(x: r.midX, y: r.midY)
+                }
+            }
+        }
+    }
+
+    private static func icon(for screen: AppRouter.Screen) -> LobbyDoor.Icon {
+        switch screen {
+        case .pusher: return .pusher
+        case .roulette: return .roulette
+        case .slots: return .slots
+        default: return .pachinko
         }
     }
 
