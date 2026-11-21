@@ -973,6 +973,16 @@
         }
       }
     },
+    "God of Wealth": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "财神"
+          }
+        }
+      }
+    },
     "HOLD & RESPIN": {
       "localizations": {
         "zh-Hans": {

@@ -27,6 +27,10 @@ struct CaishenView: View {
     @State private var featureBanner = false
     @State private var bob = false
     /// 大奖出来时字弹一下、屏幕闪一下
+    /// 机器旁边的财神现在是哪个动作
+    @State private var mascot: CaishenPose = .ingot
+    @State private var mascotPop: CGFloat = 1
+    @State private var mascotToken = 0
     @State private var punch: CGFloat = 1
     @State private var flash = 0.0
 
@@ -78,12 +82,17 @@ struct CaishenView: View {
                     Spacer(minLength: 2)
                     HStack(alignment: .bottom, spacing: 0) {
                         // 财神站在左下角（撒钱时飞到上面去，这里先藏起来）
-                        // v13.1：机器旁边是一堆 3D 的元宝和金币（财神的形象等成品图，代码画的平面小人先撤掉）
-                        TreasurePile()
-                            .frame(width: w * 0.3, height: min(h * 0.2, 170))
-                            .scaleEffect(bob ? 1.03 : 0.99, anchor: .bottom)
-                            .shadow(color: ArtPalette.gold.opacity(0.5), radius: 10)
+                        // v13.1c：财神本人（hj 出的图）。平时捧着元宝，小奖挥手，大奖欢呼，锁定重转时拱手
+                        CaishenArtView(pose: mascot)
+                            .id(mascot)
+                            .transition(.identity)
+                            .frame(width: w * 0.3, height: min(h * 0.24, 200), alignment: .bottom)
+                            .scaleEffect(bob ? 1.025 : 0.985, anchor: .bottom)
+                            .scaleEffect(mascotPop, anchor: .bottom)
+                            .shadow(color: .black.opacity(0.5), radius: 5, y: 4)
+                            .opacity(gift == nil && celebration == nil ? 1 : 0)
                             .allowsHitTesting(false)
+                            .accessibilityIdentifier("caishenMascot")
                         controls(width: w * 0.7 - 12)
                     }
                     .padding(.horizontal, 6)
@@ -155,9 +164,9 @@ struct CaishenView: View {
             CoinRain()
             if !reduceMotion { CoinBurst(count: 36).position(x: w / 2, y: h * 0.34) }
             VStack(spacing: -6) {
-                TreasurePile()
-                    .frame(width: w * 0.8, height: w * 0.72)
-                    .shadow(color: ArtPalette.gold, radius: 22)
+                CaishenArtView(pose: .cheer)
+                    .frame(height: h * 0.4)
+                    .shadow(color: ArtPalette.gold, radius: 24)
                 Title3D(text: String(localized: "The God of Wealth is here!"), tint: UIColor(red: 0.95, green: 0.1, blue: 0.08, alpha: 1))
                     .frame(width: w * 0.86)
                 HStack(spacing: 8) {
@@ -200,6 +209,10 @@ struct CaishenView: View {
             CoinRain(count: 30 + c.tier * 22)
             if !reduceMotion { CoinBurst(count: 26 + c.tier * 12).position(x: w / 2, y: h * 0.4) }
             VStack(spacing: -4) {
+                CaishenArtView(pose: .cheer)
+                    .frame(height: h * 0.26)
+                    .shadow(color: ArtPalette.gold.opacity(0.9), radius: 18)
+                    .padding(.bottom, 2)
                 Title3D(text: title, tint: tint)
                     .frame(width: w * (0.92 + CGFloat(c.tier) * 0.02))
                     .accessibilityIdentifier("caishenCelebration")
@@ -281,7 +294,7 @@ struct CaishenView: View {
         let audio = AudioManager.shared, haptic = HapticManager.shared
         let token = spinToken
         switch cue {
-        case .spinStarted: audio.play(.slotSpin); haptic.slotStart()
+        case .spinStarted: audio.play(.slotSpin); haptic.slotStart(); setMascot(.ingot)
         case .reelStopped: audio.play(.slotStop); haptic.slotColumnStop()
         case .result(let win, let multiple):
             guard win > 0 else { return }
@@ -292,6 +305,7 @@ struct CaishenView: View {
                 else { audio.play(.winBig); haptic.bigWin() }
             } else {
                 audio.play(.winSmall); haptic.smallWin()
+                setMascot(.wave, backAfter: 1.8)
             }
         case .gift(let win):
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -311,6 +325,7 @@ struct CaishenView: View {
             }
         case .featureStarted:
             audio.play(.pkAttacker); haptic.bonusTriggered()
+            setMascot(.greet)
             featureBanner = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
                 guard spinToken == token else { return }
@@ -362,6 +377,20 @@ struct CaishenView: View {
         }
     }
 
+    /// 换财神的动作（换的时候弹一下）；backAfter 秒后回到捧元宝
+    private func setMascot(_ pose: CaishenPose, backAfter: Double? = nil) {
+        mascotToken += 1
+        let token = mascotToken
+        if mascot != pose {
+            mascot = pose
+            mascotPop = 1.12
+            withAnimation(.interpolatingSpring(stiffness: 300, damping: 10)) { mascotPop = 1 }
+        }
+        if let backAfter {
+            DispatchQueue.main.asyncAfter(deadline: .now() + backAfter) { if mascotToken == token { setMascot(.ingot) } }
+        }
+    }
+
     /// 字先放大再弹回来
     private func punchIn() {
         punch = 1.35
@@ -371,6 +400,7 @@ struct CaishenView: View {
     private func endCelebration() {
         guard celebration != nil else { return }
         celebration = nil
+        setMascot(.cheer, backAfter: 2.2)
         let token = spinToken
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proceed(token: token) }
     }

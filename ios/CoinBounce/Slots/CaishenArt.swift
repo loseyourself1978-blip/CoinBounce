@@ -187,6 +187,27 @@ struct CaishenSymbolView: View {
         if symbol == .coin, let value = coinValue {
             FortuneCoin(size: size * 0.94, value: value, bet: coinBet)
                 .frame(width: size, height: size)
+        } else if symbol == .wild, let base = Icon3D.image(.symbol(.wild)), let head = CaishenPose.head.image {
+            // 百搭：3D 的金边圆牌 + 财神头像（帽翅伸到牌外面）+ WILD 字牌
+            ZStack {
+                Image(uiImage: base).resizable().interpolation(.high)
+                    .frame(width: size * 1.12, height: size * 1.12)
+                Image(uiImage: head).resizable().interpolation(.high).scaledToFit()
+                    .frame(width: size * 1.04)
+                    .offset(y: -size * 0.07)
+                if showRibbon {
+                    Text(verbatim: "WILD")
+                        .font(.system(size: size * 0.2, weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: Color(red: 0.4, green: 0, blue: 0.02), radius: 0, x: 0.8, y: 1)
+                        .padding(.horizontal, size * 0.09).padding(.vertical, size * 0.012)
+                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.95, green: 0.15, blue: 0.12), Color(red: 0.6, green: 0.02, blue: 0.05)], startPoint: .top, endPoint: .bottom)))
+                        .overlay(Capsule().stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1, size * 0.025)))
+                        .offset(y: size * 0.4)
+                }
+            }
+            .frame(width: size, height: size)
+            .shadow(color: .black.opacity(0.55), radius: size * 0.04, x: 0, y: size * 0.05)
         } else if let img = Icon3D.image(.symbol(symbol)) {
             Image(uiImage: img)
                 .resizable()
@@ -418,5 +439,33 @@ struct CountingText: View, Animatable {
     var body: some View {
         Text(verbatim: prefix + Int(value.rounded()).formatted(.number.grouping(.automatic)))
             .monospacedDigit()
+    }
+}
+
+// MARK: - v13.1c 财神（hj 生成的 3D 风格图，见 docs/ART_CREDITS.md）
+enum CaishenPose: String, CaseIterable {
+    case greet = "CaishenGreet"     // 拱手
+    case wave = "CaishenWave"       // 挥手
+    case cheer = "CaishenCheer"     // 举起双手欢呼
+    case head = "CaishenHead"       // 半身头像
+    case ingot = "CaishenIngot"     // 捧着元宝
+    case idle = "CaishenIdle"       // 站着
+
+    var image: UIImage? { UIImage(named: rawValue) }
+}
+
+/// 一张财神图（缺图时退回代码画的小人）
+struct CaishenArtView: View {
+    let pose: CaishenPose
+    var body: some View {
+        if let img = pose.image {
+            Image(uiImage: img)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                .accessibilityLabel(Text("God of Wealth"))
+        } else {
+            CaishenFigure()
+        }
     }
 }

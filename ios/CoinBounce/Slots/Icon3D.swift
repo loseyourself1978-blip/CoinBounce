@@ -488,22 +488,13 @@ enum Icon3D {
         return node
     }
 
-    /// 百搭：金边红珐琅的圆牌，上面一只小元宝和 WILD
+    /// 百搭的底牌：金边红珐琅的圆牌
     static func wild() -> SCNNode {
         let node = SCNNode()
         node.addChildNode(disc(radius: 1.0, depth: 0.14, gold(rough: 0.16)))
         node.addChildNode(disc(radius: 0.84, depth: 0.05, lacquer(red, glow: 0.35, rough: 0.3), z: 0.07))
         node.addChildNode(ring(radius: 0.92, pipe: 0.085, gold(rough: 0.12), z: 0.07))
-        let small = ingot()
-        small.scale = SCNVector3(0.46, 0.46, 0.46)
-        small.position = SCNVector3(0, 0.34, 0.4)
-        small.eulerAngles = SCNVector3(0.3, 0, 0)
-        node.addChildNode(small)
-        let font = UIFont.systemFont(ofSize: 10, weight: .black)
-        let rounded = font.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 10) } ?? font
-        let t = text("WILD", font: rounded, depth: 1.6, chamfer: 0.2, front: gold(rough: 0.12), side: gold(rough: 0.3), width: 1.38)
-        t.position = SCNVector3(0, -0.3, 0.18)
-        node.addChildNode(t)
+        // v13.1c：牌面上的财神头像和 WILD 字是另外叠上去的（CaishenSymbolView），这里只做金边红珐琅的底牌
         node.scale = SCNVector3(0.98, 0.98, 0.98)
         return node
     }

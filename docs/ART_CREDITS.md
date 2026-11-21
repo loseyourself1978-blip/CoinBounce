@@ -21,6 +21,12 @@
 - App 里用的是裁掉透明边、缩到 1200 高的版本（头像裁到脸和领结，512×512），素材名不变（`BunnyIdle`、`BunnyCheer`、`BunnyClap`、`BunnyBlowKiss`（挥手）、`BunnyJump`、`BunnyHeadshot`）。
 - 内容要求和原来一样：成年角色、经典兔女郎服装、无裸露、无性暗示动作。
 
+## 财神（v13.1 起使用，老虎机「财神到」）
+
+- 2026-11-22 hj 用 ChatGPT 生成了 6 张 3D 渲染风格的财神（拱手、挥手、举手欢呼、半身头像、捧元宝、站立），透明底，原始文件在本地 `~/Downloads/兔女郎素材/caishen/`。
+- App 里用的是裁掉透明边、缩到 1100 高的版本（头像 800 高）：`CaishenGreet`、`CaishenWave`、`CaishenCheer`、`CaishenHead`、`CaishenIngot`、`CaishenIdle`。
+- 财神是公有领域的民间神祇形象，这一版是原创生成的造型，没有照搬任何现成游戏或影视里的角色。
+
 ## 国王与王后（v12 / 1.1 起使用）
 
 | 素材名 | 尺寸 | 用途 |
