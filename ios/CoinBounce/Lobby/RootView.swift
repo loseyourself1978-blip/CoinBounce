@@ -36,7 +36,7 @@ struct RootView: View {
                     .transition(.opacity)
             }
             if router.screen == .slots {
-                SlotsView(onExit: { router.backToLobby() })
+                CaishenView(onExit: { router.backToLobby() })
                     .transition(.opacity)
             }
             if router.screen == .pinball {

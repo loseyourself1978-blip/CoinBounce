@@ -22,14 +22,15 @@ struct RouletteWheelFace: View {
                 // 号码圈
                 ctx.fill(wedge(i, R * 0.74, R * 0.88), with: .color(color))
                 // 球落进去的格子（颜色暗一点）
-                ctx.fill(wedge(i, R * 0.52, R * 0.74), with: .color(color.opacity(0.72)))
+                ctx.fill(wedge(i, R * 0.52, R * 0.74), with: .color(color))
+                ctx.fill(wedge(i, R * 0.52, R * 0.74), with: .radialGradient(Gradient(colors: [Color.black.opacity(0.55), Color.black.opacity(0.18)]), center: c, startRadius: R * 0.52, endRadius: R * 0.74))
                 ctx.stroke(wedge(i, R * 0.52, R * 0.88), with: .color(ArtPalette.goldLight.opacity(0.9)), lineWidth: max(0.5, R * 0.008))
                 // 号码：沿圆周摆，头朝外
                 let a = Double(i) * slot
                 var t = ctx
                 t.translateBy(x: c.x + CGFloat(sin(a)) * R * 0.81, y: c.y - CGFloat(cos(a)) * R * 0.81)
                 t.rotate(by: .radians(a))
-                t.draw(Text("\(number)").font(.system(size: R * 0.105, weight: .heavy, design: .rounded)).foregroundColor(.white), at: .zero)
+                t.draw(Text("\(number)").font(.system(size: R * 0.1, weight: .bold, design: .serif)).foregroundColor(.white), at: .zero)
             }
             // 中心：木色锥面 + 金色转轴
             let hub = CGRect(x: c.x - R * 0.52, y: c.y - R * 0.52, width: R * 1.04, height: R * 1.04)

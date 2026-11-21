@@ -42,18 +42,57 @@ final class RouletteWheel3D: NSObject, SCNSceneRendererDelegate {
 
     /// 2D 的转子画（号码圈、格子、中心）渲染成贴图。只在主线程调
     @MainActor
-    static func faceImage(size: CGFloat = 1024) -> UIImage? {
+    static func faceImage(size: CGFloat = 2048) -> UIImage? {
         let renderer = ImageRenderer(content: RouletteWheelFace().frame(width: size, height: size))
         renderer.scale = 1
         return renderer.uiImage
     }
     private static var cachedFace: UIImage?
 
+    /// v13 木纹贴图（桃花心木）：深浅交替的细条纹加几道大的色带，代码画的
+    static let woodImage: UIImage = {
+        let size = CGSize(width: 1024, height: 1024)
+        let fmt = UIGraphicsImageRendererFormat()
+        fmt.scale = 1
+        fmt.opaque = true
+        return UIGraphicsImageRenderer(size: size, format: fmt).image { ctx in
+            let g = ctx.cgContext
+            UIColor(red: 0.36, green: 0.13, blue: 0.06, alpha: 1).setFill()
+            g.fill(CGRect(origin: .zero, size: size))
+            var seed: UInt64 = 20261121
+            func rnd() -> CGFloat {
+                seed = seed &* 6364136223846793005 &+ 1442695040888963407
+                return CGFloat((seed >> 33) % 100000) / 100000
+            }
+            // 大的色带
+            for _ in 0..<26 {
+                let y = rnd() * 1024, h = 20 + rnd() * 70
+                UIColor(red: 0.16, green: 0.04, blue: 0.02, alpha: 0.10 + rnd() * 0.22).setFill()
+                g.fill(CGRect(x: 0, y: y, width: 1024, height: h))
+            }
+            // 细纹：略微弯曲的线
+            for _ in 0..<420 {
+                let y = rnd() * 1024, amp = rnd() * 7, ph = rnd() * 6.28
+                let dark = rnd() < 0.7
+                (dark ? UIColor(red: 0.10, green: 0.02, blue: 0.01, alpha: 0.10 + rnd() * 0.25)
+                      : UIColor(red: 0.72, green: 0.34, blue: 0.14, alpha: 0.06 + rnd() * 0.16)).setStroke()
+                g.setLineWidth(0.6 + rnd() * 1.8)
+                g.move(to: CGPoint(x: 0, y: y))
+                var x: CGFloat = 0
+                while x <= 1024 {
+                    g.addLine(to: CGPoint(x: x, y: y + sin(x / 160 + ph) * amp))
+                    x += 32
+                }
+                g.strokePath()
+            }
+        }
+    }()
+
     private func build() {
         scene.background.contents = nil
         let on = VisualFX.enabled
         let cam = SCNCamera()
-        cam.fieldOfView = 40
+        cam.fieldOfView = 36
         cam.projectionDirection = .vertical
         cam.zNear = 0.1
         cam.zFar = 50
@@ -69,9 +108,9 @@ final class RouletteWheel3D: NSObject, SCNSceneRendererDelegate {
             cam.saturation = VisualFX.saturation
         }
         cameraNode.camera = cam
-        // 从前上方看下去（仰角约 56°）：椭圆的转盘、近大远小
-        cameraNode.position = SCNVector3(0, 2.72, 1.92)
-        cameraNode.look(at: SCNVector3(0, 0, 0.07))
+        // v13：从正上方看下去（hj：斜着放不好观看）。正圆的转盘，0 号在上；留一点透视，转塔和木边还是立体的
+        cameraNode.position = SCNVector3(0, 3.95, 0)
+        cameraNode.eulerAngles = SCNVector3(-Float.pi / 2, 0, 0)
         scene.rootNode.addChildNode(cameraNode)
 
         let key = SCNNode()
@@ -98,12 +137,20 @@ final class RouletteWheel3D: NSObject, SCNSceneRendererDelegate {
         scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity * 0.8 : 1.4
 
         let gold = Self.pbr(UIColor(red: 1.0, green: 0.78, blue: 0.28, alpha: 1), metal: 1, rough: 0.22)
-        let wood = Self.pbr(UIColor(red: 0.30, green: 0.14, blue: 0.06, alpha: 1), metal: 0, rough: 0.35)
-        wood.clearCoat.contents = 1.0
-        wood.clearCoatRoughness.contents = 0.1
-        let track = Self.pbr(UIColor(red: 0.46, green: 0.25, blue: 0.11, alpha: 1), metal: 0, rough: 0.3)
-        track.clearCoat.contents = 1.0
-        track.clearCoatRoughness.contents = 0.12
+        func woodMaterial(tint: UIColor, repeatS: Float, repeatT: Float) -> SCNMaterial {
+            let m = Self.pbr(.white, metal: 0, rough: 0.32)
+            m.diffuse.contents = Self.woodImage
+            m.diffuse.wrapS = .repeat
+            m.diffuse.wrapT = .repeat
+            m.diffuse.contentsTransform = SCNMatrix4MakeScale(repeatS, repeatT, 1)
+            m.multiply.contents = tint
+            m.clearCoat.contents = 1.0
+            m.clearCoatRoughness.contents = 0.08
+            return m
+        }
+        let wood = woodMaterial(tint: UIColor(white: 0.85, alpha: 1), repeatS: 3, repeatT: 1)
+        let track = woodMaterial(tint: UIColor(red: 1.0, green: 0.86, blue: 0.72, alpha: 1), repeatS: 2, repeatT: 0.6)
+        track.diffuse.intensity = 1.35
 
         // 不动的部分：底、球道、木碗的边、金线、8 颗菱形钉
         let fixed = SCNNode()
@@ -134,9 +181,11 @@ final class RouletteWheel3D: NSObject, SCNSceneRendererDelegate {
         }
         for i in 0..<8 {
             let a = Float(i) / 8 * 2 * .pi + .pi / 8
-            let stud = SCNNode(geometry: SCNPyramid(width: 0.05, height: 0.03, length: 0.09))
+            // 横竖交替的菱形挡块
+            let along = i % 2 == 0
+            let stud = SCNNode(geometry: SCNPyramid(width: along ? 0.045 : 0.12, height: 0.035, length: along ? 0.12 : 0.045))
             stud.geometry!.firstMaterial = gold
-            stud.position = SCNVector3(sin(a) * 0.985, 0.04, -cos(a) * 0.985)
+            stud.position = SCNVector3(sin(a) * 0.97, 0.068, -cos(a) * 0.97)
             stud.eulerAngles.y = -a
             fixed.addChildNode(stud)
         }

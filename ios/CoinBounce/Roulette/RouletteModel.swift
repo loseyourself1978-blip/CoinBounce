@@ -14,9 +14,11 @@ enum RouletteTable {
     static func pocketIndex(of n: Int) -> Int { wheelOrder.firstIndex(of: n) ?? 0 }
 }
 
-/// 下注位置：直注（单个号码）和所有外围注。分注、街注、角注、线注这一版没有（竖屏手机上格子太小）
+/// 下注位置：直注、压多个号码的内围注（v13：分注、街注、角注、线注，和带 0 的三连、四连）、所有外围注
 enum RouletteBet: Hashable {
     case straight(Int)      // 0…36，赔 35:1
+    /// v13 一枚筹码压 2 / 3 / 4 / 6 个号码（号码从小到大排好）。赔 36 ÷ 个数 − 1：17:1、11:1、8:1、5:1
+    case group([Int])
     case red, black         // 1:1
     case odd, even          // 1:1
     case low, high          // 1–18 / 19–36，1:1
@@ -27,14 +29,25 @@ enum RouletteBet: Hashable {
     var payout: Int {
         switch self {
         case .straight: return 35
+        case .group(let ns): return ns.isEmpty ? 0 : 36 / ns.count - 1
         case .dozen, .column: return 2
         default: return 1
+        }
+    }
+
+    /// 这一注覆盖的号码
+    var numbers: [Int] {
+        switch self {
+        case .straight(let k): return [k]
+        case .group(let ns): return ns
+        default: return (0...36).filter { wins(on: $0) }
         }
     }
 
     func wins(on n: Int) -> Bool {
         switch self {
         case .straight(let k): return n == k
+        case .group(let ns): return ns.contains(n)
         case .red: return RouletteTable.color(of: n) == .red
         case .black: return RouletteTable.color(of: n) == .black
         case .odd: return n != 0 && n % 2 == 1
@@ -49,11 +62,45 @@ enum RouletteBet: Hashable {
     var isValid: Bool {
         switch self {
         case .straight(let k): return (0...36).contains(k)
+        case .group(let ns): return RouletteGroups.all.contains(ns)
         case .dozen(let d): return (1...3).contains(d)
         case .column(let c): return (1...3).contains(c)
         default: return true
         }
     }
+}
+
+/// v13 桌面上能压的多号码注（号码排成 3 列 12 行，n 在第 (n−1)÷3 行、第 (n−1) mod 3 列；0 在最上面横跨三列）
+enum RouletteGroups {
+    static func number(row: Int, col: Int) -> Int { row * 3 + col + 1 }
+    /// 同一行左右相邻的两个
+    static func splitAcross(row: Int, col: Int) -> [Int] { [number(row: row, col: col), number(row: row, col: col + 1)] }
+    /// 同一列上下相邻的两个
+    static func splitDown(row: Int, col: Int) -> [Int] { [number(row: row, col: col), number(row: row + 1, col: col)] }
+    static func street(row: Int) -> [Int] { (0..<3).map { number(row: row, col: $0) } }
+    static func corner(row: Int, col: Int) -> [Int] {
+        [number(row: row, col: col), number(row: row, col: col + 1), number(row: row + 1, col: col), number(row: row + 1, col: col + 1)]
+    }
+    static func line(row: Int) -> [Int] { street(row: row) + street(row: row + 1) }
+    static let zeroSplits: [[Int]] = [[0, 1], [0, 2], [0, 3]]
+    static let trios: [[Int]] = [[0, 1, 2], [0, 2, 3]]
+    static let firstFour: [Int] = [0, 1, 2, 3]
+
+    static let all: Set<[Int]> = {
+        var s = Set<[Int]>()
+        for r in 0..<12 {
+            s.insert(street(row: r))
+            for c in 0..<2 { s.insert(splitAcross(row: r, col: c)) }
+            if r < 11 {
+                s.insert(line(row: r))
+                for c in 0..<3 { s.insert(splitDown(row: r, col: c)) }
+                for c in 0..<2 { s.insert(corner(row: r, col: c)) }
+            }
+        }
+        for g in zeroSplits + trios { s.insert(g) }
+        s.insert(firstFour)
+        return s
+    }()
 }
 
 /// 钱包：App 里是 GameState 的金币余额（1 枚金币 = 1 个筹码），测试里换成假的
@@ -128,6 +175,18 @@ final class RouletteGame: ObservableObject {
         guard phase == .betting else { return }
         bets = [:]
         undoStack = []
+    }
+
+    /// 所有的注加倍（余额或上限不够时不动）
+    @discardableResult
+    func doubleBets() -> Bool {
+        guard phase == .betting, totalBet > 0 else { return false }
+        guard totalBet * 2 <= RouletteGame.maxTotalBet, totalBet * 2 <= wallet.balance() else { return false }
+        for (bet, amount) in bets {
+            bets[bet] = amount * 2
+            undoStack.append((bet, amount))
+        }
+        return true
     }
 
     /// 重复上一局的注（余额或上限不够时不动）
