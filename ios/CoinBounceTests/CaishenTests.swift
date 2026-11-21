@@ -1,14 +1,14 @@
 import XCTest
 @testable import CoinBounce
 
-/// v12.10 第二台老虎机「国王的金库」：转轮带、中奖线、锁定重转、钱包、存档。
-/// 精确返还率在 tools/slots_calc（`slc vault`）里算，这里用抽样核对
-final class VaultTests: XCTestCase {
-    typealias M = VaultMath
+/// v13 老虎机「财神到」：转轮带、中奖线、锁定重转、奖池、天降财神、钱包、存档。
+/// 精确返还率在 tools/slots_calc（`slc caishen`）里算，这里用抽样核对
+final class CaishenTests: XCTestCase {
+    typealias M = CaishenMath
 
     func test_strips_haveTheListedSymbols_andCoinsComeInRuns() {
         for (r, strip) in M.strips.enumerated() {
-            for s in VaultSymbol.allCases where s != .coin {
+            for s in CaishenSymbol.allCases where s != .coin {
                 XCTAssertEqual(strip.filter { $0 == s }.count, M.stripCounts[r][s.rawValue], "第 \(r + 1) 列 \(s)")
             }
             XCTAssertEqual(strip.filter { $0 == .coin }.count, M.coinRuns[r].reduce(0, +))
@@ -20,21 +20,25 @@ final class VaultTests: XCTestCase {
         }
         XCTAssertFalse(M.strips[0].contains(.wild))
         XCTAssertFalse(M.strips[4].contains(.wild))
-        XCTAssertEqual(M.coinValues.reduce(0) { $0 + $1.weight }, 100)
-        XCTAssertEqual(M.meanCoinValue, 1.91, accuracy: 1e-9)
+        XCTAssertEqual(M.coinValues.reduce(0) { $0 + $1.weight }, M.coinWeightTotal)
+        XCTAssertEqual(M.meanCoinValue, 2.345, accuracy: 1e-9)
+        XCTAssertEqual(M.Coin(cell: 0, value: M.miniPrize).jackpot, "MINI")
+        XCTAssertEqual(M.Coin(cell: 0, value: M.minorPrize).jackpot, "MINOR")
+        XCTAssertEqual(M.Coin(cell: 0, value: M.majorPrize).jackpot, "MAJOR")
+        XCTAssertNil(M.Coin(cell: 0, value: 5).jackpot)
     }
 
-    private func grid(mid: [VaultSymbol]) -> [[VaultSymbol]] {
-        let top: [VaultSymbol] = [.jack, .ace, .jack, .ace, .jack]
-        let bottom: [VaultSymbol] = [.queenCard, .kingCard, .queenCard, .kingCard, .queenCard]
+    private func grid(mid: [CaishenSymbol]) -> [[CaishenSymbol]] {
+        let top: [CaishenSymbol] = [.jack, .ace, .jack, .ace, .jack]
+        let bottom: [CaishenSymbol] = [.queenCard, .kingCard, .queenCard, .kingCard, .queenCard]
         return (0..<5).map { [top[$0], mid[$0], bottom[$0]] }
     }
 
     func test_evaluate_linesWildsAndCoins() {
-        XCTAssertEqual(M.evaluate(grid(mid: [.king, .king, .king, .king, .king])).lineWins, [M.LineWin(line: 0, symbol: .king, count: 5, pay: 80)])
-        XCTAssertEqual(M.evaluate(grid(mid: [.queen, .wild, .wild, .jack, .jack])).lineWins, [M.LineWin(line: 0, symbol: .queen, count: 3, pay: 3)])
+        XCTAssertEqual(M.evaluate(grid(mid: [.ingot, .ingot, .ingot, .ingot, .ingot])).lineWins, [M.LineWin(line: 0, symbol: .ingot, count: 5, pay: 60)])
+        XCTAssertEqual(M.evaluate(grid(mid: [.fu, .wild, .wild, .jack, .jack])).lineWins, [M.LineWin(line: 0, symbol: .fu, count: 3, pay: 2)])
         // 金币不连线，会把线打断；记下它们在哪些格子
-        var g = grid(mid: [.crown, .crown, .coin, .crown, .crown])
+        var g = grid(mid: [.redEnvelope, .redEnvelope, .coin, .redEnvelope, .redEnvelope])
         var o = M.evaluate(g)
         XCTAssertEqual(o.lineWins, [])
         XCTAssertEqual(o.coinCells, [2 * 3 + 1])
@@ -48,8 +52,8 @@ final class VaultTests: XCTestCase {
     func test_feature_followsTheRules() {
         var rng = PachinkoRandom(seed: 3)
         var sawFull = false, sawReset = false
-        for _ in 0..<4000 {
-            let start = Array(0..<6)
+        for _ in 0..<20000 {
+            let start = Array(0..<8)
             let f = M.playFeature(startCells: start, &rng)
             XCTAssertEqual(f.start.map(\.cell), start)
             let cells = f.coins.map(\.cell)
@@ -68,7 +72,7 @@ final class VaultTests: XCTestCase {
             if f.full { sawFull = true }
         }
         XCTAssertTrue(sawReset)
-        XCTAssertTrue(sawFull, "4000 次里应该见过全满（约 1.4%）")
+        XCTAssertTrue(sawFull, "从 8 枚开始两万次里应该见过全满（约 0.1%）")
     }
 
     func test_featureStats_matchSimulation() {
@@ -83,16 +87,17 @@ final class VaultTests: XCTestCase {
             }
             let st = M.featureStats(start: k)
             XCTAssertEqual(Double(coins) / Double(n), st.coins, accuracy: 0.05, "从 \(k) 枚开始的平均金币数")
-            XCTAssertEqual(Double(full) / Double(n), st.full, accuracy: 0.004)
+            XCTAssertEqual(Double(full) / Double(n), st.full, accuracy: 0.002)
         }
         XCTAssertEqual(M.featureStats(start: 15).coins, 15, accuracy: 1e-9)
         XCTAssertEqual(M.featureStats(start: 15).full, 1, accuracy: 1e-9)
     }
 
     func test_return_sampleMatchesExactValue() {
-        // slc vault：0.9501 = 中奖线 0.6434 + 锁定重转 0.3067；触发约 63 转一次，平均赔 19.5 倍
+        // slc caishen：0.9529 = 中奖线 0.5238 + 锁定重转 0.3069 + 天降财神 0.1222；锁定重转约 63 转一次，平均赔 19.5 倍
         let r = M.sampleReturn(spins: 3_000_000, seed: 2026)
-        XCTAssertEqual(r, 0.950, accuracy: 0.03)
+        XCTAssertEqual(r, 0.953, accuracy: 0.03)
+        XCTAssertEqual(M.meanGift / Double(M.giftOneIn), 0.1222, accuracy: 0.0001)
     }
 
     // MARK: 游戏层
@@ -107,7 +112,7 @@ final class VaultTests: XCTestCase {
         }
     }
 
-    private func findStops(_ want: (VaultMath.Outcome) -> Bool) -> [Int] {
+    private func findStops(_ want: (CaishenMath.Outcome) -> Bool) -> [Int] {
         var rng = PachinkoRandom(seed: 5)
         for _ in 0..<2_000_000 {
             let stops = M.randomStops(&rng)
@@ -119,10 +124,10 @@ final class VaultTests: XCTestCase {
 
     func test_game_featureRunsRoundByRound_andPaysAtTheEnd() {
         let w = FakeWallet(100)
-        let g = VaultGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 2))
+        let g = CaishenGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 2))
         g.recordCues = true
         g.changeBet(2)   // 下注 5
-        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }))
+        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }, noGift: true))
         XCTAssertEqual(w.spent, 5)
         let spin = g.spin!
         let f = spin.feature!
@@ -148,48 +153,93 @@ final class VaultTests: XCTestCase {
     }
 
     func test_game_settleOnExit_paysEverything_andSavesBet() {
-        let defaults = UserDefaults(suiteName: "VaultTests.save")!
-        let store = VaultSaveStore(defaults: defaults, key: "save")
+        let defaults = UserDefaults(suiteName: "CaishenTests.save")!
+        let store = CaishenSaveStore(defaults: defaults, key: "save")
         store.clear()
         let w = FakeWallet(100)
-        let g = VaultGame(wallet: w.wallet, store: store, rng: PachinkoRandom(seed: 4))
+        let g = CaishenGame(wallet: w.wallet, store: store, rng: PachinkoRandom(seed: 4))
         g.changeBet(1)   // 下注 2
-        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }))
+        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }, noGift: true))
         let win = g.spin!.win
         g.settle()
         XCTAssertEqual(g.phase, .idle)
         XCTAssertEqual(w.credited, win, "转到一半离开：中奖线和锁定重转都照常入账")
-        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }))
+        XCTAssertEqual(g.grandPoolCents, 2, "每次下注的 1% 进 GRAND 奖池")
+        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }, noGift: true))
         g.reelsStopped()
         g.nextRespin()
         g.settle()
         XCTAssertEqual(w.credited, g.stats.won)
         XCTAssertEqual(g.phase, .idle)
-        let h = VaultGame(wallet: w.wallet, store: store, rng: PachinkoRandom(seed: 5))
+        let h = CaishenGame(wallet: w.wallet, store: store, rng: PachinkoRandom(seed: 5))
         XCTAssertEqual(h.bet, 2)
         XCTAssertEqual(h.stats, g.stats)
+        XCTAssertEqual(h.grandPoolCents, g.grandPoolCents, "奖池存档")
         store.clear()
     }
 
     func test_game_outOfCoins_andConservation() {
         let poor = FakeWallet(0)
-        let p = VaultGame(wallet: poor.wallet, store: nil, rng: PachinkoRandom(seed: 1))
+        let p = CaishenGame(wallet: poor.wallet, store: nil, rng: PachinkoRandom(seed: 1))
         p.auto = true
         XCTAssertFalse(p.startSpin())
         XCTAssertTrue(p.outOfCoins)
         XCTAssertFalse(p.auto)
         let w = FakeWallet(1_000_000)
-        let g = VaultGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 9))
+        let g = CaishenGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 9))
         for _ in 0..<20_000 {
             guard g.startSpin() else { XCTFail("应该一直能转"); break }
             g.reelsStopped()
+            if g.phase == .gift { g.collectGift() }
             while g.nextRespin() {}
             g.finishShowing()
         }
+        XCTAssertGreaterThan(g.stats.gifts, 100, "两万转里财神大约来 167 次")
         XCTAssertEqual(w.coins, 1_000_000 - w.spent + w.credited)
         XCTAssertEqual(w.spent, g.stats.wagered)
         XCTAssertEqual(w.credited, g.stats.won)
         let rtp = Double(g.stats.won) / Double(g.stats.wagered)
         XCTAssertTrue((0.6...1.4).contains(rtp), "两万转的返还率在合理范围：\(rtp)")
+    }
+
+    func test_gift_paysAfterTheShow_thenFeatureOrShowing() {
+        let w = FakeWallet(100)
+        let g = CaishenGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 2))
+        g.recordCues = true
+        g.changeBet(1)   // 下注 2
+        XCTAssertTrue(g.debugSpin(stops: findStops { $0.linePay == 0 && !$0.triggers }, gift: 20))
+        g.reelsStopped()
+        XCTAssertEqual(g.phase, .gift)
+        XCTAssertEqual(w.credited, 0, "财神的钱等演完再入账")
+        XCTAssertFalse(g.startSpin())
+        XCTAssertTrue(g.cueLog.contains(.gift(win: 40)))
+        g.collectGift()
+        XCTAssertEqual(g.phase, .showing)
+        XCTAssertEqual(w.credited, 40)
+        XCTAssertEqual(g.lastWin, 40)
+        g.collectGift()
+        XCTAssertEqual(w.credited, 40, "不会入账两次")
+        // 中途离开也照给
+        g.finishShowing()
+        XCTAssertTrue(g.debugSpin(stops: findStops { $0.triggers }, gift: 5))
+        let win = g.spin!.win
+        g.settle()
+        XCTAssertEqual(w.credited, 40 + win)
+        XCTAssertEqual(g.phase, .idle)
+    }
+
+    func test_jackpotDisplay_followsBet_andGrandIncludesThePool() {
+        let w = FakeWallet(1000)
+        let g = CaishenGame(wallet: w.wallet, store: nil, rng: PachinkoRandom(seed: 3))
+        XCTAssertEqual(g.jackpot(M.miniPrize), 10)
+        XCTAssertEqual(g.jackpot(M.grandPrize), 500)
+        g.changeBet(3)   // 下注 10
+        XCTAssertEqual(g.jackpot(M.majorPrize), 1000)
+        for _ in 0..<30 {
+            XCTAssertTrue(g.debugSpin(stops: findStops { $0.linePay == 0 && !$0.triggers }, noGift: true))
+            g.reelsStopped(); g.finishShowing()
+        }
+        XCTAssertEqual(g.grandPoolCents, 300)
+        XCTAssertEqual(g.jackpot(M.grandPrize), 5003, "30 转 × 10 币的 1% = 3 枚")
     }
 }

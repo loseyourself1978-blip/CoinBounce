@@ -1,4 +1,4 @@
-# ruby addfiles.rb <CoinBounce 下的组名> <文件…> [--tests]：把新文件加进 App target；--tests 时也编进测试 target（给测试直接用的内核文件）
+# ruby addfiles.rb <CoinBounce 下的组名> <文件名，不带路径…> [--tests]：把新文件加进 App target；--tests 时也编进测试 target（给测试直接用的内核文件）
 # ruby addfiles.rb --test-file <文件…>：把测试文件加进 CoinBounceTests
 require 'xcodeproj'
 proj = Xcodeproj::Project.open(File.expand_path('../../ios/CoinBounce.xcodeproj', __dir__))

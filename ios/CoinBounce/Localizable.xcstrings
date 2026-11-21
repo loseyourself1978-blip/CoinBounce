@@ -84,6 +84,16 @@
         }
       }
     },
+    "10 fixed lines pay from the leftmost reel. Every win is a multiple of your total bet. Expected return is about 95%. Coins are virtual and have no real-world value.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 条固定中奖线，从最左边一列开始连。所有中奖都是总下注的倍数。期望返还率约 95%。金币是虚拟的，没有任何现实价值。"
+          }
+        }
+      }
+    },
     "10 lines · wins pay ×bet": {
       "extractionState": "manual",
       "localizations": {
@@ -135,6 +145,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "5 列转轮 · 10 条中奖线"
+          }
+        }
+      }
+    },
+    "6 coins start Hold & Respin": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出 6 枚金币开始锁定重转"
           }
         }
       }
@@ -632,6 +652,16 @@
         }
       }
     },
+    "Coins: 6 or more at once lock in place and start Hold & Respin with 3 respins. Each new coin resets the respins to 3. Every coin pays the number on it × your bet, or the MINI, MINOR or MAJOR jackpot. Fill all 15 spaces to win the GRAND.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金币：一次出现 6 枚以上就锁在原位，开始锁定重转，有 3 次重转；每落一枚新金币，重转次数补回 3 次。每枚金币按上面的数字 × 下注赔，或者赔 MINI、MINOR、MAJOR 奖池。15 格全满赢 GRAND 大奖。"
+          }
+        }
+      }
+    },
     "Corner": {
       "localizations": {
         "zh-Hans": {
@@ -751,6 +781,16 @@
         }
       }
     },
+    "FORTUNE GOD": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "财神到"
+          }
+        }
+      }
+    },
     "FREE": {
       "extractionState": "manual",
       "localizations": {
@@ -839,6 +879,16 @@
         }
       }
     },
+    "Fill all 15 for the GRAND": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 格全满赢 GRAND 大奖"
+          }
+        }
+      }
+    },
     "First four": {
       "localizations": {
         "zh-Hans": {
@@ -889,6 +939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "发光的是特殊金币：每推落一枚得 2 金币。"
+          }
+        }
+      }
+    },
+    "HOLD & RESPIN": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定重转"
           }
         }
       }
@@ -1135,6 +1195,16 @@
         }
       }
     },
+    "MINI ×%lld, MINOR ×%lld, MAJOR ×%lld and GRAND ×%lld of your bet. One hundredth of every bet is added to the GRAND until you win it.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINI 是下注的 %lld 倍，MINOR %lld 倍，MAJOR %lld 倍，GRAND %lld 倍。每次下注的百分之一会累积进 GRAND，直到你赢走它。"
+          }
+        }
+      }
+    },
     "MULTIBALL!": {
       "extractionState": "manual",
       "localizations": {
@@ -1365,6 +1435,16 @@
         }
       }
     },
+    "On any spin the God of Wealth may come down and scatter coins worth ×%lld to ×%lld of your bet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每一转财神都有可能从天而降撒金币，给下注的 %lld 到 %lld 倍。"
+          }
+        }
+      }
+    },
     "One coin buys one ball. Drag the spring at the bottom right down and let go to launch. Tap the left or right half of the screen to swing that flipper and keep the ball in play.": {
       "extractionState": "manual",
       "localizations": {
@@ -1585,6 +1665,16 @@
         }
       }
     },
+    "RESPINS": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重转"
+          }
+        }
+      }
+    },
     "ROUND %lld/%lld": {
       "extractionState": "manual",
       "localizations": {
@@ -1757,6 +1847,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "超级听牌！这次有戏！"
+          }
+        }
+      }
+    },
+    "SUPER WIN!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超级大奖！"
           }
         }
       }
@@ -1977,6 +2077,16 @@
         }
       }
     },
+    "The God of Wealth is here!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "财神到！"
+          }
+        }
+      }
+    },
     "The gate is open. Keep shooting!": {
       "extractionState": "manual",
       "localizations": {
@@ -2181,6 +2291,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "百搭：在中奖线上可以当任何水果、宝石、皇冠或 7。只出现在第 2、3、4 列。"
+          }
+        }
+      }
+    },
+    "Wild: the God of Wealth replaces any symbol on a line. Appears on reels 2, 3 and 4.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "百搭：财神可以代替中奖线上的任何图案，只出现在第 2、3、4 列。"
           }
         }
       }
