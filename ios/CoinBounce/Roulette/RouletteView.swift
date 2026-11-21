@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-// MARK: - v12.1 轮盘画面：转盘 + 兔女郎荷官 + 下注台 + 筹码
+// MARK: - 轮盘画面（v13 重排）：整屏的竖下注桌，开转时一只正面朝上的大转盘弹出来盖在桌上
 struct RouletteView: View {
     let onExit: () -> Void
     @StateObject private var game = RouletteGame()
@@ -22,6 +22,8 @@ struct RouletteView: View {
     @State private var roundToken = 0
     @State private var showAdUnavailableHint = false
     @State private var showSettings = false
+    /// 大转盘是不是弹出来了（开转到看完结果）
+    @State private var showWheel = false
 
     private let ticker = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
@@ -29,67 +31,47 @@ struct RouletteView: View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             let pad: CGFloat = 10
-            let wheelD = min(w * 0.62, h * 0.32)
-            let fixed: CGFloat = 40 + wheelD + 26 + RouletteTableView.dozenHeight + RouletteTableView.evenHeight + 54 + 58 + 18 + 56
-            let rowH = min(62, max(30, (h - fixed) / 3))
+            // 开转时弹出来的大转盘：正面朝上，宽度接近屏幕宽
+            let wheelD = min(w * 0.96, h * 0.6)
+            let wheelY = h * 0.44
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
-                // v12.3：赌桌上方的吊灯——一道宽光柱加转盘上的一圈光
-                LightShafts(strength: 0.06, beams: [(0.5, 0, 0.2), (0.1, 22, 0.07), (0.9, -22, 0.07)])
-                LightPool(strength: 0.14).frame(width: wheelD * 1.7, height: wheelD * 1.4).position(x: w / 2, y: 40 + wheelD * 0.62)
+                LightShafts(strength: 0.05, beams: [(0.5, 0, 0.2), (0.1, 22, 0.07), (0.9, -22, 0.07)])
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, pad).padding(.top, 4)
-                    // 转盘（左）+ 兔女郎荷官和气泡（右）
-                    HStack(alignment: .bottom, spacing: 0) {
-                        ZStack {
-                            // v12.9：立体的转盘（-fxOff 时退回 2D 画法）
-                            if VisualFX.enabled {
-                                RouletteWheel3DView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
-                                    .frame(width: wheelD, height: wheelD)
-                                    .accessibilityElement()
-                                    .accessibilityIdentifier("rouletteWheel")
-                            } else {
-                                RouletteWheelView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
-                                    .frame(width: wheelD, height: wheelD)
-                            }
-                            if game.phase == .result, let n = game.result {
-                                resultBadge(n).transition(.scale(scale: 0.4).combined(with: .opacity))
-                            }
-                        }
-                        .frame(width: wheelD, height: wheelD)
-                        .padding(.leading, pad)
-                        Spacer(minLength: 0)
-                        VStack(spacing: 2) {
-                            if let line {
-                                SpeechBubble(text: line.text, tailOnLeft: false)
-                                    .id(line.id)
-                                    .transition(.asymmetric(insertion: .scale(scale: 0.6).combined(with: .opacity), removal: .identity))
-                            }
-                            Spacer(minLength: 0)
-                            BunnyHostess(line: line, height: wheelD * 0.84, showBubble: false)
-                        }
-                        .frame(width: max(60, w - wheelD - pad * 2 - 4), height: wheelD)
-                        .padding(.trailing, pad)
-                    }
-                    .frame(height: wheelD)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.7), value: line?.id)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: game.phase)
-                    historyStrip.frame(height: 22).padding(.horizontal, pad)
-                    RouletteTableView(game: game, rowHeight: rowH) { place($0) }
+                    dealerStrip.padding(.horizontal, pad)
+                    RouletteTableView(game: game) { place($0) }
                         .padding(.horizontal, pad)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(ArtPalette.goldLight.opacity(0.9), lineWidth: 2).padding(.horizontal, pad - 1))
-                    Spacer(minLength: 0)
                     chipRow.padding(.horizontal, pad)
-                    actionRow.padding(.horizontal, pad)
-                    Text("Number 35:1 · Dozen / Column 2:1 · Others 1:1")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .padding(.bottom, 4)
+                    actionRow.padding(.horizontal, pad).padding(.bottom, 4)
                 }
+                // 转盘一直在（省得每次开转等第一帧），不用时缩小藏起来
+                Color.black.opacity(showWheel ? 0.72 : 0)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(showWheel)
+                    .onTapGesture { if game.phase == .result { dismissWheel() } }
+                ZStack {
+                    if VisualFX.enabled {
+                        RouletteWheel3DView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
+                            .accessibilityElement()
+                            .accessibilityIdentifier("rouletteWheel")
+                    } else {
+                        RouletteWheelView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
+                    }
+                    if showWheel, game.phase == .result, let n = game.result {
+                        resultBadge(n, size: wheelD * 0.3).transition(.scale(scale: 0.3).combined(with: .opacity))
+                    }
+                }
+                .frame(width: wheelD, height: wheelD)
+                .shadow(color: .black.opacity(0.7), radius: 24, y: 12)
+                .scaleEffect(showWheel ? 1 : 0.3)
+                .opacity(showWheel ? 1 : 0)
+                .position(x: w / 2, y: wheelY)
+                .allowsHitTesting(false)
+                .animation(.spring(response: 0.45, dampingFraction: 0.72), value: showWheel)
+                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: game.phase)
                 if winFly {
-                    WinCoinFly(from: CGPoint(x: pad + wheelD / 2, y: 44 + wheelD / 2), to: CGPoint(x: 70, y: 24))
+                    WinCoinFly(from: CGPoint(x: w / 2, y: wheelY), to: CGPoint(x: 70, y: 24))
                         .allowsHitTesting(false)
                 }
                 if let toast {
@@ -99,7 +81,7 @@ struct RouletteView: View {
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Capsule().fill(Color.black.opacity(0.82)))
                         .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.8), lineWidth: 1))
-                        .position(x: w / 2, y: 44 + wheelD + 40)
+                        .position(x: w / 2, y: h * 0.5)
                         .transition(.opacity)
                         .accessibilityIdentifier("rouletteToast")
                 }
@@ -130,6 +112,28 @@ struct RouletteView: View {
         .onReceive(ticker) { now in tick(now) }
     }
 
+    // MARK: 荷官：兔女郎头像 + 她说的话 + 最近开出的号码
+    private var dealerStrip: some View {
+        HStack(spacing: 8) {
+            BunnyArt(pose: .headshot)
+                .frame(width: 54, height: 54)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: 2.5))
+                .shadow(color: .black.opacity(0.5), radius: 3, y: 2)
+            VStack(alignment: .leading, spacing: 4) {
+                if let line {
+                    SpeechBubble(text: line.text, tailOnLeft: true)
+                        .id(line.id)
+                        .transition(.asymmetric(insertion: .scale(scale: 0.6, anchor: .leading).combined(with: .opacity), removal: .identity))
+                }
+                historyStrip.frame(height: 20)
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: line?.id)
+            Spacer(minLength: 0)
+        }
+        .frame(height: 60)
+    }
+
     // MARK: 顶栏：回大厅、余额、看广告、设置
     private var topBar: some View {
         HStack(spacing: 8) {
@@ -148,19 +152,19 @@ struct RouletteView: View {
         .frame(height: 36)
     }
 
-    private func resultBadge(_ n: Int) -> some View {
+    private func resultBadge(_ n: Int, size: CGFloat) -> some View {
         VStack(spacing: 2) {
             Text("\(n)")
-                .font(.system(size: 34, weight: .black, design: .rounded))
+                .font(.system(size: size * 0.52, weight: .bold, design: .serif))
                 .foregroundColor(.white)
-                .frame(width: 62, height: 62)
+                .frame(width: size, height: size)
                 .background(Circle().fill(RouletteWheelFace.fill(RouletteTable.color(of: n))))
-                .overlay(Circle().stroke(ArtPalette.goldLight, lineWidth: 3))
-                .shadow(color: .black.opacity(0.6), radius: 5)
+                .overlay(Circle().stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: 5))
+                .shadow(color: .black.opacity(0.7), radius: 8)
                 .accessibilityIdentifier("rouletteResult")
             if game.lastReturn > 0 {
                 Text("+\(game.lastReturn)")
-                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .font(.system(size: 34, weight: .black, design: .rounded))
                     .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, Color.arcadeGold], startPoint: .top, endPoint: .bottom))
                     .shadow(color: ArtPalette.outline, radius: 0, x: 1.5, y: 1.5)
             }
@@ -227,6 +231,9 @@ struct RouletteView: View {
             smallAction("arrow.clockwise", id: "rebet", label: Text("Repeat last bet"), enabled: game.canRebet) {
                 if !game.rebet() { showToast(String(localized: "Not enough coins")) }
             }
+            smallAction("multiply", title: "×2", id: "doubleBets", label: Text("Double bets"), enabled: game.phase == .betting && game.totalBet > 0) {
+                if !game.doubleBets() { showToast(String(localized: "Table limit: \(RouletteGame.maxTotalBet) coins per spin")) }
+            }
             Button {
                 startSpin()
             } label: {
@@ -246,15 +253,20 @@ struct RouletteView: View {
         .frame(height: 54)
     }
 
-    private func smallAction(_ symbol: String, id: String, label: Text, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func smallAction(_ symbol: String, title: String? = nil, id: String, label: Text, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button {
             AudioManager.shared.play(.buttonTap)
             action()
         } label: {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .bold))
+            Group {
+                if let title {
+                    Text(verbatim: title).font(.system(size: 19, weight: .black, design: .rounded))
+                } else {
+                    Image(systemName: symbol).font(.system(size: 18, weight: .bold))
+                }
+            }
                 .foregroundColor(.white)
-                .frame(width: 50, height: 50)
+                .frame(width: 46, height: 50)
                 .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.55)))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(ArtPalette.gold.opacity(0.8), lineWidth: 1.5))
         }
@@ -287,6 +299,7 @@ struct RouletteView: View {
         ballNumber = n
         lastTickPocket = -1
         spinStart = Date()
+        showWheel = true
         say(String(localized: "No more bets!"), pose: .clap)
     }
 
@@ -326,7 +339,18 @@ struct RouletteView: View {
         }
         roundToken += 1
         let token = roundToken
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+        // 先在转盘中心看结果，转盘收起来以后看桌上哪些注中了，再开下一局
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            guard token == roundToken else { return }
+            dismissWheel()
+        }
+    }
+
+    private func dismissWheel() {
+        guard showWheel else { return }
+        showWheel = false
+        let token = roundToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             guard token == roundToken, game.phase == .result else { return }
             game.newRound()
             say(String(localized: "Place your bets!"), pose: .blowKiss)
@@ -338,7 +362,7 @@ struct RouletteView: View {
     #if DEBUG
     /// 调试：-rouletteDemo 自动下几注、开转，一局接一局（截图和录屏用）
     private func runDemoRound() {
-        let picks: [(RouletteBet, Int)] = [(.red, 5), (.straight(17), 2), (.dozen(2), 5), (.column(1), 2), (.odd, 5), (.straight(0), 1), (.high, 2)]
+        let picks: [(RouletteBet, Int)] = [(.red, 5), (.straight(17), 2), (.group([8, 9, 11, 12]), 5), (.group([20, 23]), 2), (.dozen(2), 5), (.group([28, 29, 30]), 2), (.column(1), 2), (.group([0, 2]), 1), (.group([31, 32, 33, 34, 35, 36]), 5)]
         for (i, pick) in picks.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2 + Double(i) * 0.35) {
                 guard game.phase == .betting else { return }
@@ -348,7 +372,7 @@ struct RouletteView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
             startSpin()
-            DispatchQueue.main.asyncAfter(deadline: .now() + RouletteSpinMath.duration + 4.2) { runDemoRound() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + RouletteSpinMath.duration + 5.0) { runDemoRound() }
         }
     }
     #endif

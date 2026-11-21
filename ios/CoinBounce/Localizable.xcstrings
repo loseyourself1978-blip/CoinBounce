@@ -425,6 +425,16 @@
         }
       }
     },
+    "Betting table": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下注桌"
+          }
+        }
+      }
+    },
     "Black": {
       "extractionState": "manual",
       "localizations": {
@@ -622,6 +632,16 @@
         }
       }
     },
+    "Corner": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角注"
+          }
+        }
+      }
+    },
     "Done": {
       "extractionState": "manual",
       "localizations": {
@@ -629,6 +649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "完成"
+          }
+        }
+      }
+    },
+    "Double bets": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加倍下注"
           }
         }
       }
@@ -805,6 +835,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "确变！12 转高概率！"
+          }
+        }
+      }
+    },
+    "First four": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "四连注"
           }
         }
       }
@@ -1743,6 +1783,16 @@
         }
       }
     },
+    "Six line": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "线注"
+          }
+        }
+      }
+    },
     "Slots": {
       "extractionState": "manual",
       "localizations": {
@@ -1798,6 +1848,16 @@
         }
       }
     },
+    "Split": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分注"
+          }
+        }
+      }
+    },
     "Spring launcher": {
       "extractionState": "manual",
       "localizations": {
@@ -1805,6 +1865,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "弹簧拉杆"
+          }
+        }
+      }
+    },
+    "Straight": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直注"
+          }
+        }
+      }
+    },
+    "Street": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "街注"
           }
         }
       }
@@ -1992,6 +2072,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "上皿"
+          }
+        }
+      }
+    },
+    "Trio": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三连注"
           }
         }
       }
