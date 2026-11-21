@@ -1,7 +1,16 @@
-// 老虎机返还率：枚举所有停法精确计算。用法：build.sh && ./slc
+// 老虎机返还率：枚举所有停法精确计算。用法：build.sh && ./slc [vault]
 import Foundation
-let x = SlotsMath.exactReturn()
 func f(_ v: Double) -> String { String(format: "%.4f", v) }
-print("strip lengths", SlotsMath.strips.map(\.count))
-print("RTP \(f(x.total)) = lines \(f(x.lines)) + scatter \(f(x.scatter)) + free \(f(x.free)) + bonus \(f(x.bonus))")
-print("hit rate \(f(x.hitRate))  free spins 1 in \(f(1 / x.freeRate))  bonus 1 in \(f(1 / x.bonusRate))")
+if CommandLine.arguments.contains("vault") {
+    let x = VaultMath.exactReturn()
+    print("strip lengths", VaultMath.strips.map(\.count))
+    print("RTP \(f(x.total)) = lines \(f(x.lines)) + hold-and-respin \(f(x.feature))")
+    print("hit rate \(f(x.hitRate))  feature 1 in \(f(1 / x.featureRate))  mean feature pay x\(f(x.meanFeaturePay))")
+    for k in [6, 7, 8, 9] { let st = VaultMath.featureStats(start: k); print("  start \(k): coins \(f(st.coins)) full \(String(format: "%.6f", st.full))") }
+    print("sample 2M:", f(VaultMath.sampleReturn(spins: 2_000_000, seed: 1)))
+} else {
+    let x = SlotsMath.exactReturn()
+    print("strip lengths", SlotsMath.strips.map(\.count))
+    print("RTP \(f(x.total)) = lines \(f(x.lines)) + scatter \(f(x.scatter)) + free \(f(x.free)) + bonus \(f(x.bonus))")
+    print("hit rate \(f(x.hitRate))  free spins 1 in \(f(1 / x.freeRate))  bonus 1 in \(f(1 / x.bonusRate))")
+}
