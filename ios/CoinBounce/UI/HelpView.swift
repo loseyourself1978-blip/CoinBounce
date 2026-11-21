@@ -25,24 +25,18 @@ struct HelpView: View {
                     row("circle.circle.fill", "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.")
                     row("list.number", "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.")
                 }
-                Section("Pachinko") {
-                    row("circle.fill", "One coin buys one ball. Drag the spring launcher down and let go to shoot; AUTO keeps shooting at your last strength. Pull into the gold zone for the best shots. Balls that fall short come back for free.")
-                    row("target", "Pockets: the center start pocket pays 1 and spins the reels. Tulips pay 2 and open or close each time. Side pockets pay 1. The lucky cup sliding along the bottom pays 2.")
-                    row("lightbulb.fill", "Lucky lamps: every ball in a tulip or the lucky cup lights one fruit lamp. Light all 7 and 6 free golden balls rain down from the top.")
-                    row("star.circle.fill", "Jackpot: three matching symbols open the big gate for 2, 5 or 10 rounds. Each ball in the gate pays 4; a round ends after 5 balls.")
-                    row("flame.fill", "Fever time (after K, Q or 7): 12 spins at 1 in 8. Chance time (after other jackpots): 12 quick spins at normal odds.")
-                    row("percent", "Odds: jackpot 1 in 21.2 per spin. Expected return is about 96% in the gold zone and lower at other strengths.")
+                Section("Pinball") {
+                    row("circle.fill", "One coin buys one ball. Drag the spring at the bottom right down and let go to launch. Tap the left or right half of the screen to swing that flipper and keep the ball in play.")
+                    row("target", "Score by hitting bumpers, slingshots, the 7-7-7 lanes, the K-Q-J drop targets, the three stars and the Lucky Hole. Every 9,500 points pays 1 coin, and leftover points carry over to your next ball. One ball can win at most 15 coins.")
+                    row("star.circle.fill", "Missions: knock down K-Q-J, hit bumpers 12 times, light the three stars, then shoot the Lucky Hole for the jackpot and a 3-ball multiball. Lighting 7-7-7 raises the bonus multiplier (up to ×5) and lights the Lucky Hole for a mystery prize.")
+                    row("percent", "A ball lost in the first 7 seconds is returned once for free. Return depends on skill: about 50% without flipping, about 95% for average play.")
                 }
-                if let st = PachinkoSaveStore().load()?.stats, st.ballsFired > 0 {
-                    Section("Pachinko stats") {
-                        stat("Balls shot", "\(st.ballsFired)")
+                if let st = PinballSaveStore().load()?.stats, st.balls > 0 {
+                    Section("Pinball stats") {
+                        stat("Balls played", "\(st.balls)")
                         stat("Coins won", "\(st.coinsWon)")
-                        if st.ballsFired >= 1000 {
-                            stat("Return", String(format: "%.1f%%", 100 * Double(st.coinsWon) / Double(st.ballsFired)))
-                        }
+                        stat("High score", st.highScore.formatted())
                         stat("Jackpots", "\(st.jackpots)")
-                        stat("Longest chain", "\(st.bestChain)")
-                        stat("Best streak win", "\(st.biggestWin)")
                     }
                 }
                 Section {
