@@ -183,6 +183,23 @@ struct CaishenSymbolView: View {
     var showRibbon = true
 
     var body: some View {
+        // v13.1：图案是 3D 建模渲染出来的图（Icon3D）；渲染不出来（没有 Metal 的环境）时退回代码画的平面图
+        if symbol == .coin, let value = coinValue {
+            FortuneCoin(size: size * 0.94, value: value, bet: coinBet)
+                .frame(width: size, height: size)
+        } else if let img = Icon3D.image(.symbol(symbol)) {
+            Image(uiImage: img)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size * 1.12, height: size * 1.12)
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.55), radius: size * 0.04, x: 0, y: size * 0.05)
+        } else {
+            flat
+        }
+    }
+
+    private var flat: some View {
         ZStack {
             switch symbol {
             case .jack: card("J", [Color(red: 0.45, green: 0.85, blue: 1), Color(red: 0.1, green: 0.4, blue: 0.9)])
@@ -300,13 +317,17 @@ struct FortuneCoin: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(RadialGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], center: UnitPoint(x: 0.38, y: 0.3), startRadius: 0, endRadius: size * 0.62))
-            Circle().stroke(ArtPalette.outline, lineWidth: max(1, size * 0.035))
-            Circle().stroke(Color(red: 0.75, green: 0.42, blue: 0.02), lineWidth: max(1, size * 0.03)).padding(size * 0.09)
+            if let img = Icon3D.image(.blankCoin) {
+                Image(uiImage: img).resizable().interpolation(.high)
+                    .frame(width: size * 1.14, height: size * 1.14)
+            } else {
+                Circle()
+                    .fill(RadialGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], center: UnitPoint(x: 0.38, y: 0.3), startRadius: 0, endRadius: size * 0.62))
+                Circle().stroke(ArtPalette.outline, lineWidth: max(1, size * 0.035))
+            }
             if let value {
                 if let jackpot {
-                    Circle().fill(Self.tint(jackpot)).padding(size * 0.13)
+                    Circle().fill(RadialGradient(colors: [Self.tint(jackpot).opacity(0.85), Self.tint(jackpot)], center: UnitPoint(x: 0.4, y: 0.3), startRadius: 0, endRadius: size * 0.4)).padding(size * 0.17)
                     Text(verbatim: jackpot)
                         .font(.system(size: size * 0.23, weight: .black, design: .rounded))
                         .foregroundColor(.white)
@@ -326,10 +347,6 @@ struct FortuneCoin: View {
                     .frame(width: size * 0.24, height: size * 0.24)
                     .overlay(RoundedRectangle(cornerRadius: size * 0.03).stroke(ArtPalette.goldLight, lineWidth: max(0.8, size * 0.025)))
             }
-            // 左上的一道高光
-            Circle().trim(from: 0.55, to: 0.72)
-                .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: max(1, size * 0.04), lineCap: .round))
-                .padding(size * 0.06)
         }
         .frame(width: size, height: size)
     }
@@ -355,6 +372,9 @@ struct CoinRain: View {
         TimelineView(.animation) { tl in
             Canvas { ctx, size in
                 let t = tl.date.timeIntervalSince(start)
+                // v13.1：掉下来的是 3D 渲染的方孔钱和元宝（渲染不出来时退回画圆片）
+                let coinImg = Icon3D.image(.symbol(.coin)).map { ctx.resolve(Image(uiImage: $0)) }
+                let ingotImg = Icon3D.image(.symbol(.ingot)).map { ctx.resolve(Image(uiImage: $0)) }
                 for i in 0..<count {
                     // 每一枚的列、速度、起始相位都由序号算出来（不用存状态）
                     let a = Double((i * 7919) % 1000) / 1000, b = Double((i * 104729) % 1000) / 1000, c = Double((i * 1299709) % 1000) / 1000
@@ -364,19 +384,20 @@ struct CoinRain: View {
                     let y = (t - delay) * speed - 40
                     let wrapped = y.truncatingRemainder(dividingBy: Double(size.height) + 80) - 40
                     let x = a * Double(size.width) + sin(t * 2 + Double(i)) * 10
-                    let r = 9 + 9 * c
+                    let r = 16 + 14 * c
                     // 翻转：宽度按余弦变
-                    let squash = abs(cos(t * (3 + 4 * b) + Double(i)))
-                    let rect = CGRect(x: x - r * max(0.18, squash), y: wrapped - r, width: 2 * r * max(0.18, squash), height: 2 * r)
-                    if ingots && i % 6 == 0 {
-                        let ir = CGRect(x: x - r * 1.3, y: wrapped - r * 0.9, width: r * 2.6, height: r * 1.8)
-                        let p = IngotShape().path(in: ir)
-                        ctx.fill(p, with: .linearGradient(Gradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep]), startPoint: CGPoint(x: ir.midX, y: ir.minY), endPoint: CGPoint(x: ir.midX, y: ir.maxY)))
-                        ctx.stroke(p, with: .color(ArtPalette.outline), lineWidth: 1)
+                    let squash = max(0.2, abs(cos(t * (3 + 4 * b) + Double(i))))
+                    var g = ctx
+                    g.translateBy(x: x, y: wrapped)
+                    g.rotate(by: .radians(t * (1 + 2 * a) + Double(i)))
+                    if ingots && i % 5 == 0, let ingotImg {
+                        g.draw(ingotImg, in: CGRect(x: -r * 1.3, y: -r * 1.3, width: r * 2.6, height: r * 2.6))
+                    } else if let coinImg {
+                        g.scaleBy(x: squash, y: 1)
+                        g.draw(coinImg, in: CGRect(x: -r, y: -r, width: 2 * r, height: 2 * r))
                     } else {
-                        let p = Path(ellipseIn: rect)
-                        ctx.fill(p, with: .linearGradient(Gradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep]), startPoint: CGPoint(x: rect.minX, y: rect.minY), endPoint: CGPoint(x: rect.maxX, y: rect.maxY)))
-                        ctx.stroke(p, with: .color(ArtPalette.outline.opacity(0.8)), lineWidth: 1)
+                        let rect = CGRect(x: -r * squash, y: -r, width: 2 * r * squash, height: 2 * r)
+                        g.fill(Path(ellipseIn: rect), with: .color(ArtPalette.gold))
                     }
                 }
             }

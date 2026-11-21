@@ -38,9 +38,10 @@ struct CaishenView: View {
             let w = geo.size.width, h = geo.size.height
             let frameW = w - 16
             let cell = min((frameW - 28) / 5, (h * 0.34) / 3)
-            let cellH = cell * (h > 760 ? 1.4 : (h > 700 ? 1.2 : 1.05))
+            let cellH = cell * (h > 760 ? 1.32 : (h > 700 ? 1.18 : 1.05))
             ZStack {
                 CaishenBackdrop().ignoresSafeArea()
+                if !reduceMotion { GoldSparks().ignoresSafeArea().allowsHitTesting(false) }
                 VStack(spacing: 6) {
                     topBar.padding(.horizontal, 10).padding(.top, 4)
                     CaishenJackpots(game: game)
@@ -74,11 +75,11 @@ struct CaishenView: View {
                     Spacer(minLength: 2)
                     HStack(alignment: .bottom, spacing: 0) {
                         // 财神站在左下角（撒钱时飞到上面去，这里先藏起来）
-                        CaishenFigure()
-                            .frame(width: w * 0.3, height: min(h * 0.22, 190))
-                            .offset(y: bob ? -5 : 0)
-                            .opacity(gift == nil ? 1 : 0)
-                            .shadow(color: .black.opacity(0.45), radius: 4, y: 4)
+                        // v13.1：机器旁边是一堆 3D 的元宝和金币（财神的形象等成品图，代码画的平面小人先撤掉）
+                        TreasurePile()
+                            .frame(width: w * 0.3, height: min(h * 0.2, 170))
+                            .scaleEffect(bob ? 1.03 : 0.99, anchor: .bottom)
+                            .shadow(color: ArtPalette.gold.opacity(0.5), radius: 10)
                             .allowsHitTesting(false)
                         controls(width: w * 0.7 - 12)
                     }
@@ -121,6 +122,7 @@ struct CaishenView: View {
         .onAppear {
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { bob = true }
             #if DEBUG
+            Icon3D.debugDumpIfAsked()
             debugStart()
             #endif
         }
@@ -143,9 +145,9 @@ struct CaishenView: View {
                 .position(x: w / 2, y: h * 0.36)
             CoinRain()
             VStack(spacing: 6) {
-                CaishenFigure()
-                    .frame(width: w * 0.62, height: w * 0.78)
-                    .shadow(color: ArtPalette.gold, radius: 18)
+                TreasurePile()
+                    .frame(width: w * 0.8, height: w * 0.8)
+                    .shadow(color: ArtPalette.gold, radius: 22)
                 Text("The God of Wealth is here!")
                     .font(.system(size: 30, weight: .black, design: .rounded))
                     .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
@@ -584,8 +586,8 @@ struct CaishenTitle: View {
     var body: some View {
         GeometryReader { geo in
             let h = geo.size.height
-            HStack(spacing: h * 0.25) {
-                IngotView(size: h * 0.9)
+            HStack(spacing: h * 0.2) {
+                Icon3DView(kind: .symbol(.ingot), size: h * 1.25)
                 Text("FORTUNE GOD")
                     .font(.system(size: h * 0.78, weight: .black, design: .serif))
                     .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
@@ -593,7 +595,7 @@ struct CaishenTitle: View {
                     .shadow(color: ArtPalette.gold.opacity(0.7), radius: 8)
                     .lineLimit(1).minimumScaleFactor(0.5)
                     .specularSweep()
-                IngotView(size: h * 0.9)
+                Icon3DView(kind: .symbol(.ingot), size: h * 1.25)
             }
             .frame(width: geo.size.width, height: h)
         }
@@ -672,16 +674,11 @@ struct CaishenReels: View {
         let wins = showing && !feature ? (game.spin?.outcome.lineWins ?? []) : []
         let lit = showing && !feature ? litCells() : []
         return ZStack {
-            // 机壳：金框、红漆内圈、深色内胆
-            RoundedRectangle(cornerRadius: 16)
-                .fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
-                .shadow(color: .black.opacity(0.6), radius: 8, y: 5)
-            RoundedRectangle(cornerRadius: 13)
-                .fill(Color(red: 0.6, green: 0.04, blue: 0.06))
-                .padding(4)
+            // 内胆：深色的底（3D 的金框在最上面一层盖住边）
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(red: 0.07, green: 0.01, blue: 0.02))
-                .padding(8)
+                .fill(Color(red: 0.05, green: 0.0, blue: 0.01))
+                .frame(width: cell * 5 + 16, height: cellH * 3 + 8)
+                .shadow(color: .black.opacity(0.7), radius: 10, y: 6)
             if feature {
                 featureGrid
                     .frame(width: cell * 5 + 8, height: cellH * 3)
@@ -704,6 +701,8 @@ struct CaishenReels: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .allowsHitTesting(false)
             }
+            ReelFrame3D(reels: CGSize(width: cell * 5 + 8, height: cellH * 3))
+                .allowsHitTesting(false)
             if !wins.isEmpty {
                 Canvas { ctx, size in
                     let x0 = (size.width - (cell * 5 + 8)) / 2, y0 = (size.height - cellH * 3) / 2
@@ -753,7 +752,7 @@ struct CaishenReels: View {
                                 .stroke(ArtPalette.gold.opacity(coins[c] == nil ? 0.25 : 0.9), lineWidth: 1.5)
                                 .padding(2)
                             if let v = coins[c] {
-                                CaishenSymbolView(symbol: .coin, size: cell * 0.86, coinValue: v, coinBet: game.spin?.bet ?? 1)
+                                CaishenSymbolView(symbol: .coin, size: cell * 0.94, coinValue: v, coinBet: game.spin?.bet ?? 1)
                                     .shadow(color: ArtPalette.gold.opacity(0.8), radius: 6)
                                     .transition(.scale(scale: 1.8).combined(with: .opacity))
                             } else if respinning && !reduceMotion {
@@ -787,20 +786,21 @@ struct CaishenReels: View {
         }
         let base = Int(floor(p)), frac = CGFloat(p - floor(p))
         return ZStack(alignment: .top) {
-            // 转轮带：象牙色的底，带一点暖
-            LinearGradient(colors: [Color(red: 0.99, green: 0.95, blue: 0.86), Color(red: 0.9, green: 0.82, blue: 0.7)], startPoint: .leading, endPoint: .trailing)
+            // 转轮带：深红的绒面，中间亮一点（v13.1：深色的底，金色的立体图案才跳得出来）
+            LinearGradient(colors: [Color(red: 0.2, green: 0.01, blue: 0.04), Color(red: 0.42, green: 0.03, blue: 0.08), Color(red: 0.2, green: 0.01, blue: 0.04)], startPoint: .leading, endPoint: .trailing)
+            Rectangle().fill(LinearGradient(colors: [ArtPalette.gold.opacity(0.5), ArtPalette.goldDeep.opacity(0.2)], startPoint: .top, endPoint: .bottom)).frame(width: 1.5).frame(maxWidth: .infinity, alignment: .trailing)
             VStack(spacing: 0) {
                 ForEach(0..<4, id: \.self) { k in
                     let sym = strip[((base + k) % n + n) % n]
                     let isLit = !rolling && k < 3 && lit.contains(r * 3 + k)
                     let centerY = (CGFloat(k) + 0.5 - frac) * cellH + bounce
                     let rel = max(-1.4, min(1.4, (centerY - cellH * 1.5) / (cellH * 1.5)))
-                    CaishenSymbolView(symbol: sym, size: cell * 0.82)
+                    CaishenSymbolView(symbol: sym, size: cell * 0.98)
                         .frame(width: cell, height: cellH)
                         .scaleEffect(isLit ? 1.1 : 1)
                         .opacity(dim && !isLit ? 0.4 : 1)
-                        .background(isLit ? RoundedRectangle(cornerRadius: 8).fill(ArtPalette.goldLight.opacity(0.55)).padding(3) : nil)
-                        .overlay(isLit ? RoundedRectangle(cornerRadius: 8).stroke(Color(red: 0.85, green: 0.1, blue: 0.1), lineWidth: 3).padding(3) : nil)
+                        .background(isLit ? RoundedRectangle(cornerRadius: 8).fill(RadialGradient(colors: [ArtPalette.goldLight.opacity(0.75), ArtPalette.gold.opacity(0.15)], center: .center, startRadius: 2, endRadius: cell * 0.7)).padding(3) : nil)
+                        .overlay(isLit ? RoundedRectangle(cornerRadius: 8).stroke(ArtPalette.goldLight, lineWidth: 3).padding(3) : nil)
                         .blur(radius: rolling && !reduceMotion ? 1.6 : 0)
                         .rotation3DEffect(.degrees(Double(rel) * 28), axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.5)
                 }
@@ -879,6 +879,79 @@ struct CaishenPaytable: View {
         HStack(spacing: 12) {
             CaishenSymbolView(symbol: s, size: 44).padding(.bottom, 6)
             Text(text).font(.subheadline)
+        }
+    }
+}
+
+// MARK: - v13.1 用 3D 渲染图的小部件
+/// 一个 3D 渲染的图案（图渲染不出来时是空的）
+struct Icon3DView: View {
+    let kind: Icon3D.Kind
+    let size: CGFloat
+    var body: some View {
+        Group {
+            if let img = Icon3D.image(kind) {
+                Image(uiImage: img).resizable().interpolation(.high)
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+/// 一堆元宝和金币
+struct TreasurePile: View {
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            Icon3DView(kind: .pile, size: s * 1.02)
+                .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
+}
+
+/// 转轮外面的 3D 金框。reels = 转轮窗口的大小；框比窗口大一圈，上面正中有一只元宝
+struct ReelFrame3D: View {
+    let reels: CGSize
+    @Environment(\.displayScale) private var displayScale
+    var body: some View {
+        // 图的四周留白：左右下各 16，上面 34（放元宝）
+        let size = CGSize(width: reels.width + 32, height: reels.height + 50)
+        let window = CGRect(x: 16, y: 34, width: reels.width, height: reels.height)
+        Group {
+            if let img = Icon3D.frame(size: size, window: window, scale: displayScale) {
+                Image(uiImage: img).resizable()
+            } else {
+                RoundedRectangle(cornerRadius: 14).stroke(ArtPalette.gold, lineWidth: 8).padding(8)
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        // 窗口的中心对着转轮的中心
+        .offset(y: -9)
+    }
+}
+
+/// 背景里慢慢往上飘的金色光点
+struct GoldSparks: View {
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
+            Canvas { ctx, size in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                for i in 0..<34 {
+                    let a = Double((i * 7919) % 1000) / 1000, b = Double((i * 104729) % 1000) / 1000, c = Double((i * 1299709) % 1000) / 1000
+                    let period = 9 + 9 * b
+                    let u = ((t / period) + c).truncatingRemainder(dividingBy: 1)
+                    let x = a * Double(size.width) + sin(t * 0.6 + Double(i)) * 14
+                    let y = Double(size.height) * (1.05 - u * 1.1)
+                    let r = 1.5 + 3.5 * b
+                    // 两头淡入淡出，中间一闪一闪
+                    let alpha = sin(u * .pi) * (0.35 + 0.3 * sin(t * 3 + Double(i)))
+                    let rect = CGRect(x: x - r * 3, y: y - r * 3, width: r * 6, height: r * 6)
+                    ctx.fill(Path(ellipseIn: rect), with: .radialGradient(Gradient(colors: [ArtPalette.goldLight.opacity(max(0, alpha)), .clear]),
+                                                                          center: CGPoint(x: x, y: y), startRadius: 0, endRadius: r * 3))
+                }
+            }
         }
     }
 }

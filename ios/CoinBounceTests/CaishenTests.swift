@@ -242,4 +242,27 @@ final class CaishenTests: XCTestCase {
         XCTAssertEqual(g.grandPoolCents, 300)
         XCTAssertEqual(g.jackpot(M.grandPrize), 5003, "30 转 × 10 币的 1% = 3 枚")
     }
+
+    // MARK: v13.1 图案是 3D 渲染的图
+    func test_icon3D_rendersEverySymbol_withTransparentCorners() throws {
+        for kind in CoinBounce.CaishenSymbol.allCases.map({ Icon3D.Kind.symbol($0) }) + [Icon3D.Kind.blankCoin, Icon3D.Kind.pile] {
+            let img = try XCTUnwrap(Icon3D.image(kind), "\(kind) 没渲染出来")
+            let cg = try XCTUnwrap(img.cgImage)
+            XCTAssertGreaterThanOrEqual(cg.width, 300)
+            // 画到一张已知格式的位图上再读像素：四角透明，中间一块有不透明的东西
+            let w = 64, h = 64
+            var px = [UInt8](repeating: 0, count: w * h * 4)
+            let ctx = try XCTUnwrap(CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                              space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+            func alpha(_ x: Int, _ y: Int) -> UInt8 { px[(y * w + x) * 4 + 3] }
+            XCTAssertEqual(alpha(0, 0), 0, "\(kind) 左上角应该透明")
+            XCTAssertEqual(alpha(w - 1, h - 1), 0, "\(kind) 右下角应该透明")
+            var solid = 0
+            for y in 16..<48 { for x in 16..<48 where alpha(x, y) > 200 { solid += 1 } }
+            XCTAssertGreaterThan(solid, 120, "\(kind) 中间应该有东西")
+        }
+        let frame = try XCTUnwrap(Icon3D.frame(size: CGSize(width: 400, height: 330), window: CGRect(x: 16, y: 34, width: 368, height: 280), scale: 2))
+        XCTAssertEqual(frame.cgImage?.width, 800)
+    }
 }
