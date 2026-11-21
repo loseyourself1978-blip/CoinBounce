@@ -224,6 +224,16 @@
         }
       }
     },
+    "ATHENA'S TEMPLE": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雅典娜的神殿"
+          }
+        }
+      }
+    },
     "AUTO": {
       "extractionState": "manual",
       "localizations": {
@@ -581,6 +591,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "时短！12 转快转。"
+          }
+        }
+      }
+    },
+    "Choose a machine": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选一台机器"
           }
         }
       }
@@ -973,12 +993,12 @@
         }
       }
     },
-    "God of Wealth": {
+    "Gold ingots and red envelopes": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "财神"
+            "value": "元宝红包，财神送礼"
           }
         }
       }
@@ -1000,6 +1020,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "火热！x4"
+          }
+        }
+      }
+    },
+    "Havoc in the Heavenly Palace": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金箍棒一挥，蟠桃满天飞"
           }
         }
       }
@@ -1245,6 +1275,16 @@
         }
       }
     },
+    "MONKEY KING": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣闹天宫"
+          }
+        }
+      }
+    },
     "MULTIBALL!": {
       "extractionState": "manual",
       "localizations": {
@@ -1475,12 +1515,12 @@
         }
       }
     },
-    "On any spin the God of Wealth may come down and scatter coins worth ×%lld to ×%lld of your bet.": {
+    "On any spin a surprise visit may scatter coins worth ×%lld to ×%lld of your bet.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每一转财神都有可能从天而降撒金币，给下注的 %lld 到 %lld 倍。"
+            "value": "每一转都有可能迎来一次神仙驾临，撒下下注 %lld 到 %lld 倍的金币。"
           }
         }
       }
@@ -1547,6 +1587,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "选一个宝箱"
+          }
+        }
+      }
+    },
+    "PLAY": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开玩"
           }
         }
       }
@@ -2127,6 +2177,16 @@
         }
       }
     },
+    "The Monkey King is here!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣驾到！"
+          }
+        }
+      }
+    },
     "The gate is open. Keep shooting!": {
       "extractionState": "manual",
       "localizations": {
@@ -2134,6 +2194,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "大口开着呢，接着打！"
+          }
+        }
+      }
+    },
+    "The goddess descends!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降临！"
           }
         }
       }
@@ -2222,6 +2292,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "上皿"
+          }
+        }
+      }
+    },
+    "Treasures of the temple": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神殿里的金盔与神盾"
           }
         }
       }
@@ -2335,12 +2415,12 @@
         }
       }
     },
-    "Wild: the God of Wealth replaces any symbol on a line. Appears on reels 2, 3 and 4.": {
+    "Wild: replaces any symbol on a line. Appears on reels 2, 3 and 4.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "百搭：财神可以代替中奖线上的任何图案，只出现在第 2、3、4 列。"
+            "value": "百搭：可以代替中奖线上的任何图案，只出现在第 2、3、4 列。"
           }
         }
       }

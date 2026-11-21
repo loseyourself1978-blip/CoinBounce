@@ -270,4 +270,41 @@ final class CaishenTests: XCTestCase {
             XCTAssertEqual(img.cgImage?.width, 1080)
         }
     }
+
+    // MARK: v13.2 三台主题机器
+    func test_themes_renderTheirOwnSymbols_andSaveSeparately() throws {
+        XCTAssertEqual(Set(SlotTheme.allCases.map(\.saveKey)).count, 3, "三台机器各存各的")
+        XCTAssertEqual(SlotTheme.caishen.saveKey, "CoinBounce.SlotsCaishen.v1", "财神这一台沿用原来的存档")
+        for theme in [SlotTheme.wukong, .athena] {
+            XCTAssertFalse(theme.title.isEmpty)
+            for s in [CoinBounce.CaishenSymbol.ingot, .fu, .redEnvelope, .lantern, .wild] {
+                let themed = try XCTUnwrap(Icon3D.image(.symbol(s, theme)), "\(theme) \(s) 没渲染出来")
+                let base = try XCTUnwrap(Icon3D.image(.symbol(s)))
+                XCTAssertNotEqual(themed.pngData(), base.pngData(), "\(theme) 的 \(s) 应该和财神那台不一样")
+            }
+            // 字母和金币三台共用同一个模型（两次渲染的字节会差一点，所以只核对渲染得出来、大小一样）
+            XCTAssertEqual(Icon3D.image(.symbol(.ace, theme))?.size, Icon3D.image(.symbol(.ace))?.size)
+        }
+        // 财神的角色图在；另外两台的图到了以后文件名按这个规则
+        XCTAssertNotNil(SlotTheme.caishen.art(.hold))
+        XCTAssertNotNil(SlotTheme.caishen.art(.cheer))
+        XCTAssertEqual(SlotTheme(rawValue: "wukong"), .wukong)
+    }
+
+    func test_twoMachines_keepSeparateBetsAndPools() {
+        let d = UserDefaults(suiteName: "CaishenTests.themes")!
+        d.removePersistentDomain(forName: "CaishenTests.themes")
+        let w = FakeWallet(1000)
+        let a = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.wukong.saveKey), rng: PachinkoRandom(seed: 1))
+        a.changeBet(3)
+        XCTAssertTrue(a.debugSpin(stops: findStops { $0.linePay == 0 && !$0.triggers }, noGift: true))
+        a.reelsStopped(); a.finishShowing(); a.save()
+        let b = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.athena.saveKey), rng: PachinkoRandom(seed: 1))
+        XCTAssertEqual(b.bet, 1, "另一台机器的下注不受影响")
+        XCTAssertEqual(b.grandPoolCents, 0)
+        let a2 = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.wukong.saveKey), rng: PachinkoRandom(seed: 1))
+        XCTAssertEqual(a2.bet, 10)
+        XCTAssertEqual(a2.grandPoolCents, 10)
+        d.removePersistentDomain(forName: "CaishenTests.themes")
+    }
 }

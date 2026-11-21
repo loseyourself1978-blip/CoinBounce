@@ -181,34 +181,42 @@ struct CaishenSymbolView: View {
     /// 金币上写的是金币数 = 倍数 × 下注
     var coinBet = 1
     var showRibbon = true
+    @Environment(\.slotTheme) private var theme
 
     var body: some View {
         // v13.1：图案是 3D 建模渲染出来的图（Icon3D）；渲染不出来（没有 Metal 的环境）时退回代码画的平面图
         if symbol == .coin, let value = coinValue {
             FortuneCoin(size: size * 0.94, value: value, bet: coinBet)
                 .frame(width: size, height: size)
-        } else if symbol == .wild, let base = Icon3D.image(.symbol(.wild)), let head = CaishenPose.head.image {
+        } else if symbol == .wild, let base = Icon3D.image(.symbol(.wild, theme)) {
             // 百搭：3D 的金边圆牌 + 财神头像（帽翅伸到牌外面）+ WILD 字牌
             ZStack {
                 Image(uiImage: base).resizable().interpolation(.high)
                     .frame(width: size * 1.12, height: size * 1.12)
-                Image(uiImage: head).resizable().interpolation(.high).scaledToFit()
-                    .frame(width: size * 1.04)
-                    .offset(y: -size * 0.07)
+                if let head = theme.art(.head) {
+                    Image(uiImage: head).resizable().interpolation(.high).scaledToFit()
+                        .frame(width: size * 1.04)
+                        .offset(y: -size * 0.07)
+                } else if let top = Icon3D.image(.symbol(.ingot, theme)) {
+                    // 角色头像还没到：牌面上先放这台机器最值钱的图案
+                    Image(uiImage: top).resizable().interpolation(.high)
+                        .frame(width: size * 0.72, height: size * 0.72)
+                        .offset(y: -size * 0.08)
+                }
                 if showRibbon {
                     Text(verbatim: "WILD")
                         .font(.system(size: size * 0.2, weight: .black, design: .rounded))
                         .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
                         .shadow(color: Color(red: 0.4, green: 0, blue: 0.02), radius: 0, x: 0.8, y: 1)
                         .padding(.horizontal, size * 0.09).padding(.vertical, size * 0.012)
-                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.95, green: 0.15, blue: 0.12), Color(red: 0.6, green: 0.02, blue: 0.05)], startPoint: .top, endPoint: .bottom)))
+                        .background(Capsule().fill(Color(theme.enamel)).overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.25), .black.opacity(0.3)], startPoint: .top, endPoint: .bottom))))
                         .overlay(Capsule().stroke(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom), lineWidth: max(1, size * 0.025)))
                         .offset(y: size * 0.4)
                 }
             }
             .frame(width: size, height: size)
             .shadow(color: .black.opacity(0.55), radius: size * 0.04, x: 0, y: size * 0.05)
-        } else if let img = Icon3D.image(.symbol(symbol)) {
+        } else if let img = Icon3D.image(.symbol(symbol, theme)) {
             Image(uiImage: img)
                 .resizable()
                 .interpolation(.high)
@@ -387,6 +395,7 @@ struct CoinRain: View {
     var count = 46
     /// 元宝也掺一些
     var ingots = true
+    @Environment(\.slotTheme) private var theme
     @State private var start = Date()
 
     var body: some View {
@@ -395,7 +404,7 @@ struct CoinRain: View {
                 let t = tl.date.timeIntervalSince(start)
                 // v13.1：掉下来的是 3D 渲染的方孔钱和元宝（渲染不出来时退回画圆片）
                 let coinImg = Icon3D.image(.symbol(.coin)).map { ctx.resolve(Image(uiImage: $0)) }
-                let ingotImg = Icon3D.image(.symbol(.ingot)).map { ctx.resolve(Image(uiImage: $0)) }
+                let ingotImg = Icon3D.image(.symbol(.ingot, theme)).map { ctx.resolve(Image(uiImage: $0)) }
                 for i in 0..<count {
                     // 每一枚的列、速度、起始相位都由序号算出来（不用存状态）
                     let a = Double((i * 7919) % 1000) / 1000, b = Double((i * 104729) % 1000) / 1000, c = Double((i * 1299709) % 1000) / 1000
@@ -442,30 +451,20 @@ struct CountingText: View, Animatable {
     }
 }
 
-// MARK: - v13.1c 财神（hj 生成的 3D 风格图，见 docs/ART_CREDITS.md）
-enum CaishenPose: String, CaseIterable {
-    case greet = "CaishenGreet"     // 拱手
-    case wave = "CaishenWave"       // 挥手
-    case cheer = "CaishenCheer"     // 举起双手欢呼
-    case head = "CaishenHead"       // 半身头像
-    case ingot = "CaishenIngot"     // 捧着元宝
-    case idle = "CaishenIdle"       // 站着
-
-    var image: UIImage? { UIImage(named: rawValue) }
-}
-
-/// 一张财神图（缺图时退回代码画的小人）
-struct CaishenArtView: View {
-    let pose: CaishenPose
+// MARK: - 角色图（hj 生成的 3D 风格图，见 docs/ART_CREDITS.md）
+/// 一张角色图。这台机器的图还没到时什么都不画（位置空着）
+struct MascotArtView: View {
+    let theme: SlotTheme
+    let pose: SlotTheme.Pose
     var body: some View {
-        if let img = pose.image {
+        if let img = theme.art(pose) {
             Image(uiImage: img)
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-                .accessibilityLabel(Text("God of Wealth"))
+                .accessibilityLabel(Text(verbatim: theme.title))
         } else {
-            CaishenFigure()
+            Color.clear
         }
     }
 }

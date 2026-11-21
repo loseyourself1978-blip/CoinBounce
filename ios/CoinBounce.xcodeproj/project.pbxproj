@@ -12,12 +12,14 @@
 		05608DAB5246B274B697EF4A /* PinballRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF928B901EA8D655B87044F /* PinballRules.swift */; };
 		08DA3F442D95CFDD77C144F4 /* SlotsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2D74B680A438DF63D13977 /* SlotsMath.swift */; };
 		14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */; };
+		184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB71AAE3EE93F8793ACBED3E /* SlotsHallView.swift */; };
 		18F0A683ACAB7E2A161946B6 /* Look3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */; };
 		22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
 		2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */; };
 		2DDA713780278ED4154D583C /* CaishenMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D249B1492E6A97B3A58EDDB /* CaishenMath.swift */; };
 		2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
 		306AFDF2F1D67499F88E5B6F /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
+		30D07A2ADCF173BD896C99CF /* SlotTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C736FD7762B33A61AAE6E26C /* SlotTheme.swift */; };
 		3595F337FB3825DB709C57B5 /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
 		362DF30DB3F6DE891986D9B6 /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
 		41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */; };
@@ -231,7 +233,9 @@
 		C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequenceTests.swift; sourceTree = "<group>"; };
 		C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoyalArt.swift; sourceTree = "<group>"; };
 		C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmOverlay.swift; sourceTree = "<group>"; };
+		C736FD7762B33A61AAE6E26C /* SlotTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotTheme.swift; sourceTree = "<group>"; };
 		CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoBoard.swift; sourceTree = "<group>"; };
+		CB71AAE3EE93F8793ACBED3E /* SlotsHallView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsHallView.swift; sourceTree = "<group>"; };
 		D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_attacker.wav; sourceTree = "<group>"; };
 		D46437215F0A7ED0248FC3F7 /* Icon3D.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Icon3D.swift; sourceTree = "<group>"; };
 		D9FBF4D8D96DEE0AFC059038 /* CaishenGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaishenGame.swift; sourceTree = "<group>"; };
@@ -277,6 +281,8 @@
 				554EE2EE9D98A71F95DCABAF /* CaishenArt.swift */,
 				8F9D22FB65982B81AE3BA40B /* CaishenView.swift */,
 				D46437215F0A7ED0248FC3F7 /* Icon3D.swift */,
+				C736FD7762B33A61AAE6E26C /* SlotTheme.swift */,
+				CB71AAE3EE93F8793ACBED3E /* SlotsHallView.swift */,
 			);
 			name = Slots;
 			path = Slots;
@@ -715,6 +721,8 @@
 				E37CF97BA763ECA1DD12900A /* CaishenView.swift in Sources */,
 				C127A6EC9F3FC5F90CC9AA97 /* TimedGift.swift in Sources */,
 				7CB20CEDABF6EE2B7D6731A8 /* Icon3D.swift in Sources */,
+				30D07A2ADCF173BD896C99CF /* SlotTheme.swift in Sources */,
+				184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

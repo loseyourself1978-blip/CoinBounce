@@ -10,7 +10,8 @@ enum Icon3D {
     static let pixels: CGFloat = 360
 
     enum Kind: Hashable {
-        case symbol(CaishenSymbol)
+        /// 一个图案。四个高分图案和百搭的底牌随主题换模型；字母和金币三台机器共用
+        case symbol(CaishenSymbol, SlotTheme = .caishen)
         /// 正面朝前、没有方孔的金币（锁定重转里上面要写数字）
         case blankCoin
         /// 一堆元宝和金币（机器旁边的摆设、天降财神时的大图）
@@ -34,6 +35,7 @@ enum Icon3D {
     static func preload() {
         DispatchQueue.global(qos: .userInitiated).async {
             for s in CaishenSymbol.allCases { _ = image(.symbol(s)) }
+            for t in [SlotTheme.wukong, .athena] { for s in [CaishenSymbol.ingot, .fu, .redEnvelope, .lantern, .wild] { _ = image(.symbol(s, t)) } }
             _ = image(.blankCoin)
             _ = image(.pile)
         }
@@ -163,17 +165,17 @@ enum Icon3D {
         case .pile:
             root.addChildNode(pile())
             return snapshot(scene, cam, size: CGSize(width: 600, height: 600))
-        case .symbol(let s):
+        case .symbol(let s, let theme):
             switch s {
-            case .ingot: root.addChildNode(ingot())
-            case .fu: root.addChildNode(fuTile())
-            case .redEnvelope: root.addChildNode(envelope())
-            case .lantern: root.addChildNode(lantern())
+            case .ingot: root.addChildNode(theme == .wukong ? staff() : (theme == .athena ? helmet() : ingot()))
+            case .fu: root.addChildNode(theme == .wukong ? headband() : (theme == .athena ? shield() : fuTile()))
+            case .redEnvelope: root.addChildNode(theme == .wukong ? peach() : (theme == .athena ? wreath() : envelope()))
+            case .lantern: root.addChildNode(theme == .wukong ? gourd() : (theme == .athena ? amphora() : lantern()))
             case .ace: root.addChildNode(letter("A", UIColor(red: 0.95, green: 0.16, blue: 0.1, alpha: 1)))
             case .kingCard: root.addChildNode(letter("K", UIColor(red: 0.62, green: 0.2, blue: 0.9, alpha: 1)))
             case .queenCard: root.addChildNode(letter("Q", UIColor(red: 0.1, green: 0.72, blue: 0.3, alpha: 1)))
             case .jack: root.addChildNode(letter("J", UIColor(red: 0.12, green: 0.5, blue: 1.0, alpha: 1)))
-            case .wild: root.addChildNode(wild())
+            case .wild: root.addChildNode(wild(enamel: theme.enamel))
             case .coin: root.addChildNode(holeCoin())
             }
         }
@@ -489,10 +491,10 @@ enum Icon3D {
     }
 
     /// 百搭的底牌：金边红珐琅的圆牌
-    static func wild() -> SCNNode {
+    static func wild(enamel: UIColor = red) -> SCNNode {
         let node = SCNNode()
         node.addChildNode(disc(radius: 1.0, depth: 0.14, gold(rough: 0.16)))
-        node.addChildNode(disc(radius: 0.84, depth: 0.05, lacquer(red, glow: 0.35, rough: 0.3), z: 0.07))
+        node.addChildNode(disc(radius: 0.84, depth: 0.05, lacquer(enamel, glow: enamel == red ? 0.35 : 0.18, rough: 0.3), z: 0.07))
         node.addChildNode(ring(radius: 0.92, pipe: 0.085, gold(rough: 0.12), z: 0.07))
         // v13.1c：牌面上的财神头像和 WILD 字是另外叠上去的（CaishenSymbolView），这里只做金边红珐琅的底牌
         node.scale = SCNVector3(0.98, 0.98, 0.98)
@@ -526,6 +528,326 @@ enum Icon3D {
         return node
     }
 
+    // MARK: 旋转体（葫芦、蟠桃、头盔、陶瓶都是一条轮廓线绕中轴转一圈）
+    /// 把几个控制点连成一条光滑的轮廓线（Catmull-Rom），再绕 Y 轴转一圈。控制点从下往上写：(半径, 高度)。
+    /// 贴图坐标：u 绕一圈，v 沿轮廓从下（0）到上（1）——所以一张从上到下的渐变图就是从底到顶的颜色
+    static func lathe(_ control: [(Float, Float)], material: SCNMaterial, segments: Int = 56, steps: Int = 10) -> SCNGeometry {
+        var prof: [SIMD2<Float>] = []
+        let c = control.map { SIMD2($0.0, $0.1) }
+        for i in 0..<(c.count - 1) {
+            let p0 = c[max(0, i - 1)], p1 = c[i], p2 = c[i + 1], p3 = c[min(c.count - 1, i + 2)]
+            for k in 0..<steps {
+                let t = Float(k) / Float(steps), t2 = t * t, t3 = t2 * t
+                var q = 0.5 * ((2 * p1) + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (3 * p1 - p0 - 3 * p2 + p3) * t3)
+                q.x = max(0, q.x)
+                prof.append(q)
+            }
+        }
+        prof.append(c[c.count - 1])
+        let n = prof.count
+        var pos: [SCNVector3] = [], nrm: [SCNVector3] = [], uv: [CGPoint] = [], idx: [Int32] = []
+        for i in 0..<n {
+            let d = prof[min(n - 1, i + 1)] - prof[max(0, i - 1)]
+            // 轮廓线的法线（朝外）：切线 (dr, dy) 转 90°
+            var nn = SIMD2(d.y, -d.x)
+            let len = simd_length(nn)
+            nn = len > 1e-6 ? nn / len : SIMD2(0, i == 0 ? -1 : 1)
+            for j in 0...segments {
+                let th = Float(j) / Float(segments) * 2 * .pi
+                pos.append(SCNVector3(prof[i].x * cos(th), prof[i].y, prof[i].x * sin(th)))
+                nrm.append(SCNVector3(nn.x * cos(th), nn.y, nn.x * sin(th)))
+                uv.append(CGPoint(x: CGFloat(j) / CGFloat(segments), y: CGFloat(i) / CGFloat(n - 1)))
+            }
+        }
+        for i in 0..<(n - 1) {
+            for j in 0..<segments {
+                let a = Int32(i * (segments + 1) + j), b = Int32((i + 1) * (segments + 1) + j)
+                idx += [a, b, a + 1, a + 1, b, b + 1]
+            }
+        }
+        let g = SCNGeometry(sources: [SCNGeometrySource(vertices: pos), SCNGeometrySource(normals: nrm), SCNGeometrySource(textureCoordinates: uv)],
+                            elements: [SCNGeometryElement(indices: idx, primitiveType: .triangles)])
+        g.materials = [material]
+        return g
+    }
+
+    /// 从上到下的渐变图（配合 lathe 的贴图坐标：stops 里位置 0 是物体的底、1 是顶）
+    static func gradientImage(_ stops: [(UIColor, CGFloat)]) -> UIImage {
+        let size = CGSize(width: 8, height: 256)
+        let fmt = UIGraphicsImageRendererFormat()
+        fmt.scale = 1
+        fmt.opaque = true
+        return UIGraphicsImageRenderer(size: size, format: fmt).image { ctx in
+            let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: stops.map { $0.0.cgColor } as CFArray, locations: stops.map { $0.1 })!
+            ctx.cgContext.drawLinearGradient(g, start: .zero, end: CGPoint(x: 0, y: size.height), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+    }
+
+    private static func ball(_ r: CGFloat, _ m: SCNMaterial, _ x: Float, _ y: Float, _ z: Float, scale: SCNVector3 = SCNVector3(1, 1, 1)) -> SCNNode {
+        let s = SCNSphere(radius: r)
+        s.segmentCount = 36
+        s.firstMaterial = m
+        let n = SCNNode(geometry: s)
+        n.position = SCNVector3(x, y, z)
+        n.scale = scale
+        return n
+    }
+
+    // MARK: 西游记的图案
+    /// 金箍棒：竖着的红漆棒，两头是金箍，脚下一朵祥云
+    static func staff() -> SCNNode {
+        let node = SCNNode()
+        let body = SCNCylinder(radius: 0.17, height: 1.36)
+        body.radialSegmentCount = 40
+        body.firstMaterial = lacquer(UIColor(red: 0.8, green: 0.05, blue: 0.06, alpha: 1), glow: 0.35, rough: 0.25)
+        node.addChildNode(SCNNode(geometry: body))
+        for side in [Float(1), -1] {
+            let cap = SCNCylinder(radius: 0.22, height: 0.34)
+            cap.radialSegmentCount = 40
+            cap.firstMaterial = gold(rough: 0.16)
+            let c = SCNNode(geometry: cap)
+            c.position = SCNVector3(0, side * 0.82, 0)
+            node.addChildNode(c)
+            for dy in [Float(-0.17), 0, 0.17] {
+                let t = SCNTorus(ringRadius: 0.225, pipeRadius: 0.04)
+                t.ringSegmentCount = 40
+                t.firstMaterial = gold(rough: 0.1)
+                let r = SCNNode(geometry: t)
+                r.position = SCNVector3(0, side * 0.82 + dy, 0)
+                node.addChildNode(r)
+            }
+            node.addChildNode(ball(0.14, gold(rough: 0.1), 0, side * 1.03, 0))
+        }
+        // 祥云：一团珍珠色的球，垫在棒子后面
+        let cloud = lacquer(UIColor(red: 1.0, green: 0.93, blue: 0.8, alpha: 1), glow: 0.25, rough: 0.35)
+        for (x, y, r) in [(-0.55, -0.5, 0.26), (-0.28, -0.36, 0.3), (0.28, -0.36, 0.3), (0.55, -0.5, 0.26), (0, -0.56, 0.3), (-0.78, -0.62, 0.17), (0.78, -0.62, 0.17)] as [(Float, Float, CGFloat)] {
+            node.addChildNode(ball(r, cloud, x, y, -0.3, scale: SCNVector3(1, 0.8, 0.6)))
+        }
+        node.scale = SCNVector3(0.94, 0.94, 0.94)
+        return node
+    }
+
+    /// 紧箍：一道金圈，正面两个卷起来的云头，中间一颗红宝石。从前上方看（左右对称）
+    static func headband() -> SCNNode {
+        let node = SCNNode()
+        let hoop = SCNNode()
+        let t = SCNTorus(ringRadius: 0.84, pipeRadius: 0.1)
+        t.ringSegmentCount = 72
+        t.pipeSegmentCount = 24
+        t.firstMaterial = gold(rough: 0.14)
+        hoop.addChildNode(SCNNode(geometry: t))
+        let thin = SCNTorus(ringRadius: 0.84, pipeRadius: 0.035)
+        thin.ringSegmentCount = 72
+        thin.firstMaterial = gold(rough: 0.08)
+        let thinNode = SCNNode(geometry: thin)
+        thinNode.position = SCNVector3(0, 0.12, 0)
+        hoop.addChildNode(thinNode)
+        // 正面的两个云头（立着的小圈）和宝石
+        for side in [Float(-1), 1] {
+            let curl = SCNTorus(ringRadius: 0.15, pipeRadius: 0.05)
+            curl.firstMaterial = gold(rough: 0.1)
+            let c = SCNNode(geometry: curl)
+            c.eulerAngles.x = .pi / 2
+            c.position = SCNVector3(side * 0.2, 0.2, 0.86)
+            hoop.addChildNode(c)
+        }
+        hoop.addChildNode(ball(0.12, lacquer(UIColor(red: 0.9, green: 0.05, blue: 0.1, alpha: 1), glow: 0.5, rough: 0.1), 0, 0.12, 0.92))
+        hoop.eulerAngles.x = 0.62
+        node.addChildNode(hoop)
+        node.position = SCNVector3(0, -0.08, 0)
+        node.scale = SCNVector3(1.14, 1.14, 1.14)
+        return node
+    }
+
+    /// 蟠桃：尖头朝上的桃子，从底下的奶黄过渡到顶上的桃红，两片绿叶
+    static func peach() -> SCNNode {
+        let node = SCNNode()
+        let m = lacquer(.white, glow: 0.25, rough: 0.35)
+        let skin = gradientImage([(UIColor(red: 1.0, green: 0.78, blue: 0.45, alpha: 1), 0.0), (UIColor(red: 1.0, green: 0.5, blue: 0.4, alpha: 1), 0.32),
+                                  (UIColor(red: 0.92, green: 0.2, blue: 0.3, alpha: 1), 0.68), (UIColor(red: 0.75, green: 0.05, blue: 0.18, alpha: 1), 1.0)])
+        m.diffuse.contents = skin
+        m.emission.contents = skin
+        m.emission.intensity = 0.1
+        m.multiply.contents = UIColor(white: 0.7, alpha: 1)
+        m.clearCoat.contents = 0.4
+        let g = lathe([(0, -0.82), (0.42, -0.74), (0.76, -0.38), (0.86, 0.04), (0.72, 0.44), (0.42, 0.72), (0.14, 0.92), (0, 1.0)], material: m)
+        node.addChildNode(SCNNode(geometry: g))
+        let leaf = lacquer(UIColor(red: 0.12, green: 0.6, blue: 0.2, alpha: 1), glow: 0.3, rough: 0.3)
+        for side in [Float(-1), 1] {
+            let l = ball(0.5, leaf, side * 0.62, -0.7, 0.12, scale: SCNVector3(1, 0.3, 0.42))
+            l.eulerAngles.z = side * 0.45
+            node.addChildNode(l)
+        }
+        node.scale = SCNVector3(0.98, 0.98, 0.98)
+        node.position = SCNVector3(0, -0.04, 0)
+        return node
+    }
+
+    /// 葫芦：金葫芦，腰上系一条红绸
+    static func gourd() -> SCNNode {
+        let node = SCNNode()
+        let g = lathe([(0, -0.95), (0.4, -0.9), (0.66, -0.58), (0.66, -0.26), (0.42, 0.06), (0.24, 0.2), (0.36, 0.42), (0.4, 0.6), (0.27, 0.8), (0.11, 0.9), (0.08, 1.0), (0, 1.02)],
+                      material: gold(rough: 0.16))
+        node.addChildNode(SCNNode(geometry: g))
+        let silk = lacquer(UIColor(red: 0.9, green: 0.06, blue: 0.08, alpha: 1), glow: 0.35, rough: 0.4)
+        let band = SCNTorus(ringRadius: 0.27, pipeRadius: 0.07)
+        band.ringSegmentCount = 48
+        band.firstMaterial = silk
+        let bandNode = SCNNode(geometry: band)
+        bandNode.position = SCNVector3(0, 0.2, 0)
+        node.addChildNode(bandNode)
+        // 蝴蝶结：两片 + 中间的结
+        for side in [Float(-1), 1] {
+            let b = ball(0.2, silk, side * 0.2, 0.2, 0.3, scale: SCNVector3(1, 0.6, 0.4))
+            b.eulerAngles.z = side * 0.3
+            node.addChildNode(b)
+            let tail = ball(0.16, silk, side * 0.12, -0.02, 0.36, scale: SCNVector3(0.45, 1, 0.3))
+            tail.eulerAngles.z = side * -0.3
+            node.addChildNode(tail)
+        }
+        node.addChildNode(ball(0.08, silk, 0, 0.2, 0.36))
+        node.scale = SCNVector3(0.95, 0.95, 0.95)
+        return node
+    }
+
+    // MARK: 希腊神话的图案
+    /// 头盔：科林斯式的金盔（T 形的面部开口），头顶一道横着的红色马鬃冠
+    static func helmet() -> SCNNode {
+        let node = SCNNode()
+        let g = lathe([(0.6, -0.9), (0.66, -0.55), (0.76, -0.05), (0.74, 0.35), (0.56, 0.7), (0.28, 0.88), (0, 0.94)], material: gold(rough: 0.16))
+        node.addChildNode(SCNNode(geometry: g))
+        // 面部的开口：两只杏核形的眼孔 + 下面一道竖缝（中间留着护鼻）
+        let dark = lacquer(UIColor(red: 0.03, green: 0.03, blue: 0.08, alpha: 1), glow: 0, rough: 0.6)
+        dark.clearCoat.contents = 0
+        for side in [Float(-1), 1] {
+            let eye = ball(0.2, dark, side * 0.27, 0.02, 0.7, scale: SCNVector3(1, 0.5, 0.4))
+            eye.eulerAngles.z = side * -0.2
+            node.addChildNode(eye)
+        }
+        let slit = SCNNode(geometry: SCNBox(width: 0.17, height: 0.78, length: 0.3, chamferRadius: 0.06))
+        slit.geometry!.firstMaterial = dark
+        slit.position = SCNVector3(0, -0.56, 0.58)
+        node.addChildNode(slit)
+        // 眼孔上面的一道眉弓、盔沿
+        let brow = SCNTorus(ringRadius: 0.75, pipeRadius: 0.04)
+        brow.ringSegmentCount = 64
+        brow.firstMaterial = gold(rough: 0.1)
+        let browNode = SCNNode(geometry: brow)
+        browNode.position = SCNVector3(0, 0.22, 0)
+        node.addChildNode(browNode)
+        // 横冠：一把扇形的红色马鬃，底下一道金托
+        func fan(_ r0: CGFloat, _ r1: CGFloat, depth: CGFloat, _ m: SCNMaterial, z: Float) {
+            let p = UIBezierPath()
+            p.addArc(withCenter: .zero, radius: r1, startAngle: .pi * 0.08, endAngle: .pi * 0.92, clockwise: true)
+            p.addArc(withCenter: .zero, radius: r0, startAngle: .pi * 0.92, endAngle: .pi * 0.08, clockwise: false)
+            p.close()
+            p.flatness = 0.004
+            let shape = SCNShape(path: p, extrusionDepth: depth)
+            shape.chamferRadius = min(0.04, depth / 3)
+            shape.materials = [m]
+            let n = SCNNode(geometry: shape)
+            n.position = SCNVector3(0, 0.1, z)
+            node.addChildNode(n)
+        }
+        fan(0.9, 1.34, depth: 0.16, lacquer(UIColor(red: 0.5, green: 0.0, blue: 0.02, alpha: 1), glow: 0.3, rough: 0.6), z: 0)
+        fan(0.84, 0.94, depth: 0.22, gold(rough: 0.12), z: 0)
+        node.scale = SCNVector3(0.74, 0.74, 0.74)
+        node.position = SCNVector3(0, -0.2, 0)
+        return node
+    }
+
+    /// 盾牌：圆盾，金边、蓝珐琅、中间一颗凸起的盾心和八道光芒
+    static func shield() -> SCNNode {
+        let node = SCNNode()
+        node.addChildNode(disc(radius: 1.0, depth: 0.14, gold(rough: 0.16)))
+        node.addChildNode(disc(radius: 0.8, depth: 0.05, lacquer(UIColor(red: 0.03, green: 0.18, blue: 0.62, alpha: 1), glow: 0.2, rough: 0.25), z: 0.07))
+        node.addChildNode(ring(radius: 0.9, pipe: 0.1, gold(rough: 0.12), z: 0.07))
+        node.addChildNode(ring(radius: 0.5, pipe: 0.035, gold(rough: 0.1), z: 0.1))
+        for k in 0..<8 {
+            let a = Float(k) * .pi / 4
+            let d = simd_float3(cos(a), sin(a), 0)
+            let ray = SCNCone(topRadius: 0, bottomRadius: 0.085, height: 0.34)
+            ray.radialSegmentCount = 4
+            ray.firstMaterial = gold(rough: 0.12)
+            let n = SCNNode(geometry: ray)
+            n.simdOrientation = simd_quatf(from: simd_float3(0, 1, 0), to: d)
+            n.simdPosition = d * 0.42 + simd_float3(0, 0, 0.11)
+            n.scale = SCNVector3(1, 1, 0.5)
+            node.addChildNode(n)
+        }
+        node.addChildNode(ball(0.24, gold(rough: 0.1), 0, 0, 0.1, scale: SCNVector3(1, 1, 0.55)))
+        // 边上一圈铆钉
+        for k in 0..<12 {
+            let a = Float(k) * .pi / 6
+            node.addChildNode(ball(0.045, gold(rough: 0.08), cos(a) * 0.9, sin(a) * 0.9, 0.17))
+        }
+        node.scale = SCNVector3(0.98, 0.98, 0.98)
+        return node
+    }
+
+    /// 橄榄花环：一圈金叶子，上面留个口，底下系红绸
+    static func wreath() -> SCNNode {
+        let node = SCNNode()
+        let leafA = gold(rough: 0.14), leafB = gold(rough: 0.3)
+        let count = 22
+        for k in 0..<count {
+            // 从底下往两边排上去，顶上留一个口
+            let half = k % 2 == 0 ? Float(1) : -1
+            let step = Float(k / 2)
+            let a = -Float.pi / 2 + half * (0.22 + step * 0.26)
+            let outer = (k / 2) % 2 == 0
+            let r: Float = outer ? 0.84 : 0.66
+            let leaf = ball(0.26, outer ? leafA : leafB, cos(a) * r, sin(a) * r, outer ? 0.04 : 0, scale: SCNVector3(1, 0.4, 0.22))
+            // 叶尖朝着往上走的方向，外圈的往外撇、内圈的往里撇
+            leaf.eulerAngles.z = a + half * (.pi / 2) + half * (outer ? -0.45 : 0.45)
+            node.addChildNode(leaf)
+        }
+        let stem = SCNTorus(ringRadius: 0.75, pipeRadius: 0.03)
+        stem.ringSegmentCount = 64
+        stem.firstMaterial = gold(rough: 0.2)
+        let stemNode = SCNNode(geometry: stem)
+        stemNode.eulerAngles.x = .pi / 2
+        stemNode.position.z = -0.04
+        node.addChildNode(stemNode)
+        let silk = lacquer(UIColor(red: 0.9, green: 0.06, blue: 0.08, alpha: 1), glow: 0.35, rough: 0.4)
+        for side in [Float(-1), 1] {
+            let b = ball(0.2, silk, side * 0.2, -0.78, 0.14, scale: SCNVector3(1, 0.6, 0.4))
+            b.eulerAngles.z = side * 0.3
+            node.addChildNode(b)
+        }
+        node.addChildNode(ball(0.09, silk, 0, -0.78, 0.2))
+        node.position = SCNVector3(0, 0.04, 0)
+        return node
+    }
+
+    /// 双耳瓶：陶土色的瓶身，黑色的纹带，两只耳
+    static func amphora() -> SCNNode {
+        let node = SCNNode()
+        let clay = UIColor(red: 0.86, green: 0.4, blue: 0.16, alpha: 1), black = UIColor(red: 0.08, green: 0.05, blue: 0.05, alpha: 1)
+        let goldC = UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 1)
+        let m = lacquer(.white, glow: 0.2, rough: 0.3)
+        let skin = gradientImage([(black, 0), (black, 0.09), (clay, 0.1), (clay, 0.3), (goldC, 0.31), (black, 0.33), (black, 0.52), (goldC, 0.54), (clay, 0.56),
+                                  (clay, 0.7), (black, 0.71), (black, 0.76), (clay, 0.77), (clay, 0.92), (black, 0.93), (black, 1)])
+        m.diffuse.contents = skin
+        m.emission.contents = skin
+        m.emission.intensity = 0.1
+        let g = lathe([(0, -1.0), (0.27, -1.0), (0.29, -0.9), (0.2, -0.8), (0.42, -0.5), (0.6, -0.1), (0.58, 0.2), (0.4, 0.48), (0.2, 0.62), (0.17, 0.8), (0.2, 0.9), (0.31, 0.97), (0.31, 1.0), (0.2, 1.0)],
+                      material: m)
+        node.addChildNode(SCNNode(geometry: g))
+        for side in [Float(-1), 1] {
+            let h = SCNTorus(ringRadius: 0.2, pipeRadius: 0.045)
+            h.ringSegmentCount = 40
+            h.firstMaterial = lacquer(black, glow: 0, rough: 0.3)
+            let n = SCNNode(geometry: h)
+            n.eulerAngles.x = .pi / 2
+            n.scale = SCNVector3(0.9, 1, 1.25)
+            n.position = SCNVector3(side * 0.36, 0.66, 0)
+            node.addChildNode(n)
+        }
+        node.scale = SCNVector3(0.96, 0.96, 0.96)
+        return node
+    }
+
     // MARK: 立体的大字（大奖、财神到……）
     private static var titleCache: [String: UIImage] = [:]
 
@@ -554,8 +876,8 @@ enum Icon3D {
 
     // MARK: 机器外框
     /// 转轮外面的金框：size 是整张图的大小（点），window 是中间留给转轮的洞。框的截面是倒圆的金条，里面一圈红漆，四角各一颗金钉，上面正中一只元宝
-    static func frame(size: CGSize, window: CGRect, scale: CGFloat) -> UIImage? {
-        let key = "\(Int(size.width))x\(Int(size.height))-\(Int(window.width))x\(Int(window.height))"
+    static func frame(size: CGSize, window: CGRect, scale: CGFloat, theme: SlotTheme = .caishen) -> UIImage? {
+        let key = "\(theme.rawValue)-\(Int(size.width))x\(Int(size.height))-\(Int(window.width))x\(Int(window.height))"
         lock.lock(); defer { lock.unlock() }
         if let c = frameCache[key] { return c }
         let scene = SCNScene()
@@ -603,7 +925,7 @@ enum Icon3D {
         let t: CGFloat = 13
         let outer = window.insetBy(dx: -t, dy: -t)
         band(outer: outer, inner: window.insetBy(dx: -4, dy: -4), radius: 16, depth: 0.16, chamfer: 0.045, gold(rough: 0.16), z: 0)
-        band(outer: window.insetBy(dx: -5, dy: -5), inner: window, radius: 9, depth: 0.1, chamfer: 0.02, lacquer(red, glow: 0.3), z: -0.02)
+        band(outer: window.insetBy(dx: -5, dy: -5), inner: window, radius: 9, depth: 0.1, chamfer: 0.02, lacquer(theme.enamel, glow: 0.3), z: -0.02)
         for (x, y) in [(outer.minX + 5, outer.minY + 5), (outer.maxX - 5, outer.minY + 5), (outer.minX + 5, outer.maxY - 5), (outer.maxX - 5, outer.maxY - 5)] {
             let s = SCNSphere(radius: 7 * u)
             s.segmentCount = 32
@@ -617,10 +939,11 @@ enum Icon3D {
         plate.geometry!.firstMaterial = gold(rough: 0.16)
         plate.position = SCNVector3(0, Float((size.height / 2 - outer.minY - 2) * u), 0.05)
         scene.rootNode.addChildNode(plate)
-        let top = ingot()
-        let k = Float(22 * u)
+        // 牌子上的摆件：这台机器最值钱的那个图案
+        let top = theme == .wukong ? peach() : (theme == .athena ? shield() : ingot())
+        let k = Float((theme == .caishen ? 22 : 15) * u)
         top.scale = SCNVector3(k, k, k)
-        top.eulerAngles = SCNVector3(0.5, 0, 0)
+        if theme == .caishen { top.eulerAngles = SCNVector3(0.5, 0, 0) }
         top.position = SCNVector3(0, Float((size.height / 2 - outer.minY + 6) * u), 0.4)
         scene.rootNode.addChildNode(top)
 
@@ -636,7 +959,8 @@ enum Icon3D {
         guard let i = args.firstIndex(of: "-dumpIcons"), i + 1 < args.count else { return }
         let dir = URL(fileURLWithPath: args[i + 1])
         var all: [(String, UIImage)] = []
-        for s in CaishenSymbol.allCases { if let img = image(.symbol(s)) { all.append(("\(s)", img)) } }
+        let theme = SlotTheme.launchTheme ?? .caishen
+        for s in CaishenSymbol.allCases { if let img = image(.symbol(s, theme)) { all.append(("\(s)", img)) } }
         if let img = image(.blankCoin) { all.append(("blankCoin", img)) }
         if let img = image(.pile) { all.append(("pile", img)) }
         // 一张总览：深红底，5 个一行
@@ -661,7 +985,7 @@ enum Icon3D {
             }
             try? one.pngData()?.write(to: dir.appendingPathComponent("\(name).png"))
         }
-        if let f = frame(size: CGSize(width: 400, height: 330), window: CGRect(x: 20, y: 40, width: 360, height: 270), scale: 2) {
+        if let f = frame(size: CGSize(width: 400, height: 330), window: CGRect(x: 20, y: 40, width: 360, height: 270), scale: 2, theme: theme) {
             try? f.pngData()?.write(to: dir.appendingPathComponent("frame.png"))
         }
     }
