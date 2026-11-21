@@ -42,8 +42,9 @@ struct LobbyView: View {
                             router.open(.roulette)
                         }
                         .accessibilityIdentifier("doorRoulette")
-                        LobbyDoor(title: String(localized: "Pachinko"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
-                            router.open(.pachinko)
+                        // v12.7：第三扇门换成弹球台（弹子机的代码还在，-startPachinko 能进）
+                        LobbyDoor(title: String(localized: "Pinball"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
+                            router.open(.pinball)
                         }
                         .accessibilityIdentifier("doorPachinko")
                     }
