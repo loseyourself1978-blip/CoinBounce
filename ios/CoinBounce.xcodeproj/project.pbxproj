@@ -12,6 +12,7 @@
 		05608DAB5246B274B697EF4A /* PinballRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF928B901EA8D655B87044F /* PinballRules.swift */; };
 		08DA3F442D95CFDD77C144F4 /* SlotsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2D74B680A438DF63D13977 /* SlotsMath.swift */; };
 		14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */; };
+		18F0A683ACAB7E2A161946B6 /* Look3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */; };
 		22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
 		2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */; };
 		2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
@@ -30,6 +31,7 @@
 		84D24F6E668F2F6F9E6EEE87 /* SlotsGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259FCAFDED30AC92645ED110 /* SlotsGame.swift */; };
 		87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
 		8CFAB628C4309A6D70DD4C96 /* PinballGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A80A0461A30A3992F5749FF /* PinballGame.swift */; };
+		8F0057FC905F3A2898D27996 /* RouletteWheel3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00070213C92112D1B11410E9 /* RouletteWheel3D.swift */; };
 		8F82E9270F4CF5D68C3589EC /* sfx_pk_nail_3.wav in Resources */ = {isa = PBXBuildFile; fileRef = 55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */; };
 		99560B1CF2D3B9A12B6244C8 /* PinballTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B58D87155C2F1917DBB3D8 /* PinballTests.swift */; };
 		A0A79905C9F9164917CCF72E /* sfx_pk_start.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1E437F0B110E73380F71621E /* sfx_pk_start.wav */; };
@@ -106,6 +108,7 @@
 		C602A7E3A20B7CFD4367EA5A /* Pinball3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DD2475C2F97A8ED49B02EA /* Pinball3DScene.swift */; };
 		CDD124B18B8CAF2F84A7F6B0 /* PinballEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5FE08520EB82BD5A34CF505 /* PinballEngine.swift */; };
 		CE7ADF35369A9CD3A12A119F /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
+		D06A138D8C5D815113B7D9FE /* Lobby3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BBB9B6AC43CC167DDC3A46 /* Lobby3DScene.swift */; };
 		D0AFF0D8B4521296A1B639D9 /* sfx_pk_nail_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */; };
 		D31E75F461607C878B536B2B /* sfx_pk_count.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1D84389FD89837773F507262 /* sfx_pk_count.wav */; };
 		DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */ = {isa = PBXBuildFile; fileRef = D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */; };
@@ -125,6 +128,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00070213C92112D1B11410E9 /* RouletteWheel3D.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RouletteWheel3D.swift; sourceTree = "<group>"; };
 		060744781071BBA307B2EAF6 /* PinballView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinballView.swift; sourceTree = "<group>"; };
 		1D84389FD89837773F507262 /* sfx_pk_count.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_count.wav; sourceTree = "<group>"; };
 		1E437F0B110E73380F71621E /* sfx_pk_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_start.wav; sourceTree = "<group>"; };
@@ -136,6 +140,7 @@
 		5A80A0461A30A3992F5749FF /* PinballGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinballGame.swift; sourceTree = "<group>"; };
 		5DA22958088F526918E564A6 /* PachinkoView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoView.swift; sourceTree = "<group>"; };
 		65DD2475C2F97A8ED49B02EA /* Pinball3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pinball3DScene.swift; sourceTree = "<group>"; };
+		7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Look3DTests.swift; sourceTree = "<group>"; };
 		7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoTests.swift; sourceTree = "<group>"; };
 		7DF928B901EA8D655B87044F /* PinballRules.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinballRules.swift; sourceTree = "<group>"; };
 		7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_reach.wav; sourceTree = "<group>"; };
@@ -219,6 +224,7 @@
 		E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_2.wav; sourceTree = "<group>"; };
 		F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoSimulator.swift; sourceTree = "<group>"; };
 		F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoPhysics.swift; sourceTree = "<group>"; };
+		F3BBB9B6AC43CC167DDC3A46 /* Lobby3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lobby3DScene.swift; sourceTree = "<group>"; };
 		FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -301,6 +307,7 @@
 				7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */,
 				B9B58D87155C2F1917DBB3D8 /* PinballTests.swift */,
 				2C6E520CCE4903CFD956E323 /* SlotsTests.swift */,
+				7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -434,6 +441,7 @@
 				C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */,
 				C1669D88E60D7E6491549840 /* RouletteTableView.swift */,
 				C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */,
+				00070213C92112D1B11410E9 /* RouletteWheel3D.swift */,
 			);
 			path = Roulette;
 			sourceTree = "<group>";
@@ -445,6 +453,7 @@
 				C10D0101790978C3955D31EB /* RootView.swift */,
 				C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */,
 				C183E40460A162E1121333A9 /* LobbyView.swift */,
+				F3BBB9B6AC43CC167DDC3A46 /* Lobby3DScene.swift */,
 			);
 			path = Lobby;
 			sourceTree = "<group>";
@@ -611,6 +620,7 @@
 				AF1BB3BED9812602A8FDDE46 /* SlotsMath.swift in Sources */,
 				C21638066250834B419D3940 /* SlotsGame.swift in Sources */,
 				60178DF6F82CA9C65E0BD365 /* SlotsTests.swift in Sources */,
+				18F0A683ACAB7E2A161946B6 /* Look3DTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -667,6 +677,8 @@
 				08DA3F442D95CFDD77C144F4 /* SlotsMath.swift in Sources */,
 				84D24F6E668F2F6F9E6EEE87 /* SlotsGame.swift in Sources */,
 				6D718B9AE32C4BAECE98CB50 /* SlotsView.swift in Sources */,
+				8F0057FC905F3A2898D27996 /* RouletteWheel3D.swift in Sources */,
+				D06A138D8C5D815113B7D9FE /* Lobby3DScene.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
