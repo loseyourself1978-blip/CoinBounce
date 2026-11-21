@@ -525,6 +525,34 @@ enum Icon3D {
         return node
     }
 
+    // MARK: 立体的大字（大奖、财神到……）
+    private static var titleCache: [String: UIImage] = [:]
+
+    /// 一行厚厚的立体字：正面是亮漆的颜色，侧面和倒角是金的。图的宽高比 3:1
+    static func title(_ string: String, front: UIColor = UIColor(red: 0.95, green: 0.1, blue: 0.08, alpha: 1)) -> UIImage? {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        front.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let key = "\(string)|\(Int(r * 255)),\(Int(g * 255)),\(Int(b * 255))"
+        lock.lock(); defer { lock.unlock() }
+        if let c = titleCache[key] { return c }
+        let (scene, cam, root) = makeScene()
+        // 中文用苹方，其他用圆体
+        let hasCJK = string.unicodeScalars.contains { $0.value >= 0x2E80 }
+        let base = UIFont.systemFont(ofSize: 10, weight: .black)
+        let font = hasCJK ? (UIFont(name: "PingFangSC-Semibold", size: 10) ?? base)
+                          : (base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 10) } ?? base)
+        // 汉字笔画细，倒角大了边会翻出毛刺：只给很小的倒角
+        let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: hasCJK ? 0.03 : 0.3, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
+        let holder = SCNNode()
+        holder.addChildNode(t)
+        // 往后仰一点，看得见字的厚度和底面
+        holder.eulerAngles = SCNVector3(-0.22, 0, 0)
+        root.addChildNode(holder)
+        let img = snapshot(scene, cam, size: CGSize(width: 1080, height: 360))
+        if let img { titleCache[key] = img }
+        return img
+    }
+
     // MARK: 机器外框
     /// 转轮外面的金框：size 是整张图的大小（点），window 是中间留给转轮的洞。框的截面是倒圆的金条，里面一圈红漆，四角各一颗金钉，上面正中一只元宝
     static func frame(size: CGSize, window: CGRect, scale: CGFloat) -> UIImage? {

@@ -26,6 +26,9 @@ struct CaishenView: View {
     @State private var respinning = false
     @State private var featureBanner = false
     @State private var bob = false
+    /// 大奖出来时字弹一下、屏幕闪一下
+    @State private var punch: CGFloat = 1
+    @State private var flash = 0.0
 
     struct Celebration: Equatable {
         var amount: Int
@@ -54,9 +57,9 @@ struct CaishenView: View {
                         CaishenReels(game: game, spinStart: spinStart, stopTimes: stopTimes, cell: cell, cellH: cellH,
                                      respinning: respinning, reduceMotion: reduceMotion)
                         if featureBanner {
-                            VStack(spacing: 2) {
-                                Text("HOLD & RESPIN")
-                                    .font(.system(size: 30, weight: .black, design: .rounded))
+                            VStack(spacing: -2) {
+                                Title3D(text: String(localized: "HOLD & RESPIN"), tint: UIColor(red: 1.0, green: 0.72, blue: 0.1, alpha: 1))
+                                    .frame(width: frameW * 0.8)
                                 Text("Fill all 15 for the GRAND")
                                     .font(.system(size: 14, weight: .heavy, design: .rounded))
                                     .foregroundColor(.white)
@@ -143,25 +146,31 @@ struct CaishenView: View {
             RadialGradient(colors: [ArtPalette.goldLight.opacity(0.85), ArtPalette.gold.opacity(0.35), .clear], center: .center, startRadius: 10, endRadius: w * 0.62)
                 .frame(width: w * 1.3, height: w * 1.3)
                 .position(x: w / 2, y: h * 0.36)
+            if !reduceMotion {
+                SunRays(color: ArtPalette.goldLight)
+                    .frame(width: w * 2.2, height: w * 2.2)
+                    .position(x: w / 2, y: h * 0.34)
+                    .blendMode(.plusLighter)
+            }
             CoinRain()
-            VStack(spacing: 6) {
+            if !reduceMotion { CoinBurst(count: 36).position(x: w / 2, y: h * 0.34) }
+            VStack(spacing: -6) {
                 TreasurePile()
-                    .frame(width: w * 0.8, height: w * 0.8)
+                    .frame(width: w * 0.8, height: w * 0.72)
                     .shadow(color: ArtPalette.gold, radius: 22)
-                Text("The God of Wealth is here!")
-                    .font(.system(size: 30, weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
-                    .lineLimit(1).minimumScaleFactor(0.5)
+                Title3D(text: String(localized: "The God of Wealth is here!"), tint: UIColor(red: 0.95, green: 0.1, blue: 0.08, alpha: 1))
+                    .frame(width: w * 0.86)
                 HStack(spacing: 8) {
-                    ArtCoin(size: 40)
+                    Icon3DView(kind: .symbol(.coin), size: 58)
                     CountingText(value: giftShown, prefix: "+")
-                        .font(.system(size: 54, weight: .black, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
-                        .shadow(color: ArtPalette.outline, radius: 0, x: 2.5, y: 2.5)
+                        .font(.system(size: 62, weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: Color(red: 0.55, green: 0.02, blue: 0.04), radius: 0, x: 3, y: 3)
+                        .shadow(color: ArtPalette.gold.opacity(0.9), radius: 12)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 10)
+            .scaleEffect(punch)
             .position(x: w / 2, y: h * 0.42)
             // 从屏幕上面降下来
             .transition(.move(edge: .top).combined(with: .opacity))
@@ -174,32 +183,42 @@ struct CaishenView: View {
     // MARK: 大奖演出
     private func celebrationOverlay(_ c: Celebration, w: CGFloat, h: CGFloat) -> some View {
         let title: String = [String(localized: "BIG WIN!"), String(localized: "MEGA WIN!"), String(localized: "SUPER WIN!"), "GRAND JACKPOT"][min(3, c.tier)]
+        let tint: UIColor = [UIColor(red: 0.95, green: 0.1, blue: 0.08, alpha: 1), UIColor(red: 0.95, green: 0.1, blue: 0.08, alpha: 1),
+                             UIColor(red: 0.62, green: 0.12, blue: 0.9, alpha: 1), UIColor(red: 1.0, green: 0.72, blue: 0.1, alpha: 1)][min(3, c.tier)]
         return ZStack {
-            Color.black.opacity(0.55).ignoresSafeArea()
-            RadialGradient(colors: [Color(red: 1, green: 0.3, blue: 0.1).opacity(0.6), .clear], center: .center, startRadius: 0, endRadius: w * 0.7)
-                .frame(width: w * 1.4, height: w * 1.4)
-                .position(x: w / 2, y: h * 0.42)
+            Color.black.opacity(0.6).ignoresSafeArea()
+            // 字后面：一团火色的光 + 慢慢转的光芒
+            RadialGradient(colors: [Color(red: 1, green: 0.55, blue: 0.1).opacity(0.85), Color(red: 1, green: 0.2, blue: 0.05).opacity(0.35), .clear], center: .center, startRadius: 0, endRadius: w * 0.75)
+                .frame(width: w * 1.5, height: w * 1.5)
+                .position(x: w / 2, y: h * 0.4)
+            if !reduceMotion {
+                SunRays(color: ArtPalette.goldLight)
+                    .frame(width: w * 2.2, height: w * 2.2)
+                    .position(x: w / 2, y: h * 0.4)
+                    .blendMode(.plusLighter)
+            }
             CoinRain(count: 30 + c.tier * 22)
-            VStack(spacing: 4) {
-                Text(verbatim: title)
-                    .font(.system(size: 46 + CGFloat(c.tier) * 4, weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: Color(red: 0.6, green: 0.02, blue: 0.05), radius: 0, x: 3, y: 3)
-                    .shadow(color: ArtPalette.gold.opacity(0.9), radius: 16)
-                    .lineLimit(1).minimumScaleFactor(0.4)
+            if !reduceMotion { CoinBurst(count: 26 + c.tier * 12).position(x: w / 2, y: h * 0.4) }
+            VStack(spacing: -4) {
+                Title3D(text: title, tint: tint)
+                    .frame(width: w * (0.92 + CGFloat(c.tier) * 0.02))
                     .accessibilityIdentifier("caishenCelebration")
                 HStack(spacing: 8) {
-                    ArtCoin(size: 44)
+                    Icon3DView(kind: .symbol(.coin), size: 64)
                     CountingText(value: celebrationShown, prefix: "+")
-                        .font(.system(size: 62, weight: .black, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
-                        .shadow(color: ArtPalette.outline, radius: 0, x: 3, y: 3)
+                        .font(.system(size: 70, weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: Color(red: 0.55, green: 0.02, blue: 0.04), radius: 0, x: 3.5, y: 3.5)
+                        .shadow(color: ArtPalette.gold.opacity(0.9), radius: 14)
                         .lineLimit(1).minimumScaleFactor(0.5)
                 }
             }
-            .padding(.horizontal, 16)
-            .position(x: w / 2, y: h * 0.42)
-            .transition(.scale(scale: 0.3).combined(with: .opacity))
+            .padding(.horizontal, 10)
+            .scaleEffect(punch)
+            .position(x: w / 2, y: h * 0.4)
+            .transition(.scale(scale: 0.2).combined(with: .opacity))
+            // 出来的一瞬间闪一下白
+            Color.white.opacity(flash).ignoresSafeArea().allowsHitTesting(false)
         }
         .contentShape(Rectangle())
         .onTapGesture { endCelebration() }
@@ -280,6 +299,7 @@ struct CaishenView: View {
                 audio.play(.jackpotFanfare); audio.play(.cheer); haptic.jackpot()
                 giftShown = 0
                 gift = win
+                punchIn()
                 withAnimation(.easeOut(duration: 1.6).delay(0.5)) { giftShown = Double(win) }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
                     guard spinToken == token else { return }
@@ -330,6 +350,9 @@ struct CaishenView: View {
         if tier >= 2 { audio.play(.applause) }
         celebrationShown = 0
         celebration = Celebration(amount: amount, tier: tier)
+        punchIn()
+        flash = 0.75
+        withAnimation(.easeOut(duration: 0.45)) { flash = 0 }
         let roll = 1.2 + Double(tier) * 0.6
         withAnimation(.easeOut(duration: roll).delay(0.3)) { celebrationShown = Double(amount) }
         let token = spinToken
@@ -337,6 +360,12 @@ struct CaishenView: View {
             guard spinToken == token else { return }
             endCelebration()
         }
+    }
+
+    /// 字先放大再弹回来
+    private func punchIn() {
+        punch = 1.35
+        withAnimation(.interpolatingSpring(stiffness: 260, damping: 9).delay(0.12)) { punch = 1 }
     }
 
     private func endCelebration() {
@@ -666,6 +695,7 @@ struct CaishenReels: View {
     let cellH: CGFloat
     let respinning: Bool
     let reduceMotion: Bool
+    @State private var pulse = false
 
     var body: some View {
         let spinning = game.phase == .spinning
@@ -722,6 +752,7 @@ struct CaishenReels: View {
                 .opacity(0.9)
             }
         }
+        .onAppear { withAnimation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true)) { pulse = true } }
         .accessibilityElement()
         .accessibilityIdentifier("slotsReels")
         .accessibilityLabel(Text("Reels"))
@@ -797,7 +828,9 @@ struct CaishenReels: View {
                     let rel = max(-1.4, min(1.4, (centerY - cellH * 1.5) / (cellH * 1.5)))
                     CaishenSymbolView(symbol: sym, size: cell * 0.98)
                         .frame(width: cell, height: cellH)
-                        .scaleEffect(isLit ? 1.1 : 1)
+                        .scaleEffect(isLit ? (pulse && !reduceMotion ? 1.2 : 1.04) : 1)
+                        .shadow(color: isLit ? ArtPalette.goldLight.opacity(pulse ? 0.95 : 0.4) : .clear, radius: isLit ? 12 : 0)
+                        .zIndex(isLit ? 1 : 0)
                         .opacity(dim && !isLit ? 0.4 : 1)
                         .background(isLit ? RoundedRectangle(cornerRadius: 8).fill(RadialGradient(colors: [ArtPalette.goldLight.opacity(0.75), ArtPalette.gold.opacity(0.15)], center: .center, startRadius: 2, endRadius: cell * 0.7)).padding(3) : nil)
                         .overlay(isLit ? RoundedRectangle(cornerRadius: 8).stroke(ArtPalette.goldLight, lineWidth: 3).padding(3) : nil)
@@ -953,5 +986,95 @@ struct GoldSparks: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - v13.1 中奖特效
+/// 立体的大字（3D 渲染的图；渲染不出来时退回普通的金字）
+struct Title3D: View {
+    let text: String
+    let tint: UIColor
+    var body: some View {
+        if let img = Icon3D.title(text, front: tint) {
+            Image(uiImage: img)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(3, contentMode: .fit)
+                .shadow(color: .black.opacity(0.6), radius: 5, y: 5)
+                .shadow(color: ArtPalette.gold.opacity(0.8), radius: 16)
+                .accessibilityLabel(Text(verbatim: text))
+        } else {
+            Text(verbatim: text)
+                .font(.system(size: 46, weight: .black, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
+                .shadow(color: Color(red: 0.6, green: 0.02, blue: 0.05), radius: 0, x: 3, y: 3)
+                .lineLimit(1).minimumScaleFactor(0.4)
+        }
+    }
+}
+
+/// 从中心放射出去、慢慢旋转的光芒
+struct SunRays: View {
+    var color: Color = ArtPalette.goldLight
+    var rays = 18
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
+            Canvas { ctx, size in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                let c = CGPoint(x: size.width / 2, y: size.height / 2)
+                let R = min(size.width, size.height) / 2
+                for k in 0..<rays {
+                    // 宽窄相间的两组光，转的方向相反
+                    let wide = k % 2 == 0
+                    let a = Double(k) / Double(rays) * 2 * .pi + t * (wide ? 0.25 : -0.18)
+                    let half = wide ? 0.085 : 0.04
+                    var p = Path()
+                    p.move(to: c)
+                    p.addLine(to: CGPoint(x: c.x + CGFloat(cos(a - half)) * R, y: c.y + CGFloat(sin(a - half)) * R))
+                    p.addLine(to: CGPoint(x: c.x + CGFloat(cos(a + half)) * R, y: c.y + CGFloat(sin(a + half)) * R))
+                    p.closeSubpath()
+                    ctx.fill(p, with: .radialGradient(Gradient(colors: [color.opacity(wide ? 0.55 : 0.4), color.opacity(0)]), center: c, startRadius: R * 0.08, endRadius: R))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// 金币从中间爆开：往四面飞出去，再被重力拉下来（只放一次）
+struct CoinBurst: View {
+    var count = 30
+    @State private var start = Date()
+    var body: some View {
+        TimelineView(.animation) { tl in
+            Canvas { ctx, size in
+                let t = tl.date.timeIntervalSince(start)
+                guard t < 2.4 else { return }
+                let coin = Icon3D.image(.symbol(.coin)).map { ctx.resolve(Image(uiImage: $0)) }
+                let ingot = Icon3D.image(.symbol(.ingot)).map { ctx.resolve(Image(uiImage: $0)) }
+                let c = CGPoint(x: size.width / 2, y: size.height / 2)
+                for i in 0..<count {
+                    let a = Double((i * 7919) % 1000) / 1000, b = Double((i * 104729) % 1000) / 1000, d = Double((i * 1299709) % 1000) / 1000
+                    let angle = a * 2 * .pi
+                    let speed = 380 + 520 * b
+                    let x = cos(angle) * speed * t
+                    let y = sin(angle) * speed * t * 0.8 - 260 * t + 900 * t * t
+                    let r = 15 + 16 * d
+                    var g = ctx
+                    g.opacity = max(0, min(1, 2.4 - t))
+                    g.translateBy(x: c.x + x, y: c.y + y)
+                    g.rotate(by: .radians(t * (3 + 5 * d) + Double(i)))
+                    if i % 6 == 0, let ingot {
+                        g.draw(ingot, in: CGRect(x: -r * 1.3, y: -r * 1.3, width: r * 2.6, height: r * 2.6))
+                    } else if let coin {
+                        g.scaleBy(x: max(0.25, abs(cos(t * (4 + 5 * b) + Double(i)))), y: 1)
+                        g.draw(coin, in: CGRect(x: -r, y: -r, width: 2 * r, height: 2 * r))
+                    }
+                }
+            }
+        }
+        .frame(width: 900, height: 1400)
+        .allowsHitTesting(false)
+        .onAppear { start = Date() }
     }
 }

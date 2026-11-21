@@ -264,5 +264,10 @@ final class CaishenTests: XCTestCase {
         }
         let frame = try XCTUnwrap(Icon3D.frame(size: CGSize(width: 400, height: 330), window: CGRect(x: 16, y: 34, width: 368, height: 280), scale: 2))
         XCTAssertEqual(frame.cgImage?.width, 800)
+        // 立体的大字：中文和英文都渲染得出来
+        for s in ["大奖！", "BIG WIN!", "财神到！"] {
+            let img = try XCTUnwrap(Icon3D.title(s), "\(s) 没渲染出来")
+            XCTAssertEqual(img.cgImage?.width, 1080)
+        }
     }
 }
