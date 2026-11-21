@@ -85,7 +85,8 @@ final class AdsManager: NSObject, ObservableObject, RewardedAdPresenting, FullSc
 
     private func requestTrackingIfNeeded(then next: @escaping () -> Void) {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-debugSkipATT") { next(); return }
+        // 单元测试宿主里不弹跟踪授权（弹出来没人点，会一直挂在模拟器上，挡住之后的截图）
+        if ProcessInfo.processInfo.arguments.contains("-debugSkipATT") || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { next(); return }
         #endif
         Self.log("ATT status before request=\(ATTrackingManager.trackingAuthorizationStatus.rawValue) (0 notDetermined, 1 restricted, 2 denied, 3 authorized)")
         guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { next(); return }
