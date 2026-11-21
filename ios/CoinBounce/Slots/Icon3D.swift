@@ -109,13 +109,14 @@ enum Icon3D {
         cam.camera!.fieldOfView = 22
         cam.camera!.zNear = 0.5
         cam.camera!.zFar = 40
-        cam.position = SCNVector3(0, 0.5, 6.1)
+        // v13.1b：相机正对着图案（hj：要正视呈现，歪着摆不自然）
+        cam.position = SCNVector3(0, 0, 6.1)
         cam.look(at: SCNVector3(0, 0, 0))
         scene.rootNode.addChildNode(cam)
         let key = SCNNode()
         key.light = SCNLight()
         key.light!.type = .directional
-        key.light!.intensity = 900
+        key.light!.intensity = 500
         key.light!.color = UIColor(red: 1, green: 0.96, blue: 0.88, alpha: 1)
         key.eulerAngles = SCNVector3(-0.7, -0.55, 0)
         scene.rootNode.addChildNode(key)
@@ -127,6 +128,15 @@ enum Icon3D {
         rim.light!.color = UIColor(red: 1, green: 0.85, blue: 0.6, alpha: 1)
         rim.eulerAngles = SCNVector3(-2.3, 0.6, 0)
         scene.rootNode.addChildNode(rim)
+        // 离得很近的一盏点光源（左上前方）：正面朝前的平面上，各处到灯的角度不一样，
+        // 所以会有一块从左上往右下淡下去的高光——平面才不是一整块死颜色
+        let spot = SCNNode()
+        spot.light = SCNLight()
+        spot.light!.type = .omni
+        spot.light!.intensity = 190
+        spot.light!.color = UIColor(red: 1, green: 0.97, blue: 0.9, alpha: 1)
+        spot.position = SCNVector3(-1.1, 1.5, 2.2)
+        scene.rootNode.addChildNode(spot)
         let amb = SCNNode()
         amb.light = SCNLight()
         amb.light!.type = .ambient
@@ -234,7 +244,8 @@ enum Icon3D {
         ringNode.scale = SCNVector3(1, 1, 0.95)
         ringNode.position = SCNVector3(0, 0.03, 0)
         node.addChildNode(ringNode)
-        node.eulerAngles = SCNVector3(0.36, -0.3, 0)
+        // 元宝正面朝前，只往前低一点头（看得见甲板和那一团），左右对称
+        node.eulerAngles = SCNVector3(0.3, 0, 0)
         node.position = SCNVector3(0, 0.0, 0)
         node.scale = SCNVector3(1.02, 1.02, 1.02)
         return node
@@ -292,7 +303,6 @@ enum Icon3D {
             n.position = SCNVector3(cos(a) * 0.62, sin(a) * 0.62, 0.09)
             node.addChildNode(n)
         }
-        node.eulerAngles = SCNVector3(-0.12, -0.42, 0)
         node.scale = SCNVector3(0.98, 0.98, 0.98)
         return node
     }
@@ -304,8 +314,7 @@ enum Icon3D {
         node.addChildNode(disc(radius: 0.8, depth: 0.04, gold(rough: 0.42), z: 0.08))
         node.addChildNode(ring(radius: 0.9, pipe: 0.1, gold(rough: 0.12), z: 0.08))
         node.addChildNode(ring(radius: 0.76, pipe: 0.025, gold(rough: 0.12), z: 0.1))
-        node.eulerAngles = SCNVector3(-0.1, 0.0, 0)
-        node.position = SCNVector3(0, 0.02, 0)
+
         return node
     }
 
@@ -362,14 +371,13 @@ enum Icon3D {
         node.addChildNode(tasselNode)
         node.scale = SCNVector3(0.84, 0.84, 0.84)
         node.position = SCNVector3(0, 0.1, 0)
-        node.eulerAngles = SCNVector3(0.1, 0.25, 0)
         return node
     }
 
     /// 红包：红色的厚信封 + 弧形的封口 + 金色的封印
     static func envelope() -> SCNNode {
         let node = SCNNode()
-        let body = SCNBox(width: 1.2, height: 1.66, length: 0.14, chamferRadius: 0.06)
+        let body = SCNBox(width: 1.2, height: 1.66, length: 0.3, chamferRadius: 0.14)
         body.firstMaterial = lacquer(red, glow: 0.3, rough: 0.5)
         node.addChildNode(SCNNode(geometry: body))
         let p = UIBezierPath()
@@ -383,7 +391,7 @@ enum Icon3D {
         flap.chamferRadius = 0.02
         flap.materials = [lacquer(UIColor(red: 0.98, green: 0.16, blue: 0.12, alpha: 1), glow: 0.35, rough: 0.4)]
         let flapNode = SCNNode(geometry: flap)
-        flapNode.position = SCNVector3(0, 0, 0.08)
+        flapNode.position = SCNVector3(0, 0, 0.16)
         node.addChildNode(flapNode)
         // 封口的金边：沿着弧线摆一串小金珠
         for i in 0...20 {
@@ -399,7 +407,7 @@ enum Icon3D {
             s.segmentCount = 12
             s.firstMaterial = gold(rough: 0.15)
             let n = SCNNode(geometry: s)
-            n.position = SCNVector3(Float(x), Float(y), 0.13)
+            n.position = SCNVector3(Float(x), Float(y), 0.21)
             node.addChildNode(n)
         }
         let seal = SCNNode()
@@ -408,13 +416,12 @@ enum Icon3D {
         let hole = SCNNode(geometry: SCNBox(width: 0.13, height: 0.13, length: 0.1, chamferRadius: 0.01))
         hole.geometry!.firstMaterial = lacquer(red, glow: 0.2)
         seal.addChildNode(hole)
-        seal.position = SCNVector3(0, 0.1, 0.14)
+        seal.position = SCNVector3(0, 0.1, 0.22)
         node.addChildNode(seal)
-        let band = SCNNode(geometry: SCNBox(width: 1.22, height: 0.12, length: 0.16, chamferRadius: 0.03))
+        let band = SCNNode(geometry: SCNBox(width: 1.22, height: 0.12, length: 0.34, chamferRadius: 0.05))
         band.geometry!.firstMaterial = gold(rough: 0.2)
         band.position = SCNVector3(0, -0.58, 0)
         node.addChildNode(band)
-        node.eulerAngles = SCNVector3(0.05, -0.42, 0.14)
         node.scale = SCNVector3(1.05, 1.05, 1.05)
         return node
     }
@@ -425,6 +432,11 @@ enum Icon3D {
         t.font = font
         t.flatness = 0.02
         t.chamferRadius = chamfer
+        // 倒角的截面是四分之一圆（默认是一条斜线）
+        let prof = UIBezierPath()
+        prof.move(to: CGPoint(x: 0, y: 1))
+        prof.addQuadCurve(to: CGPoint(x: 1, y: 0), controlPoint: CGPoint(x: 1, y: 1))
+        t.chamferProfile = prof
         // 材质顺序：正面、背面、侧面、正面倒角、背面倒角
         t.materials = [front, side, side, side, side]
         let n = SCNNode(geometry: t)
@@ -439,12 +451,12 @@ enum Icon3D {
 
     /// A、K、Q、J：厚厚的立体字，正面是带光泽的颜色，侧面和倒角是金的
     static func letter(_ s: String, _ color: UIColor) -> SCNNode {
-        let font = UIFont(name: "Georgia-Bold", size: 10) ?? UIFont.systemFont(ofSize: 10, weight: .black)
-        let n = text(s, font: font, depth: 2.6, chamfer: 0.35, front: lacquer(color, glow: 0.45, rough: 0.25), side: gold(rough: 0.16), height: 1.6, width: 1.7)
+        // 正面看：笔画粗细均匀的圆体字，配一圈圆的大倒角——厚度看不见了，立体感靠这圈鼓起来的金边
+        let base = UIFont.systemFont(ofSize: 10, weight: .black)
+        let font = base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 10) } ?? base
+        let n = text(s, font: font, depth: 2.4, chamfer: 0.42, front: lacquer(color, glow: 0.45, rough: 0.25), side: gold(rough: 0.14), height: 1.62, width: 1.7)
         let holder = SCNNode()
         holder.addChildNode(n)
-        holder.eulerAngles = SCNVector3(0.1, -0.36, 0)
-        holder.position = SCNVector3(0, 0.02, 0)
         return holder
     }
 
@@ -472,7 +484,6 @@ enum Icon3D {
         let fu = text("福", font: UIFont(name: "PingFangSC-Semibold", size: 10) ?? UIFont.systemFont(ofSize: 10, weight: .heavy), depth: 1.0, chamfer: 0.12, front: gold(rough: 0.14), side: gold(rough: 0.3), height: 0.92)
         fu.position = SCNVector3(0, 0, 0.14)
         node.addChildNode(fu)
-        node.eulerAngles = SCNVector3(0.06, -0.3, 0)
         node.scale = SCNVector3(1.02, 1.02, 1.02)
         return node
     }
@@ -493,7 +504,6 @@ enum Icon3D {
         let t = text("WILD", font: rounded, depth: 1.6, chamfer: 0.2, front: gold(rough: 0.12), side: gold(rough: 0.3), width: 1.38)
         t.position = SCNVector3(0, -0.3, 0.18)
         node.addChildNode(t)
-        node.eulerAngles = SCNVector3(-0.05, -0.3, 0)
         node.scale = SCNVector3(0.98, 0.98, 0.98)
         return node
     }
@@ -545,8 +555,6 @@ enum Icon3D {
         let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: hasCJK ? 0.03 : 0.3, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
         let holder = SCNNode()
         holder.addChildNode(t)
-        // 往后仰一点，看得见字的厚度和底面
-        holder.eulerAngles = SCNVector3(-0.22, 0, 0)
         root.addChildNode(holder)
         let img = snapshot(scene, cam, size: CGSize(width: 1080, height: 360))
         if let img { titleCache[key] = img }

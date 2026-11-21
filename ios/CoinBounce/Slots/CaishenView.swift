@@ -723,9 +723,9 @@ struct CaishenReels: View {
                 }
                 .frame(width: cell * 5 + 8, height: cellH * 3)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0), .init(color: .clear, location: 0.2),
+                LinearGradient(stops: [.init(color: .black.opacity(0.3), location: 0), .init(color: .clear, location: 0.14),
                                        .init(color: Color.white.opacity(0.06), location: 0.5),
-                                       .init(color: .clear, location: 0.8), .init(color: .black.opacity(0.55), location: 1)],
+                                       .init(color: .clear, location: 0.86), .init(color: .black.opacity(0.3), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                     .frame(width: cell * 5 + 8, height: cellH * 3)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -824,8 +824,7 @@ struct CaishenReels: View {
                 ForEach(0..<4, id: \.self) { k in
                     let sym = strip[((base + k) % n + n) % n]
                     let isLit = !rolling && k < 3 && lit.contains(r * 3 + k)
-                    let centerY = (CGFloat(k) + 0.5 - frac) * cellH + bounce
-                    let rel = max(-1.4, min(1.4, (centerY - cellH * 1.5) / (cellH * 1.5)))
+                    // v13.1b：图案一律正面朝前，不再做「圆筒」的后仰（上下两行会歪，hj 说不自然）
                     CaishenSymbolView(symbol: sym, size: cell * 0.98)
                         .frame(width: cell, height: cellH)
                         .scaleEffect(isLit ? (pulse && !reduceMotion ? 1.2 : 1.04) : 1)
@@ -835,7 +834,6 @@ struct CaishenReels: View {
                         .background(isLit ? RoundedRectangle(cornerRadius: 8).fill(RadialGradient(colors: [ArtPalette.goldLight.opacity(0.75), ArtPalette.gold.opacity(0.15)], center: .center, startRadius: 2, endRadius: cell * 0.7)).padding(3) : nil)
                         .overlay(isLit ? RoundedRectangle(cornerRadius: 8).stroke(ArtPalette.goldLight, lineWidth: 3).padding(3) : nil)
                         .blur(radius: rolling && !reduceMotion ? 1.6 : 0)
-                        .rotation3DEffect(.degrees(Double(rel) * 28), axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.5)
                 }
             }
             .offset(y: -frac * cellH + bounce)
