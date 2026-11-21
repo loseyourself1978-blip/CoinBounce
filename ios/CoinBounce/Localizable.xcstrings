@@ -192,6 +192,16 @@
         }
       }
     },
+    "A little gift for you. Come back in 4 hours for more!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送你一点小礼物，4 小时后再来领哦！"
+          }
+        }
+      }
+    },
     "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.": {
       "extractionState": "manual",
       "localizations": {
@@ -802,6 +812,16 @@
         }
       }
     },
+    "FREE +%lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免费 +%lld"
+          }
+        }
+      }
+    },
     "FREE SPINS": {
       "extractionState": "manual",
       "localizations": {
@@ -895,6 +915,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "四连注"
+          }
+        }
+      }
+    },
+    "Free coins": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免费金币"
           }
         }
       }

@@ -77,6 +77,10 @@ struct LobbyView: View {
                             .accessibilityIdentifier("lobbyBunny")
                             .padding(.leading, use3D ? w * 0.04 : w * 0.12)
                         Spacer(minLength: 0)
+                        // v13 定时送币：每 4 小时领一次
+                        TimedGiftButton { say(String(localized: "A little gift for you. Come back in 4 hours for more!"), pose: .blowKiss) }
+                            .padding(.trailing, 14)
+                            .padding(.bottom, 10)
                     }
                     .frame(height: bunnyH)
                     .padding(.bottom, 4)

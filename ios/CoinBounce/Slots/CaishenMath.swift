@@ -52,6 +52,7 @@ enum CaishenMath {
     // 天降财神
     static let giftOneIn = 120
     static let giftPrizes = [5, 8, 10, 15, 20, 30]
+    static let giftMin = 5, giftMax = 30
     static var meanGift: Double { Double(giftPrizes.reduce(0, +)) / Double(giftPrizes.count) }
     /// 这一转财神来不来；来了给多少倍
     static func drawGift(_ rng: inout PachinkoRandom) -> Int? {

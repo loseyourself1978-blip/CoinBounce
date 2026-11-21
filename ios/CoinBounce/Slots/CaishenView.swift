@@ -860,7 +860,7 @@ struct CaishenPaytable: View {
                 Section("Jackpots") {
                     Text("MINI ×\(CaishenMath.miniPrize), MINOR ×\(CaishenMath.minorPrize), MAJOR ×\(CaishenMath.majorPrize) and GRAND ×\(CaishenMath.grandPrize) of your bet. One hundredth of every bet is added to the GRAND until you win it.")
                         .font(.subheadline)
-                    Text("On any spin the God of Wealth may come down and scatter coins worth ×\(CaishenMath.giftPrizes.min() ?? 0) to ×\(CaishenMath.giftPrizes.max() ?? 0) of your bet.")
+                    Text("On any spin the God of Wealth may come down and scatter coins worth ×\(CaishenMath.giftMin) to ×\(CaishenMath.giftMax) of your bet.")
                         .font(.subheadline)
                 }
                 Section {

@@ -2,7 +2,8 @@ import SceneKit
 import SwiftUI
 import UIKit
 
-// MARK: - v12.7 弹球台 3D 画面（SceneKit；物理和规则在 PinballEngine / PinballRules，这里只画）
+// MARK: - 弹球台 3D 画面（v12.7 做的；v13 换成「法老的宝藏」主题，并解决画面发糊）
+// 原来的名字：v12.7 弹球台 3D 画面（SceneKit；物理和规则在 PinballEngine / PinballRules，这里只画）
 /// 台面坐标 (x 0…1, y 0…1.9, y 向上) → 世界坐标：X = (x − 0.5)·W，Y = (y − 0.95)·W，台面在 Z = 0。
 /// 整张台面往后仰（上边远、下边近），像站在弹球机前面往下看。
 final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
@@ -74,8 +75,10 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
     }
 
     static let gold = UIColor(red: 1.0, green: 0.78, blue: 0.25, alpha: 1)
-    static let pink = UIColor(red: 1.0, green: 0.25, blue: 0.65, alpha: 1)
-    static let cyan = UIColor(red: 0.2, green: 0.95, blue: 1.0, alpha: 1)
+    /// v13 埃及主题：这一色原来是粉红，现在是红玉髓的橙红（名字没改，用的地方多）
+    static let pink = UIColor(red: 1.0, green: 0.42, blue: 0.16, alpha: 1)
+    /// 绿松石
+    static let cyan = UIColor(red: 0.1, green: 0.85, blue: 0.78, alpha: 1)
     static let chrome = UIColor(red: 0.92, green: 0.93, blue: 0.96, alpha: 1)
 
     // MARK: 灯光和相机（和推币机、弹子机同一套）
@@ -93,8 +96,9 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             cam.exposureOffset = VisualFX.exposureOffset
             cam.whitePoint = VisualFX.whitePoint
             cam.bloomThreshold = VisualFX.bloomThreshold
-            cam.bloomIntensity = lowTier ? VisualFX.bloomIntensity * 0.8 : VisualFX.bloomIntensity * 1.4
-            cam.bloomBlurRadius = lowTier ? 4 : 6
+            // v13：泛光收小（原来 ×1.4，整张台面蒙着一层雾）
+            cam.bloomIntensity = VisualFX.bloomIntensity * 0.6
+            cam.bloomBlurRadius = 4
             cam.bloomIterationCount = lowTier ? 1 : 2
             cam.bloomIterationSpread = 0.4
             cam.contrast = VisualFX.contrast
@@ -119,7 +123,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let spec = SCNNode()
         spec.light = SCNLight()
         spec.light!.type = .omni
-        spec.light!.intensity = 420
+        spec.light!.intensity = 140
         spec.light!.color = UIColor(red: 1, green: 0.93, blue: 0.8, alpha: 1)
         spec.position = SCNVector3(-6, 4, 14)
         scene.rootNode.addChildNode(spec)
@@ -129,7 +133,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         amb.light!.intensity = 240
         scene.rootNode.addChildNode(amb)
         scene.lightingEnvironment.contents = on ? PusherScene3D.sharedCasinoEnvironment : PusherScene3D.environmentImage()
-        scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity : 1.6
+        scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity * 0.5 : 1.0
 
         root.eulerAngles = SCNVector3(Self.tilt, 0, 0)
         scene.rootNode.addChildNode(root)
@@ -142,22 +146,29 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let W = Self.W
         let hw = W / 2, hh = W * Float(T.height) / 2
         let chromeM = Self.pbr(Self.chrome, metal: 1, rough: 0.12)
-        let lacquer = Self.pbr(UIColor(red: 0.5, green: 0.03, blue: 0.1, alpha: 1), metal: 0.1, rough: 0.3)
-        lacquer.clearCoat.contents = 1.0
-        lacquer.clearCoatRoughness.contents = 0.08
+        // v13：机柜是青金石蓝的漆（原来的红漆在 HDR 下发白）
+        let lacquer = Self.pbr(UIColor(red: 0.03, green: 0.1, blue: 0.4, alpha: 1), metal: 0, rough: 0.7)
+        lacquer.emission.contents = UIColor(red: 0.01, green: 0.04, blue: 0.16, alpha: 1)
+        lacquer.clearCoat.contents = 0.05
+        lacquer.clearCoatRoughness.contents = 0.3
         let goldM = Self.pbr(Self.gold, metal: 1, rough: 0.22)
         let rubber = Self.pbr(UIColor(white: 0.08, alpha: 1), metal: 0, rough: 0.6)
         let redRubber = Self.pbr(UIColor(red: 0.85, green: 0.08, blue: 0.15, alpha: 1), metal: 0, rough: 0.45)
 
         // 台面板：亮漆（清漆层反射环境）
         let art = Self.tableArt()
-        let plateM = Self.pbr(.white, metal: 0, rough: 0.5)
+        // v13：台面是哑光的（原来清漆层在这个斜角下反射一大片环境光，画面像蒙了一层灰）
+        let plateM = Self.pbr(.white, metal: 0, rough: 0.7)
         plateM.diffuse.contents = art
-        plateM.clearCoat.contents = 0.35
-        plateM.clearCoatRoughness.contents = 0.15
-        plateM.multiply.contents = UIColor(white: 0.85, alpha: 1)
+        plateM.clearCoat.contents = 0.06
+        plateM.clearCoatRoughness.contents = 0.3
+        // v13：台面只留一点自发光（原来 0.62，再过一遍泛光，整张图发灰发糊）
         plateM.emission.contents = art
-        plateM.emission.intensity = 0.62
+        plateM.emission.intensity = 0.3
+        plateM.diffuse.mipFilter = .linear
+        plateM.diffuse.maxAnisotropy = 8
+        plateM.emission.mipFilter = .linear
+        plateM.emission.maxAnisotropy = 8
         let plate = SCNNode(geometry: SCNBox(width: CGFloat(W), height: CGFloat(hh * 2), length: 0.4, chamferRadius: 0))
         plate.geometry!.materials = [plateM]
         plate.position = SCNVector3(0, 0, -0.2)
@@ -241,7 +252,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             tri.addLine(to: CGPoint(x: CGFloat(wx(mx(T.slingC.x))), y: CGFloat(wy(T.slingC.y))))
             tri.close()
             let shape = SCNShape(path: tri, extrusionDepth: 0.3)
-            let m = Self.pbr(UIColor(red: 0.2, green: 0.05, blue: 0.3, alpha: 1), metal: 0.2, rough: 0.3, emission: Self.pink, intensity: 0.5)
+            let m = Self.pbr(UIColor(red: 0.02, green: 0.2, blue: 0.22, alpha: 1), metal: 0.2, rough: 0.3, emission: Self.cyan, intensity: 0.45)
             shape.firstMaterial = m
             slingMats.append(m)
             let n = SCNNode(geometry: shape)
@@ -445,7 +456,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
 
         // 机柜上的灯泡
         bulbA = Self.pbr(.white, metal: 0, rough: 0.3, emission: Self.gold, intensity: 2.2)
-        bulbB = Self.pbr(.white, metal: 0, rough: 0.3, emission: Self.pink, intensity: 0.6)
+        bulbB = Self.pbr(.white, metal: 0, rough: 0.3, emission: Self.cyan, intensity: 0.6)
         let ga = SCNSphere(radius: 0.13); ga.segmentCount = 10; ga.firstMaterial = bulbA
         let gb = SCNSphere(radius: 0.13); gb.segmentCount = 10; gb.firstMaterial = bulbB
         let bulbs = SCNNode()
@@ -694,48 +705,53 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let w: CGFloat = 1024, h: CGFloat = 1946
         func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * Double(w), y: (T.height - y) / T.height * Double(h)) }
         let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
+        // v13：按 2 倍画（2048 × 3892）。原来 1024 宽的图铺满整屏，是画面发糊的原因之一
+        format.scale = VisualFX.lowTier ? 1 : 2
         format.opaque = true
         let goldC = UIColor(red: 1, green: 0.8, blue: 0.32, alpha: 1)
+        let sand = UIColor(red: 0.93, green: 0.78, blue: 0.5, alpha: 1)
         let img = UIGraphicsImageRenderer(size: CGSize(width: w, height: h), format: format).image { ctx in
             let c = ctx.cgContext
             let space = CGColorSpaceCreateDeviceRGB()
-            let top = UIColor(red: 0.26, green: 0.12, blue: 0.55, alpha: 1), bottom = UIColor(red: 0.03, green: 0.03, blue: 0.16, alpha: 1)
+            // 「法老的宝藏」：青金石色的夜空，太阳从蘑菇柱中间升起
+            let top = UIColor(red: 0.07, green: 0.2, blue: 0.5, alpha: 1), bottom = UIColor(red: 0.02, green: 0.04, blue: 0.14, alpha: 1)
             let center = pt(T.fieldCenter, 1.22)
             let g = CGGradient(colorsSpace: space, colors: [top.cgColor, bottom.cgColor] as CFArray, locations: [0, 1])!
             c.drawRadialGradient(g, startCenter: center, startRadius: 0, endCenter: center, endRadius: 1300, options: [.drawsAfterEndLocation])
-            // 放射光芒（从蘑菇柱中间）
-            for i in 0..<56 {
-                let a0 = Double(i) / 56 * 2 * .pi, a1 = a0 + (i % 2 == 0 ? 0.045 : 0.022)
+            func halo(_ p: CGPoint, _ r: CGFloat, _ col: UIColor, _ alpha: CGFloat = 0.55) {
+                let hg = CGGradient(colorsSpace: space, colors: [col.withAlphaComponent(alpha).cgColor, col.withAlphaComponent(0).cgColor] as CFArray, locations: [0, 1])!
+                c.drawRadialGradient(hg, startCenter: p, startRadius: 0, endCenter: p, endRadius: r, options: [])
+            }
+            halo(center, 620, goldC, 0.3)
+            // 太阳的光芒：细而规整的金线
+            for i in 0..<48 {
+                let a0 = Double(i) / 48 * 2 * .pi, a1 = a0 + (i % 2 == 0 ? 0.03 : 0.012)
                 c.move(to: center)
                 c.addLine(to: CGPoint(x: center.x + cos(a0) * 2400, y: center.y + sin(a0) * 2400))
                 c.addLine(to: CGPoint(x: center.x + cos(a1) * 2400, y: center.y + sin(a1) * 2400))
                 c.closePath()
-                c.setFillColor((i % 4 == 0 ? goldC : pink).withAlphaComponent(i % 2 == 0 ? 0.10 : 0.06).cgColor)
+                c.setFillColor(goldC.withAlphaComponent(i % 2 == 0 ? 0.09 : 0.05).cgColor)
                 c.fillPath()
             }
-            for (k, r) in [260.0, 380.0, 520.0].enumerated() {
-                c.setStrokeColor((k % 2 == 0 ? goldC : cyan).withAlphaComponent(0.25).cgColor)
-                c.setLineWidth(k % 2 == 0 ? 3 : 1.5)
-                c.setLineDash(phase: 0, lengths: k % 2 == 0 ? [] : [10, 14])
+            // 太阳的几圈光环（外圈是一格一格的，像项圈上的镶嵌）
+            for (k, r) in [250.0, 370.0, 500.0].enumerated() {
+                c.setStrokeColor((k == 1 ? cyan : goldC).withAlphaComponent(0.4).cgColor)
+                c.setLineWidth(k == 1 ? 8 : 2.5)
+                c.setLineDash(phase: 0, lengths: k == 1 ? [18, 10] : [])
                 c.addArc(center: center, radius: r, startAngle: 0, endAngle: 2 * .pi, clockwise: false)
                 c.strokePath()
             }
             c.setLineDash(phase: 0, lengths: [])
             var seed = PachinkoRandom(seed: 7)
-            for _ in 0..<420 {
-                let x = seed.uniform() * Double(w), y = seed.uniform() * Double(h), r = 0.8 + seed.uniform() * 2.4
-                c.setFillColor(UIColor(white: 1, alpha: 0.12 + seed.uniform() * 0.4).cgColor)
+            for _ in 0..<220 {
+                let x = seed.uniform() * Double(w), y = seed.uniform() * Double(h), r = 0.6 + seed.uniform() * 1.8
+                c.setFillColor(UIColor(red: 1, green: 0.95, blue: 0.75, alpha: 0.15 + seed.uniform() * 0.45).cgColor)
                 c.fillEllipse(in: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
             }
-            func halo(_ p: CGPoint, _ r: CGFloat, _ col: UIColor, _ alpha: CGFloat = 0.55) {
-                let hg = CGGradient(colorsSpace: space, colors: [col.withAlphaComponent(alpha).cgColor, col.withAlphaComponent(0).cgColor] as CFArray, locations: [0, 1])!
-                c.drawRadialGradient(hg, startCenter: p, startRadius: 0, endCenter: p, endRadius: r, options: [])
-            }
-            func label(_ text: String, _ p: CGPoint, size: CGFloat, color: UIColor, kern: CGFloat = 1, angle: CGFloat = 0) {
+            func label(_ text: String, _ p: CGPoint, size: CGFloat, color: UIColor, kern: CGFloat = 1, angle: CGFloat = 0, serif: Bool = false) {
                 let font = UIFont.systemFont(ofSize: size, weight: .black)
-                let rounded = font.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: size) } ?? font
-                let s = NSAttributedString(string: text, attributes: [.font: rounded, .foregroundColor: color, .kern: kern,
+                let styled = font.fontDescriptor.withDesign(serif ? .serif : .rounded).map { UIFont(descriptor: $0, size: size) } ?? font
+                let s = NSAttributedString(string: text, attributes: [.font: styled, .foregroundColor: color, .kern: kern,
                                                                       .strokeColor: UIColor.black.withAlphaComponent(0.6), .strokeWidth: -2.5])
                 let sz = s.size()
                 c.saveGState()
@@ -744,32 +760,103 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
                 s.draw(at: CGPoint(x: -sz.width / 2, y: -sz.height / 2))
                 c.restoreGState()
             }
-            // 蘑菇柱底下的光
-            for (k, bp) in T.bumpers.enumerated() { halo(pt(bp.x, bp.y), 120, [pink, cyan, goldC][k % 3]) }
-            // 顶部滚道 7 7 7
-            for lx in T.topLaneX { label("7", pt(lx, T.topLaneY1 + 0.045), size: 54, color: goldC) }
-            // 幸运洞
+            /// 安卡（生命之符）：上面一个圈，下面一个十字
+            func ankh(_ p: CGPoint, _ k: CGFloat, _ col: UIColor) {
+                c.setStrokeColor(UIColor.black.withAlphaComponent(0.55).cgColor)
+                for pass in 0..<2 {
+                    c.setLineWidth(pass == 0 ? k * 0.3 : k * 0.18)
+                    if pass == 1 { c.setStrokeColor(col.cgColor) }
+                    c.setLineCap(.round)
+                    c.strokeEllipse(in: CGRect(x: p.x - k * 0.3, y: p.y - k * 0.95, width: k * 0.6, height: k * 0.8))
+                    c.move(to: CGPoint(x: p.x, y: p.y - k * 0.15)); c.addLine(to: CGPoint(x: p.x, y: p.y + k * 0.95))
+                    c.move(to: CGPoint(x: p.x - k * 0.5, y: p.y + k * 0.1)); c.addLine(to: CGPoint(x: p.x + k * 0.5, y: p.y + k * 0.1))
+                    c.strokePath()
+                }
+            }
+            /// 展开的翅膀（蘑菇柱底下：带翼的日轮）
+            func wings(_ p: CGPoint, _ r: CGFloat, _ col: UIColor) {
+                for side in [CGFloat(-1), 1] {
+                    for i in 0..<5 {
+                        let a = CGFloat(i) * 0.2 - 0.25
+                        c.move(to: CGPoint(x: p.x + side * r * 0.9, y: p.y))
+                        c.addQuadCurve(to: CGPoint(x: p.x + side * r * 2.1 * cos(a), y: p.y + r * 2.1 * sin(a)),
+                                       control: CGPoint(x: p.x + side * r * 1.6, y: p.y - r * 0.5 + CGFloat(i) * r * 0.25))
+                    }
+                }
+                c.setStrokeColor(col.withAlphaComponent(0.55).cgColor)
+                c.setLineWidth(5)
+                c.setLineCap(.round)
+                c.strokePath()
+            }
+            // 蘑菇柱底下：光 + 翅膀
+            for (k, bp) in T.bumpers.enumerated() {
+                let col = [pink, cyan, goldC][k % 3]
+                halo(pt(bp.x, bp.y), 130, col)
+                wings(pt(bp.x, bp.y), 62, col)
+            }
+            // 顶部滚道：三个安卡
+            for lx in T.topLaneX { ankh(pt(lx, T.topLaneY1 + 0.05), 30, goldC) }
+            // 墓室入口（幸运洞）
             halo(pt(T.holeX, T.holeY), 110, goldC)
-            label("LUCKY HOLE", pt(T.holeX - 0.01, T.holeY - 0.065), size: 22, color: goldC, kern: 1.5)
+            label("TOMB", pt(T.holeX - 0.01, T.holeY - 0.065), size: 24, color: goldC, kern: 4, serif: true)
             // 靶
-            halo(pt(T.dropX + 0.03, T.targetY[1]), 130, .white, 0.25)
+            halo(pt(T.dropX + 0.03, T.targetY[1]), 130, sand, 0.25)
             halo(pt(T.standupX - 0.03, T.targetY[1]), 130, cyan, 0.3)
-            label("K · Q · J", pt(T.dropX + 0.085, T.targetY[1]), size: 24, color: .white, kern: 2, angle: -.pi / 2)
+            label("K · Q · J", pt(T.dropX + 0.085, T.targetY[1]), size: 24, color: sand, kern: 2, angle: -.pi / 2, serif: true)
             label("★ ★ ★", pt(T.standupX - 0.085, T.targetY[1]), size: 24, color: cyan, kern: 2, angle: .pi / 2)
-            // 中间的大标志
-            let mid = pt(T.fieldCenter, 0.82)
-            c.setStrokeColor(goldC.withAlphaComponent(0.55).cgColor)
-            c.setLineWidth(5)
-            c.addArc(center: mid, radius: 150, startAngle: 0, endAngle: 2 * .pi, clockwise: false)
+            // 中间：金字塔和它上面的眼睛，下面是台名
+            let mid = pt(T.fieldCenter, 0.84)
+            halo(mid, 230, goldC, 0.28)
+            let px: CGFloat = 190, pyTop = mid.y - 150, pyBase = mid.y + 60
+            let tri = CGMutablePath()
+            tri.move(to: CGPoint(x: mid.x, y: pyTop))
+            tri.addLine(to: CGPoint(x: mid.x + px, y: pyBase))
+            tri.addLine(to: CGPoint(x: mid.x - px, y: pyBase))
+            tri.closeSubpath()
+            c.saveGState()
+            c.addPath(tri); c.clip()
+            let pg = CGGradient(colorsSpace: space, colors: [UIColor(red: 1, green: 0.86, blue: 0.5, alpha: 1).cgColor, UIColor(red: 0.72, green: 0.45, blue: 0.14, alpha: 1).cgColor] as CFArray, locations: [0, 1])!
+            c.drawLinearGradient(pg, start: CGPoint(x: mid.x - px, y: pyTop), end: CGPoint(x: mid.x + px, y: pyBase), options: [])
+            // 背光的一面
+            c.move(to: CGPoint(x: mid.x, y: pyTop)); c.addLine(to: CGPoint(x: mid.x + px, y: pyBase)); c.addLine(to: CGPoint(x: mid.x + 40, y: pyBase)); c.closePath()
+            c.setFillColor(UIColor(red: 0.3, green: 0.15, blue: 0.02, alpha: 0.45).cgColor)
+            c.fillPath()
+            // 砖缝
+            c.setStrokeColor(UIColor(red: 0.35, green: 0.18, blue: 0.03, alpha: 0.55).cgColor)
+            c.setLineWidth(1.5)
+            var row = 0
+            var y = pyBase
+            while y > pyTop {
+                c.move(to: CGPoint(x: mid.x - px, y: y)); c.addLine(to: CGPoint(x: mid.x + px, y: y))
+                var x = mid.x - px + (row % 2 == 0 ? 0 : 19)
+                while x < mid.x + px { c.move(to: CGPoint(x: x, y: y)); c.addLine(to: CGPoint(x: x, y: y - 21)); x += 38 }
+                y -= 21; row += 1
+            }
             c.strokePath()
-            c.setStrokeColor(pink.withAlphaComponent(0.6).cgColor)
-            c.setLineWidth(2)
-            c.addArc(center: mid, radius: 166, startAngle: 0, endAngle: 2 * .pi, clockwise: false)
+            c.restoreGState()
+            c.addPath(tri)
+            c.setStrokeColor(UIColor(red: 1, green: 0.93, blue: 0.65, alpha: 0.95).cgColor)
+            c.setLineWidth(4)
+            c.setLineJoin(.round)
             c.strokePath()
-            halo(mid, 150, UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 1), 0.35)
-            label("COIN", CGPoint(x: mid.x, y: mid.y - 34), size: 62, color: goldC, kern: 4)
-            label("BOUNCE", CGPoint(x: mid.x, y: mid.y + 26), size: 50, color: .white, kern: 3)
-            label("P I N B A L L", CGPoint(x: mid.x, y: mid.y + 78), size: 22, color: pink, kern: 3)
+            // 塔尖上的眼睛
+            let eye = CGPoint(x: mid.x, y: pyTop + 78)
+            c.setFillColor(UIColor(red: 0.03, green: 0.06, blue: 0.2, alpha: 1).cgColor)
+            c.move(to: CGPoint(x: eye.x - 46, y: eye.y))
+            c.addQuadCurve(to: CGPoint(x: eye.x + 46, y: eye.y), control: CGPoint(x: eye.x, y: eye.y - 40))
+            c.addQuadCurve(to: CGPoint(x: eye.x - 46, y: eye.y), control: CGPoint(x: eye.x, y: eye.y + 34))
+            c.fillPath()
+            c.setFillColor(cyan.cgColor)
+            c.fillEllipse(in: CGRect(x: eye.x - 15, y: eye.y - 16, width: 30, height: 30))
+            c.setFillColor(UIColor.black.cgColor)
+            c.fillEllipse(in: CGRect(x: eye.x - 7, y: eye.y - 8, width: 14, height: 14))
+            c.setFillColor(UIColor.white.cgColor)
+            c.fillEllipse(in: CGRect(x: eye.x - 9, y: eye.y - 11, width: 6, height: 6))
+            label("PHARAOH'S", CGPoint(x: mid.x, y: pyBase + 42), size: 46, color: goldC, kern: 5, serif: true)
+            label("TREASURE", CGPoint(x: mid.x, y: pyBase + 92), size: 46, color: sand, kern: 7, serif: true)
+            // 台名两边各一个安卡
+            ankh(CGPoint(x: mid.x - 215, y: pyBase + 62), 26, cyan)
+            ankh(CGPoint(x: mid.x + 215, y: pyBase + 62), 26, cyan)
             // 内道的箭头、保球灯的字
             for side in 0..<2 {
                 let x = side == 0 ? (T.guideX + T.slingA.x) / 2 : T.mirror((T.guideX + T.slingA.x) / 2)
@@ -828,7 +915,7 @@ struct Pinball3DView: UIViewRepresentable {
         v.isPlaying = true
         v.rendersContinuously = true
         v.preferredFramesPerSecond = 60
-        v.antialiasingMode = VisualFX.lowTier ? .none : .multisampling2X
+        v.antialiasingMode = VisualFX.lowTier ? .none : .multisampling4X
         v.backgroundColor = .clear
         v.isOpaque = false
         v.isUserInteractionEnabled = false
