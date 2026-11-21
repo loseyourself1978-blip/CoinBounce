@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - v12.1 大厅导航：大厅 / 推币机 / 轮盘 / 弹子机（v12.5）
 /// 推币机第一次进入时才创建，之后一直留着（不显示时暂停物理和渲染），台面上的金币、奖励队列都不丢
 final class AppRouter: ObservableObject {
-    enum Screen: String, CaseIterable { case lobby, pusher, roulette, pachinko, pinball }
+    enum Screen: String, CaseIterable { case lobby, pusher, roulette, pachinko, pinball, slots }
 
     @Published private(set) var screen: Screen
     /// 推币机画面已经创建（创建后不再销毁）
@@ -40,6 +40,7 @@ final class AppRouter: ObservableObject {
         if arguments.contains("-startLobby") { return .lobby }
         if arguments.contains("-startRoulette") { return .roulette }
         if arguments.contains("-startPachinko") { return .pachinko }
+        if arguments.contains("-startSlots") || arguments.contains("-slotsDemo") { return .slots }
         if arguments.contains("-startPinball") || arguments.contains("-pinballDemo") { return .pinball }
         if arguments.contains("-startPusher") { return .pusher }
         if environment["XCTestConfigurationFilePath"] != nil { return .pusher }
