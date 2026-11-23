@@ -85,7 +85,6 @@ struct GameLayout: Equatable {
         let left = safeArea.leading + m
         let right = size.width - safeArea.trailing - m
         let contentW = max(0, right - left)
-        let centerX = (left + right) / 2
         let usableH = max(0, size.height - safeArea.top - safeArea.bottom)
 
         _ = usableH

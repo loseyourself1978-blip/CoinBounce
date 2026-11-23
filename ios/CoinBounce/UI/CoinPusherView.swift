@@ -5,44 +5,45 @@ import Combine
 /// v11.7：飞字层单独观察 FloatingScoreBoard（飞字变化不让整个游戏画面重算）
 private struct FloatingScoreLayer: View {
     @ObservedObject var board: FloatingScoreBoard
-    let balanceTarget: CGPoint
     var body: some View {
         ZStack {
             ForEach(board.scores) { score in
                 FloatingScoreView(score: score)
                     .position(x: score.x, y: score.y)
             }
-            ForEach(board.flights) { flight in
-                CoinFlightView(flight: flight, to: balanceTarget)
-            }
         }
         .allowsHitTesting(false)
     }
 }
 
-/// v11.7：台面拥挤时直接入账的中奖金币：一串金币从老虎机飞到余额，旁边「+N」
-private struct CoinFlightView: View {
-    let flight: CoinFlight
-    let to: CGPoint
-    @State private var go = false
+/// v12.0：还没落下的奖励金币「+N」（余额下面）。只观察 RewardMeter，每落一枚只重画这一小块
+private struct RewardIncomingChip: View {
+    @ObservedObject var meter: RewardMeter
     var body: some View {
-        let n = min(8, max(3, flight.amount))
-        ZStack {
-            ForEach(0..<n, id: \.self) { i in
-                ArtCoin(size: 22)
-                    .position(go ? to : CGPoint(x: flight.from.x + CGFloat(i - n / 2) * 10, y: flight.from.y))
-                    .opacity(go ? 0.2 : 1)
-                    .animation(.easeIn(duration: 0.55).delay(Double(i) * 0.05), value: go)
+        ZStack { chip }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: meter.pending > 0)
+    }
+    @ViewBuilder private var chip: some View {
+        if meter.pending > 0 {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(ArtPalette.goldLight)
+                ArtCoin(size: 15)
+                Text("+\(meter.pending)")
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, Color.arcadeGold], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: ArtPalette.outline, radius: 0, x: 1, y: 1)
             }
-            Text("+\(flight.amount)")
-                .font(.system(size: 30, weight: .black, design: .rounded))
-                .foregroundStyle(LinearGradient(colors: [ArtPalette.goldLight, Color.arcadeGold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom))
-                .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
-                .position(x: (go ? to.x + 70 : flight.from.x), y: go ? to.y + 26 : flight.from.y - 30)
-                .opacity(go ? 0 : 1)
-                .animation(.easeOut(duration: 1.0), value: go)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(Capsule().fill(Color.black.opacity(0.62)))
+            .overlay(Capsule().stroke(Color.arcadeGold.opacity(0.85), lineWidth: 1.5))
+            .fixedSize()
+            .accessibilityIdentifier("rewardIncoming")
+            .accessibilityLabel(Text("+\(meter.pending)"))
+            .transition(.scale(scale: 0.6).combined(with: .opacity))
         }
-        .onAppear { go = true }
     }
 }
 
@@ -206,8 +207,11 @@ struct CoinPusherView: View {
                 #endif
 
                 // 飞分特效层
-                FloatingScoreLayer(board: gameState.floatingBoard,
-                                   balanceTarget: { let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.minX + r.height * 0.6, y: r.midY) }())
+                FloatingScoreLayer(board: gameState.floatingBoard)
+                // v12.0：还没落下的奖励金币数，贴在余额下面
+                RewardIncomingChip(meter: gameState.rewardMeter)
+                    .position({ let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.midX, y: r.maxY + 13) }())
+                    .allowsHitTesting(false)
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
@@ -239,7 +243,7 @@ struct CoinPusherView: View {
                 gameState.onDrop = { [pusher3D] coin in
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), special: coin.isSpecial)
                 }
-                // v11.7：中奖金币也是真的 3D 金币，从顶部随机位置落下（不触发战斗、水果、BONUS）
+                // v12.0：奖励金币也是真的 3D 金币，从顶部随机位置落下，和玩家投的金币一样触发战斗、水果、BONUS
                 gameState.onRewardDrop = { [pusher3D] coin in
                     pusher3D.spawnFallingCoin(atScreen: CGPoint(x: coin.x, y: coin.y), screenVelocity: CGVector(dx: coin.vx, dy: coin.vy), reward: true)
                 }
@@ -347,6 +351,12 @@ struct CoinPusherView: View {
         let autoplayLite = ProcessInfo.processInfo.arguments.contains("-autoplayLite")
         pusher3D.verifiesMotion = ProcessInfo.processInfo.arguments.contains("-autoplay")
         #if DEBUG
+        // 调试：-debugReward N 启动 4 秒后排入 N 枚奖励金币（录屏、检查余额下面的「+N」）
+        if let i = ProcessInfo.processInfo.arguments.firstIndex(of: "-debugReward") {
+            let args = ProcessInfo.processInfo.arguments
+            let n = i + 1 < args.count ? Int(args[i + 1]) ?? 60 : 60
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { gameState.payReward(n, source: .other) }
+        }
         // 调试：-debugJackpot 每 8 秒强制一次终极大奖（检查兔女郎符号、奖池派奖、庆祝动画）
         if ProcessInfo.processInfo.arguments.contains("-debugJackpot") {
             Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { _ in

@@ -159,7 +159,6 @@ final class DropFieldScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: 每帧
     override func update(_ currentTime: TimeInterval) {
-        let dt = lastUpdate == 0 ? 1.0 / 60 : min(1.0 / 20, currentTime - lastUpdate)
         lastUpdate = currentTime
         guard let state = gameState else { return }
 

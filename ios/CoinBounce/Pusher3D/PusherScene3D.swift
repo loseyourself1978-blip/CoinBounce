@@ -979,7 +979,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     /// 投币：在屏幕点（COIN 滑块出口）生成一枚 3D 金币，正面朝相机，约束在下落平面里，在格挡之间弹跳下落。
     /// 主线程调用时先排队，下一帧在渲染线程生成（物理回调也在渲染线程，避免两边同时改金币列表）
-    /// reward：v11.7 中奖金币（真的 3D 金币，不触发战斗、水果、BONUS）
+    /// reward：奖励金币（真的 3D 金币；v12.0 起和玩家投的金币一样触发战斗、水果、BONUS，标记只用于统计）
     func spawnFallingCoin(atScreen s: CGPoint, screenVelocity v: CGVector = .zero, special: Bool = false, reward: Bool = false) {
         spawnLock.lock()
         pendingSpawns.append((s, v, special, reward))
@@ -1565,8 +1565,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             track.lastDiameter = diameter
             guard track.falling else { continue }
             // 中奖金币不触发战斗、水果、BONUS（不会连锁中奖），越过 BONUS 线时照样解除约束落下
-            if !track.crossedBattle && sp.y >= battleLineY { track.crossedBattle = true; if !track.isReward { battle += 1 } }
-            if !track.crossedFruit && sp.y >= fruitLineY { track.crossedFruit = true; if !track.isReward { fruits.append(sp.x) } }
+            if !track.crossedBattle && sp.y >= battleLineY { track.crossedBattle = true; battle += 1 }
+            if !track.crossedFruit && sp.y >= fruitLineY { track.crossedFruit = true; fruits.append(sp.x) }
             // v11.6 闸门：在立柱高度范围内逐帧量金币压进立柱多深（圆到立柱矩形的距离 < 半径）。
             // 高速金币和运动学立柱接触时物理会让它压进去几点（接触松弛）：圆心在立柱高度范围内、从侧面压进去时，
             // 把金币沿横向推回它圆心所在的那一侧（开口里或外面）、横向速度反向——画面上金币不会一半在里一半在外
@@ -1618,8 +1618,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             }
             if !track.crossedBonus && sp.y >= releaseLineY {
                 track.crossedBonus = true
-                if !track.isReward { bonuses.append((sp.x, diameter / 2, bonusGateX)) }
-                if let l = gateLayout, !track.isReward {
+                bonuses.append((sp.x, diameter / 2, bonusGateX))
+                if let l = gateLayout {
                     bonusCrossings += 1
                     let inside = l.bonusFullyInside(x: sp.x, radius: diameter / 2, gateX: bonusGateX)
                     let straddle = l.bonusStraddlesPost(x: sp.x, radius: diameter / 2, gateX: bonusGateX)

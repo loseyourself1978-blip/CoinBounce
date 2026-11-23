@@ -417,7 +417,7 @@ extension Pusher3DTests {
         XCTAssertEqual(spins, triggers + free, "转动次数 = 整枚穿过次数（+ 免费转动卡）")
         XCTAssertLessThanOrEqual(maxQueue, GameConstants.maxQueuedDrops, "投币队列有上限")
         XCTAssertLessThan(maxSpinQueue, 15, "转动排队不会越积越多")
-        XCTAssertLessThanOrEqual(maxFalling, GameConstants.maxCoinsInFlight + GameConstants.maxPhysicalReward, "同时下落的金币有上限")
+        XCTAssertLessThanOrEqual(maxFalling, GameConstants.maxCoinsInFlight, "同时下落的金币有上限（v12.0：奖励金币也算在里面）")
         XCTAssertEqual(state.slotSpinState, .spinIdle, "排空后停止转动")
         XCTAssertLessThanOrEqual(maxTable, 135, "台面拥挤时放币变慢，台面上的金币不会越堆越多（真机 140 枚以上掉帧）")
         XCTAssertEqual(pusher.deadZoneCount, 0)

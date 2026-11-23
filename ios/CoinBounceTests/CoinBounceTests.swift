@@ -11,6 +11,11 @@ final class CoinBounceTests: XCTestCase {
     var state: GameState!
     let testDefaults = UserDefaults(suiteName: "CoinBounceTests")!
 
+    override func tearDown() {
+        state.clearRewardQueueForTesting()
+        super.tearDown()
+    }
+
     override func setUp() {
         super.setUp()
         state = GameState.shared
@@ -349,7 +354,6 @@ final class CoinBounceTests: XCTestCase {
 
     func test_iteration9_fruitPattern_index5() {
         // 确认水果索引 5 被正确处理为橘子（逻辑层面）
-        let initialLit = state.fruitsLit[5]
         state.lightUpFruit(at: 5)
         XCTAssertTrue(state.fruitsLit[5], "Iteration 9: 索引 5 的水果灯应能被正常点亮")
     }

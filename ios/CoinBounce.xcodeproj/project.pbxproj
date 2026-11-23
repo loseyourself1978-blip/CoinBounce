@@ -58,6 +58,7 @@
 		C0C5FD123EB80F14316E31CC /* sfx_coin_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0E2449189777C40043D660E /* sfx_coin_drop.wav */; };
 		C0DD55AFF7CE14562A88B26D /* ArcadeArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */; };
 		C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */; };
+		C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -112,6 +113,7 @@
 		C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = amb_crowd_loop.wav; sourceTree = "<group>"; };
 		C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeArt.swift; sourceTree = "<group>"; };
 		C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRewardTests.swift; sourceTree = "<group>"; };
+		C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardDropTests.swift; sourceTree = "<group>"; };
 		C0A6513C75A7B7AA2979393A /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAudioTests.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 				B1A1DD042C00000500000001 /* GameLayoutTests.swift */,
 				C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
 				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
+				C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */,
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
@@ -390,6 +393,7 @@
 				B1A1DD032C00000500000001 /* GameLayoutTests.swift in Sources */,
 				C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
 				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
+				C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */,
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,

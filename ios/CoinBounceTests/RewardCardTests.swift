@@ -50,7 +50,7 @@ final class RewardCardTests: XCTestCase {
                 switch c.kind {
                 case .coins: XCTAssertTrue(CardPool.coinAmounts.contains(c.amount))
                 case .freeSpins: XCTAssertEqual(c.amount, 3)
-                case .warriorStrike: XCTAssertTrue([5, 10].contains(c.amount))
+                case .warriorStrike: XCTAssertTrue([2, 4].contains(c.amount))
                 }
             }
         }
@@ -65,7 +65,7 @@ final class RewardCardTests: XCTestCase {
             strikeAmounts.insert(cards.first { $0.kind == .warriorStrike }!.amount)
         }
         XCTAssertEqual(coinAmounts, Set(CardPool.coinAmounts))
-        XCTAssertEqual(strikeAmounts, [5, 10])
+        XCTAssertEqual(strikeAmounts, [2, 4])
         XCTAssertEqual(firstKinds.count, 3, "顺序随机：每种都出现在第一张过")
     }
 
@@ -84,7 +84,8 @@ final class RewardCardTests: XCTestCase {
         offer(coins: 10)
         let before = state.availableCoins
         state.pickCard(.coins)
-        XCTAssertEqual(state.availableCoins, before + 10)
+        XCTAssertEqual(state.availableCoins, before, "v12.0：不直接入账")
+        XCTAssertEqual(state.pendingRewardDrops, 10, "卡上的金币从顶部落下")
         XCTAssertEqual(state.pickedCard, .coins)
         XCTAssertFalse(state.fruitsLit.contains(true), "选完水果重置")
     }
@@ -93,7 +94,8 @@ final class RewardCardTests: XCTestCase {
         offer(coins: 20)
         let before = state.availableCoins
         state.pickCard(.coins)
-        XCTAssertEqual(state.availableCoins, before + 20)
+        XCTAssertEqual(state.availableCoins, before)
+        XCTAssertEqual(state.pendingRewardDrops, 20)
     }
 
     func test_pick_onlyOnce() {
@@ -102,7 +104,8 @@ final class RewardCardTests: XCTestCase {
         state.pickCard(.coins)
         state.pickCard(.coins)
         state.pickCard(.freeSpins)
-        XCTAssertEqual(state.availableCoins, before + 10, "只能选一次")
+        XCTAssertEqual(state.availableCoins, before)
+        XCTAssertEqual(state.pendingRewardDrops, 10, "只能选一次")
         XCTAssertEqual(state.pickedCard, .coins)
     }
 
@@ -146,7 +149,8 @@ final class RewardCardTests: XCTestCase {
         state.pickCard(.warriorStrike)
         XCTAssertEqual(state.bossHealth, 0)
         XCTAssertEqual(state.bossDefeatedCount, ko + 1, "血量归零照常 K.O.")
-        XCTAssertEqual(state.availableCoins, before + GameConstants.bossKOReward)
+        XCTAssertEqual(state.availableCoins, before)
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.bossKOReward)
     }
 
     /// 用固定种子模拟真实的落点：金币从往复的 COIN 滑块出口落下（x = 中心 + 行程·sin(相位)），
@@ -220,7 +224,9 @@ final class RewardCardTests: XCTestCase {
         XCTAssertTrue(state.offeredCards.isEmpty)
     }
 
-    func test_bossKOReward_isFive() {
-        XCTAssertEqual(GameConstants.bossKOReward, 4, "v11.8：原来 20")
+    func test_bossKOReward_followsBossPlan() {
+        XCTAssertEqual(GameConstants.bossPlan, .ko50per2000, "v12.0（hj 2026-11-11）：约 2000 枚 K.O. 一次、+50")
+        XCTAssertEqual(GameConstants.bossKOReward, 50)
+        XCTAssertEqual(GameConstants.bossDamagePerHit, 0.000111)
     }
 }
