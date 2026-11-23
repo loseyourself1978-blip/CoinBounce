@@ -865,7 +865,8 @@ enum Icon3D {
         let font = hasCJK ? (UIFont(name: "PingFangSC-Semibold", size: 10) ?? base)
                           : (base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 10) } ?? base)
         // 汉字不做倒角：SCNText 给某些字（財神駕到、鎖定重轉、超級大獎）加倒角时会把网格算坏，画出一大片刺或一整块
-        let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: hasCJK ? 0 : 0.3, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
+        // 英文的长句（GOD OF WEALTH!）带倒角时同样会算坏，所以大字一律不做倒角
+        let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: 0, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
         // 保险：网格的外框离谱（字号 10 的一行字，高应该在 5–16 之间，宽不超过每个字 13）就不用这张图，画面退回普通的金字
         let (lo, hi) = t.geometry?.boundingBox ?? (SCNVector3Zero, SCNVector3Zero)
         let boxH = hi.y - lo.y, boxW = hi.x - lo.x
@@ -981,7 +982,7 @@ enum Icon3D {
         }
         try? sheet.pngData()?.write(to: dir.appendingPathComponent("icons_sheet.png"))
         // 立体字：简繁都导出来看（有的字形 SCNText 会画坏）
-        for (k, str) in ["财神驾到！", "財神駕到！", "財神", "駕到", "大聖駕到！", "女神降臨！", "鎖定重轉", "超級大獎！", "巨獎！"].enumerated() {
+        for (k, str) in ["财神驾到！", "財神駕到！", "GOD OF WEALTH!", "THE MONKEY KING!", "ATHENA DESCENDS!", "HOLD & RESPIN", "GRAND JACKPOT", "SUPER WIN!", "MEGA WIN!"].enumerated() {
             if let img = title(str) {
                 let one = UIGraphicsImageRenderer(size: img.size, format: fmt).image { ctx in
                     UIColor(red: 0.2, green: 0.02, blue: 0.04, alpha: 1).setFill()

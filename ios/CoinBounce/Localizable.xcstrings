@@ -338,6 +338,22 @@
         }
       }
     },
+    "ATHENA DESCENDS!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降临！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降臨！"
+          }
+        }
+      }
+    },
     "ATHENA'S TEMPLE": {
       "localizations": {
         "zh-Hans": {
@@ -1478,6 +1494,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "免費轉：任意位置出現 3、4、5 個，賠 ×2、×5、×20，並送 8、12、20 次免費轉。免費轉裡的中獎翻倍。"
+          }
+        }
+      }
+    },
+    "GOD OF WEALTH!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "财神驾到！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "財神駕到！"
           }
         }
       }
@@ -3302,6 +3334,22 @@
         }
       }
     },
+    "THE MONKEY KING!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣驾到！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大聖駕到！"
+          }
+        }
+      }
+    },
     "TOO SOFT — PULL FURTHER": {
       "extractionState": "manual",
       "localizations": {
@@ -3387,38 +3435,6 @@
         }
       }
     },
-    "The God of Wealth is here!": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "财神驾到！"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "財神駕到！"
-          }
-        }
-      }
-    },
-    "The Monkey King is here!": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大圣驾到！"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大聖駕到！"
-          }
-        }
-      }
-    },
     "The gate is open. Keep shooting!": {
       "extractionState": "manual",
       "localizations": {
@@ -3432,22 +3448,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "大口開著呢，接著打！"
-          }
-        }
-      }
-    },
-    "The goddess descends!": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "女神降临！"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "女神降臨！"
           }
         }
       }

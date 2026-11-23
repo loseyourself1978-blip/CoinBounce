@@ -266,7 +266,7 @@ final class CaishenTests: XCTestCase {
         XCTAssertEqual(frame.cgImage?.width, 800)
         // 立体的大字：中文和英文都渲染得出来
         // 繁体的这几句曾经把 SCNText 的网格算坏（带倒角时），画出一大片刺；现在汉字不做倒角
-        for s in ["大奖！", "BIG WIN!", "财神驾到！", "財神駕到！", "鎖定重轉", "超級大獎！", "大聖駕到！", "女神降臨！"] {
+        for s in ["大奖！", "BIG WIN!", "财神驾到！", "財神駕到！", "鎖定重轉", "超級大獎！", "大聖駕到！", "女神降臨！", "GOD OF WEALTH!", "HOLD & RESPIN", "GRAND JACKPOT"] {
             let img = try XCTUnwrap(Icon3D.title(s), "\(s) 没渲染出来")
             XCTAssertEqual(img.cgImage?.width, 1080)
         }

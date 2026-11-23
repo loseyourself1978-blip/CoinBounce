@@ -19,9 +19,9 @@ enum SlotTheme: String, CaseIterable, Hashable, Identifiable {
     /// 随机大奖出来时的那句话
     var giftTitle: String {
         switch self {
-        case .caishen: return String(localized: "The God of Wealth is here!")
-        case .wukong: return String(localized: "The Monkey King is here!")
-        case .athena: return String(localized: "The goddess descends!")
+        case .caishen: return String(localized: "GOD OF WEALTH!")
+        case .wukong: return String(localized: "THE MONKEY KING!")
+        case .athena: return String(localized: "ATHENA DESCENDS!")
         }
     }
 
