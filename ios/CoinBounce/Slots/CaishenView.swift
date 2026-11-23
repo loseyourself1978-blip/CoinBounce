@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 // MARK: - v13 老虎机「财神到」整屏：顶部四档奖池、5×3 转轮、锁定重转、天降财神、分档的大奖演出
 /// v13.2：同一套画面和玩法带三个主题（财神、西游记、雅典娜），见 SlotTheme
@@ -18,6 +19,7 @@ struct CaishenView: View {
     @ObservedObject private var ads = AdsManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.requestReview) private var requestReview
     @State private var spinStart: Date?
     @State private var stopTimes: [Double] = []
     @State private var spinToken = 0
@@ -428,6 +430,10 @@ struct CaishenView: View {
         guard celebration != nil else { return }
         celebration = nil
         setMascot(.cheer, backAfter: 2.2)
+        // 大奖演出结束后，合适的时候请玩家评分（自动转的时候不打断）
+        if !game.auto, ReviewPrompt().recordBigWin() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { requestReview() }
+        }
         let token = spinToken
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proceed(token: token) }
     }

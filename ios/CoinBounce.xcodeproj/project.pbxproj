@@ -24,6 +24,7 @@
 		362DF30DB3F6DE891986D9B6 /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
 		41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */; };
 		4535A4828E2A35C68F00C721 /* PinballRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF928B901EA8D655B87044F /* PinballRules.swift */; };
+		4571102CABCA941350B23894 /* ReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC5E8C7942286AE1B061531 /* ReviewPrompt.swift */; };
 		4754EED802BDF247D43EFAE4 /* CaishenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FE18A1DB092C83A3CF8598 /* CaishenTests.swift */; };
 		48C463B98F14D59677E797A5 /* PachinkoSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */; };
 		53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA22958088F526918E564A6 /* PachinkoView.swift */; };
@@ -57,6 +58,7 @@
 		B1A1E1E52C00000100000003 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1E62C00000100000003 /* GameState.swift */; };
 		B1A1E1EF2C00000100000008 /* CoinPusherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1E1F02C00000100000008 /* CoinPusherView.swift */; };
 		B1A1E1F12C00000100000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A1E1F22C00000100000009 /* Assets.xcassets */; };
+		B2CD1DD86E4E5666B31C65F9 /* ReviewPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376343C1D9840D127C12A132 /* ReviewPromptTests.swift */; };
 		BAE88F5A7D8ABB71D3C088F6 /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
 		C00EF1A5C77513DCDFAFAFDA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */; };
 		C01AD1F3908B38A4F60ABA0A /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C08BE306C19A1AD748AA16 /* AppConfig.swift */; };
@@ -146,6 +148,7 @@
 		1E437F0B110E73380F71621E /* sfx_pk_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_start.wav; sourceTree = "<group>"; };
 		259FCAFDED30AC92645ED110 /* SlotsGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsGame.swift; sourceTree = "<group>"; };
 		2C6E520CCE4903CFD956E323 /* SlotsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsTests.swift; sourceTree = "<group>"; };
+		376343C1D9840D127C12A132 /* ReviewPromptTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReviewPromptTests.swift; sourceTree = "<group>"; };
 		4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoReelView.swift; sourceTree = "<group>"; };
 		505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoGame.swift; sourceTree = "<group>"; };
 		52322E7485D2A68FB93F5E1D /* TimedGift.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimedGift.swift; sourceTree = "<group>"; };
@@ -248,6 +251,7 @@
 		F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoPhysics.swift; sourceTree = "<group>"; };
 		F3BBB9B6AC43CC167DDC3A46 /* Lobby3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lobby3DScene.swift; sourceTree = "<group>"; };
 		FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoModel.swift; sourceTree = "<group>"; };
+		FDC5E8C7942286AE1B061531 /* ReviewPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReviewPrompt.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -339,6 +343,7 @@
 				7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */,
 				58FE18A1DB092C83A3CF8598 /* CaishenTests.swift */,
 				5D805E51F237EEAFDD2550FD /* TimedGiftTests.swift */,
+				376343C1D9840D127C12A132 /* ReviewPromptTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -348,6 +353,7 @@
 			children = (
 				B1A1E1E22C00000100000001 /* CoinBounceApp.swift */,
 				C0C08BE306C19A1AD748AA16 /* AppConfig.swift */,
+				FDC5E8C7942286AE1B061531 /* ReviewPrompt.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -567,6 +573,7 @@
 				en,
 				Base,
 				"zh-Hans",
+				"zh-Hant",
 			);
 			mainGroup = B1A1E1D62C00000100000000;
 			packageReferences = (
@@ -657,6 +664,7 @@
 				78F936A1CDA0E1E0342E482E /* CaishenGame.swift in Sources */,
 				4754EED802BDF247D43EFAE4 /* CaishenTests.swift in Sources */,
 				D31AA95522B3B57CBC694942 /* TimedGiftTests.swift in Sources */,
+				B2CD1DD86E4E5666B31C65F9 /* ReviewPromptTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -723,6 +731,7 @@
 				7CB20CEDABF6EE2B7D6731A8 /* Icon3D.swift in Sources */,
 				30D07A2ADCF173BD896C99CF /* SlotTheme.swift in Sources */,
 				184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */,
+				4571102CABCA941350B23894 /* ReviewPrompt.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
