@@ -278,6 +278,8 @@ class GameState: ObservableObject {
         dropQueue = 0
         dropCrowded = false
         clearRewardQueueForTesting()
+        setPaused(false)
+        creditAdRewardDirectly = false
         rewardDropsReleased = 0
         lastReleaseWasPlayer = false
         showCardSelection = false   // 和 offeredCards / pickedCard 一起清（否则「正在显示」但没有卡）
@@ -348,12 +350,36 @@ class GameState: ObservableObject {
         layout = newLayout
     }
 
+    // MARK: v12.1 大厅：不在推币机画面时暂停（物理步进、放币时钟、3D 渲染都停住，状态和奖励队列留着）
+    private(set) var isPaused = false
+    /// 3D 推币机接上后由它暂停 / 恢复自己的场景
+    var onPauseChanged: ((Bool) -> Void)?
+    func setPaused(_ paused: Bool) {
+        guard paused != isPaused else { return }
+        isPaused = paused
+        displayLink?.isPaused = paused
+        lastFrameTimestamp = nil   // 回来后的第一帧不把离开的时间算进去
+        if paused { saveNow() }
+        onPauseChanged?(paused)
+    }
+    /// 看广告的 +50：推币机里变成金币从顶部落下；大厅和轮盘里（没有台面可落）直接入账
+    var creditAdRewardDirectly = false
+
+    /// 轮盘下注：扣金币（不够时不扣）
+    @discardableResult
+    func spendCoins(_ amount: Int) -> Bool {
+        guard amount > 0, availableCoins >= amount else { return false }
+        availableCoins -= amount
+        return true
+    }
+
     func startDisplayLink() {
         // 只保留一个 display link，重复调用（如 onAppear）不会叠加物理步进
         guard displayLink == nil else { return }
         lastFrameTimestamp = nil
         displayLink = CADisplayLink(target: self, selector: #selector(displayLinkFired(_:)))
         displayLink?.preferredFramesPerSecond = 60
+        displayLink?.isPaused = isPaused
         displayLink?.add(to: .main, forMode: .common)
     }
 
@@ -681,7 +707,11 @@ class GameState: ObservableObject {
         adRewardDay = GameState.dayKey(for: now)
         adRewardsClaimed = used + 1
         lastAdRewardAt = now
-        payReward(GameConstants.adRewardCoins, source: .ad)
+        if creditAdRewardDirectly {
+            addCoins(GameConstants.adRewardCoins, source: .ad)
+        } else {
+            payReward(GameConstants.adRewardCoins, source: .ad)
+        }
         addFloatingScore(text: "+\(GameConstants.adRewardCoins)", x: layout.topRow.minX + layout.topRow.width * 0.2, y: layout.topRow.maxY + 12, color: .yellow, big: true)
         #if DEBUG
         NSLog("[Ads] granted %d coins, balance %d, today %d", GameConstants.adRewardCoins, availableCoins, adRewardsClaimed)
@@ -726,7 +756,7 @@ class GameState: ObservableObject {
     }
 
     /// 收支来源（返还率统计用）
-    enum CoinSource: String, CaseIterable { case tray, special, fruit, slot, jackpot, card, boss, ad, other }
+    enum CoinSource: String, CaseIterable { case tray, special, fruit, slot, jackpot, card, boss, ad, roulette, other }
     /// 累计投入（玩家投出的金币）和按来源的累计入账
     private(set) var econSpent = 0
     private(set) var econCredited: [CoinSource: Int] = [:]

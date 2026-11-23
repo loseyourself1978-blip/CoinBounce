@@ -979,6 +979,13 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     /// 投币：在屏幕点（COIN 滑块出口）生成一枚 3D 金币，正面朝相机，约束在下落平面里，在格挡之间弹跳下落。
     /// 主线程调用时先排队，下一帧在渲染线程生成（物理回调也在渲染线程，避免两边同时改金币列表）
+    /// v12.1：不在推币机画面时停住场景（物理、推板动作、渲染），回来接着走
+    func setPaused(_ paused: Bool) {
+        scene.isPaused = paused
+        view?.isPlaying = !paused
+        view?.rendersContinuously = !paused
+    }
+
     /// reward：奖励金币（真的 3D 金币；v12.0 起和玩家投的金币一样触发战斗、水果、BONUS，标记只用于统计）
     func spawnFallingCoin(atScreen s: CGPoint, screenVelocity v: CGVector = .zero, special: Bool = false, reward: Bool = false) {
         spawnLock.lock()

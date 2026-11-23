@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1D1DCA615DA15273622ED53 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */; };
+		C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D0101790978C3955D31EB /* RootView.swift */; };
+		C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */; };
+		C16EF850B6ED99EB87BF4A96 /* LobbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C183E40460A162E1121333A9 /* LobbyView.swift */; };
+		C136A11EBBF5152682C8F496 /* RouletteModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15D843E97B93E76AD34E7BF /* RouletteModel.swift */; };
+		C1BA5C5F6ABF98C700001858 /* RouletteWheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */; };
+		C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1669D88E60D7E6491549840 /* RouletteTableView.swift */; };
+		C1AE316C645B262ADE820797 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */; };
+		C1CD9787636B62C3A30C977E /* RouletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */; };
+		C1A513140AF9032289CEDCAF /* LobbyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */; };
 		C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */; };
 		C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BB9432736E34B07E750DAC /* HelpView.swift */; };
 		C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075D82C2DCA77FB779AC10E /* RewardCards.swift */; };
@@ -72,6 +82,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		C10D0101790978C3955D31EB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunnyHostess.swift; sourceTree = "<group>"; };
+		C183E40460A162E1121333A9 /* LobbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyView.swift; sourceTree = "<group>"; };
+		C15D843E97B93E76AD34E7BF /* RouletteModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteModel.swift; sourceTree = "<group>"; };
+		C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteWheelView.swift; sourceTree = "<group>"; };
+		C1669D88E60D7E6491549840 /* RouletteTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTableView.swift; sourceTree = "<group>"; };
+		C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
+		C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTests.swift; sourceTree = "<group>"; };
+		C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyTests.swift; sourceTree = "<group>"; };
 		C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionParallax.swift; sourceTree = "<group>"; };
 		C0BB9432736E34B07E750DAC /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
@@ -147,6 +167,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C1FBB204711EB7C21F10C1C5 /* Lobby */ = {
+			isa = PBXGroup;
+			children = (
+				C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */,
+				C10D0101790978C3955D31EB /* RootView.swift */,
+				C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */,
+				C183E40460A162E1121333A9 /* LobbyView.swift */,
+			);
+			path = Lobby;
+			sourceTree = "<group>";
+		};
+		C18347FAA09888791D99361F /* Roulette */ = {
+			isa = PBXGroup;
+			children = (
+				C15D843E97B93E76AD34E7BF /* RouletteModel.swift */,
+				C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */,
+				C1669D88E60D7E6491549840 /* RouletteTableView.swift */,
+				C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */,
+			);
+			path = Roulette;
+			sourceTree = "<group>";
+		};
 		C080BA7BD9B6E1810AD5220C /* Pusher3D */ = {
 			isa = PBXGroup;
 			children = (
@@ -164,6 +206,8 @@
 				C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */,
 				C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */,
 				C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */,
+				C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */,
+				C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */,
 				C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */,
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
@@ -236,6 +280,8 @@
 				B1A1E1B02C00000100000001 /* App */,
 				B1A1E1B12C00000100000001 /* GameCore */,
 				B1A1E1B62C00000100000001 /* UI */,
+				C1FBB204711EB7C21F10C1C5 /* Lobby */,
+				C18347FAA09888791D99361F /* Roulette */,
 				B1A1E1F22C00000100000009 /* Assets.xcassets */,
 				C0D773A5B713E8706AF20636 /* Audio */,
 				C04022E061E3BAB702D507BB /* Info.plist */,
@@ -394,6 +440,8 @@
 				C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */,
 				C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */,
 				C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */,
+				C1CD9787636B62C3A30C977E /* RouletteTests.swift in Sources */,
+				C1A513140AF9032289CEDCAF /* LobbyTests.swift in Sources */,
 				C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */,
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
@@ -425,6 +473,14 @@
 				C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */,
 				C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */,
 				C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */,
+				C1D1DCA615DA15273622ED53 /* AppRouter.swift in Sources */,
+				C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */,
+				C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */,
+				C16EF850B6ED99EB87BF4A96 /* LobbyView.swift in Sources */,
+				C136A11EBBF5152682C8F496 /* RouletteModel.swift in Sources */,
+				C1BA5C5F6ABF98C700001858 /* RouletteWheelView.swift in Sources */,
+				C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */,
+				C1AE316C645B262ADE820797 /* RouletteView.swift in Sources */,
 				C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -604,7 +660,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coinbounce.CoinBounce;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -631,7 +687,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.coinbounce.CoinBounce;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

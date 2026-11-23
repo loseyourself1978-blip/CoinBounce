@@ -16,9 +16,14 @@ struct HelpView: View {
                     row("dollarsign.circle.fill", "Each coin pushed off the front edge pays 1 coin. Coins that slide off the sides are lost.")
                     row("rectangle.split.3x1.fill", "A coin passing through the BONUS slider spins the slot machine. Three or more matching symbols in the middle row, starting from the left, win coins; a full row is the JACKPOT.")
                     row("circle.grid.3x3.fill", "A coin passing through the middle of a fruit lights it. Light all 7 fruits to pick a reward card, then the fruits reset.")
-                    row("shield.fill", "Coins crossing the battle hit the BOSS. Knock it out for 4 coins.")
+                    row("shield.fill", "Coins crossing the battle hit the BOSS. Knock it out and 50 coins fall from the top.")
+                    row("arrow.down.to.line", "Every prize falls from the top as real coins. They are yours once they drop off the front edge.")
                     row("sparkles", "Glowing coins are special: each one pushed off pays 2 coins.")
                     row("play.rectangle.fill", "Tap ▶ +50 at the top to watch a short ad for 50 coins, once every 90 seconds, up to 10 times a day.")
+                }
+                Section("Roulette") {
+                    row("circle.circle.fill", "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.")
+                    row("list.number", "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.")
                 }
                 Section {
                     Text("Coins are virtual and have no real-world value.")

@@ -17,7 +17,7 @@ struct CoinBounceApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CoinPusherView()
+            RootView()   // v12.1：先到大厅，再进推币机 / 轮盘
                 .statusBarHidden(true)   // v11.4 参考隐藏状态栏，JACKPOT 牌从屏幕最顶端开始
         }
         .onChange(of: scenePhase) { phase in
