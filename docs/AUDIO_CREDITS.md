@@ -17,6 +17,10 @@ Everything else is synthesized by `tools/audio/generate_audio.py` with the Pytho
 (oscillators, filtered noise, envelopes): all `sfx_*.wav` effects, plus the crowd murmur, distant
 slot-machine jingles, synth bells and coin cascades in the floor ambience. No samples were used.
 
+The eight pachinko effects (`sfx_pk_launch`, `sfx_pk_nail_1`…`3`, `sfx_pk_start`, `sfx_pk_reach`,
+`sfx_pk_attacker`, `sfx_pk_count`, v12.5) are synthesized the same way: `python3 tools/audio/generate_audio.py --pachinko`
+writes only those files.
+
 ## How the shipped loops are made (v11.8)
 
 - `tools/audio/make_music.sh` renders `bgm_loop.wav` from "Catchy Swing": 32 kHz mono, about −18 LUFS.

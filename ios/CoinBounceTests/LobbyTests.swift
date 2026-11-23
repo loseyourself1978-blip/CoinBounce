@@ -32,6 +32,7 @@ final class LobbyTests: XCTestCase {
         XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce", "-debugReward", "60"], environment: [:]), .pusher)
         XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce"], environment: ["XCTestConfigurationFilePath": "/x"]), .pusher, "测试宿主照旧直接是推币机")
         XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce", "-startRoulette"], environment: [:]), .roulette)
+        XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce", "-startPachinko"], environment: [:]), .pachinko)
         XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce", "-startLobby", "-autoplay"], environment: ["XCTestConfigurationFilePath": "/x"]), .lobby)
         XCTAssertEqual(AppRouter.launchScreen(arguments: ["CoinBounce", "-startPusher"], environment: [:]), .pusher)
     }
@@ -108,12 +109,17 @@ final class LobbyTests: XCTestCase {
         XCTAssertTrue(state.grantAdReward(now: Date(timeIntervalSince1970: 1_800_000_000)))
         XCTAssertEqual(state.availableCoins, 100 + 2 * GameConstants.adRewardCoins, "轮盘里：直接入账")
         router.backToLobby()
+        router.open(.pachinko)
+        state.lastAdRewardAt = nil
+        XCTAssertTrue(state.grantAdReward(now: Date(timeIntervalSince1970: 1_800_000_000)))
+        XCTAssertEqual(state.availableCoins, 100 + 3 * GameConstants.adRewardCoins, "弹子机里：直接入账")
+        router.backToLobby()
         router.open(.pusher)
         state.lastAdRewardAt = nil
         XCTAssertTrue(state.grantAdReward(now: Date(timeIntervalSince1970: 1_800_000_000)))
-        XCTAssertEqual(state.availableCoins, 100 + 2 * GameConstants.adRewardCoins)
+        XCTAssertEqual(state.availableCoins, 100 + 3 * GameConstants.adRewardCoins)
         XCTAssertEqual(state.pendingRewardDrops, GameConstants.adRewardCoins, "推币机里：从顶部落下")
-        XCTAssertEqual(state.adRewardsUsed(on: Date(timeIntervalSince1970: 1_800_000_000)), 3, "同一个每日次数")
+        XCTAssertEqual(state.adRewardsUsed(on: Date(timeIntervalSince1970: 1_800_000_000)), 4, "同一个每日次数")
     }
 
     func test_bunnyGreeting_isRandomLineAndPose() {

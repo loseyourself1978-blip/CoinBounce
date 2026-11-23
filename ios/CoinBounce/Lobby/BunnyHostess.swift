@@ -35,6 +35,8 @@ struct BunnyHostess: View {
     var bubbleOnRight = true
     /// 轮盘里气泡单独摆（在兔女郎上面），这里就不画
     var showBubble = true
+    /// 气泡最大宽度（默认身高的 0.62；弹子机里兔女郎小，气泡要宽一点）
+    var bubbleWidth: CGFloat? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var beat = false
 
@@ -49,7 +51,7 @@ struct BunnyHostess: View {
                 .animation(reduceMotion ? nil : rhythm(pose), value: beat)
             if let line, showBubble {
                 SpeechBubble(text: line.text, tailOnLeft: bubbleOnRight)
-                    .frame(maxWidth: height * 0.62)
+                    .frame(maxWidth: bubbleWidth ?? height * 0.62)
                     .offset(x: (bubbleOnRight ? 1 : -1) * height * 0.26, y: -height * 0.02)
                     .id(line.id)
                     .transition(.scale(scale: 0.6, anchor: bubbleOnRight ? .bottomLeading : .bottomTrailing).combined(with: .opacity))

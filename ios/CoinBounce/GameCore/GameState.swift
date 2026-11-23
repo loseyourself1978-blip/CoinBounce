@@ -796,7 +796,7 @@ class GameState: ObservableObject {
     }
 
     /// 收支来源（返还率统计用）
-    enum CoinSource: String, CaseIterable { case tray, special, fruit, slot, jackpot, card, boss, ad, roulette, other }
+    enum CoinSource: String, CaseIterable { case tray, special, fruit, slot, jackpot, card, boss, ad, roulette, pachinko, other }
     /// 累计投入（玩家投出的金币）和按来源的累计入账
     private(set) var econSpent = 0
     private(set) var econCredited: [CoinSource: Int] = [:]

@@ -29,10 +29,17 @@ struct RootView: View {
             if router.screen == .lobby {
                 LobbyView(router: router)
                     .transition(.opacity)
+                    .zIndex(1)   // 转场时大厅在最上面淡出
             }
             if router.screen == .roulette {
                 RouletteView(onExit: { router.backToLobby() })
                     .transition(.opacity)
+            }
+            if router.screen == .pachinko {
+                // 进场不淡入：直接出现在大厅下面，由大厅在上面淡出。建这个画面会卡主线程约 0.15 秒，
+                // 两边同时淡入淡出的话卡完时大厅已经淡没了、弹子机还没淡出来，中间会露出几帧黑底
+                PachinkoView(onExit: { router.backToLobby() })
+                    .transition(.asymmetric(insertion: .identity, removal: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.25), value: router.screen)

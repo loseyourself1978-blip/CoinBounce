@@ -7,25 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C1D1DCA615DA15273622ED53 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */; };
-		C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D0101790978C3955D31EB /* RootView.swift */; };
-		C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */; };
-		C16EF850B6ED99EB87BF4A96 /* LobbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C183E40460A162E1121333A9 /* LobbyView.swift */; };
-		C136A11EBBF5152682C8F496 /* RouletteModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15D843E97B93E76AD34E7BF /* RouletteModel.swift */; };
-		C1BA5C5F6ABF98C700001858 /* RouletteWheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */; };
-		C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1669D88E60D7E6491549840 /* RouletteTableView.swift */; };
-		C1AE316C645B262ADE820797 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */; };
-		C1CD9787636B62C3A30C977E /* RouletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */; };
-		C1A513140AF9032289CEDCAF /* LobbyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */; };
-		C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */; };
-		C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BB9432736E34B07E750DAC /* HelpView.swift */; };
-		C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075D82C2DCA77FB779AC10E /* RewardCards.swift */; };
-		C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C09E74094A4667BE570DF287 /* RewardCardTests.swift */; };
-		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
-		C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07DAD123163FB2694651B70 /* Pusher3DTests.swift */; };
-		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
-		C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */; };
-		C0F327EBFA234B58F9BA788A /* DropFieldScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */; };
+		306AFDF2F1D67499F88E5B6F /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
+		BAE88F5A7D8ABB71D3C088F6 /* PachinkoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */; };
+		41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */; };
+		6A899AEB6DB1EC1EBA022400 /* PachinkoReelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */; };
+		53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA22958088F526918E564A6 /* PachinkoView.swift */; };
+		87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
+		22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
+		F8714687D110A5DC517E1DDA /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
+		CE7ADF35369A9CD3A12A119F /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
+		551D53120C98B6BC03E2CEB4 /* PachinkoSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */; };
+		2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
+		3595F337FB3825DB709C57B5 /* PachinkoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */; };
+		362DF30DB3F6DE891986D9B6 /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
+		48C463B98F14D59677E797A5 /* PachinkoSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */; };
+		691A974BE570C6713AA79B47 /* PachinkoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */; };
 		B1A1AAAA2C00000200000001 /* CoinBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */; };
 		B1A1BB012C00000300000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1BB022C00000300000001 /* HapticManager.swift */; };
 		B1A1CC012C00000400000001 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1CC022C00000400000001 /* SlotMachineView.swift */; };
@@ -45,15 +41,15 @@
 		C02B91ABF6D4853D700EE10E /* sfx_slot_stop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */; };
 		C032AA4BDB461E49F4A4A008 /* sfx_baffle_hit.wav in Resources */ = {isa = PBXBuildFile; fileRef = C03D722AF32143CA34474B39 /* sfx_baffle_hit.wav */; };
 		C043C65F1E488BEC41029C47 /* sfx_jackpot.wav in Resources */ = {isa = PBXBuildFile; fileRef = C013055A43B134AF24AA5599 /* sfx_jackpot.wav */; };
+		C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C09E74094A4667BE570DF287 /* RewardCardTests.swift */; };
 		C046F49F5DA252D59510B3F0 /* AdsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01550AC5A455675584028A5 /* AdsManager.swift */; };
 		C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */; };
 		C05023BDDC0F0C704285337C /* sfx_bed_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C010872C092B094220E8C0C7 /* sfx_bed_drop.wav */; };
+		C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075D82C2DCA77FB779AC10E /* RewardCards.swift */; };
+		C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BB9432736E34B07E750DAC /* HelpView.swift */; };
 		C063BCB6F473BC0EBC0B2356 /* sfx_win_big.wav in Resources */ = {isa = PBXBuildFile; fileRef = C065A216266C4D4C0CD3793D /* sfx_win_big.wav */; };
-		C197F86F2E10BF3D81FEB910 /* sfx_jackpot_fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */; };
-		C1A7A738123BFC80BBE8326C /* sfx_applause.wav in Resources */ = {isa = PBXBuildFile; fileRef = C11D4165DBFC06F8476B284C /* sfx_applause.wav */; };
-		C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */; };
-		C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */; };
 		C064F742390651D88B659F01 /* sfx_slot_spin.wav in Resources */ = {isa = PBXBuildFile; fileRef = C01A8C670299D69B11017774 /* sfx_slot_spin.wav */; };
+		C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07DAD123163FB2694651B70 /* Pusher3DTests.swift */; };
 		C07516CB54148100DE592C7D /* sfx_fruit_lit.wav in Resources */ = {isa = PBXBuildFile; fileRef = C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */; };
 		C079D1C28017942DBAFC45E1 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A6513C75A7B7AA2979393A /* AudioManager.swift */; };
 		C07FA2A747489018D109C9BC /* SettingsAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */; };
@@ -62,17 +58,45 @@
 		C0A0D5000000000000000005 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = C0A0D5000000000000000003 /* GoogleMobileAds */; };
 		C0A0D5000000000000000006 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = C0A0D5000000000000000004 /* GoogleUserMessagingPlatform */; };
 		C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C01343A2745A50F8C65B2470 /* Localizable.xcstrings */; };
+		C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */; };
 		C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */; };
 		C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */ = {isa = PBXBuildFile; fileRef = C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */; };
+		14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */; };
+		2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */; };
+		D0AFF0D8B4521296A1B639D9 /* sfx_pk_nail_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */; };
+		8F82E9270F4CF5D68C3589EC /* sfx_pk_nail_3.wav in Resources */ = {isa = PBXBuildFile; fileRef = 55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */; };
+		A0A79905C9F9164917CCF72E /* sfx_pk_start.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1E437F0B110E73380F71621E /* sfx_pk_start.wav */; };
+		AD80C62908E864CA28E4919C /* sfx_pk_reach.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */; };
+		DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */ = {isa = PBXBuildFile; fileRef = D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */; };
+		D31E75F461607C878B536B2B /* sfx_pk_count.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1D84389FD89837773F507262 /* sfx_pk_count.wav */; };
+		C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */; };
 		C0C347C3A330D17D05CC9A99 /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */; };
 		C0C5FD123EB80F14316E31CC /* sfx_coin_drop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C0E2449189777C40043D660E /* sfx_coin_drop.wav */; };
+		C0D5945CCD4B590A7B95609E /* PusherScene3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */; };
 		C0DD55AFF7CE14562A88B26D /* ArcadeArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */; };
+		C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */; };
 		C0EC55315A1BD43C16612EA1 /* AdRewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */; };
 		C0EC55315A1BD43C16612EB2 /* RewardDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */; };
-		C2FA3A0381132776B3194A65 /* KOSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20338B8773C7C4F3BF12432 /* KOSequence.swift */; };
-		C27AE408551A0988D294654D /* RoyalArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */; };
+		C0F327EBFA234B58F9BA788A /* DropFieldScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */; };
+		C136A11EBBF5152682C8F496 /* RouletteModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15D843E97B93E76AD34E7BF /* RouletteModel.swift */; };
+		C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1669D88E60D7E6491549840 /* RouletteTableView.swift */; };
+		C16EF850B6ED99EB87BF4A96 /* LobbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C183E40460A162E1121333A9 /* LobbyView.swift */; };
+		C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */; };
+		C197F86F2E10BF3D81FEB910 /* sfx_jackpot_fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */; };
+		C1A513140AF9032289CEDCAF /* LobbyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */; };
+		C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */ = {isa = PBXBuildFile; fileRef = C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */; };
+		C1A7A738123BFC80BBE8326C /* sfx_applause.wav in Resources */ = {isa = PBXBuildFile; fileRef = C11D4165DBFC06F8476B284C /* sfx_applause.wav */; };
+		C1AE316C645B262ADE820797 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */; };
+		C1BA5C5F6ABF98C700001858 /* RouletteWheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */; };
+		C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D0101790978C3955D31EB /* RootView.swift */; };
+		C1CD9787636B62C3A30C977E /* RouletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */; };
+		C1D1DCA615DA15273622ED53 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */; };
+		C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */; };
 		C23BD4D77AAF63F41B15A3A5 /* KOSequenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */; };
+		C27AE408551A0988D294654D /* RoyalArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */; };
+		C2FA3A0381132776B3194A65 /* KOSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20338B8773C7C4F3BF12432 /* KOSequence.swift */; };
 		C36D7CEB5BDCB23A3A461CDF /* FilmOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */; };
+		FE6872D42E0742E7F79B793A /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,25 +110,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
-		C10D0101790978C3955D31EB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunnyHostess.swift; sourceTree = "<group>"; };
-		C183E40460A162E1121333A9 /* LobbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyView.swift; sourceTree = "<group>"; };
-		C15D843E97B93E76AD34E7BF /* RouletteModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteModel.swift; sourceTree = "<group>"; };
-		C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteWheelView.swift; sourceTree = "<group>"; };
-		C1669D88E60D7E6491549840 /* RouletteTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTableView.swift; sourceTree = "<group>"; };
-		C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
-		C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTests.swift; sourceTree = "<group>"; };
-		C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyTests.swift; sourceTree = "<group>"; };
-		C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionParallax.swift; sourceTree = "<group>"; };
-		C0BB9432736E34B07E750DAC /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
-		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
-		C09E74094A4667BE570DF287 /* RewardCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCardTests.swift; sourceTree = "<group>"; };
-		C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleEffectsTests.swift; sourceTree = "<group>"; };
-		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
-		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
-		C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherScene3D.swift; sourceTree = "<group>"; };
-		C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropFieldScene.swift; sourceTree = "<group>"; };
+		7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoTests.swift; sourceTree = "<group>"; };
 		B1A1AAAB2C00000200000001 /* CoinBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinBounceTests.swift; sourceTree = "<group>"; };
 		B1A1AAAF2C00000200000001 /* CoinBounceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoinBounceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A1BB022C00000300000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
@@ -127,32 +133,68 @@
 		C01A8C670299D69B11017774 /* sfx_slot_spin.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_slot_spin.wav; sourceTree = "<group>"; };
 		C026F5EB2678C99744DDA993 /* sfx_no_coins.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_no_coins.wav; sourceTree = "<group>"; };
 		C03D722AF32143CA34474B39 /* sfx_baffle_hit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_baffle_hit.wav; sourceTree = "<group>"; };
+		C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherScene3D.swift; sourceTree = "<group>"; };
 		C04022E061E3BAB702D507BB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PusherSceneView.swift; sourceTree = "<group>"; };
 		C057EC36E4D14DF47ED79A8C /* sfx_fruit_lit.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_fruit_lit.wav; sourceTree = "<group>"; };
 		C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_small.wav; sourceTree = "<group>"; };
+		9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_launch.wav; sourceTree = "<group>"; };
+		9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_1.wav; sourceTree = "<group>"; };
+		E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_2.wav; sourceTree = "<group>"; };
+		55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_3.wav; sourceTree = "<group>"; };
+		1E437F0B110E73380F71621E /* sfx_pk_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_start.wav; sourceTree = "<group>"; };
+		7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_reach.wav; sourceTree = "<group>"; };
+		D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_attacker.wav; sourceTree = "<group>"; };
+		1D84389FD89837773F507262 /* sfx_pk_count.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_count.wav; sourceTree = "<group>"; };
 		C065A216266C4D4C0CD3793D /* sfx_win_big.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_win_big.wav; sourceTree = "<group>"; };
-		C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_jackpot_fanfare.wav; sourceTree = "<group>"; };
-		C11D4165DBFC06F8476B284C /* sfx_applause.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_applause.wav; sourceTree = "<group>"; };
-		C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_cheer.wav; sourceTree = "<group>"; };
-		C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = amb_crowd_loop.wav; sourceTree = "<group>"; };
+		C075D82C2DCA77FB779AC10E /* RewardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCards.swift; sourceTree = "<group>"; };
+		C07DAD123163FB2694651B70 /* Pusher3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pusher3DTests.swift; sourceTree = "<group>"; };
+		C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropFieldScene.swift; sourceTree = "<group>"; };
 		C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeArt.swift; sourceTree = "<group>"; };
 		C08F370932C3CDA3A722C1F9 /* AdRewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRewardTests.swift; sourceTree = "<group>"; };
 		C08F370932C3CDA3A722C2A0 /* RewardDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardDropTests.swift; sourceTree = "<group>"; };
+		C09E74094A4667BE570DF287 /* RewardCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCardTests.swift; sourceTree = "<group>"; };
 		C0A6513C75A7B7AA2979393A /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		C0ABAF6830D7E4E28FE95285 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C0AF586462798AA2D8424DDD /* SettingsAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAudioTests.swift; sourceTree = "<group>"; };
 		C0AFC3BAB814249E2557C10D /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		C0BB5A849F7E5C9460FB8051 /* bgm_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bgm_loop.wav; sourceTree = "<group>"; };
+		C0BB9432736E34B07E750DAC /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		C0C08BE306C19A1AD748AA16 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		C0CEEBDFBB7C821B4EA8DEE9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C0E2449189777C40043D660E /* sfx_coin_drop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_coin_drop.wav; sourceTree = "<group>"; };
+		C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionParallax.swift; sourceTree = "<group>"; };
+		C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleEffectsTests.swift; sourceTree = "<group>"; };
 		C0F834431226434D9E9F47F0 /* sfx_slot_stop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_slot_stop.wav; sourceTree = "<group>"; };
 		C0FFFAAADEAE0B1E7AC6334D /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
+		C10D0101790978C3955D31EB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C11D4165DBFC06F8476B284C /* sfx_applause.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_applause.wav; sourceTree = "<group>"; };
+		C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
+		C12D2C8DD35B77BA9F32BBA9 /* RouletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTests.swift; sourceTree = "<group>"; };
+		C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteWheelView.swift; sourceTree = "<group>"; };
+		C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_cheer.wav; sourceTree = "<group>"; };
+		C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = amb_crowd_loop.wav; sourceTree = "<group>"; };
+		C15D843E97B93E76AD34E7BF /* RouletteModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteModel.swift; sourceTree = "<group>"; };
+		C1669D88E60D7E6491549840 /* RouletteTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTableView.swift; sourceTree = "<group>"; };
+		C183E40460A162E1121333A9 /* LobbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyView.swift; sourceTree = "<group>"; };
+		C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunnyHostess.swift; sourceTree = "<group>"; };
+		C1B16ED006E229B1802DB249 /* sfx_jackpot_fanfare.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_jackpot_fanfare.wav; sourceTree = "<group>"; };
+		C1BBD6C590CAC5C9890F2B2D /* LobbyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LobbyTests.swift; sourceTree = "<group>"; };
 		C20338B8773C7C4F3BF12432 /* KOSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequence.swift; sourceTree = "<group>"; };
-		C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoyalArt.swift; sourceTree = "<group>"; };
 		C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequenceTests.swift; sourceTree = "<group>"; };
+		C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoyalArt.swift; sourceTree = "<group>"; };
 		C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmOverlay.swift; sourceTree = "<group>"; };
+		CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoBoard.swift; sourceTree = "<group>"; };
+		E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoConstants.swift; sourceTree = "<group>"; };
+		F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoSimulator.swift; sourceTree = "<group>"; };
+		505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoGame.swift; sourceTree = "<group>"; };
+		DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pachinko3DScene.swift; sourceTree = "<group>"; };
+		4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoReelView.swift; sourceTree = "<group>"; };
+		5DA22958088F526918E564A6 /* PachinkoView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoView.swift; sourceTree = "<group>"; };
+		F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoPhysics.swift; sourceTree = "<group>"; };
+		FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,44 +217,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C2F258B21F1D7DC7FA66831B /* Battle */ = {
+		A68BBF089DE8E01DD3610ED6 /* Pachinko */ = {
 			isa = PBXGroup;
 			children = (
-				C20338B8773C7C4F3BF12432 /* KOSequence.swift */,
-				C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */,
+				E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */,
+				CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */,
+				F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */,
+				FC7F18FE34665B7648E16AE7 /* PachinkoModel.swift */,
+				F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */,
+				505DDA742C9B2F3F4C4B5E91 /* PachinkoGame.swift */,
+				DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */,
+				4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */,
+				5DA22958088F526918E564A6 /* PachinkoView.swift */,
 			);
-			path = Battle;
-			sourceTree = "<group>";
-		};
-		C1FBB204711EB7C21F10C1C5 /* Lobby */ = {
-			isa = PBXGroup;
-			children = (
-				C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */,
-				C10D0101790978C3955D31EB /* RootView.swift */,
-				C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */,
-				C183E40460A162E1121333A9 /* LobbyView.swift */,
-			);
-			path = Lobby;
-			sourceTree = "<group>";
-		};
-		C18347FAA09888791D99361F /* Roulette */ = {
-			isa = PBXGroup;
-			children = (
-				C15D843E97B93E76AD34E7BF /* RouletteModel.swift */,
-				C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */,
-				C1669D88E60D7E6491549840 /* RouletteTableView.swift */,
-				C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */,
-			);
-			path = Roulette;
-			sourceTree = "<group>";
-		};
-		C080BA7BD9B6E1810AD5220C /* Pusher3D */ = {
-			isa = PBXGroup;
-			children = (
-				C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */,
-				C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */,
-			);
-			path = Pusher3D;
+			name = Pachinko;
+			path = Pachinko;
 			sourceTree = "<group>";
 		};
 		B1A1AAB02C00000200000001 /* CoinBounceTests */ = {
@@ -230,6 +249,7 @@
 				C07DAD123163FB2694651B70 /* Pusher3DTests.swift */,
 				C0ED6AA78693B2BDE69CBE79 /* BattleEffectsTests.swift */,
 				C09E74094A4667BE570DF287 /* RewardCardTests.swift */,
+				7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */,
 			);
 			path = CoinBounceTests;
 			sourceTree = "<group>";
@@ -309,8 +329,18 @@
 				C01343A2745A50F8C65B2470 /* Localizable.xcstrings */,
 				C0BF0482296CF50EAD72758A /* InfoPlist.xcstrings */,
 				C080BA7BD9B6E1810AD5220C /* Pusher3D */,
+				A68BBF089DE8E01DD3610ED6 /* Pachinko */,
 			);
 			path = CoinBounce;
+			sourceTree = "<group>";
+		};
+		C080BA7BD9B6E1810AD5220C /* Pusher3D */ = {
+			isa = PBXGroup;
+			children = (
+				C03F1EBDD563926CBE45D448 /* PusherScene3D.swift */,
+				C041CFCB010CE3AC8B34E077 /* PusherSceneView.swift */,
+			);
+			path = Pusher3D;
 			sourceTree = "<group>";
 		};
 		C0D773A5B713E8706AF20636 /* Audio */ = {
@@ -332,8 +362,47 @@
 				C1396C93E8A068E7E2BCA19E /* sfx_cheer.wav */,
 				C15D54FEC75A32016ABD8A9C /* amb_crowd_loop.wav */,
 				C058BB166A327B04FDEEEEDD /* sfx_win_small.wav */,
+				9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */,
+				9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */,
+				E972212C2B8414B6F8464BC6 /* sfx_pk_nail_2.wav */,
+				55691F210487D05250F8F86D /* sfx_pk_nail_3.wav */,
+				1E437F0B110E73380F71621E /* sfx_pk_start.wav */,
+				7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */,
+				D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */,
+				1D84389FD89837773F507262 /* sfx_pk_count.wav */,
 			);
 			path = Audio;
+			sourceTree = "<group>";
+		};
+		C18347FAA09888791D99361F /* Roulette */ = {
+			isa = PBXGroup;
+			children = (
+				C15D843E97B93E76AD34E7BF /* RouletteModel.swift */,
+				C136EAE4115DCBA75859DDC3 /* RouletteWheelView.swift */,
+				C1669D88E60D7E6491549840 /* RouletteTableView.swift */,
+				C12D2B3FF3FC88756BEFB28D /* RouletteView.swift */,
+			);
+			path = Roulette;
+			sourceTree = "<group>";
+		};
+		C1FBB204711EB7C21F10C1C5 /* Lobby */ = {
+			isa = PBXGroup;
+			children = (
+				C1248DB17F2AA12DF3AE1CC0 /* AppRouter.swift */,
+				C10D0101790978C3955D31EB /* RootView.swift */,
+				C1AF92AF06C4509FD31EE571 /* BunnyHostess.swift */,
+				C183E40460A162E1121333A9 /* LobbyView.swift */,
+			);
+			path = Lobby;
+			sourceTree = "<group>";
+		};
+		C2F258B21F1D7DC7FA66831B /* Battle */ = {
+			isa = PBXGroup;
+			children = (
+				C20338B8773C7C4F3BF12432 /* KOSequence.swift */,
+				C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */,
+			);
+			path = Battle;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -442,6 +511,14 @@
 				C1A74B0891EA08E1D51EE9C0 /* sfx_cheer.wav in Resources */,
 				C17556C5D3ABE14BD25DCDD0 /* amb_crowd_loop.wav in Resources */,
 				C0B7FE82DE281CC21971F5B1 /* sfx_win_small.wav in Resources */,
+				14BA5665699FBB49055F3DFA /* sfx_pk_launch.wav in Resources */,
+				2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */,
+				D0AFF0D8B4521296A1B639D9 /* sfx_pk_nail_2.wav in Resources */,
+				8F82E9270F4CF5D68C3589EC /* sfx_pk_nail_3.wav in Resources */,
+				A0A79905C9F9164917CCF72E /* sfx_pk_start.wav in Resources */,
+				AD80C62908E864CA28E4919C /* sfx_pk_reach.wav in Resources */,
+				DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */,
+				D31E75F461607C878B536B2B /* sfx_pk_count.wav in Resources */,
 				C0B4ED5A22382949E867DE35 /* PrivacyInfo.xcprivacy in Resources */,
 				C0AD00B24D423B645EF922D2 /* Localizable.xcstrings in Resources */,
 				C049BF7FEE3196E1456DB0C9 /* InfoPlist.xcstrings in Resources */,
@@ -467,6 +544,13 @@
 				C06979CCA83AA06AD111712D /* Pusher3DTests.swift in Sources */,
 				C0AFD0AE912625FF2558A549 /* BattleEffectsTests.swift in Sources */,
 				C043F701592856B8D546E807 /* RewardCardTests.swift in Sources */,
+				691A974BE570C6713AA79B47 /* PachinkoTests.swift in Sources */,
+				87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */,
+				22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */,
+				F8714687D110A5DC517E1DDA /* PachinkoPhysics.swift in Sources */,
+				CE7ADF35369A9CD3A12A119F /* PachinkoModel.swift in Sources */,
+				551D53120C98B6BC03E2CEB4 /* PachinkoSimulator.swift in Sources */,
+				BAE88F5A7D8ABB71D3C088F6 /* PachinkoGame.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,6 +590,15 @@
 				C13DADDFB59820852337A8DF /* RouletteTableView.swift in Sources */,
 				C1AE316C645B262ADE820797 /* RouletteView.swift in Sources */,
 				C0DD93A41EEE9FD6FE475B50 /* MotionParallax.swift in Sources */,
+				FE6872D42E0742E7F79B793A /* PachinkoConstants.swift in Sources */,
+				362DF30DB3F6DE891986D9B6 /* PachinkoBoard.swift in Sources */,
+				2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */,
+				3595F337FB3825DB709C57B5 /* PachinkoModel.swift in Sources */,
+				48C463B98F14D59677E797A5 /* PachinkoSimulator.swift in Sources */,
+				306AFDF2F1D67499F88E5B6F /* PachinkoGame.swift in Sources */,
+				41FF1AA6BDF412624D5BE4B4 /* Pachinko3DScene.swift in Sources */,
+				6A899AEB6DB1EC1EBA022400 /* PachinkoReelView.swift in Sources */,
+				53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -536,6 +629,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.coinbounce.CoinBounceTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CoinBounce.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CoinBounce";
