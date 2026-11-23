@@ -32,7 +32,7 @@ struct PinballView: View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack {
-                RouletteBackdrop().ignoresSafeArea()
+                PinballBackdrop().ignoresSafeArea()
                 VStack(spacing: 4) {
                     topBar.padding(.horizontal, 10).padding(.top, 4)
                     PinballDisplay(hud: game.hud, flash: flashText)
@@ -422,5 +422,17 @@ struct PinballTouchSurface: UIViewRepresentable {
         v.onFlipper = onFlipper
         v.onPull = onPull
         v.onRelease = onRelease
+    }
+}
+
+/// v13 背景：沙漠的夜——上面深蓝，下面一点暖沙色
+struct PinballBackdrop: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [Color(red: 0.03, green: 0.07, blue: 0.2), Color(red: 0.05, green: 0.1, blue: 0.26), Color(red: 0.22, green: 0.14, blue: 0.08)],
+                           startPoint: .top, endPoint: .bottom)
+            RadialGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4).opacity(0.16), .clear], center: UnitPoint(x: 0.5, y: 0.35), startRadius: 10, endRadius: 520)
+            RadialGradient(colors: [.clear, Color.black.opacity(0.5)], center: .center, startRadius: 240, endRadius: 640)
+        }
     }
 }

@@ -293,6 +293,90 @@ final class RouletteTests: XCTestCase {
         }
     }
 
+    // MARK: v13 压多个号码的内围注
+    func test_groupBets_countsAndPayouts() {
+        let all = RouletteGroups.all
+        XCTAssertEqual(all.filter { $0.count == 2 }.count, 24 + 33 + 3, "分注：横 24、竖 33、带 0 的 3")
+        XCTAssertEqual(all.filter { $0.count == 3 }.count, 12 + 2, "街注 12 + 带 0 的三连 2")
+        XCTAssertEqual(all.filter { $0.count == 4 }.count, 22 + 1, "角注 22 + 0-1-2-3")
+        XCTAssertEqual(all.filter { $0.count == 6 }.count, 11, "线注 11")
+        for ns in all {
+            let bet = RouletteBet.group(ns)
+            XCTAssertTrue(bet.isValid)
+            XCTAssertEqual(ns, ns.sorted())
+            // 每一注的期望返还都是 36/37
+            let wins = (0...36).filter { bet.wins(on: $0) }.count
+            XCTAssertEqual(wins, ns.count)
+            XCTAssertEqual(wins * (bet.payout + 1), 36)
+        }
+        XCTAssertEqual(RouletteBet.group([17, 18]).payout, 17)
+        XCTAssertEqual(RouletteBet.group([1, 2, 3]).payout, 11)
+        XCTAssertEqual(RouletteBet.group([8, 9, 11, 12]).payout, 8)
+        XCTAssertEqual(RouletteBet.group([1, 2, 3, 4, 5, 6]).payout, 5)
+        XCTAssertFalse(RouletteBet.group([1, 5]).isValid, "不相邻的号码不能凑成一注")
+        XCTAssertFalse(RouletteBet.group([3, 4]).isValid, "3 和 4 不在同一行")
+    }
+
+    func test_groupBet_settles() {
+        let purse = Purse(100)
+        let g = RouletteGame(wallet: purse.wallet, rng: FixedRNG(values: [8]))
+        g.chip = 5
+        XCTAssertEqual(g.place(.group([8, 9, 11, 12])), .placed)
+        XCTAssertEqual(g.place(.group([20, 23])), .placed)
+        XCTAssertEqual(g.place(.group([1, 5])), .closed)
+        g.spin(); g.settle()
+        XCTAssertEqual(g.lastReturn, 45)
+        XCTAssertEqual(purse.coins, 100 - 10 + 45)
+    }
+
+    func test_doubleBets() {
+        let purse = Purse(100)
+        let g = RouletteGame(wallet: purse.wallet, rng: FixedRNG(values: [1]))
+        g.chip = 10
+        g.place(.red); g.place(.group([1, 2]))
+        XCTAssertTrue(g.doubleBets())
+        XCTAssertEqual(g.totalBet, 40)
+        XCTAssertFalse(g.doubleBets(), "再加倍就超过上限 50")
+        XCTAssertEqual(g.totalBet, 40)
+        g.undo(); g.undo()
+        XCTAssertEqual(g.totalBet, 20, "撤销两次回到加倍之前")
+    }
+
+    // MARK: v13 下注桌的几何
+    func test_layout_anchorOfEveryBetHitsThatBet() {
+        let L = RouletteLayout(size: CGSize(width: 382, height: 540))
+        var bets: [RouletteBet] = (0...36).map { .straight($0) } + RouletteGroups.all.map { .group($0) }
+        bets += [.red, .black, .odd, .even, .low, .high] + (1...3).map { .dozen($0) } + (1...3).map { .column($0) }
+        XCTAssertEqual(bets.count, 37 + 108 + 12)
+        for bet in bets {
+            guard let a = L.anchor(bet) else { XCTFail("没有位置：\(bet)"); continue }
+            XCTAssertEqual(L.bet(at: a), bet, "筹码放的位置点下去应该是这一注")
+            // 手指偏一点（三分之一个容差）还是这一注
+            let dx = L.cellW * RouletteLayout.lineTolerance / 3, dy = L.cellH * RouletteLayout.lineTolerance / 3
+            XCTAssertEqual(L.bet(at: CGPoint(x: a.x + dx, y: a.y + dy)), bet)
+        }
+    }
+
+    func test_layout_everyPointOnTableIsAValidBetOrNothing() {
+        let L = RouletteLayout(size: CGSize(width: 382, height: 540))
+        var seen = Set<RouletteBet>()
+        var y: CGFloat = -4
+        while y < 546 {
+            var x: CGFloat = -4
+            while x < 386 {
+                if let b = L.bet(at: CGPoint(x: x, y: y)) {
+                    XCTAssertTrue(b.isValid, "\(b) @ \(x),\(y)")
+                    seen.insert(b)
+                }
+                x += 1.5
+            }
+            y += 1.5
+        }
+        XCTAssertEqual(seen.count, 37 + 108 + 12, "每一注都点得到")
+        XCTAssertNil(L.bet(at: CGPoint(x: -1, y: 100)))
+        XCTAssertNil(L.bet(at: CGPoint(x: 20, y: 10)), "0 左边的空角不是注")
+    }
+
     // MARK: 真钱包：GameState 的金币
     func test_gameStateWallet_spendAndCredit() {
         let state = GameState.shared
