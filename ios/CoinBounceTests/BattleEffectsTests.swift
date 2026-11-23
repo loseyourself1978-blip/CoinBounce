@@ -78,7 +78,7 @@ final class BattleEffectsTests: XCTestCase {
         XCTAssertEqual(state.bossHealth, 1 - 2 * GameConstants.bossDamagePerHit, accuracy: 1e-9)
     }
 
-    func test_bossKO_thenRevives() {
+    func test_bossKO_thenRevives() throws {
         var t = Date()
         let kos = state.bossDefeatedCount
         let coinsBefore = state.availableCoins
@@ -93,10 +93,18 @@ final class BattleEffectsTests: XCTestCase {
         XCTAssertEqual(state.pendingRewardDrops, GameConstants.bossKOReward, "KO 奖励变成金币从顶部落下")
         state.coinCrossedBattle(now: t)
         XCTAssertEqual(state.bossDefeatedCount, kos + 1, "KO 期间不再计算")
-        let revived = expectation(description: "revive")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { revived.fulfill() }
-        wait(for: [revived], timeout: 5)
-        XCTAssertEqual(state.bossHealth, 1, "1.2 秒后满血复活")
+        // v12.2：K.O. 过场。不到 2 秒不能跳过；之后点一下，BOSS 立刻满血，过场接到「复位」那一段
+        let start = try XCTUnwrap(state.koSequenceStart, "K.O. 后开始过场")
+        XCTAssertFalse(state.skipKOSequence(now: start.addingTimeInterval(1.0)), "不到 2 秒不能跳过")
+        XCTAssertEqual(state.bossHealth, 0)
+        XCTAssertTrue(state.skipKOSequence(now: start.addingTimeInterval(2.5)))
+        XCTAssertEqual(state.bossHealth, 1, "跳过后满血复活")
+        XCTAssertFalse(state.skipKOSequence(now: start.addingTimeInterval(2.6)), "已经在复位，不能再跳")
+        XCTAssertEqual(state.pendingRewardDrops, GameConstants.bossKOReward, "跳过不影响 +50")
+        let ended = expectation(description: "sequence ends")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { ended.fulfill() }
+        wait(for: [ended], timeout: 5)
+        XCTAssertNil(state.koSequenceStart, "复位 1 秒后过场结束")
     }
 
     // MARK: 金币雨与飞字

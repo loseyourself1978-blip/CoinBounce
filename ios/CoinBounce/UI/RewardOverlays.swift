@@ -109,7 +109,7 @@ struct CardIcon: View {
         switch kind {
         case .coins: ZStack { ArtCoin(size: 36).offset(x: -8, y: 4); ArtCoin(size: 36).offset(x: 8, y: -4) }
         case .freeSpins: ReelsIcon(size: 56)
-        case .warriorStrike: WarriorFigure(size: 46)
+        case .warriorStrike: Image(RoyalAsset.kingAttack.rawValue).resizable().interpolation(.high).frame(width: 58, height: 58)
         }
     }
 }
@@ -119,7 +119,7 @@ extension RewardCard {
         switch kind {
         case .coins: return "+\(amount) Coins"
         case .freeSpins: return "\(amount) Free Spins"
-        case .warriorStrike: return "Warrior Strike"
+        case .warriorStrike: return "King's Strike"
         }
     }
 

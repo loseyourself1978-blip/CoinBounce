@@ -445,24 +445,24 @@
         }
       }
     },
-    "Warrior": {
+    "King": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "勇士"
+            "value": "国王"
           }
         }
       }
     },
-    "Warrior Strike": {
+    "King's Strike": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "勇士重击"
+            "value": "国王重击"
           }
         }
       }
@@ -533,13 +533,13 @@
         }
       }
     },
-    "Coins crossing the battle hit the BOSS. Knock it out and 50 coins fall from the top.": {
+    "Coins crossing the battle make the King hit the BOSS. Knock it out to free the Queen, and 50 coins fall from the top. Tap the battle to skip the celebration.": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "金币穿过战斗区会攻击 BOSS。打倒它，50 枚金币从顶部落下。"
+            "value": "金币穿过战斗区，国王就攻击 BOSS。打倒它救出王后，50 枚金币从顶部落下。点一下战斗区可以跳过庆祝动画。"
           }
         }
       }
@@ -870,6 +870,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
+          }
+        }
+      }
+    },
+    "Tap to skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击跳过"
           }
         }
       }
