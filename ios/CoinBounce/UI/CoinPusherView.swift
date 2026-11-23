@@ -79,6 +79,7 @@ struct CoinPusherView: View {
     @State private var bossShake: CGFloat = 0
     @State private var bossFlash = false
     @State private var kingAttacking = false
+    @State private var bossHurt = false
     @State private var kingAttackRun = 0
 
     var body: some View {
@@ -666,13 +667,14 @@ extension CoinPusherView {
         .allowsHitTesting(gameState.koSequenceStart != nil)
     }
 
-    /// 国王换成出剑的那张图，seconds 秒后换回来
+    /// 国王换成出剑的那张图、BOSS 换成挨打的那张图，seconds 秒后换回来
     private func showKingAttack(for seconds: Double) {
         kingAttackRun += 1
         let run = kingAttackRun
         kingAttacking = true
+        bossHurt = true
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
-            if kingAttackRun == run { kingAttacking = false }
+            if kingAttackRun == run { kingAttacking = false; bossHurt = false }
         }
     }
 
@@ -757,7 +759,7 @@ extension CoinPusherView {
     private func queenActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
         let pos: CGFloat = CGFloat(KOSequence.queenPosition(at: t))
         let nearKing: CGFloat = kingX(w: w) + figure * 0.8
-        let x: CGFloat = nearKing + (w * 0.925 - nearKing) * pos
+        let x: CGFloat = nearKing + (w * 0.93 - nearKing) * pos
         let running: Bool = KOSequence.phase(at: t) == .queenRuns
         let hop: CGFloat = running ? -CGFloat(abs(sin(t * 12))) * figure * 0.07 : 0
         let asset: RoyalAsset = KOSequence.queenIsHappy(at: t) ? .queenHappy : .queenCry
@@ -772,31 +774,38 @@ extension CoinPusherView {
         .position(x: x, y: h * 0.5)
     }
 
-    /// 右侧 BOSS
+    /// 右侧 BOSS（v12.4 换成图片）：平时站着，挨打的一瞬间换成后仰的图，K.O. 后坐在地上转圈，复位时站起来
     private func bossActor(w: CGFloat, h: CGFloat, figure: CGFloat, t: Double) -> some View {
         let down: Double = KOSequence.bossDown(at: t)
+        let asset: RoyalAsset = down > 0 ? .bossKO : ((bossHurt || PerfDebug.args.contains("-shotBossHurt")) ? .bossHurt : .bossIdle)
+        // 倒下的那一下往下一沉再弹回
+        let thud: CGFloat = down > 0 && down < 1 ? CGFloat(sin(down * .pi)) * figure * 0.06 : 0
         return VStack(spacing: 2) {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 Circle()
                     .fill(RadialGradient(colors: [.red.opacity(0.3), .clear], center: .center, startRadius: 0, endRadius: 20))
                     .frame(width: figure, height: figure)
-                BossFigure(size: figure * 0.85)
-                    .colorMultiply(bossFlash ? Color(red: 1, green: 0.45, blue: 0.45) : .white)
+                RoyalSprite(asset: asset, height: figure * 1.3)
+                    .colorMultiply(bossFlash ? Color(red: 1, green: 0.6, blue: 0.6) : .white)
+                    .offset(y: thud)
+            }
+            .frame(width: figure, height: figure)
+            .overlay {
                 // v11.8 重击：两道白色斩击划过 BOSS
                 if strikeSlash {
-                    ForEach(0..<2, id: \.self) { k in
-                        Capsule()
-                            .fill(LinearGradient(colors: [.white, .yellow, .white.opacity(0)], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: figure * 1.1, height: figure * 0.09)
-                            .rotationEffect(.degrees(k == 0 ? -35 : 35))
-                            .shadow(color: .orange, radius: 6)
+                    ZStack {
+                        ForEach(0..<2, id: \.self) { k in
+                            Capsule()
+                                .fill(LinearGradient(colors: [.white, .yellow, .white.opacity(0)], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: figure * 1.1, height: figure * 0.09)
+                                .rotationEffect(.degrees(k == 0 ? -35 : 35))
+                                .shadow(color: .orange, radius: 6)
+                        }
                     }
                     .transition(.scale(scale: 0.2).combined(with: .opacity))
                 }
             }
             .offset(x: bossShake)
-            .rotationEffect(.degrees(80 * down), anchor: .bottom)
-            .opacity(1 - 0.75 * down)
             Text("BOSS")
                 .font(.system(size: min(w * 0.030, h * 0.12), weight: .black))
                 .foregroundColor(.white)
@@ -804,7 +813,7 @@ extension CoinPusherView {
             HealthBar(progress: CGFloat(gameState.bossHealth), color: .red, width: w * 0.18)
                 .animation(.easeOut(duration: 0.25), value: gameState.bossHealth)
         }
-        .position(x: w * 0.815, y: h * 0.5)
+        .position(x: w * 0.775, y: h * 0.5)
     }
 
     /// 亲吻：大图、粉色光晕、代码画的爱心、「K.O.! +50」

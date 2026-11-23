@@ -497,68 +497,7 @@ struct SlotSymbolArt: View {
 }
 
 
-// MARK: - 角色（国王、王后是图片，见 Battle/RoyalArt.swift）
-
-struct BossFigure: View {
-    let size: CGFloat
-
-    var body: some View {
-        let line = max(1, size * 0.03)
-        ZStack {
-            // 角
-            ForEach([-1.0, 1.0], id: \.self) { side in
-                Path { p in
-                    p.move(to: CGPoint(x: size * (0.5 + 0.18 * side), y: size * 0.3))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.38 * side), y: size * 0.02))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.30 * side), y: size * 0.36))
-                    p.closeSubpath()
-                }
-                .fill(ArtPalette.goldLight)
-                .overlay(Path { p in
-                    p.move(to: CGPoint(x: size * (0.5 + 0.18 * side), y: size * 0.3))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.38 * side), y: size * 0.02))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.30 * side), y: size * 0.36))
-                    p.closeSubpath()
-                }.stroke(ArtPalette.outline, lineWidth: line))
-            }
-            // 脑袋
-            Circle()
-                .fill(RadialGradient(colors: [Color(red: 0.95, green: 0.45, blue: 0.75), ArtPalette.magenta, ArtPalette.magentaDeep],
-                                     center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.42))
-                .overlay(Circle().stroke(ArtPalette.outline, lineWidth: line))
-                .frame(width: size * 0.74, height: size * 0.7)
-                .offset(y: size * 0.1)
-            // 眼睛和眉毛
-            ForEach([-1.0, 1.0], id: \.self) { side in
-                ZStack {
-                    Circle().fill(Color.white).overlay(Circle().stroke(ArtPalette.outline, lineWidth: line * 0.8))
-                        .frame(width: size * 0.18, height: size * 0.18)
-                    Circle().fill(ArtPalette.outline).frame(width: size * 0.08, height: size * 0.08)
-                        .offset(x: -CGFloat(side) * size * 0.02)
-                    Capsule().fill(ArtPalette.outline)
-                        .frame(width: size * 0.2, height: size * 0.045)
-                        .rotationEffect(.degrees(side * 20))
-                        .offset(y: -size * 0.11)
-                }
-                .offset(x: CGFloat(side) * size * 0.14, y: size * 0.04)
-            }
-            // 嘴和獠牙
-            Capsule().fill(ArtPalette.outline).frame(width: size * 0.34, height: size * 0.1).offset(y: size * 0.27)
-            ForEach([-1.0, 1.0], id: \.self) { side in
-                Path { p in
-                    p.move(to: CGPoint(x: size * (0.5 + 0.09 * side), y: size * 0.73))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.13 * side), y: size * 0.84))
-                    p.addLine(to: CGPoint(x: size * (0.5 + 0.05 * side), y: size * 0.74))
-                }
-                .fill(Color.white)
-            }
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 // MARK: - 小图标
-
 /// SPIN 按钮上的三格转轴图标
 struct ReelsIcon: View {
     let size: CGFloat

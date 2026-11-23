@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - v12.2 国王 / 王后 / 亲吻
+// MARK: - v12.2 国王 / 王后 / 亲吻；v12.4 BOSS
 /// 素材在 Assets.xcassets（生成脚本 tools/art/）。国王朝右、王后朝左；1024 高的画布里脚在 y≈975 / 970，
 /// 所以按高度缩放、底边对齐；亲吻图是 3:2
 enum RoyalAsset: String, CaseIterable {
@@ -10,6 +10,10 @@ enum RoyalAsset: String, CaseIterable {
     case queenCry = "QueenCry"
     case queenHappy = "QueenHappy"
     case kiss = "KingQueenKiss"
+    /// v12.4 BOSS（朝左，和国王同一个比例：按同样的高度缩放、底边对齐）。挨打时上半身后仰，K.O. 时坐在地上转圈
+    case bossIdle = "BossIdle"
+    case bossHurt = "BossHurt"
+    case bossKO = "BossKO"
 
     /// 宽 / 高
     var aspect: CGFloat { self == .kiss ? 1.5 : 1 }
@@ -17,6 +21,7 @@ enum RoyalAsset: String, CaseIterable {
     var footMargin: CGFloat {
         switch self {
         case .queenCry, .queenHappy: return 54.0 / 1024
+        case .bossKO: return 46.0 / 1024
         default: return 49.0 / 1024
         }
     }
