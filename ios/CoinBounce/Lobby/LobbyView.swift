@@ -16,7 +16,7 @@ struct LobbyView: View {
             let w = geo.size.width, h = geo.size.height
             let side = w * 0.045 + 10   // 两侧立柱里面再留一点
             let doorW = min((w - side * 2 - 8 * 2) / 3, 150)
-            let doorH = doorW * 1.7
+            let doorH = min(doorW * 1.95, h * 0.3)
             let bunnyH = min(h * 0.42, 380)
             ZStack {
                 LobbyBackdrop().ignoresSafeArea()
@@ -25,7 +25,7 @@ struct LobbyView: View {
                 LightPool(strength: 0.16).frame(width: w * 1.1, height: h * 0.22).position(x: w / 2, y: h * 0.16)
                 LightPool(strength: 0.14).frame(width: w * 0.9, height: h * 0.2).position(x: w / 2, y: h * 0.86)
                 VStack(spacing: 0) {
-                    topBar
+                    topBar(width: w - side * 2)
                         .padding(.horizontal, side)
                         .padding(.top, 6)
                     LobbySign(glow: glow)
@@ -50,7 +50,7 @@ struct LobbyView: View {
                     Spacer(minLength: 8)
                     // 兔女郎迎宾：点她换一句话、换一个动作
                     HStack(alignment: .bottom, spacing: 0) {
-                        BunnyHostess(line: line, height: bunnyH)
+                        BunnyHostess(line: line, height: bunnyH, groundShadow: true)
                             .contentShape(Rectangle())
                             .onTapGesture { greet() }
                             .accessibilityIdentifier("lobbyBunny")
@@ -84,6 +84,10 @@ struct LobbyView: View {
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
+            // -lobbyBunnyCycle：每 0.6 秒换一句话、换一个动作（逐帧检查换动作时有没有重影）
+            if args.contains("-lobbyBunnyCycle") {
+                Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in greet() }
+            }
             if let i = args.firstIndex(of: "-debugEnterPachinkoAfter"), i + 1 < args.count, let t = Double(args[i + 1]) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + t) { router.open(.pachinko) }
             }
@@ -91,9 +95,11 @@ struct LobbyView: View {
         }
     }
 
-    private var topBar: some View {
-        HStack(spacing: 8) {
-            CoinBalanceView(coins: gameState.availableCoins, height: 30, width: 150)
+    /// v12.6：余额框的宽度按屏幕算（SE 上固定 150 会把顶栏撑出屏幕，整个大厅跟着偏到右边）
+    private func topBar(width: CGFloat) -> some View {
+        let fixed: CGFloat = (ads.adsEnabled ? AdHUDButton.size.width + 8 : 0) + 30 + 30 + 16
+        return HStack(spacing: 8) {
+            CoinBalanceView(coins: gameState.availableCoins, height: 30, width: max(90, min(150, width - fixed)))
             Spacer(minLength: 0)
             if ads.adsEnabled {
                 AdHUDButton(ads: ads, gameState: gameState, showUnavailableHint: $showAdUnavailableHint)
@@ -239,7 +245,7 @@ struct LobbyDoor: View {
                         .stroke(ArtPalette.outline.opacity(0.7), lineWidth: 1)
                         .padding(5)
                     iconView
-                        .frame(width: width * 0.62, height: width * 0.62)
+                        .frame(width: width * 0.68, height: width * (icon == .pachinko ? 0.86 : 0.68))
                         .offset(y: height * 0.04)
                         .saturation(locked ? 0.2 : 1)
                         .opacity(locked ? 0.6 : 1)
@@ -285,18 +291,67 @@ struct LobbyDoor: View {
             RouletteWheelFace()
                 .overlay(Circle().stroke(ArtPalette.goldLight, lineWidth: 2))
         case .pachinko:
+            // v12.6：小弹子机——拱形台面、钉子、液晶屋檐、钢珠，右边一根红头弹簧拉杆
             Canvas { ctx, size in
-                let rows = 4
-                for r in 0..<rows {
-                    let cols = r.isMultiple(of: 2) ? 4 : 3
-                    for c in 0..<cols {
-                        let x = size.width * (CGFloat(c) + (r.isMultiple(of: 2) ? 0.5 : 1.0)) / 4
-                        let y = size.height * (CGFloat(r) + 0.6) / CGFloat(rows + 1)
-                        ctx.fill(Path(ellipseIn: CGRect(x: x - 3, y: y - 3, width: 6, height: 6)), with: .color(.white))
-                    }
+                let w = size.width, h = size.height
+                let board = CGRect(x: w * 0.08, y: h * 0.02, width: w * 0.68, height: h * 0.96)
+                var arch = Path()
+                let r = board.width / 2
+                arch.move(to: CGPoint(x: board.minX, y: board.maxY))
+                arch.addLine(to: CGPoint(x: board.minX, y: board.minY + r))
+                arch.addArc(center: CGPoint(x: board.midX, y: board.minY + r), radius: r, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+                arch.addLine(to: CGPoint(x: board.maxX, y: board.maxY))
+                arch.closeSubpath()
+                ctx.fill(arch, with: .linearGradient(Gradient(colors: [Color(red: 0.24, green: 0.16, blue: 0.6), Color(red: 0.05, green: 0.04, blue: 0.2)]),
+                                                     startPoint: CGPoint(x: 0, y: board.minY), endPoint: CGPoint(x: 0, y: board.maxY)))
+                ctx.stroke(arch, with: .linearGradient(Gradient(colors: [.white, Color(white: 0.55)]), startPoint: .zero, endPoint: CGPoint(x: w, y: h)), lineWidth: max(2, w * 0.035))
+                // 液晶屋檐
+                let lcd = CGRect(x: board.midX - board.width * 0.24, y: board.minY + board.height * 0.3, width: board.width * 0.48, height: board.height * 0.2)
+                var roof = Path()
+                roof.move(to: CGPoint(x: lcd.minX - 3, y: lcd.minY))
+                roof.addLine(to: CGPoint(x: lcd.midX, y: lcd.minY - lcd.height * 0.45))
+                roof.addLine(to: CGPoint(x: lcd.maxX + 3, y: lcd.minY))
+                let pink = Color(red: 1, green: 0.3, blue: 0.7)
+                ctx.fill(Path(roundedRect: lcd, cornerRadius: 2), with: .color(Color(red: 0.06, green: 0.03, blue: 0.14)))
+                ctx.stroke(Path(roundedRect: lcd, cornerRadius: 2), with: .color(pink), lineWidth: 1.6)
+                ctx.stroke(roof, with: .color(pink), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                for i in 0..<3 {
+                    let c = CGRect(x: lcd.minX + lcd.width * (0.08 + 0.3 * CGFloat(i)), y: lcd.minY + lcd.height * 0.22, width: lcd.width * 0.24, height: lcd.height * 0.56)
+                    ctx.fill(Path(roundedRect: c, cornerRadius: 1), with: .color(i == 1 ? ArtPalette.goldLight : ArtPalette.gold))
                 }
-                let b = CGRect(x: size.width * 0.42, y: size.height * 0.78, width: size.width * 0.16, height: size.width * 0.16)
-                ctx.fill(Path(ellipseIn: b), with: .color(Color(red: 0.8, green: 0.85, blue: 0.95)))
+                // 钉子
+                let pin = max(1.3, w * 0.022)
+                func nail(_ x: CGFloat, _ y: CGFloat) {
+                    ctx.fill(Path(ellipseIn: CGRect(x: board.minX + board.width * x - pin, y: board.minY + board.height * y - pin, width: 2 * pin, height: 2 * pin)), with: .color(ArtPalette.goldLight))
+                }
+                for (x, y) in [(0.36, 0.1), (0.64, 0.1), (0.22, 0.2), (0.5, 0.18), (0.78, 0.2), (0.13, 0.36), (0.87, 0.36), (0.13, 0.5), (0.87, 0.5),
+                               (0.25, 0.62), (0.5, 0.6), (0.75, 0.62), (0.14, 0.74), (0.38, 0.74), (0.62, 0.74), (0.86, 0.74), (0.26, 0.86), (0.74, 0.86)] as [(CGFloat, CGFloat)] {
+                    nail(x, y)
+                }
+                // 始动口
+                let cup = CGRect(x: board.midX - w * 0.05, y: board.minY + board.height * 0.83, width: w * 0.1, height: w * 0.08)
+                ctx.fill(Path(roundedRect: cup, cornerRadius: 2), with: .color(Color(red: 0.3, green: 0.95, blue: 1)))
+                // 钢珠
+                let rb = max(2.6, w * 0.045)
+                for (x, y) in [(0.3, 0.27), (0.7, 0.44), (0.5, 0.68)] as [(CGFloat, CGFloat)] {
+                    let c = CGPoint(x: board.minX + board.width * x, y: board.minY + board.height * y)
+                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - rb, y: c.y - rb, width: 2 * rb, height: 2 * rb)),
+                             with: .radialGradient(Gradient(colors: [.white, Color(white: 0.75), Color(white: 0.35)]), center: CGPoint(x: c.x - rb * 0.3, y: c.y - rb * 0.35), startRadius: 0, endRadius: rb * 1.3))
+                }
+                // 弹簧拉杆
+                let px = w * 0.88
+                var spring = Path()
+                let top = h * 0.42, bottomY = h * 0.8
+                spring.move(to: CGPoint(x: px, y: top))
+                let turns = 7
+                for i in 1...turns {
+                    spring.addLine(to: CGPoint(x: px + (i.isMultiple(of: 2) ? -1 : 1) * w * 0.045, y: top + (bottomY - top) * CGFloat(i) / CGFloat(turns)))
+                }
+                ctx.stroke(spring, with: .color(Color(white: 0.85)), style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                ctx.fill(Path(ellipseIn: CGRect(x: px - rb, y: top - 2 * rb - 1, width: 2 * rb, height: 2 * rb)), with: .color(Color(white: 0.92)))
+                let knob = w * 0.075
+                ctx.fill(Path(ellipseIn: CGRect(x: px - knob, y: bottomY, width: 2 * knob, height: 2 * knob)),
+                         with: .radialGradient(Gradient(colors: [Color(red: 1, green: 0.5, blue: 0.5), Color(red: 0.85, green: 0.08, blue: 0.2)]), center: CGPoint(x: px - knob * 0.3, y: bottomY + knob * 0.6), startRadius: 0, endRadius: knob * 1.4))
             }
         }
     }

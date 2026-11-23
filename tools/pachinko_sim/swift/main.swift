@@ -17,8 +17,10 @@ case "rates":
     let t0 = Date()
     for (w, at) in [(false, false), (true, false), (false, true)] {
         let r = PachinkoSimulator.pocketRates(power: pw, balls: n, wings: w, attacker: at, seed: seed)
-        print("pw \(pw) w\(w ? 1 : 0) a\(at ? 1 : 0) | foul \(f(r.foul)) start \(f(r.start)) tul \(f(r.tulip)) side \(f(r.side)) atk \(f(r.attacker)) warp \(f(r.warp)) stuck \(r.stuck) | t_mean \(f(r.meanFlight)) t_max \(f(r.maxFlight))")
+        print("pw \(pw) w\(w ? 1 : 0) a\(at ? 1 : 0) | foul \(f(r.foul)) start \(f(r.start)) tul \(f(r.tulip)) side \(f(r.side)) atk \(f(r.attacker)) cup \(f(r.catcher)) warp \(f(r.warp)) stuck \(r.stuck) | t_mean \(f(r.meanFlight)) t_max \(f(r.maxFlight))")
     }
+    let sh = PachinkoSimulator.measuredRates(power: pw, ballsEach: n, seed: seed).shower
+    print("shower start \(f(sh[0])) wings \(f(sh[1])) tul \(f(sh[2])) side \(f(sh[3])) atk \(f(sh[4])) cup \(f(sh[5]))")
     print("secs \(Date().timeIntervalSince(t0))")
 case "coupled":
     let n = Int(arg(2, 1_000_000)), seeds = Int(arg(3, 10))
@@ -27,7 +29,7 @@ case "coupled":
     for s in 1...seeds {
         let st = PachinkoSimulator.runCoupled(balls: n, seed: UInt64(s))
         tot.add(st)
-        print("seed \(s) RTP \(f(st.returnRate)) start \(f(Double(st.payStart) / Double(st.fired))) tul \(f(Double(st.payTulip) / Double(st.fired))) side \(f(Double(st.paySide) / Double(st.fired))) atk \(f(Double(st.payAttacker) / Double(st.fired))) jp/100 \(f(st.jackpotsPer100)) first/100 \(f(st.firstHitsPer100)) stuck \(st.stuck) maxFlight \(f(st.maxFlight)) maxInFlight \(st.maxInFlight)")
+        print("seed \(s) RTP \(f(st.returnRate)) start \(f(Double(st.payStart) / Double(st.fired))) tul \(f(Double(st.payTulip) / Double(st.fired))) side \(f(Double(st.paySide) / Double(st.fired))) atk \(f(Double(st.payAttacker) / Double(st.fired))) cup \(f(Double(st.payCatcher) / Double(st.fired))) bonus/ball \(f(Double(st.bonusBalls) / Double(st.fired))) jp/100 \(f(st.jackpotsPer100)) first/100 \(f(st.firstHitsPer100)) stuck \(st.stuck) maxFlight \(f(st.maxFlight)) maxInFlight \(st.maxInFlight)")
         fflush(stdout)
     }
     print("POOLED balls \(tot.fired) RTP \(f(tot.returnRate)) jp/100 \(f(tot.jackpotsPer100)) first/100 \(f(tot.firstHitsPer100)) over \(f(Double(tot.startOverflow) / Double(max(tot.startIn, 1)))) reach/spin \(f(Double(tot.reaches) / Double(max(tot.spins, 1)))) secs \(Int(Date().timeIntervalSince(t0)))")

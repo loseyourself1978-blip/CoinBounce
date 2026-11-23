@@ -135,4 +135,22 @@ final class LobbyTests: XCTestCase {
         XCTAssertNotEqual(BunnyScript.greeting().id, BunnyScript.greeting().id, "每次都是新的一句（动作重播）")
         for pose in BunnyScript.greetingPoses { XCTAssertNotNil(pose.image, "\(pose) 的图在") }
     }
+
+    /// v12.6：兔女郎的摇摆由时钟算出来；幅度有上限，换动作不靠淡入淡出
+    func test_bunnyMotion_isBoundedAndPeriodic() {
+        for pose in BunnyPose.allCases {
+            var maxLift: CGFloat = 0, maxTilt = 0.0
+            for i in 0..<600 {
+                let m = BunnyHostess.motion(pose, height: 300, time: Double(i) / 60)
+                XCTAssertLessThanOrEqual(m.lift, 0.0001, "只往上抬")
+                maxLift = max(maxLift, -m.lift)
+                maxTilt = max(maxTilt, abs(m.tilt))
+            }
+            XCTAssertLessThanOrEqual(maxLift, 300 * 0.06 + 0.001)
+            XCTAssertLessThanOrEqual(maxTilt, 2.21)
+            XCTAssertGreaterThan(maxLift, 1, "\(pose) 在动")
+        }
+        let jump = BunnyHostess.motion(.jump, height: 300, time: 0.17).lift
+        XCTAssertLessThan(jump, -15, "跳的动作抬得最高")
+    }
 }

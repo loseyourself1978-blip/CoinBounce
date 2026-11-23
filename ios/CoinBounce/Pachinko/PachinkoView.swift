@@ -17,7 +17,7 @@ struct PachinkoView: View {
     @ObservedObject private var ads = AdsManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var scene3D: Pachinko3DScene?
-    @State private var lcdRect: CGRect = .zero
+    @State private var rects = Pachinko3DScene.Rects()
     @State private var floaters: [Floater] = []
     @State private var showAdUnavailableHint = false
     @State private var showSettings = false
@@ -27,41 +27,57 @@ struct PachinkoView: View {
     @State private var flash = false
     @State private var coinFlyToken = 0
     @State private var firstFrame = false
+    @State private var machineSize: CGSize = .zero
+    @State private var showerBanner = false
+    @State private var lampPulse = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     struct Floater: Identifiable { let id = UUID(); let point: CGPoint; let amount: Int }
 
-    /// 机器（含外框）的宽高比：相机按这个比例把整台机器放进 3D 视图
-    static let cabinetAspect: CGFloat = 0.8
+    static let topBarHeight: CGFloat = 36
+
+    /// 机器在屏幕上占多大（content = 去掉安全区以后的画面）。大厅预热时也用它，快照和进场后的视图才一样大
+    static func machineSize(in content: CGSize) -> CGSize {
+        let availH = max(200, content.height - topBarHeight - 12)
+        let layout = Pachinko3DScene.Layout.fitting(CGSize(width: content.width, height: availH))
+        return CGSize(width: content.width, height: min(availH, content.width / layout.aspect))
+    }
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
-            let pad: CGFloat = 10
-            let controlsH: CGFloat = 112
-            let cabH = max(200, min(h - 36 - controlsH - 22, w / Self.cabinetAspect))
+            let size = Self.machineSize(in: geo.size)
             ZStack {
                 RouletteBackdrop().ignoresSafeArea()
-                LightPool(strength: 0.14).frame(width: w * 1.1, height: cabH).position(x: w / 2, y: 40 + cabH / 2)
-                let spare = max(0, h - 36 - controlsH - 22 - cabH)
-                let bunnyH = min(190, max(150, spare + 70))
-                VStack(spacing: 6) {
-                    topBar.padding(.horizontal, pad).padding(.top, 4)
-                    cabinet(width: w, height: cabH)
+                LightPool(strength: 0.14).frame(width: w * 1.1, height: size.height * 0.7).position(x: w / 2, y: 40 + size.height * 0.4)
+                VStack(spacing: 4) {
+                    topBar.padding(.horizontal, 10).padding(.top, 4)
+                    cabinet(width: size.width, height: size.height)
                     Spacer(minLength: 0)
-                    controls
-                        .frame(height: controlsH)
-                        .padding(.horizontal, pad + 4)
-                        .padding(.bottom, 4)
                 }
-                // 兔女郎：站在操作区上方左侧，气泡朝右上（大屏在机器下面的空位里，SE 压在机器左下角）
+                // 兔女郎：站在面板左边，气泡朝右上
+                let apron = shownRects.apron
+                let bunnyH = apron.height > 10 ? min(250, apron.height * 1.18) : 170
                 BunnyHostess(line: line, height: bunnyH, bubbleOnRight: true, bubbleWidth: 150)
                     .frame(width: bunnyH * 1.4, height: bunnyH, alignment: .bottomLeading)
-                    .position(x: 4 + bunnyH * 0.7, y: h - controlsH - 6 - bunnyH / 2)
+                    .position(x: 2 + bunnyH * 0.7, y: min(h - bunnyH / 2 - 2, Self.topBarHeight + 8 + size.height - bunnyH / 2 - 6))
                     .allowsHitTesting(false)
                     .accessibilityIdentifier("pachinkoBunny")
                 if flash && !reduceMotion {
                     ArtPalette.goldLight.opacity(0.55).ignoresSafeArea().allowsHitTesting(false)
+                }
+                if showerBanner {
+                    Text("GOLDEN SHOWER!")
+                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
+                        .shadow(color: ArtPalette.gold.opacity(0.9), radius: 12)
+                        .lineLimit(1).minimumScaleFactor(0.5)
+                        .frame(maxWidth: w - 40)
+                        .position(x: w / 2, y: Self.topBarHeight + size.height * 0.2)
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
+                        .allowsHitTesting(false)
+                        .accessibilityIdentifier("pachinkoShower")
                 }
                 if let text = noticeText {
                     Text(text)
@@ -72,8 +88,9 @@ struct PachinkoView: View {
                         .background(Capsule().fill(Color.black.opacity(0.82)))
                         .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.8), lineWidth: 1))
                         .frame(maxWidth: w - 40)
-                        .position(x: w / 2, y: 40 + cabH * 0.1)
+                        .position(x: w / 2, y: Self.topBarHeight + size.height * 0.2)
                         .transition(.opacity)
+                        .allowsHitTesting(false)
                         .accessibilityIdentifier("pachinkoNotice")
                 }
                 if showAdUnavailableHint {
@@ -88,6 +105,7 @@ struct PachinkoView: View {
                 }
             }
             .onAppear {
+                machineSize = size
                 // 有预热快照时，转场先用快照（便宜），0.3 秒后再建 3D 视图：
                 // 建 SCNView / Metal 层会卡主线程一下，放在转场里会让大厅先淡出、中间露出几帧黑底
                 if Pachinko3DScene.placeholder != nil {
@@ -109,16 +127,36 @@ struct PachinkoView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: game.notice)
         .animation(.easeInOut(duration: 0.3), value: dimmed)
+        .animation(.spring(response: 0.35, dampingFraction: 0.6), value: showerBanner)
         .onReceive(game.cues) { handle($0) }
+    }
+
+    /// 3D 视图报上来之前，先用大厅预热时量好的位置
+    private var shownRects: Pachinko3DScene.Rects {
+        if rects.lcd.width > 10 { return rects }
+        if let r = Pachinko3DScene.placeholderRects, let img = Pachinko3DScene.placeholder,
+           img.size.height > 0, machineSize.height > 0,
+           abs(img.size.width / img.size.height - machineSize.width / machineSize.height) < 0.01 { return r }   // 快照的 size 是像素，比比例
+        return rects
     }
 
     // MARK: 事件 → 兔女郎、声音、触感、特效
     private func handle(_ cue: PachinkoCue) {
         let audio = AudioManager.shared, haptic = HapticManager.shared
         switch cue {
-        case .launched: audio.play(.pkLaunch)
+        case .launched: audio.play(.pkLaunch); haptic.coinFall()
         case .startHit: audio.play(.pkStart); haptic.coinFall()
         case .tulipOpened, .smallWin: audio.play(.winSmall)
+        case .catcherSaved: audio.play(.winSmall); haptic.coinFall()
+        case .lampLit: audio.play(.pkCount); lampPulse += 1
+        case .showerStarted:
+            audio.play(.winBig)
+            audio.play(.cheer)
+            haptic.bigWin()
+            lampPulse += 1
+            scene3D?.flashBulbs(seconds: 3)
+            showerBanner = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { showerBanner = false }
         case .spinStarted: audio.play(.slotSpin); dimmed = false
         case .reelStopped: audio.play(.slotStop); haptic.slotColumnStop()
         case .reach(let r):
@@ -142,7 +180,7 @@ struct PachinkoView: View {
         // 进口、郁金香这种高频小事不打断正在说的话
         let minor: Bool = {
             switch cue {
-            case .startHit, .tulipOpened, .foul, .tooHard, .trayEmpty, .idle: return true
+            case .startHit, .tulipOpened, .foul, .tooHard, .trayEmpty, .idle, .catcherSaved, .lampLit: return true
             default: return false
             }
         }()
@@ -174,8 +212,8 @@ struct PachinkoView: View {
         game.reduceMotion = reduceMotion
         // 等 onReceive 订阅上了再打招呼
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { game.entered() }
-        let s = Pachinko3DScene(game: game)
-        s.onLCDRect = { r in lcdRect = r }
+        let s = Pachinko3DScene(game: game, layout: .fitting(machineSize))
+        s.onRects = { r in rects = r }
         s.onFirstFrame = { firstFrame = true }
         s.onPayout = { pt, amount in
             let f = Floater(point: pt, amount: amount)
@@ -196,9 +234,34 @@ struct PachinkoView: View {
             // 录屏 / 截图：-pachinkoJackpot 塞一张 ROYAL 中奖票（普通リーチ 7 秒）；-pachinkoReach 塞一张没中的超级リーチ
             if args.contains("-pachinkoJackpot") { game.debugInsertTicket(PachinkoTicket(hit: 0, kind: 20, show: 800)) }
             if args.contains("-pachinkoReach") { game.debugInsertTicket(PachinkoTicket(hit: 60000, kind: 0, show: 5)) }
+            // -pachinkoLamps N：先点亮 N 盏水果灯（6 = 再进一球就下金珠雨）
+            if let i = args.firstIndex(of: "-pachinkoLamps"), i + 1 < args.count, let n = Int(args[i + 1]) { game.debugLightLamps(n) }
+        }
+        // -pachinkoPull 0.65：拉杆停在这个位置不放（截图用）；-pachinkoShot 0.65：每 2 秒手动拉一次
+        if let i = args.firstIndex(of: "-pachinkoPull"), i + 1 < args.count, let v = Double(args[i + 1]) {
+            if gameState.availableCoins < 50 { gameState.addCoins(50, source: .other) }
+            game.buy()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { game.pull = v }
+        }
+        if let i = args.firstIndex(of: "-pachinkoShot"), i + 1 < args.count, let v = Double(args[i + 1]) {
+            if gameState.availableCoins < 50 { gameState.addCoins(50, source: .other) }
+            debugShoot(v)
         }
         #endif
     }
+
+    #if DEBUG
+    private func debugShoot(_ v: Double) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            guard scene3D != nil else { return }
+            game.pull = v
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                game.releasePlunger()
+                debugShoot(v)
+            }
+        }
+    }
+    #endif
 
     /// 离开（回大厅、切后台）：在飞的珠子结算，存档
     private func leave() {
@@ -230,12 +293,13 @@ struct PachinkoView: View {
             }
             SettingsButton { showSettings = true }
         }
-        .frame(height: 36)
+        .frame(height: Self.topBarHeight)
     }
 
-    // MARK: 3D 机器 + 液晶数字盘 + 飘字
+    // MARK: 3D 机器 + 叠在上面的液晶数字盘、水果灯、面板按钮、拉杆
     private func cabinet(width w: CGFloat, height h: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
+        let r = shownRects
+        return ZStack(alignment: .topLeading) {
             // 第一帧出来之前：大厅预热时拍的机器快照（第一次进来不会看到空白）
             if !firstFrame, let img = Pachinko3DScene.placeholder {
                 Image(uiImage: img).resizable().aspectRatio(contentMode: .fit)
@@ -245,13 +309,20 @@ struct PachinkoView: View {
             if let scene3D {
                 Pachinko3DView(scene3D: scene3D)
             }
-            let lcd = lcdRect.width > 10 ? lcdRect : placeholderLCD(w: w, h: h)
-            if lcd.width > 10 {
+            if r.lcd.width > 10 {
                 PachinkoReelView(machine: game.machine, spinStartedAt: game.spinStartedAt)
-                    .frame(width: lcd.width - 6, height: lcd.height - 6)
+                    .frame(width: r.lcd.width - 6, height: r.lcd.height - 6)
                     .rotation3DEffect(.radians(Double(-Pachinko3DScene.tilt) * 0.9), axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.35)
-                    .position(x: lcd.midX, y: lcd.midY)
+                    .position(x: r.lcd.midX, y: r.lcd.midY)
                     .allowsHitTesting(false)
+                PachinkoMarquee(lamps: game.features.lamps, pulse: lampPulse)
+                    .frame(width: r.marquee.width, height: r.marquee.height)
+                    .position(x: r.marquee.midX, y: r.marquee.midY)
+                    .allowsHitTesting(false)
+                controls(in: r.apron)
+                    .frame(width: r.apron.width, height: r.apron.height)
+                    .position(x: r.apron.midX, y: r.apron.midY)
+                plungerArea(r.plunger)
             }
             ForEach(floaters) { f in
                 FloatingPayout(amount: f.amount)
@@ -264,8 +335,8 @@ struct PachinkoView: View {
                     .fill(Color.black.opacity(0.4))
                     .mask(
                         Rectangle()
-                            .overlay(RoundedRectangle(cornerRadius: 6).frame(width: lcdRect.width + 8, height: lcdRect.height + 8)
-                                .position(x: lcdRect.midX, y: lcdRect.midY).blendMode(.destinationOut))
+                            .overlay(RoundedRectangle(cornerRadius: 6).frame(width: r.lcd.width + 8, height: r.lcd.height + 8)
+                                .position(x: r.lcd.midX, y: r.lcd.midY).blendMode(.destinationOut))
                             .compositingGroup()
                     )
                     .allowsHitTesting(false)
@@ -281,25 +352,18 @@ struct PachinkoView: View {
         .accessibilityIdentifier("pachinkoBoard")
     }
 
-    /// 3D 视图建好之前：按快照里液晶的位置摆数字盘（快照按 aspectFit 放在 w × h 里）
-    private func placeholderLCD(w: CGFloat, h: CGFloat) -> CGRect {
-        guard let img = Pachinko3DScene.placeholder, let r = Pachinko3DScene.placeholderLCD, img.size.height > 0 else { return .zero }
-        let scale = min(w / img.size.width, h / img.size.height)
-        let iw = img.size.width * scale, ih = img.size.height * scale
-        let ox = (w - iw) / 2, oy = (h - ih) / 2
-        return CGRect(x: ox + r.minX * iw, y: oy + r.minY * ih, width: r.width * iw, height: r.height * ih)
-    }
-
-    // MARK: 上皿、买珠、AUTO、手柄（金色亮面，和轮盘同一套）
-    private var controls: some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
+    // MARK: 面板：上皿、AUTO、买珠、力度表（左边留给兔女郎）
+    private func controls(in apron: CGRect) -> some View {
+        let bunnyW = min(84, apron.width * 0.25)
+        let chipW = max(38, min(50, (apron.width - bunnyW - 30 - 3 * 6) / 4))
+        return HStack(alignment: .center, spacing: 6) {
+            Spacer(minLength: bunnyW)
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 6) {
                     trayBadge
                     autoButton
-                    Spacer(minLength: 0)
                 }
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(PachinkoConstants.chips, id: \.self) { v in
                         Button {
                             AudioManager.shared.play(.coinDrop)
@@ -307,9 +371,9 @@ struct PachinkoView: View {
                             game.buy()
                         } label: {
                             Text("+\(v)")
-                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundColor(Color(red: 0.35, green: 0.18, blue: 0.0))
-                                .frame(width: 50, height: 40)
+                                .frame(width: chipW, height: 38)
                                 .background(GoldGloss(shape: Capsule()))
                                 .overlay(Capsule().stroke(game.chip == v ? Color.white : ArtPalette.goldDeep, lineWidth: game.chip == v ? 2.5 : 1))
                                 .shadow(color: .black.opacity(0.45), radius: 3, y: 2)
@@ -320,25 +384,62 @@ struct PachinkoView: View {
                 }
             }
             Spacer(minLength: 0)
-            PachinkoHandle(power: $game.power, isDown: $game.handleDown, size: 100)
-                .accessibilityIdentifier("pachinkoHandle")
+            PachinkoPowerGauge(pull: game.pull, lastPull: PachinkoConstants.pull(forPower: game.power))
+                .frame(width: 16, height: min(118, apron.height * 0.74))
+                .accessibilityIdentifier("pachinkoGauge")
         }
+        .padding(.trailing, 4)
+    }
+
+    /// 拉杆的触摸区：按住往下拖，松手发射。头一次进来有「往下拉」的提示
+    private func plungerArea(_ r: CGRect) -> some View {
+        ZStack(alignment: .top) {
+            Color.clear
+            if game.stats.ballsFired == 0 && game.pull == 0 && !game.auto {
+                PullHint().offset(x: -r.width * 0.42, y: r.height * 0.18)
+            }
+        }
+        .frame(width: r.width, height: r.height)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    if game.auto { game.auto = false }
+                    let p = min(1, max(0, Double(v.translation.height) / Double(max(44, r.height * 0.3))))
+                    // 过了推荐区的两条边各震一下
+                    let z = PachinkoConstants.pullSweet
+                    if (game.pull < z.lowerBound) != (p < z.lowerBound) || (game.pull > z.upperBound) != (p > z.upperBound) {
+                        HapticManager.shared.slotColumnStop()
+                    }
+                    game.pull = p
+                }
+                .onEnded { _ in game.releasePlunger() }
+        )
+        .position(x: r.midX, y: r.midY)
+        .accessibilityElement()
+        .accessibilityIdentifier("pachinkoPlunger")
+        .accessibilityLabel(Text("Spring launcher"))
+        .accessibilityHint(Text("Drag down and release to shoot a ball"))
+        .accessibilityAction { game.pull = PachinkoConstants.defaultPull; game.releasePlunger() }
     }
 
     private var trayBadge: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             Circle()
                 .fill(RadialGradient(colors: [.white, Color(white: 0.55), Color(white: 0.25)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 9))
-                .frame(width: 15, height: 15)
+                .frame(width: 14, height: 14)
             Text("Tray")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(.white.opacity(0.75))
+                .lineLimit(1)
             Text("\(game.tray)/\(PachinkoConstants.trayCapacity)")
-                .font(.system(size: 15, weight: .black, design: .rounded))
+                .font(.system(size: 14, weight: .black, design: .rounded))
                 .monospacedDigit()
                 .foregroundColor(ArtPalette.goldLight)
+                .lineLimit(1)
         }
-        .padding(.horizontal, 10).frame(height: 32)
+        .fixedSize()
+        .padding(.horizontal, 9).frame(height: 32)
         .background(Capsule().fill(Color.black.opacity(0.6)))
         .overlay(Capsule().stroke(ArtPalette.gold.opacity(0.7), lineWidth: 1))
         .accessibilityIdentifier("pachinkoTray")
@@ -349,14 +450,17 @@ struct PachinkoView: View {
             AudioManager.shared.play(.buttonTap)
             game.auto.toggle()
             if game.auto {
-                game.resetPower()
+                // 没手动打过（或上一发力度不在推荐区）就回到推荐区中间
+                if !PachinkoConstants.sweetZone.contains(game.power) { game.resetPower() }
                 if game.tray == 0 { game.buy() }
             }
         } label: {
             Text("AUTO")
                 .font(.system(size: 13, weight: .black, design: .rounded))
                 .foregroundColor(game.auto ? Color(red: 0.35, green: 0.18, blue: 0.0) : ArtPalette.goldLight)
-                .padding(.horizontal, 14).frame(height: 32)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 12).frame(height: 32)
                 .background(Group {
                     if game.auto { GoldGloss(shape: Capsule()) } else { Capsule().fill(Color.black.opacity(0.6)) }
                 })
@@ -364,6 +468,116 @@ struct PachinkoView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("pachinkoAuto")
+    }
+}
+
+/// v12.6 灯牌：7 盏水果灯（郁金香、幸运杯每进一球亮一盏，全亮下金珠雨）
+struct PachinkoMarquee: View {
+    let lamps: Int
+    let pulse: Int
+    @State private var bump = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let d = min(h * 0.86, (w * 0.66) / 7.5)
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("LUCKY LAMPS")
+                        .font(.system(size: max(10, h * 0.36), weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: ArtPalette.outline, radius: 0, x: 1, y: 1)
+                    Text("Light all 7 for a golden shower")
+                        .font(.system(size: max(8, h * 0.2), weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 1, green: 0.7, blue: 0.82))
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .frame(width: w * 0.3, alignment: .leading)
+                Spacer(minLength: 2)
+                HStack(spacing: d * 0.09) {
+                    ForEach(0..<PachinkoConstants.lampCount, id: \.self) { i in
+                        let lit = i < lamps
+                        ZStack {
+                            Circle()
+                                .fill(RadialGradient(colors: lit ? [Color.white, ArtPalette.goldLight, ArtPalette.gold] : [Color(white: 0.28), Color(white: 0.08)],
+                                                     center: UnitPoint(x: 0.4, y: 0.35), startRadius: 0, endRadius: d * 0.6))
+                            FruitIcon(index: i, size: d * 0.68)
+                                .saturation(lit ? 1 : 0)
+                                .opacity(lit ? 1 : 0.35)
+                            Circle().stroke(lit ? Color.white : ArtPalette.goldDeep, lineWidth: lit ? 2 : 1.2)
+                        }
+                        .frame(width: d, height: d)
+                        .shadow(color: lit ? ArtPalette.gold.opacity(0.95) : .clear, radius: lit ? 7 : 0)
+                        .scaleEffect(lit && i == lamps - 1 && bump ? 1.28 : 1)
+                    }
+                }
+                .accessibilityElement()
+                .accessibilityIdentifier("pachinkoLamps")
+                .accessibilityLabel(Text("Lucky lamps"))
+                .accessibilityValue(Text(verbatim: "\(lamps)/\(PachinkoConstants.lampCount)"))
+            }
+            .padding(.horizontal, 6)
+            .frame(width: w, height: h)
+        }
+        .onChange(of: pulse) { _ in
+            bump = true
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.45)) { bump = false }
+        }
+    }
+}
+
+/// v12.6 力度表：往下拉越多填得越多；金色一段是推荐区；细白线是上一发的力度
+struct PachinkoPowerGauge: View {
+    let pull: Double
+    let lastPull: Double
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let z = PachinkoConstants.pullSweet
+            let inZone = z.contains(pull)
+            ZStack(alignment: .top) {
+                Capsule().fill(Color.black.opacity(0.65))
+                Capsule().stroke(ArtPalette.gold.opacity(0.7), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(ArtPalette.gold.opacity(0.55))
+                    .frame(width: w - 4, height: h * (z.upperBound - z.lowerBound))
+                    .offset(y: h * z.lowerBound)
+                if pull > 0 {
+                    Capsule()
+                        .fill(LinearGradient(colors: inZone ? [ArtPalette.goldLight, ArtPalette.gold] : [ArtPalette.magenta, ArtPalette.magentaDeep], startPoint: .top, endPoint: .bottom))
+                        .frame(width: w - 6, height: max(6, h * pull))
+                        .padding(.top, 1)
+                        .shadow(color: inZone ? ArtPalette.gold : .clear, radius: 5)
+                } else {
+                    Capsule().fill(Color.white.opacity(0.9))
+                        .frame(width: w + 4, height: 2.5)
+                        .offset(y: h * lastPull)
+                }
+            }
+        }
+    }
+}
+
+/// 头一次进来：拉杆旁边「往下拉」的提示
+struct PullHint: View {
+    @State private var down = false
+    var body: some View {
+        VStack(spacing: 1) {
+            Text("PULL")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+            Image(systemName: "chevron.down").font(.system(size: 13, weight: .black))
+            Image(systemName: "chevron.down").font(.system(size: 13, weight: .black)).opacity(0.6)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 9).fill(ArtPalette.magentaDeep.opacity(0.92)))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.white.opacity(0.8), lineWidth: 1))
+        .offset(y: down ? 10 : 0)
+        .onAppear { withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { down = true } }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
@@ -389,85 +603,5 @@ struct FloatingPayout: View {
             .offset(y: go ? -34 : -8)
             .opacity(go ? 0 : 1)
             .onAppear { withAnimation(.easeOut(duration: 0.75)) { go = true } }
-    }
-}
-
-/// 发射手柄（2.2 节）：镀铬旋钮，按住连发，上下拖改力度；外圈金色一段是推荐区
-struct PachinkoHandle: View {
-    @Binding var power: Double
-    @Binding var isDown: Bool
-    let size: CGFloat
-    @State private var dragStart: (y: CGFloat, power: Double)?
-
-    /// 力度 0…1 对应 -135°…+135°（0° 朝上）
-    private func angle(_ p: Double) -> Angle { .degrees(-135 + 270 * p) }
-
-    var body: some View {
-        ZStack {
-            // 外圈底座：黑色烤漆 + 刻度槽
-            Circle()
-                .fill(RadialGradient(colors: [Color(white: 0.22), Color(white: 0.04)], center: .center, startRadius: size * 0.3, endRadius: size * 0.52))
-                .shadow(color: .black.opacity(0.6), radius: 6, y: 4)
-            Circle()
-                .trim(from: 0, to: 0.75)
-                .stroke(Color.white.opacity(0.14), style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                .rotationEffect(.degrees(135))
-                .padding(5)
-            Circle()
-                .trim(from: PachinkoConstants.sweetZone.lowerBound * 0.75, to: PachinkoConstants.sweetZone.upperBound * 0.75)
-                .stroke(ArtPalette.gold, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                .shadow(color: ArtPalette.gold.opacity(0.9), radius: 4)
-                .rotationEffect(.degrees(135))
-                .padding(5)
-            Circle()
-                .trim(from: 0, to: power * 0.75)
-                .stroke(ArtPalette.magenta.opacity(0.85), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .rotationEffect(.degrees(135))
-                .padding(12)
-            // 镀铬旋钮：锥形渐变做出金属拉丝反光，顶上一块高光
-            ZStack {
-                Circle()
-                    .fill(AngularGradient(colors: [Color(white: 0.95), Color(white: 0.45), Color(white: 0.9), Color(white: 0.35), Color(white: 0.98), Color(white: 0.5), Color(white: 0.95)], center: .center))
-                Circle()
-                    .stroke(LinearGradient(colors: [.white, Color(white: 0.3)], startPoint: .top, endPoint: .bottom), lineWidth: 2)
-                Ellipse()
-                    .fill(LinearGradient(colors: [Color.white.opacity(0.85), .clear], startPoint: .top, endPoint: .bottom))
-                    .frame(width: size * 0.38, height: size * 0.2)
-                    .offset(y: -size * 0.14)
-                // 指针
-                Capsule()
-                    .fill(LinearGradient(colors: [ArtPalette.magenta, ArtPalette.magentaDeep], startPoint: .top, endPoint: .bottom))
-                    .frame(width: 7, height: size * 0.22)
-                    .offset(y: -size * 0.13)
-                    .rotationEffect(angle(power))
-                Circle()
-                    .fill(RadialGradient(colors: [isDown ? ArtPalette.goldLight : Color(white: 0.9), isDown ? ArtPalette.gold : Color(white: 0.5)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.1))
-                    .frame(width: size * 0.16, height: size * 0.16)
-            }
-            .frame(width: size * 0.66, height: size * 0.66)
-            .shadow(color: .black.opacity(0.5), radius: 3, y: 2)
-            .scaleEffect(isDown ? 0.96 : 1)
-        }
-        .frame(width: size, height: size)
-        .shadow(color: isDown ? ArtPalette.gold.opacity(0.6) : .clear, radius: 10)
-        .contentShape(Circle())
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { v in
-                    if dragStart == nil {
-                        dragStart = (v.startLocation.y, power)
-                        isDown = true
-                    }
-                    if let d = dragStart {
-                        power = min(1, max(0, d.power + Double(d.y - v.location.y) / 160))
-                    }
-                }
-                .onEnded { _ in
-                    dragStart = nil
-                    isDown = false
-                }
-        )
-        .accessibilityLabel(Text("Power"))
-        .accessibilityValue(Text(verbatim: "\(Int((power * 100).rounded()))%"))
     }
 }

@@ -55,7 +55,7 @@ struct RouletteView: View {
                             if let line {
                                 SpeechBubble(text: line.text, tailOnLeft: false)
                                     .id(line.id)
-                                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                                    .transition(.asymmetric(insertion: .scale(scale: 0.6).combined(with: .opacity), removal: .identity))
                             }
                             Spacer(minLength: 0)
                             BunnyHostess(line: line, height: wheelD * 0.84, showBubble: false)

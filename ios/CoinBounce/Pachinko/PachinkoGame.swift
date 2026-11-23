@@ -25,6 +25,25 @@ struct PachinkoSave: Codable, Equatable {
     var chip: Int
     var auto: Bool
     var stats: PachinkoStats
+    /// v12.6 水果灯（旧存档没有这一项）
+    var features: PachinkoFeatures?
+}
+
+/// v12.6 发射轨道上的珠子（还没交给物理）。result = nil 是回流：冲到半路退回拉杆
+struct PachinkoLaneBall {
+    var t = 0.0
+    var duration: Double
+    /// 要走的路径长度（回流：最高点）
+    var reach: Double
+    var result: PachinkoBall?
+
+    /// 现在走到路径的哪里（PachinkoBoard.lanePoint 的参数）
+    var distance: Double {
+        let u = min(1, max(0, t / duration))
+        if result == nil { return reach * 4 * u * (1 - u) }
+        // 出膛快、到脱轨点还带着速度
+        return reach * (0.55 * u * (2 - u) + 0.45 * u)
+    }
 }
 
 /// 弹子机单独一个键，不动 GameState 的存档路径（旧存档读不到时从普通状态开始）
@@ -69,6 +88,10 @@ enum PachinkoCue: Equatable {
     case modeEntered(PachinkoMode)
     case modeEnded
     case trayEmpty
+    /// v12.6：幸运杯接住；第 count 盏水果灯亮；金珠雨开始
+    case catcherSaved
+    case lampLit(count: Int)
+    case showerStarted
     case outOfCoins
     case idle
 }
@@ -81,10 +104,13 @@ enum PachinkoScript {
     /// 这个事件兔女郎说什么；nil = 不说话（只有声音或特效）
     static func line(for cue: PachinkoCue) -> Line? {
         switch cue {
-        case .enter: return Line(text: String(localized: "Welcome to Pachinko! One coin, one ball."), pose: .idle)
+        case .enter: return Line(text: String(localized: "Welcome to Pachinko! Pull the spring and let go."), pose: .idle)
         case .firstShot: return Line(text: String(localized: "Round start! Aim for the center pocket."), pose: .blowKiss)
-        case .foul: return Line(text: String(localized: "Too soft! Turn it up a little."), pose: .idle)
+        case .foul: return Line(text: String(localized: "Too soft! Pull the spring further."), pose: .idle)
         case .tooHard: return Line(text: String(localized: "Too hard. Try the gold zone."), pose: .idle)
+        case .catcherSaved: return Line(text: String(localized: "Lucky cup! Nice catch!"), pose: .clap)
+        case .lampLit(let n): return n == PachinkoConstants.lampCount - 1 ? Line(text: String(localized: "One more fruit lamp!"), pose: .cheer) : nil
+        case .showerStarted: return Line(text: String(localized: "All lamps lit! Golden shower!"), pose: .jump)
         case .startHit(let n): return n % 5 == 0 ? Line(text: String(localized: "Nice shot!"), pose: .clap) : nil
         case .tulipOpened: return Line(text: String(localized: "The tulip is open!"), pose: .clap)
         case .reach(.superReach): return Line(text: String(localized: "SUPER REACH! This could be it!"), pose: .jump)
@@ -120,8 +146,12 @@ final class PachinkoGame: ObservableObject {
     @Published var chip = 1 { didSet { dirty = true } }
     @Published var auto = false { didSet { dirty = true } }
     @Published var power = PachinkoConstants.defaultPower { didSet { dirty = true; sinceInput = 0 } }
-    /// 手柄按着：连发
+    /// 手柄按着：连发（v12.6 起界面不用，留给测试和调试）
     @Published var handleDown = false { didSet { sinceInput = 0 } }
+    /// v12.6 弹簧拉杆拉下的比例 0…1（手指拖着时更新；松手调 releasePlunger）
+    @Published var pull = 0.0 { didSet { sinceInput = 0 } }
+    /// v12.6 水果灯
+    @Published private(set) var features: PachinkoFeatures
     /// 状态机快照：只在有事件或保留变化时更新（每帧更新会让 SwiftUI 整屏重算）
     @Published private(set) var machine: PachinkoMachine
     /// 这一转开始的时刻（数字盘动画用；读档时按剩余时间倒推）
@@ -133,6 +163,10 @@ final class PachinkoGame: ObservableObject {
 
     /// 在飞的珠子。场景每帧直接读，不发布
     private(set) var balls: [PachinkoBall] = []
+    /// v12.6 发射轨道上的珠子（场景每帧读）
+    private(set) var laneBalls: [PachinkoLaneBall] = []
+    private var shotQueued = false
+    private var f: PachinkoFeatures
     private(set) var physics: PachinkoPhysics
     /// 场景订阅：珠子落袋（画闪光、换郁金香花瓣）
     var onPocket: ((PachinkoPocket, PachinkoBall) -> Void)?
@@ -176,6 +210,8 @@ final class PachinkoGame: ObservableObject {
         m = saved?.machine ?? PachinkoMachine()
         machine = m
         stats = saved?.stats ?? PachinkoStats()
+        f = saved?.features ?? PachinkoFeatures()
+        features = f
         if let s = saved {
             power = min(1, max(0, s.power))
             chip = PachinkoConstants.chips.contains(s.chip) ? s.chip : 1
@@ -190,7 +226,22 @@ final class PachinkoGame: ObservableObject {
     }
 
     var balance: Int { wallet.balance() }
-    var ballsInFlight: Int { balls.count }
+    var ballsInFlight: Int { balls.count + laneBalls.count }
+    /// 距离下一发还要等多久的比例 0…1（AUTO 时拉杆自己一拉一放的动画用）
+    var fireProgress: Double { 1 - min(1, max(0, fireCooldown / PachinkoConstants.fireInterval)) }
+    /// 幸运杯现在的位置
+    var catcherX: Double { PachinkoBoard.catcherX(time: physics.time) }
+
+    // MARK: v12.6 弹簧拉杆
+    /// 松手：按拉下的比例定力度，打一颗。拉得太少算取消。上皿空了自动按当前筹码买
+    func releasePlunger() {
+        let p = pull
+        pull = 0
+        guard p >= PachinkoConstants.pullCancelBelow else { return }
+        power = PachinkoConstants.power(forPull: p)
+        if tray == 0, case .insufficientCoins = buy() { return }
+        shotQueued = true
+    }
 
     // MARK: 买珠
     /// 往上皿加一个筹码面值的珠子。上皿里的珠子数不超过余额（没扣钱，但不能排超过付得起的数）
@@ -252,9 +303,26 @@ final class PachinkoGame: ObservableObject {
         physics.wingsOpen = m.wingsOpen
         physics.attackerOpen = m.attackerOpen
         fireCooldown -= dt
-        if (handleDown || auto) && fireCooldown <= 0 {
+        if (handleDown || auto || shotQueued) && fireCooldown <= 0 {
             if auto && tray == 0 { autoRefill() }
+            shotQueued = false
             tryFire()
+        }
+        physics.tick()
+        // 发射轨道：走到脱轨点交给物理；回流的退回拉杆
+        var k = 0
+        while k < laneBalls.count {
+            laneBalls[k].t += dt
+            if laneBalls[k].t >= laneBalls[k].duration {
+                if let b = laneBalls[k].result { balls.append(b) }
+                laneBalls.remove(at: k)
+            } else {
+                k += 1
+            }
+        }
+        if f.advance(dt) {
+            balls.append(physics.showerBall())
+            features = f
         }
         clock += dt
         sinceInput += dt
@@ -301,10 +369,14 @@ final class PachinkoGame: ObservableObject {
     #endif
 
     private func tryFire() {
-        guard tray > 0, balls.count < maxInFlight else { return }
+        guard tray > 0, balls.count + laneBalls.count < maxInFlight else { return }
         fireCooldown = fireInterval
         // 回流：力度不够，珠子回上皿，不扣币
         guard let b = physics.launch(power: power) else {
+            let c = PachinkoConstants.self
+            let k = min(1, (c.launchKBase + c.launchKSpan * power) / c.foulK)
+            laneBalls.append(PachinkoLaneBall(duration: c.laneFoulTime, reach: PachinkoBoard.laneStraight * max(0.2, k * k * 0.9), result: nil))
+            emit(.launched)
             notice = .foul
             if clock - lastFoulCue > 8 { lastFoulCue = clock; emit(.foul) }
             return
@@ -318,14 +390,16 @@ final class PachinkoGame: ObservableObject {
         }
         tray -= 1
         if notice == .foul { notice = nil }
-        balls.append(b)
+        let elevation = atan2(b.y - PachinkoBoard.archCenterY, b.x - PachinkoBoard.archCenterX)
+        let reach = PachinkoBoard.laneLength(toElevation: elevation)
+        laneBalls.append(PachinkoLaneBall(duration: PachinkoConstants.laneTimeBase + PachinkoConstants.laneTimePerLength * reach, reach: reach, result: b))
         stats.ballsFired += 1
         sinceShot = 0
         idleSaid = false
         dirty = true
         emit(.launched)
         if !firedThisVisit { firedThisVisit = true; emit(.firstShot) }
-        else if (0.7...0.8).contains(power) && clock - lastTooHardCue > 20 { lastTooHardCue = clock; emit(.tooHard) }
+        else if power >= 0.7 && clock - lastTooHardCue > 20 { lastTooHardCue = clock; emit(.tooHard) }
         if tray == 0 && !auto { emit(.trayEmpty) }
     }
 
@@ -359,7 +433,16 @@ final class PachinkoGame: ObservableObject {
                 machineChanged = true
                 emit(.attackerBall(count: count))
             }
+        case .catcher:
+            amount = c.catcherPayout
+            emit(.catcherSaved)
         case .stuck, .out: break
+        }
+        let lamp = f.pocket(p)
+        if lamp.lit {
+            features = f
+            dirty = true
+            emit(lamp.shower ? .showerStarted : .lampLit(count: f.lamps))
         }
         if amount > 0 {
             wallet.credit(amount)
@@ -426,23 +509,40 @@ final class PachinkoGame: ObservableObject {
     /// 在飞的珠子快进到落袋、马上入账，然后存档（4.5 节：退出时不丢、不多给）
     func settleInFlight() {
         handleDown = false
-        for var b in balls {
-            let p = physics.fastForward(&b)
-            pay(p, ball: b)
-            physics.apply(p)
-            physics.attackerOpen = m.attackerOpen
-        }
-        balls.removeAll()
+        shotQueued = false
+        pull = 0
+        for l in laneBalls { if let b = l.result { balls.append(b) } }
+        laneBalls.removeAll()
+        // 在飞的珠子结算时可能又凑满一轮灯：排队的赠送珠也一起打完
+        var guardCount = 0
+        repeat {
+            for _ in 0..<f.drainShower() { balls.append(physics.showerBall()) }
+            let pending = balls
+            balls.removeAll()
+            for var b in pending {
+                let p = physics.fastForward(&b)
+                pay(p, ball: b)
+                physics.apply(p)
+                physics.attackerOpen = m.attackerOpen
+            }
+            guardCount += 1
+        } while f.showerQueue > 0 && guardCount < 20
+        features = f
         publish()
         save()
     }
 
     func save() {
         dirty = false
-        store?.save(PachinkoSave(machine: m, tulipOpen: physics.board.tulipOpen, power: power, chip: chip, auto: auto, stats: stats))
+        store?.save(PachinkoSave(machine: m, tulipOpen: physics.board.tulipOpen, power: power, chip: chip, auto: auto, stats: stats, features: f))
     }
 
     #if DEBUG
+    /// 调试 / 截图：先点亮 n 盏水果灯
+    func debugLightLamps(_ n: Int) {
+        for _ in 0..<min(n, PachinkoConstants.lampCount - 1) { f.pocket(.catcher) }
+        features = f
+    }
     /// 调试 / 截图：直接塞一张保留票
     func debugInsertTicket(_ t: PachinkoTicket) {
         m.startEntered(t)

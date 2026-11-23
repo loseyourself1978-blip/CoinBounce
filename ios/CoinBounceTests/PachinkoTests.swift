@@ -41,20 +41,22 @@ final class PachinkoTests: XCTestCase {
     func test_launch_foulAndDetach() {
         var ph = PachinkoPhysics(rng: PachinkoRandom(seed: 3))
         let n = 4000
-        var foul0 = 0, foul25 = 0, right = 0, fired100 = 0
+        var foul0 = 0, foul25 = 0, left = 0, fired100 = 0
         for _ in 0..<n { if ph.launch(power: 0) == nil { foul0 += 1 } }
         for _ in 0..<n {
             guard let b = ph.launch(power: 0.25) else { foul25 += 1; continue }
-            XCTAssertLessThan(b.x, 0.5, "k < 1 在拱顶左侧脱轨")
+            XCTAssertGreaterThan(b.x, 0.5, "v12.6 发射轨道在右边：k < 1 在拱顶右侧脱轨")
+            XCTAssertLessThan(b.vx, 0, "往左上飞")
+            XCTAssertGreaterThan(b.vy, 0)
         }
         for _ in 0..<n {
             guard let b = ph.launch(power: 1) else { continue }
             fired100 += 1
-            if b.x > 0.5 { right += 1 }
+            if b.x < 0.5 { left += 1 }
         }
         XCTAssertGreaterThan(Double(foul0) / Double(n), 0.8)
         XCTAssertLessThan(Double(foul25) / Double(n), 0.01)
-        XCTAssertGreaterThan(Double(right) / Double(fired100), 0.9, "power 1 时大多数 k ≥ 1，越过天顶落在右半边")
+        XCTAssertGreaterThan(Double(left) / Double(fired100), 0.9, "power 1 时大多数 k ≥ 1，越过天顶落在左半边")
     }
 
     // MARK: 物理
@@ -94,6 +96,8 @@ final class PachinkoTests: XCTestCase {
         XCTAssertEqual(r.side, ref.side, accuracy: 0.006, "袖口")
         XCTAssertEqual(r.attacker, ref.attacker, accuracy: 0.015, "大入赏口")
         XCTAssertEqual(r.warp, ref.warp, accuracy: 0.010, "ワープ口")
+        XCTAssertEqual(r.catcher, ref.catcher, accuracy: 0.006, "v12.6 幸运杯")
+        for (a, b) in zip(r.shower, ref.shower) { XCTAssertEqual(a, b, accuracy: 0.015, "v12.6 金珠雨的进球率") }
     }
 
     // MARK: 抽选
@@ -235,7 +239,10 @@ final class PachinkoTests: XCTestCase {
         XCTAssertGreaterThan(st.payAttacker, 0)
         XCTAssertLessThanOrEqual(st.maxInFlight, PachinkoConstants.maxBallsInFlight)
         XCTAssertEqual(st.returnRate, PachinkoConstants.targetReturn, accuracy: 0.08)
-        XCTAssertEqual(st.payStart + st.payTulip + st.paySide + st.payAttacker, st.paid)
+        XCTAssertEqual(st.payStart + st.payTulip + st.paySide + st.payAttacker + st.payCatcher, st.paid)
+        XCTAssertGreaterThan(st.payCatcher, 0, "v12.6 幸运杯")
+        XCTAssertGreaterThan(st.showers, 0, "v12.6 金珠雨")
+        XCTAssertEqual(st.bonusBalls, st.showers * PachinkoConstants.showerBalls, "每轮金珠雨掉固定颗数")
     }
 
     /// 返还率门槛：用本内核测得的进球率跑快速模型，10 个种子各 1000 万颗珠，合计在 0.95–0.97，单个种子在 0.94–0.98
@@ -252,7 +259,8 @@ final class PachinkoTests: XCTestCase {
     /// 参考进球率（pk.c）的快速模型 1 亿颗珠：0.955–0.965
     func test_return_fastModelReference() {
         let st = PachinkoSimulator.runFast(balls: 100_000_000, rates: .reference, seed: 1)
-        XCTAssertEqual(st.returnRate, 0.960, accuracy: 0.005)
+        // v12.6：快速模型把金珠雨简化成逐颗抽样，比完整模拟低约 0.005；门槛用整条返还率带
+        XCTAssertTrue(PachinkoConstants.returnBand.contains(st.returnRate), "\(st.returnRate)")
     }
 
     /// 力度 0.10–1.00 每 0.05 一档：任何力度的返还率都不超过 0.97
@@ -263,6 +271,203 @@ final class PachinkoTests: XCTestCase {
             let st = PachinkoSimulator.runFast(balls: 5_000_000, rates: r, seed: UInt64(i))
             XCTAssertLessThanOrEqual(st.returnRate, 0.975, "power \(pw): \(st.returnRate)")
         }
+    }
+
+
+    // MARK: v12.6 弹簧拉杆、发射轨道、幸运杯、水果灯、金珠雨
+    func test_plunger_pullMapping() {
+        let c = PachinkoConstants.self
+        XCTAssertEqual(c.power(forPull: 0), 0)
+        XCTAssertEqual(c.power(forPull: 1), 1, accuracy: 1e-9)
+        XCTAssertEqual(c.power(forPull: c.pullSweet.lowerBound), c.sweetZone.lowerBound, accuracy: 1e-9, "拉到 50% = 推荐区下沿")
+        XCTAssertEqual(c.power(forPull: c.pullSweet.upperBound), c.sweetZone.upperBound, accuracy: 1e-9)
+        XCTAssertEqual(c.power(forPull: c.defaultPull), c.defaultPower, accuracy: 0.01, "默认拉到的位置 = 最好的力度")
+        var last = -1.0
+        for i in 0...100 {
+            let p = Double(i) / 100
+            let w = c.power(forPull: p)
+            XCTAssertGreaterThan(w, last, "单调")
+            last = w
+            XCTAssertEqual(c.pull(forPower: w), p, accuracy: 1e-9, "互为反函数")
+        }
+    }
+
+    func test_plunger_releaseFiresOneBall() {
+        let w = FakeWallet(20)
+        let g = makeGame(w)
+        g.chip = 5
+        // 拉得太少：取消
+        g.pull = 0.03
+        g.releasePlunger()
+        play(g, seconds: 0.5)
+        XCTAssertEqual(g.stats.ballsFired, 0)
+        XCTAssertEqual(g.tray, 0)
+        // 拉到推荐区松手：上皿自动买一个筹码的珠，打出一颗，先在发射轨道上
+        g.pull = PachinkoConstants.defaultPull
+        g.releasePlunger()
+        XCTAssertEqual(g.pull, 0, "松手拉杆回位")
+        XCTAssertEqual(g.tray, 5)
+        g.update(1.0 / 60)
+        XCTAssertEqual(g.stats.ballsFired, 1)
+        XCTAssertEqual(g.tray, 4)
+        XCTAssertEqual(w.spent, 1)
+        XCTAssertEqual(g.laneBalls.count, 1)
+        XCTAssertTrue(g.balls.isEmpty, "还没到脱轨点")
+        XCTAssertEqual(g.power, PachinkoConstants.defaultPower, accuracy: 0.01)
+        play(g, seconds: 1.0)
+        XCTAssertTrue(g.laneBalls.isEmpty)
+        XCTAssertEqual(g.stats.ballsFired, 1, "松一次只打一颗")
+        // 余额 0：松手不打，提示没币
+        let w0 = FakeWallet(0)
+        let g0 = makeGame(w0)
+        g0.pull = 0.7
+        g0.releasePlunger()
+        play(g0, seconds: 1)
+        XCTAssertEqual(g0.stats.ballsFired, 0)
+        XCTAssertEqual(g0.notice, .outOfCoins)
+    }
+
+    func test_plunger_foulRollsBackOnLane() {
+        let w = FakeWallet(10)
+        let g = makeGame(w, seed: 5)
+        g.buy()
+        g.pull = 0.12
+        g.releasePlunger()
+        g.update(1.0 / 60)
+        XCTAssertEqual(g.laneBalls.count, 1)
+        XCTAssertNil(g.laneBalls[0].result, "力度不够：回流")
+        var peak = 0.0
+        for _ in 0..<120 {
+            g.update(1.0 / 60)
+            if let l = g.laneBalls.first { peak = max(peak, l.distance) }
+        }
+        XCTAssertGreaterThan(peak, 0.05)
+        XCTAssertLessThan(peak, PachinkoBoard.laneStraight, "回流的珠到不了拱顶")
+        XCTAssertTrue(g.laneBalls.isEmpty)
+        XCTAssertTrue(g.balls.isEmpty)
+        XCTAssertEqual(w.spent, 0, "回流不扣币")
+        XCTAssertEqual(g.tray, 1)
+    }
+
+    func test_lane_pathIsContinuousAndEndsAtDetachPoint() {
+        typealias B = PachinkoBoard
+        // 路径连续：相邻两点之间不跳
+        var prev = B.lanePoint(0)
+        XCTAssertEqual(prev.x, B.laneX, accuracy: 1e-9)
+        XCTAssertEqual(prev.y, B.laneBottomY, accuracy: 1e-9)
+        XCTAssertGreaterThan(B.laneX - PachinkoConstants.ballRadius, B.wallRight + 0.02, "轨道在右墙外面")
+        let total = B.laneLength(toElevation: .pi * 0.7)
+        var s = 0.0
+        while s < total {
+            s += 0.002
+            let p = B.lanePoint(s)
+            XCTAssertLessThan(hypot(p.x - prev.x, p.y - prev.y), 0.004)
+            prev = p
+        }
+        // 过了挡片以后贴着拱顶内侧；终点就是物理接手的位置
+        var ph = PachinkoPhysics(rng: PachinkoRandom(seed: 8))
+        for _ in 0..<200 {
+            guard let b = ph.launch(power: 0.25) else { continue }
+            let e = atan2(b.y - B.archCenterY, b.x - B.archCenterX)
+            XCTAssertGreaterThan(e, B.flapEnd, "脱轨点在挡片上面")
+            let p = B.lanePoint(B.laneLength(toElevation: e))
+            XCTAssertEqual(p.x, b.x, accuracy: 0.004)
+            XCTAssertEqual(p.y, b.y, accuracy: 0.004)
+        }
+    }
+
+    func test_catcher_slidesAndCatches() {
+        typealias B = PachinkoBoard
+        let c = PachinkoConstants.self
+        XCTAssertEqual(B.catcherX(time: 0), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(B.catcherX(time: c.catcherPeriod / 4), 0.5 + c.catcherAmplitude, accuracy: 1e-9)
+        XCTAssertEqual(B.catcherX(time: c.catcherPeriod), 0.5, accuracy: 1e-9)
+        // 杯子在正下方：接住；不在：出界
+        var ph = PachinkoPhysics(rng: PachinkoRandom(seed: 1))
+        var b = PachinkoBall()
+        b.x = 0.5; b.y = 0.06; b.vy = -1
+        var p: PachinkoPocket?
+        while p == nil { p = ph.step(&b) }
+        XCTAssertEqual(p, .catcher)
+        ph.time = c.catcherPeriod / 4
+        b = PachinkoBall()
+        b.x = 0.5; b.y = 0.06; b.vy = -1
+        p = nil
+        while p == nil { p = ph.step(&b) }
+        XCTAssertEqual(p, .out)
+    }
+
+    func test_features_lampsAndShower() {
+        var f = PachinkoFeatures()
+        XCTAssertFalse(f.pocket(.start).lit)
+        XCTAssertFalse(f.pocket(.side).lit)
+        XCTAssertFalse(f.pocket(.out).lit)
+        XCTAssertFalse(f.pocket(.attacker).lit)
+        XCTAssertEqual(f.lamps, 0)
+        let n = PachinkoConstants.lampCount
+        for i in 1..<n {
+            let r = f.pocket(i % 3 == 0 ? .catcher : (i % 2 == 0 ? .tulipLeft : .tulipRight))
+            XCTAssertTrue(r.lit)
+            XCTAssertFalse(r.shower)
+            XCTAssertEqual(f.lamps, i)
+        }
+        XCTAssertFalse(f.advance(1), "灯没满不掉珠")
+        let r = f.pocket(.tulipLeft)
+        XCTAssertTrue(r.shower)
+        XCTAssertEqual(f.lamps, 0, "全亮后重新数")
+        XCTAssertEqual(f.showerQueue, PachinkoConstants.showerBalls)
+        var dropped = 0
+        for _ in 0..<Int(5 / PachinkoConstants.physicsStep) { if f.advance(PachinkoConstants.physicsStep) { dropped += 1 } }
+        XCTAssertEqual(dropped, PachinkoConstants.showerBalls)
+        XCTAssertEqual(f.showerQueue, 0)
+        // 赠送珠从拱顶里面掉下来，标成金色
+        var ph = PachinkoPhysics(rng: PachinkoRandom(seed: 4))
+        for _ in 0..<500 {
+            let b = ph.showerBall()
+            XCTAssertTrue(b.bonus)
+            XCTAssertLessThan(hypot(b.x - PachinkoBoard.archCenterX, b.y - PachinkoBoard.archCenterY), PachinkoBoard.archRadius - PachinkoConstants.ballRadius)
+        }
+    }
+
+    func test_game_showerIsFreeAndSettlesOnExit() {
+        let defaults = UserDefaults(suiteName: "PachinkoTests.shower")!
+        let store = PachinkoSaveStore(defaults: defaults, key: "save")
+        store.clear()
+        let w = FakeWallet(50)
+        let g = makeGame(w, store: store, seed: 3)
+        g.recordCues = true
+        g.debugLightLamps(PachinkoConstants.lampCount - 1)
+        XCTAssertEqual(g.features.lamps, PachinkoConstants.lampCount - 1)
+        // 存档带着灯
+        g.save()
+        XCTAssertEqual(makeGame(w, store: store).features.lamps, PachinkoConstants.lampCount - 1)
+        // 连发到金珠雨开始
+        g.chip = 10
+        g.auto = true
+        var guardSeconds = 0
+        while !g.cueLog.contains(.showerStarted) && guardSeconds < 120 { play(g, seconds: 1); guardSeconds += 1 }
+        XCTAssertTrue(g.cueLog.contains(.showerStarted))
+        g.auto = false
+        let firedAtShower = g.stats.ballsFired
+        play(g, seconds: 0.4)
+        XCTAssertTrue(g.balls.contains { $0.bonus }, "金珠在台面上")
+        g.settleInFlight()
+        XCTAssertEqual(g.ballsInFlight, 0)
+        XCTAssertEqual(g.features.showerQueue, 0, "排队的赠送珠退出时也结算")
+        XCTAssertEqual(w.spent, g.stats.ballsFired, "赠送珠不扣币")
+        XCTAssertLessThanOrEqual(g.stats.ballsFired - firedAtShower, 1)
+        XCTAssertEqual(w.credited, g.stats.coinsWon)
+        store.clear()
+    }
+
+    func test_save_oldFormatWithoutFeatures() throws {
+        // v12.5 的存档没有 features：能读，灯从 0 开始
+        let old = PachinkoSave(machine: PachinkoMachine(), tulipOpen: [true, false], power: 0.3, chip: 2, auto: false, stats: PachinkoStats(), features: nil)
+        var obj = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as? [String: Any])
+        obj.removeValue(forKey: "features")
+        let decoded = try JSONDecoder().decode(PachinkoSave.self, from: JSONSerialization.data(withJSONObject: obj))
+        XCTAssertNil(decoded.features)
+        XCTAssertEqual(decoded.tulipOpen, [true, false])
     }
 
     // MARK: 数字盘图案
