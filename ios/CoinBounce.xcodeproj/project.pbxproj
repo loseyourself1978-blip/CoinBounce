@@ -72,6 +72,7 @@
 		C2FA3A0381132776B3194A65 /* KOSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20338B8773C7C4F3BF12432 /* KOSequence.swift */; };
 		C27AE408551A0988D294654D /* RoyalArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */; };
 		C23BD4D77AAF63F41B15A3A5 /* KOSequenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */; };
+		C36D7CEB5BDCB23A3A461CDF /* FilmOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -151,6 +152,7 @@
 		C20338B8773C7C4F3BF12432 /* KOSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequence.swift; sourceTree = "<group>"; };
 		C2B1163ADE5A158B6EF24811 /* RoyalArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoyalArt.swift; sourceTree = "<group>"; };
 		C244E459AE032ABF26C9E9C9 /* KOSequenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KOSequenceTests.swift; sourceTree = "<group>"; };
+		C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -267,6 +269,7 @@
 				C08A258A8FAE2E3F34DDC1BE /* ArcadeArt.swift */,
 				C082E3E8B426B7E04D88D396 /* DropFieldScene.swift */,
 				C0BB9432736E34B07E750DAC /* HelpView.swift */,
+				C3DCBD7E70D4ED184F63C591 /* FilmOverlay.swift */,
 				C0EBBDAAD5E6DBCFA714DF2B /* MotionParallax.swift */,
 			);
 			path = UI;
@@ -491,6 +494,7 @@
 				C0BF234C8A61AA1A4A64458B /* PusherSceneView.swift in Sources */,
 				C059B1695F7EF418EE57B577 /* RewardCards.swift in Sources */,
 				C060B0BE96742CC9E8D15B15 /* HelpView.swift in Sources */,
+				C36D7CEB5BDCB23A3A461CDF /* FilmOverlay.swift in Sources */,
 				C1D1DCA615DA15273622ED53 /* AppRouter.swift in Sources */,
 				C1C3390367B9C7EF2C5CEC12 /* RootView.swift in Sources */,
 				C1D60D3FCE5F1192F8FA2692 /* BunnyHostess.swift in Sources */,

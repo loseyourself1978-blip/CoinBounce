@@ -20,6 +20,10 @@ struct LobbyView: View {
             let bunnyH = min(h * 0.42, 380)
             ZStack {
                 LobbyBackdrop().ignoresSafeArea()
+                // v12.3：吊灯照下来的光柱，招牌和地毯中间各一圈光
+                LightShafts()
+                LightPool(strength: 0.16).frame(width: w * 1.1, height: h * 0.22).position(x: w / 2, y: h * 0.16)
+                LightPool(strength: 0.14).frame(width: w * 0.9, height: h * 0.2).position(x: w / 2, y: h * 0.86)
                 VStack(spacing: 0) {
                     topBar
                         .padding(.horizontal, side)
@@ -69,6 +73,7 @@ struct LobbyView: View {
                 }
             }
         }
+        .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(isPresented: $showHelp) { HelpView() }
         .onAppear {
@@ -181,6 +186,7 @@ struct LobbySign: View {
                     Text("COIN BOUNCE")
                         .font(.system(size: h * 0.36, weight: .black, design: .rounded))
                         .foregroundStyle(LinearGradient(colors: [Color.white, ArtPalette.goldLight, ArtPalette.gold], startPoint: .top, endPoint: .bottom))
+                        .specularSweep()
                         .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 2)
                     Text("CASINO")
                         .font(.system(size: h * 0.22, weight: .heavy, design: .rounded))

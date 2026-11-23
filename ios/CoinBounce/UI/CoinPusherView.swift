@@ -232,6 +232,11 @@ struct CoinPusherView: View {
                                       onFinished: { gameState.finishCardPick() })
                     .frame(width: sw, height: sh)
                 }
+                // v12.3：JACKPOT 数字后面的一圈暖光；暗角和颗粒盖在最上面（静态图层，不拦触摸）
+                LightPool(strength: 0.26)
+                    .place(in: layout.jackpot.insetBy(dx: -layout.jackpot.width * 0.05, dy: -layout.jackpot.height * 0.25))
+                FilmOverlay()
+                    .frame(width: sw, height: sh)
             }
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
