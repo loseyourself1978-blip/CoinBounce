@@ -52,15 +52,19 @@ struct LobbyView: View {
                                 router.open(.pusher)
                             }
                             .accessibilityIdentifier("doorPusher")
+                            if AppRouter.isAvailable(.roulette) {
                             LobbyDoor(title: String(localized: "Roulette"), tint: Color(red: 0.2, green: 0.75, blue: 0.45), icon: .roulette, locked: false, width: doorW, height: doorH) {
                                 router.open(.roulette)
                             }
                             .accessibilityIdentifier("doorRoulette")
+                            }
                             // v12.7：第三扇门换成弹球台（弹子机的代码还在，-startPachinko 能进）
+                            if AppRouter.isAvailable(.pinball) {
                             LobbyDoor(title: String(localized: "Pinball"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
                                 router.open(.pinball)
                             }
                             .accessibilityIdentifier("doorPachinko")
+                            }
                             // v12.8：第四扇门，老虎机
                             LobbyDoor(title: String(localized: "Slots"), tint: Color(red: 0.85, green: 0.3, blue: 0.75), icon: .slots, locked: false, width: doorW, height: doorH) {
                                 router.open(.slots)
@@ -102,9 +106,11 @@ struct LobbyView: View {
         .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(isPresented: $showHelp) { HelpView() }
         .onReceive(MotionParallax.shared.$offset) { Lobby3DScene.shared.setTilt($0) }
+        .onReceive(Timer.publish(every: 7, on: .main, in: .common).autoconnect()) { _ in greet() }
         .onAppear {
             glow = true
             greet()
+            testerTopUp()
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
@@ -207,7 +213,17 @@ struct LobbyView: View {
         .frame(height: 36)
     }
 
-    private func greet() { line = BunnyScript.greeting() }
+    private func greet() {
+        line = BunnyScript.greeting(jackpot: Int(gameState.jackpotPool), giftReady: TimedGift.shared.ready())
+    }
+
+    /// 测试模式（只在调试版里有，商店版没有）：回到大厅时金币不到 100 就补到 100
+    private func testerTopUp() {
+        guard TesterMode.enabled, gameState.availableCoins < TesterMode.coins else { return }
+        gameState.addCoins(TesterMode.coins - gameState.availableCoins, source: .other)
+        gameState.saveNow()
+        say(String(localized: "Test mode: coins topped up to \(TesterMode.coins)."), pose: .clap)
+    }
     private func say(_ text: String, pose: BunnyPose) { line = BunnyLine(text: text, pose: pose) }
 }
 

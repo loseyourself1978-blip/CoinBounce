@@ -242,4 +242,70 @@ final class CaishenTests: XCTestCase {
         XCTAssertEqual(g.grandPoolCents, 300)
         XCTAssertEqual(g.jackpot(M.grandPrize), 5003, "30 转 × 10 币的 1% = 3 枚")
     }
+
+    // MARK: v13.1 图案是 3D 渲染的图
+    func test_icon3D_rendersEverySymbol_withTransparentCorners() throws {
+        for kind in CoinBounce.CaishenSymbol.allCases.map({ Icon3D.Kind.symbol($0) }) + [Icon3D.Kind.blankCoin, Icon3D.Kind.pile] {
+            let img = try XCTUnwrap(Icon3D.image(kind), "\(kind) 没渲染出来")
+            let cg = try XCTUnwrap(img.cgImage)
+            XCTAssertGreaterThanOrEqual(cg.width, 300)
+            // 画到一张已知格式的位图上再读像素：四角透明，中间一块有不透明的东西
+            let w = 64, h = 64
+            var px = [UInt8](repeating: 0, count: w * h * 4)
+            let ctx = try XCTUnwrap(CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                              space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+            func alpha(_ x: Int, _ y: Int) -> UInt8 { px[(y * w + x) * 4 + 3] }
+            XCTAssertEqual(alpha(0, 0), 0, "\(kind) 左上角应该透明")
+            XCTAssertEqual(alpha(w - 1, h - 1), 0, "\(kind) 右下角应该透明")
+            var solid = 0
+            for y in 16..<48 { for x in 16..<48 where alpha(x, y) > 200 { solid += 1 } }
+            XCTAssertGreaterThan(solid, 120, "\(kind) 中间应该有东西")
+        }
+        let frame = try XCTUnwrap(Icon3D.frame(size: CGSize(width: 400, height: 330), window: CGRect(x: 16, y: 34, width: 368, height: 280), scale: 2))
+        XCTAssertEqual(frame.cgImage?.width, 800)
+        // 立体的大字：中文和英文都渲染得出来
+        // 繁体的这几句曾经把 SCNText 的网格算坏（带倒角时），画出一大片刺；现在汉字不做倒角
+        for s in ["大奖！", "BIG WIN!", "财神驾到！", "財神駕到！", "鎖定重轉", "超級大獎！", "大聖駕到！", "女神降臨！", "GOD OF WEALTH!", "HOLD & RESPIN", "GRAND JACKPOT"] {
+            let img = try XCTUnwrap(Icon3D.title(s), "\(s) 没渲染出来")
+            XCTAssertEqual(img.cgImage?.width, 1080)
+        }
+    }
+
+    // MARK: v13.2 三台主题机器
+    func test_themes_renderTheirOwnSymbols_andSaveSeparately() throws {
+        XCTAssertEqual(Set(SlotTheme.allCases.map(\.saveKey)).count, 3, "三台机器各存各的")
+        XCTAssertEqual(SlotTheme.caishen.saveKey, "CoinBounce.SlotsCaishen.v1", "财神这一台沿用原来的存档")
+        for theme in [SlotTheme.wukong, .athena] {
+            XCTAssertFalse(theme.title.isEmpty)
+            for s in [CoinBounce.CaishenSymbol.ingot, .fu, .redEnvelope, .lantern, .wild] {
+                let themed = try XCTUnwrap(Icon3D.image(.symbol(s, theme)), "\(theme) \(s) 没渲染出来")
+                let base = try XCTUnwrap(Icon3D.image(.symbol(s)))
+                XCTAssertNotEqual(themed.pngData(), base.pngData(), "\(theme) 的 \(s) 应该和财神那台不一样")
+            }
+            // 字母和金币三台共用同一个模型（两次渲染的字节会差一点，所以只核对渲染得出来、大小一样）
+            XCTAssertEqual(Icon3D.image(.symbol(.ace, theme))?.size, Icon3D.image(.symbol(.ace))?.size)
+        }
+        // 财神的角色图在；另外两台的图到了以后文件名按这个规则
+        XCTAssertNotNil(SlotTheme.caishen.art(.hold))
+        XCTAssertNotNil(SlotTheme.caishen.art(.cheer))
+        XCTAssertEqual(SlotTheme(rawValue: "wukong"), .wukong)
+    }
+
+    func test_twoMachines_keepSeparateBetsAndPools() {
+        let d = UserDefaults(suiteName: "CaishenTests.themes")!
+        d.removePersistentDomain(forName: "CaishenTests.themes")
+        let w = FakeWallet(1000)
+        let a = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.wukong.saveKey), rng: PachinkoRandom(seed: 1))
+        a.changeBet(3)
+        XCTAssertTrue(a.debugSpin(stops: findStops { $0.linePay == 0 && !$0.triggers }, noGift: true))
+        a.reelsStopped(); a.finishShowing(); a.save()
+        let b = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.athena.saveKey), rng: PachinkoRandom(seed: 1))
+        XCTAssertEqual(b.bet, 1, "另一台机器的下注不受影响")
+        XCTAssertEqual(b.grandPoolCents, 0)
+        let a2 = CaishenGame(wallet: w.wallet, store: CaishenSaveStore(defaults: d, key: SlotTheme.wukong.saveKey), rng: PachinkoRandom(seed: 1))
+        XCTAssertEqual(a2.bet, 10)
+        XCTAssertEqual(a2.grandPoolCents, 10)
+        d.removePersistentDomain(forName: "CaishenTests.themes")
+    }
 }

@@ -46,18 +46,31 @@ final class Lobby3DScene: NSObject, SCNSceneRendererDelegate {
     private var frames = 0
     private var fpsWindow: TimeInterval = 0
 
-    private override init() {
-        let dx = Self.doorSpacing
-        doors = [
+    /// 四扇门的定义（x 由 layout 排）
+    static var allDoors: [Door] {
+        [
             Door(screen: .pusher, identifier: "doorPusher", title: String(localized: "Coin Pusher"),
-                 tint: UIColor(red: 1.0, green: 0.74, blue: 0.2, alpha: 1), x: -1.5 * dx),
+                 tint: UIColor(red: 1.0, green: 0.74, blue: 0.2, alpha: 1), x: 0),
             Door(screen: .roulette, identifier: "doorRoulette", title: String(localized: "Roulette"),
-                 tint: UIColor(red: 0.2, green: 0.85, blue: 0.45, alpha: 1), x: -0.5 * dx),
+                 tint: UIColor(red: 0.2, green: 0.85, blue: 0.45, alpha: 1), x: 0),
             Door(screen: .pinball, identifier: "doorPachinko", title: String(localized: "Pinball"),
-                 tint: UIColor(red: 0.4, green: 0.6, blue: 1.0, alpha: 1), x: 0.5 * dx),
+                 tint: UIColor(red: 0.4, green: 0.6, blue: 1.0, alpha: 1), x: 0),
             Door(screen: .slots, identifier: "doorSlots", title: String(localized: "Slots"),
-                 tint: UIColor(red: 0.95, green: 0.35, blue: 0.8, alpha: 1), x: 1.5 * dx),
+                 tint: UIColor(red: 0.95, green: 0.35, blue: 0.8, alpha: 1), x: 0),
         ]
+    }
+
+    /// 把要显示的门左右对称地排开。门少的时候间距放宽一点，不然两扇门挤在正中间
+    static func layout(_ shown: [Door]) -> [Door] {
+        let n = shown.count
+        let dx = doorSpacing * (n <= 2 ? 1.5 : (n == 3 ? 1.28 : 1))
+        return shown.enumerated().map { i, d in
+            Door(screen: d.screen, identifier: d.identifier, title: d.title, tint: d.tint, x: (Float(i) - Float(n - 1) / 2) * dx)
+        }
+    }
+
+    private override init() {
+        doors = Self.layout(Self.allDoors.filter { AppRouter.isAvailable($0.screen) })
         super.init()
         let t0 = CACurrentMediaTime()
         buildLights()

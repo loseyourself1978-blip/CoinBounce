@@ -9,6 +9,12 @@
             "state": "translated",
             "value": "免费转 %lld 次"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費轉 %lld 次"
+          }
         }
       }
     },
@@ -16,6 +22,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 回合"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld 回合"
@@ -30,6 +42,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 连庄！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 連莊！"
           }
         }
       }
@@ -59,6 +77,12 @@
             "state": "translated",
             "value": "还要转 %lld 次"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "還要轉 %lld 次"
+          }
         }
       }
     },
@@ -69,6 +93,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "+%lld 金币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld 金幣"
           }
         }
       }
@@ -81,6 +111,12 @@
             "state": "translated",
             "value": "10 条固定中奖线，从最左边一列开始连。每次中奖都是总下注的整数倍。期望返还约 94%。金币是虚拟的，没有现实价值。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 條固定中獎線，從最左邊一列開始連。每次中獎都是總下注的整數倍。期望返還約 94%。金幣是虛擬的，沒有現實價值。"
+          }
         }
       }
     },
@@ -90,6 +126,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "10 条固定中奖线，从最左边一列开始连。所有中奖都是总下注的倍数。期望返还率约 95%。金币是虚拟的，没有任何现实价值。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 條固定中獎線，從最左邊一列開始連。所有中獎都是總下注的倍數。期望返還率約 95%。金幣是虛擬的，沒有任何現實價值。"
           }
         }
       }
@@ -102,6 +144,12 @@
             "state": "translated",
             "value": "10 条线 · 中奖按总下注的倍数赔"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 條線 · 中獎按總下注的倍數賠"
+          }
         }
       }
     },
@@ -112,6 +160,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "3 个宝箱"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 個寶箱"
           }
         }
       }
@@ -124,6 +178,12 @@
             "state": "translated",
             "value": "3 个以上"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 個以上"
+          }
         }
       }
     },
@@ -134,6 +194,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "五连"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五連"
           }
         }
       }
@@ -146,6 +212,12 @@
             "state": "translated",
             "value": "5 列转轮 · 10 条中奖线"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 列轉輪 · 10 條中獎線"
+          }
         }
       }
     },
@@ -155,6 +227,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "出 6 枚金币开始锁定重转"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出 6 枚金幣開始鎖定重轉"
           }
         }
       }
@@ -167,6 +245,12 @@
             "state": "translated",
             "value": "开球 7 秒内掉下去的球免费还一次。返还率看技术：不打挡板约 50%，普通水平约 95%。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開球 7 秒內掉下去的球免費還一次。返還率看技術：不打擋板約 50%，普通水平約 95%。"
+          }
         }
       }
     },
@@ -177,6 +261,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币穿过 BONUS 滑块会转动老虎机。中间一行从最左边起连续 3 个及以上相同符号赢金币，整行相同就是 JACKPOT。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣穿過 BONUS 滑塊會轉動老虎機。中間一行從最左邊起連續 3 個及以上相同符號贏金幣，整行相同就是 JACKPOT。"
           }
         }
       }
@@ -189,6 +279,12 @@
             "state": "translated",
             "value": "金币从水果灯中间穿过会点亮它。7 个水果全部点亮后可以选一张奖励卡，然后水果全部熄灭，开始新一轮。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣從水果燈中間穿過會點亮它。7 個水果全部點亮後可以選一張獎勵卡，然後水果全部熄滅，開始新一輪。"
+          }
         }
       }
     },
@@ -198,6 +294,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "送你一点小礼物，4 小时后再来领哦！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送你一點小禮物，4 小時後再來領哦！"
           }
         }
       }
@@ -210,6 +312,12 @@
             "state": "translated",
             "value": "单个号码赔 35 倍。一打或一列赔 2 倍。红黑、单双、1–18 / 19–36 赔 1 倍。开出 0 时只有押 0 的赢。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "單個號碼賠 35 倍。一打或一列賠 2 倍。紅黑、單雙、1–18 / 19–36 賠 1 倍。開出 0 時只有押 0 的贏。"
+          }
         }
       }
     },
@@ -220,6 +328,44 @@
           "stringUnit": {
             "state": "translated",
             "value": "三颗星全亮！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三顆星全亮！"
+          }
+        }
+      }
+    },
+    "ATHENA DESCENDS!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降临！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降臨！"
+          }
+        }
+      }
+    },
+    "ATHENA'S TEMPLE": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雅典娜的神殿"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雅典娜的神殿"
           }
         }
       }
@@ -232,6 +378,12 @@
             "state": "translated",
             "value": "自动"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動"
+          }
         }
       }
     },
@@ -242,6 +394,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "广告隐私选项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "廣告隱私選項"
           }
         }
       }
@@ -254,6 +412,12 @@
             "state": "translated",
             "value": "直接加入余额"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接加入餘額"
+          }
         }
       }
     },
@@ -264,6 +428,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "水果全亮！选一张卡"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果全亮！選一張卡"
           }
         }
       }
@@ -276,6 +446,12 @@
             "state": "translated",
             "value": "水果灯全亮！金珠雨来啦！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果燈全亮！金珠雨來啦！"
+          }
         }
       }
     },
@@ -286,6 +462,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "中奖全部翻倍"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中獎全部翻倍"
+          }
+        }
+      }
+    },
+    "Athena's Temple just opened. Take a look?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雅典娜的神殿刚开门，来看看？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雅典娜的神殿剛開門，來看看？"
           }
         }
       }
@@ -298,6 +496,12 @@
             "state": "translated",
             "value": "本球结束"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本球結束"
+          }
         }
       }
     },
@@ -308,6 +512,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "本球结束 · +%lld 金币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本球結束 · +%lld 金幣"
           }
         }
       }
@@ -320,6 +530,12 @@
             "state": "translated",
             "value": "保球！再来一次"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保球！再來一次"
+          }
         }
       }
     },
@@ -327,6 +543,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "下注"
@@ -342,6 +564,12 @@
             "state": "translated",
             "value": "大奖！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大獎！"
+          }
         }
       }
     },
@@ -349,6 +577,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "燃爆！x%lld"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "燃爆！x%lld"
@@ -364,6 +598,12 @@
             "state": "translated",
             "value": "倍数 ×%lld · 幸运洞亮了"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "倍數 ×%lld · 幸運洞亮了"
+          }
         }
       }
     },
@@ -371,6 +611,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BOSS 立即掉 %lld%% 血"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "BOSS 立即掉 %lld%% 血"
@@ -386,6 +632,12 @@
             "state": "translated",
             "value": "兔女郎的好运"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兔女郎的好運"
+          }
         }
       }
     },
@@ -396,6 +648,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "回大厅"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回大廳"
           }
         }
       }
@@ -408,6 +666,12 @@
             "state": "translated",
             "value": "回到普通状态，这一轮结束！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到普通狀態，這一輪結束！"
+          }
         }
       }
     },
@@ -418,6 +682,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "打过的球"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打過的球"
           }
         }
       }
@@ -430,6 +700,12 @@
             "state": "translated",
             "value": "打出的珠数"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打出的珠數"
+          }
         }
       }
     },
@@ -440,6 +716,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "单串最高赢取"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "單串最高贏取"
           }
         }
       }
@@ -452,12 +734,24 @@
             "state": "translated",
             "value": "下次好运！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次好運！"
+          }
         }
       }
     },
     "Betting table": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下注桌"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "下注桌"
@@ -473,6 +767,12 @@
             "state": "translated",
             "value": "黑"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑"
+          }
         }
       }
     },
@@ -483,6 +783,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "中奖！2 回合！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中獎！2 回合！"
           }
         }
       }
@@ -495,12 +801,24 @@
             "state": "translated",
             "value": "宝箱：第 1、3、5 列同时出现宝箱就开宝箱游戏，选一个，赢 ×4 到 ×25。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "寶箱：第 1、3、5 列同時出現寶箱就開寶箱遊戲，選一個，贏 ×4 到 ×25。"
+          }
         }
       }
     },
     "Bunny": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兔女郎"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "兔女郎"
@@ -516,6 +834,12 @@
             "state": "translated",
             "value": "游戏大厅"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遊戲大廳"
+          }
         }
       }
     },
@@ -526,6 +850,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "时短  %lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短  %lld"
           }
         }
       }
@@ -538,6 +868,12 @@
             "state": "translated",
             "value": "时短 12"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短 12"
+          }
         }
       }
     },
@@ -548,6 +884,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币勇士"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣勇士"
           }
         }
       }
@@ -560,6 +902,12 @@
             "state": "translated",
             "value": "连击！x3"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連擊！x3"
+          }
         }
       }
     },
@@ -570,6 +918,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "即将开放"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "即將開放"
           }
         }
       }
@@ -582,6 +936,28 @@
             "state": "translated",
             "value": "时短！12 转快转。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短！12 轉快轉。"
+          }
+        }
+      }
+    },
+    "Choose a machine": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选一台机器"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選一台機器"
+          }
         }
       }
     },
@@ -589,6 +965,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空下注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "清空下注"
@@ -604,6 +986,12 @@
             "state": "translated",
             "value": "推币机"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推幣機"
+          }
         }
       }
     },
@@ -614,6 +1002,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "推币机正在掉金币哦！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推幣機正在掉金幣哦！"
           }
         }
       }
@@ -626,6 +1020,12 @@
             "state": "translated",
             "value": "金币是虚拟的，没有现实价值。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣是虛擬的，沒有現實價值。"
+          }
         }
       }
     },
@@ -636,6 +1036,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币穿过战斗区，国王就攻击 BOSS。打倒它救出王后，50 枚金币从顶部落下。点一下战斗区可以跳过庆祝动画。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣穿過戰鬥區，國王就攻擊 BOSS。打倒它救出王后，50 枚金幣從頂部落下。點一下戰鬥區可以跳過慶祝動畫。"
           }
         }
       }
@@ -648,6 +1054,12 @@
             "state": "translated",
             "value": "金币从顶部滑块落下，弹跳着穿过老虎机、战斗区和水果灯排，最后落到推币台上。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣從頂部滑塊落下，彈跳著穿過老虎機、戰鬥區和水果燈排，最後落到推幣台上。"
+          }
         }
       }
     },
@@ -659,6 +1071,12 @@
             "state": "translated",
             "value": "赢得的金币"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贏得的金幣"
+          }
         }
       }
     },
@@ -669,12 +1087,24 @@
             "state": "translated",
             "value": "金币：一次出现 6 枚以上就锁在原位，开始锁定重转，有 3 次重转；每落一枚新金币，重转次数补回 3 次。每枚金币按上面的数字 × 下注赔，或者赔 MINI、MINOR、MAJOR 奖池。15 格全满赢 GRAND 大奖。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣：一次出現 6 枚以上就鎖在原位，開始鎖定重轉，有 3 次重轉；每落一枚新金幣，重轉次數補回 3 次。每枚金幣按上面的數字 × 下注賠，或者賠 MINI、MINOR、MAJOR 獎池。15 格全滿贏 GRAND 大獎。"
+          }
         }
       }
     },
     "Corner": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "角注"
@@ -690,12 +1120,24 @@
             "state": "translated",
             "value": "完成"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
         }
       }
     },
     "Double bets": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加倍下注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "加倍下注"
@@ -711,6 +1153,12 @@
             "state": "translated",
             "value": "往下拖再松手，发射一颗珠"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "往下拖再鬆手，發射一顆珠"
+          }
         }
       }
     },
@@ -721,6 +1169,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "投币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "投幣"
           }
         }
       }
@@ -733,6 +1187,12 @@
             "state": "translated",
             "value": "双"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙"
+          }
         }
       }
     },
@@ -743,6 +1203,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "从前沿推落的每枚金币得 1 枚；从两侧滑落的不算。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從前沿推落的每枚金幣得 1 枚；從兩側滑落的不算。"
           }
         }
       }
@@ -755,6 +1221,12 @@
             "state": "translated",
             "value": "所有奖励都变成真的金币从顶部落下，从前沿掉下来才算你的。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有獎勵都變成真的金幣從頂部落下，從前沿掉下來才算你的。"
+          }
         }
       }
     },
@@ -765,6 +1237,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "确变  %lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確變  %lld"
           }
         }
       }
@@ -777,6 +1255,12 @@
             "state": "translated",
             "value": "确变 12"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確變 12"
+          }
         }
       }
     },
@@ -788,6 +1272,12 @@
             "state": "translated",
             "value": "狂热！x5"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "狂熱！x5"
+          }
         }
       }
     },
@@ -796,7 +1286,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "财神到"
+            "value": "天降财神"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天降財神"
           }
         }
       }
@@ -809,6 +1305,12 @@
             "state": "translated",
             "value": "免费"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費"
+          }
         }
       }
     },
@@ -818,6 +1320,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免费 +%lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費 +%lld"
           }
         }
       }
@@ -830,6 +1338,12 @@
             "state": "translated",
             "value": "免费转"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費轉"
+          }
         }
       }
     },
@@ -840,6 +1354,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "剩余免费转：%lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剩餘免費轉：%lld"
           }
         }
       }
@@ -852,6 +1372,12 @@
             "state": "translated",
             "value": "免费转共赢 %lld"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費轉共贏 %lld"
+          }
         }
       }
     },
@@ -862,6 +1388,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免费转 · 中奖全部 ×2"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費轉 · 中獎全部 ×2"
           }
         }
       }
@@ -874,6 +1406,12 @@
             "state": "translated",
             "value": "今天手气怎么样？"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天手氣怎麼樣？"
+          }
         }
       }
     },
@@ -884,6 +1422,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "确变（K、Q、7 之后）：12 转，中奖率 1/8。时短（其他大奖之后）：12 转快转，中奖率不变。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確變（K、Q、7 之後）：12 轉，中獎率 1/8。時短（其他大獎之後）：12 轉快轉，中獎率不變。"
           }
         }
       }
@@ -896,6 +1440,12 @@
             "state": "translated",
             "value": "确变！12 转高概率！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確變！12 轉高概率！"
+          }
         }
       }
     },
@@ -905,6 +1455,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "15 格全满赢 GRAND 大奖"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 格全滿贏 GRAND 大獎"
           }
         }
       }
@@ -916,6 +1472,12 @@
             "state": "translated",
             "value": "四连注"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "四連注"
+          }
         }
       }
     },
@@ -925,6 +1487,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免费金币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費金幣"
           }
         }
       }
@@ -937,6 +1505,28 @@
             "state": "translated",
             "value": "免费转：任意位置出现 3、4、5 个，赔 ×2、×5、×20，并送 8、12、20 次免费转。免费转里的中奖翻倍。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費轉：任意位置出現 3、4、5 個，賠 ×2、×5、×20，並送 8、12、20 次免費轉。免費轉裡的中獎翻倍。"
+          }
+        }
+      }
+    },
+    "GOD OF WEALTH!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "财神驾到！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "財神駕到！"
+          }
         }
       }
     },
@@ -944,6 +1534,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金珠雨！"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "金珠雨！"
@@ -959,6 +1555,12 @@
             "state": "translated",
             "value": "领 %lld 金币"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "領 %lld 金幣"
+          }
         }
       }
     },
@@ -970,6 +1572,28 @@
             "state": "translated",
             "value": "发光的是特殊金币：每推落一枚得 2 金币。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "發光的是特殊金幣：每推落一枚得 2 金幣。"
+          }
+        }
+      }
+    },
+    "Gold ingots and red envelopes": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元宝红包，财神送礼"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元寶紅包，財神送禮"
+          }
         }
       }
     },
@@ -979,6 +1603,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "锁定重转"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鎖定重轉"
           }
         }
       }
@@ -991,6 +1621,28 @@
             "state": "translated",
             "value": "火热！x4"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "火熱！x4"
+          }
+        }
+      }
+    },
+    "Havoc in the Heavenly Palace": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金箍棒一挥，蟠桃满天飞"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金箍棒一揮，蟠桃滿天飛"
+          }
         }
       }
     },
@@ -1001,6 +1653,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "帮助"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幫助"
           }
         }
       }
@@ -1013,6 +1671,12 @@
             "state": "translated",
             "value": "帮助与隐私"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幫助與隱私"
+          }
         }
       }
     },
@@ -1020,6 +1684,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最高分"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "最高分"
@@ -1035,6 +1705,12 @@
             "state": "translated",
             "value": "玩法说明"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "玩法說明"
+          }
         }
       }
     },
@@ -1045,6 +1721,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "大奖！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大獎！"
           }
         }
       }
@@ -1057,6 +1739,12 @@
             "state": "translated",
             "value": "大奖：三格同图，大入赏口张开 2、5 或 10 回合。每进一球赔 4 枚，进满 5 球算一回合。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大獎：三格同圖，大入賞口張開 2、5 或 10 回合。每進一球賠 4 枚，進滿 5 球算一回合。"
+          }
         }
       }
     },
@@ -1068,6 +1756,12 @@
             "state": "translated",
             "value": "大奖次数"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大獎次數"
+          }
         }
       }
     },
@@ -1075,6 +1769,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K-Q-J 全倒！"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "K-Q-J 全倒！"
@@ -1090,6 +1790,12 @@
             "state": "translated",
             "value": "国王"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "國王"
+          }
         }
       }
     },
@@ -1100,6 +1806,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "国王重击"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "國王重擊"
           }
         }
       }
@@ -1112,6 +1824,12 @@
             "state": "translated",
             "value": "幸运灯"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幸運燈"
+          }
         }
       }
     },
@@ -1122,6 +1840,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "7 盏全亮 下金珠雨"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 盞全亮 下金珠雨"
           }
         }
       }
@@ -1134,6 +1858,12 @@
             "state": "translated",
             "value": "连线赔付（总下注的倍数）"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連線賠付（總下注的倍數）"
+          }
         }
       }
     },
@@ -1144,6 +1874,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "广告加载中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "廣告加載中"
           }
         }
       }
@@ -1156,6 +1892,12 @@
             "state": "translated",
             "value": "最长连庄"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最長連莊"
+          }
         }
       }
     },
@@ -1166,6 +1908,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "幸运杯接住啦！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幸運杯接住啦！"
           }
         }
       }
@@ -1178,6 +1926,12 @@
             "state": "translated",
             "value": "幸运灯"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幸運燈"
+          }
         }
       }
     },
@@ -1188,6 +1942,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "幸运灯：珠子每进一次郁金香或幸运杯，点亮一盏水果灯。7 盏全亮，顶上落下 6 颗免费的金珠。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "幸運燈：珠子每進一次鬱金香或幸運杯，點亮一盞水果燈。7 盞全亮，頂上落下 6 顆免費的金珠。"
           }
         }
       }
@@ -1200,6 +1960,12 @@
             "state": "translated",
             "value": "超级连击！x%lld"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超級連擊！x%lld"
+          }
         }
       }
     },
@@ -1210,6 +1976,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "这一球已赢到上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這一球已贏到上限"
           }
         }
       }
@@ -1222,6 +1994,12 @@
             "state": "translated",
             "value": "超级大奖！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超級大獎！"
+          }
         }
       }
     },
@@ -1232,6 +2010,28 @@
             "state": "translated",
             "value": "MINI 是下注的 %lld 倍，MINOR %lld 倍，MAJOR %lld 倍，GRAND %lld 倍。每次下注的百分之一会累积进 GRAND，直到你赢走它。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINI 是下注的 %lld 倍，MINOR %lld 倍，MAJOR %lld 倍，GRAND %lld 倍。每次下注的百分之一會累積進 GRAND，直到你贏走它。"
+          }
+        }
+      }
+    },
+    "MONKEY KING": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣闹天宫"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大聖鬧天宮"
+          }
         }
       }
     },
@@ -1239,6 +2039,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多球！"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "多球！"
@@ -1254,6 +2060,12 @@
             "state": "translated",
             "value": "神秘奖：+%lld 分"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神秘獎：+%lld 分"
+          }
         }
       }
     },
@@ -1264,6 +2076,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "神秘奖：加一颗球"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神秘獎：加一顆球"
           }
         }
       }
@@ -1276,6 +2094,12 @@
             "state": "translated",
             "value": "神秘奖：蘑菇柱 ×3"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神秘獎：蘑菇柱 ×3"
+          }
         }
       }
     },
@@ -1286,6 +2110,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "任务 1/4：打倒 K、Q、J"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任務 1/4：打倒 K、Q、J"
           }
         }
       }
@@ -1298,6 +2128,12 @@
             "state": "translated",
             "value": "任务 2/4：撞蘑菇柱 %lld/%lld"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任務 2/4：撞蘑菇柱 %lld/%lld"
+          }
         }
       }
     },
@@ -1308,6 +2144,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "任务 3/4：点亮三颗星"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任務 3/4：點亮三顆星"
           }
         }
       }
@@ -1320,6 +2162,12 @@
             "state": "translated",
             "value": "任务 4/4：打进幸运洞！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任務 4/4：打進幸運洞！"
+          }
         }
       }
     },
@@ -1330,6 +2178,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "任务：打倒 K-Q-J → 撞蘑菇柱 12 次 → 点亮三颗星 → 打进幸运洞，开大奖并进入三球齐发。点亮 7-7-7 会提高得分倍数（最高 ×5），并点亮幸运洞的神秘奖。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任務：打倒 K-Q-J → 撞蘑菇柱 12 次 → 點亮三顆星 → 打進幸運洞，開大獎並進入三球齊發。點亮 7-7-7 會提高得分倍數（最高 ×5），並點亮幸運洞的神秘獎。"
           }
         }
       }
@@ -1342,6 +2196,12 @@
             "state": "translated",
             "value": "背景音乐"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "背景音樂"
+          }
         }
       }
     },
@@ -1353,6 +2213,12 @@
             "state": "translated",
             "value": "下一枚金币"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一枚金幣"
+          }
         }
       }
     },
@@ -1360,6 +2226,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一回合"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "下一回合"
@@ -1375,6 +2247,12 @@
             "state": "translated",
             "value": "漂亮！x2"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "漂亮！x2"
+          }
         }
       }
     },
@@ -1386,6 +2264,12 @@
             "state": "translated",
             "value": "进了！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "進了！"
+          }
         }
       }
     },
@@ -1396,6 +2280,12 @@
             "state": "translated",
             "value": "暂时没有可用的广告，请检查网络后再试。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫時沒有可用的廣告，請檢查網路後再試。"
+          }
         }
       }
     },
@@ -1403,6 +2293,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下注！"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "停止下注！"
@@ -1418,6 +2314,12 @@
             "state": "translated",
             "value": "金币不足"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣不足"
+          }
         }
       }
     },
@@ -1428,6 +2330,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金币不够了。看广告领 +50！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣不夠了。看廣告領 +50！"
           }
         }
       }
@@ -1440,6 +2348,12 @@
             "state": "translated",
             "value": "单个号码 35:1 · 打 / 列 2:1 · 其他 1:1"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "單個號碼 35:1 · 打 / 列 2:1 · 其他 1:1"
+          }
         }
       }
     },
@@ -1450,6 +2364,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "单"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "單"
           }
         }
       }
@@ -1462,15 +2382,27 @@
             "state": "translated",
             "value": "概率：每转中奖率 1/21.2。金色区下的期望返还约 96%，其他力度更低。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概率：每轉中獎率 1/21.2。金色區下的期望返還約 96%，其他力度更低。"
+          }
         }
       }
     },
-    "On any spin the God of Wealth may come down and scatter coins worth ×%lld to ×%lld of your bet.": {
+    "On any spin a surprise visit may scatter coins worth ×%lld to ×%lld of your bet.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每一转财神都有可能从天而降撒金币，给下注的 %lld 到 %lld 倍。"
+            "value": "每一转都有可能迎来一次神仙驾临，撒下下注 %lld 到 %lld 倍的金币。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每一轉都有可能迎來一次神仙駕臨，撒下下注 %lld 到 %lld 倍的金幣。"
           }
         }
       }
@@ -1483,6 +2415,12 @@
             "state": "translated",
             "value": "一枚金币一颗球。把右下角的弹簧往下拉、松手发射。点屏幕左半边或右半边，打对应的挡板，别让球掉下去。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一枚金幣一顆球。把右下角的彈簧往下拉、鬆手發射。點螢幕左半邊或右半邊，打對應的擋板，別讓球掉下去。"
+          }
         }
       }
     },
@@ -1493,6 +2431,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "一枚金币买一颗珠。把弹簧拉杆往下拉、松手就发射；「自动」会按上一发的力度连续打。拉到金色那一段最好打。太轻掉回来的珠子不扣币。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一枚金幣買一顆珠。把彈簧拉桿往下拉、鬆手就發射；「自動」會按上一髮的力度連續打。拉到金色那一段最好打。太輕掉回來的珠子不扣幣。"
           }
         }
       }
@@ -1505,6 +2449,12 @@
             "state": "translated",
             "value": "再亮一盏水果灯就满了！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再亮一盞水果燈就滿了！"
+          }
         }
       }
     },
@@ -1515,6 +2465,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "珠子打完了，再来点？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "珠子打完了，再來點？"
           }
         }
       }
@@ -1527,6 +2483,12 @@
             "state": "translated",
             "value": "金币不够？看个短广告领 50。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金幣不夠？看個短廣告領 50。"
+          }
         }
       }
     },
@@ -1538,6 +2500,28 @@
             "state": "translated",
             "value": "选一个宝箱"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選一個寶箱"
+          }
+        }
+      }
+    },
+    "PLAY": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开玩"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開玩"
+          }
         }
       }
     },
@@ -1545,6 +2529,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下拉"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "下拉"
@@ -1560,6 +2550,12 @@
             "state": "translated",
             "value": "弹子机"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈子機"
+          }
         }
       }
     },
@@ -1570,6 +2566,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "弹子机即将开放！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈子機即將開放！"
           }
         }
       }
@@ -1582,6 +2584,12 @@
             "state": "translated",
             "value": "弹子机统计"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈子機統計"
+          }
         }
       }
     },
@@ -1592,6 +2600,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "赔付表"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "賠付表"
           }
         }
       }
@@ -1604,6 +2618,28 @@
             "state": "translated",
             "value": "选一个筹码，点台面下注，再点 SPIN。每局最多下注 50 枚金币。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選一個籌碼，點台面下注，再點 SPIN。每局最多下注 50 枚金幣。"
+          }
+        }
+      }
+    },
+    "Pick one of three machines. Set your bet and tap SPIN. Matching symbols on any of 10 lines, starting from the left reel, win a multiple of your bet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台机器任选一台。调好下注，点 SPIN。10 条中奖线上从最左一列开始连成相同图案，就赢下注的若干倍。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台機器任選一台。調好下注，點 SPIN。10 條中獎線上從最左一列開始連成相同圖案，就贏下注的若干倍。"
+          }
         }
       }
     },
@@ -1614,6 +2650,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "弹球台"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈球台"
           }
         }
       }
@@ -1626,6 +2668,12 @@
             "state": "translated",
             "value": "弹球台统计"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈球台統計"
+          }
         }
       }
     },
@@ -1636,6 +2684,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "请下注！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請下注！"
           }
         }
       }
@@ -1648,6 +2702,12 @@
             "state": "translated",
             "value": "入口：中间的始动口赔 1 币并转一次数字盘。郁金香赔 2 币，每进一球开合一次。两侧袖口赔 1 币。底部来回滑动的幸运杯赔 2 币。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入口：中間的始動口賠 1 幣並轉一次數字盤。鬱金香賠 2 幣，每進一球開合一次。兩側袖口賠 1 幣。底部來回滑動的幸運杯賠 2 幣。"
+          }
         }
       }
     },
@@ -1658,6 +2718,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "力度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度"
+          }
+        }
+      }
+    },
+    "Press and slide on the table to aim: on a line between two numbers, on a corner of four, or on the left edge of a row. The covered numbers light up with the payout. Release to place the chip.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住在桌上滑动来选注：停在两个号码之间的线上、四个号码的角上，或者一行的左边线上。被覆盖的号码会亮起来并显示赔率，松手就下注。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住在桌上滑動來選注：停在兩個號碼之間的線上、四個號碼的角上，或者一行的左邊線上。被覆蓋的號碼會亮起來並顯示賠率，放開就下注。"
           }
         }
       }
@@ -1670,6 +2752,12 @@
             "state": "translated",
             "value": "隐私政策"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隱私政策"
+          }
         }
       }
     },
@@ -1680,6 +2768,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "下拉弹簧发射 · 一币一球"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下拉彈簧發射 · 一幣一球"
           }
         }
       }
@@ -1692,6 +2786,12 @@
             "state": "translated",
             "value": "听牌"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聽牌"
+          }
         }
       }
     },
@@ -1702,6 +2802,12 @@
             "state": "translated",
             "value": "重转"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重轉"
+          }
         }
       }
     },
@@ -1709,6 +2815,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld/%lld 回合"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld/%lld 回合"
@@ -1724,6 +2836,12 @@
             "state": "translated",
             "value": "听牌！来呀……"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聽牌！來呀……"
+          }
         }
       }
     },
@@ -1734,6 +2852,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "红"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紅"
           }
         }
       }
@@ -1746,6 +2870,12 @@
             "state": "translated",
             "value": "转轮"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轉輪"
+          }
         }
       }
     },
@@ -1756,6 +2886,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "重复上一局"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重復上一局"
           }
         }
       }
@@ -1768,6 +2904,12 @@
             "state": "translated",
             "value": "实际返还率"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "實際返還率"
+          }
         }
       }
     },
@@ -1778,6 +2920,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "奖励到手！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獎勵到手！"
           }
         }
       }
@@ -1790,6 +2938,12 @@
             "state": "translated",
             "value": "奖励规则"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獎勵規則"
+          }
         }
       }
     },
@@ -1800,6 +2954,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "轮盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輪盤"
           }
         }
       }
@@ -1812,6 +2972,12 @@
             "state": "translated",
             "value": "第 %lld 回合！继续打！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 回合！繼續打！"
+          }
         }
       }
     },
@@ -1822,6 +2988,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "开始啦！瞄准中间的口。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始啦！瞄准中間的口。"
           }
         }
       }
@@ -1834,6 +3006,12 @@
             "state": "translated",
             "value": "皇家大奖！5 回合！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皇家大獎！5 回合！"
+          }
         }
       }
     },
@@ -1844,6 +3022,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "三个七！10 回合！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三個七！10 回合！"
           }
         }
       }
@@ -1856,6 +3040,12 @@
             "state": "translated",
             "value": "继续打！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續打！"
+          }
         }
       }
     },
@@ -1866,6 +3056,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "超级听牌"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超級聽牌"
           }
         }
       }
@@ -1878,6 +3074,12 @@
             "state": "translated",
             "value": "超级听牌！这次有戏！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超級聽牌！這次有戲！"
+          }
         }
       }
     },
@@ -1887,6 +3089,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "超级大奖！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超級大獎！"
           }
         }
       }
@@ -1899,6 +3107,12 @@
             "state": "translated",
             "value": "撞蘑菇柱、弹弓，过 7-7-7 滚道，打 K-Q-J 落靶、三颗星和幸运洞都得分。每 9,500 分换 1 枚金币，没用完的分数留到下一球。一颗球最多赢 15 枚金币。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撞蘑菇柱、彈弓，過 7-7-7 滾道，打 K-Q-J 落靶、三顆星和幸運洞都得分。每 9,500 分換 1 枚金幣，沒用完的分數留到下一球。一顆球最多贏 15 枚金幣。"
+          }
         }
       }
     },
@@ -1910,6 +3124,12 @@
             "state": "translated",
             "value": "设置"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
         }
       }
     },
@@ -1919,6 +3139,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "线注"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "線注"
+          }
+        }
+      }
+    },
+    "Six or more coins lock in place and start Hold & Respin. Fill all 15 spaces to win the GRAND jackpot.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次出现 6 枚以上金币会锁在原位，开始锁定重转。15 格全满赢 GRAND 大奖。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次出現 6 枚以上金幣會鎖在原位，開始鎖定重轉。15 格全滿贏 GRAND 大獎。"
           }
         }
       }
@@ -1931,6 +3173,12 @@
             "state": "translated",
             "value": "老虎机"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "老虎機"
+          }
         }
       }
     },
@@ -1941,6 +3189,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "就差一点！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就差一點！"
           }
         }
       }
@@ -1953,6 +3207,12 @@
             "state": "translated",
             "value": "声音与震动"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聲音與震動"
+          }
         }
       }
     },
@@ -1960,6 +3220,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音效"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "音效"
@@ -1975,12 +3241,24 @@
             "state": "translated",
             "value": "特殊图案"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "特殊圖案"
+          }
         }
       }
     },
     "Split": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "分注"
@@ -1996,6 +3274,12 @@
             "state": "translated",
             "value": "弹簧拉杆"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彈簧拉桿"
+          }
         }
       }
     },
@@ -2006,12 +3290,24 @@
             "state": "translated",
             "value": "直注"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直注"
+          }
         }
       }
     },
     "Street": {
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "街注"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "街注"
@@ -2027,6 +3323,12 @@
             "state": "translated",
             "value": "支持"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支援"
+          }
         }
       }
     },
@@ -2037,6 +3339,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "点左边"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點左邊"
           }
         }
       }
@@ -2049,6 +3357,28 @@
             "state": "translated",
             "value": "点右边"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點右邊"
+          }
+        }
+      }
+    },
+    "THE MONKEY KING!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣驾到！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大聖駕到！"
+          }
         }
       }
     },
@@ -2060,6 +3390,12 @@
             "state": "translated",
             "value": "太轻了，再拉多一点"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太輕了，再拉多一點"
+          }
         }
       }
     },
@@ -2067,6 +3403,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每局最多下注 %lld 枚"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "每局最多下注 %lld 枚"
@@ -2082,6 +3424,12 @@
             "state": "translated",
             "value": "点击 $ 按钮投一枚金币，按住不放可以连续投币。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點按 $ 按鈕投一枚金幣，按住不放可以連續投幣。"
+          }
         }
       }
     },
@@ -2092,6 +3440,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "点击跳过"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點按跳過"
           }
         }
       }
@@ -2104,15 +3458,43 @@
             "state": "translated",
             "value": "点顶部的 ▶ +50 看一段短广告领 50 金币，每 90 秒一次，每天最多 10 次。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點頂部的 ▶ +50 看一段短廣告領 50 金幣，每 90 秒一次，每天最多 10 次。"
+          }
         }
       }
     },
-    "The God of Wealth is here!": {
+    "Test mode: coins topped up to %lld.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "财神到！"
+            "value": "测试模式：金币补到 %lld 了。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "測試模式：金幣補到 %lld 了。"
+          }
+        }
+      }
+    },
+    "The Monkey King has a prize for you.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大圣闹天宫开张了，去转两把？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大聖鬧天宮開張了，去轉兩把？"
           }
         }
       }
@@ -2125,6 +3507,28 @@
             "state": "translated",
             "value": "大口开着呢，接着打！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大口開著呢，接著打！"
+          }
+        }
+      }
+    },
+    "The pusher jackpot is at %lld coins. Want a try?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推币机奖池现在有 %lld 枚，要不要去试试？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推幣機獎池現在有 %lld 枚，要不要去試試？"
+          }
         }
       }
     },
@@ -2135,6 +3539,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "推板前后往复，被推出前沿掉下去的金币都归你。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推板前後往復，被推出前沿掉下去的金幣都歸你。"
           }
         }
       }
@@ -2147,6 +3557,12 @@
             "state": "translated",
             "value": "轮盘开台啦！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輪盤開台啦！"
+          }
         }
       }
     },
@@ -2157,6 +3573,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "老虎机免费转 %lld 次"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "老虎機免費轉 %lld 次"
           }
         }
       }
@@ -2169,6 +3591,28 @@
             "state": "translated",
             "value": "郁金香开了！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鬱金香開了！"
+          }
+        }
+      }
+    },
+    "Three slot machines are waiting!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台老虎机等你来转！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台老虎機等你來轉！"
+          }
         }
       }
     },
@@ -2179,6 +3623,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "太重了，试试金色那一段。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太重了，試試金色那一段。"
           }
         }
       }
@@ -2191,6 +3641,12 @@
             "state": "translated",
             "value": "太轻了！弹簧再拉多一点。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太輕了！彈簧再拉多一點。"
+          }
         }
       }
     },
@@ -2198,6 +3654,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "力度太小，珠子退回上皿了。"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "力度太小，珠子退回上皿了。"
@@ -2213,6 +3675,28 @@
             "state": "translated",
             "value": "上皿"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上皿"
+          }
+        }
+      }
+    },
+    "Treasures of the temple": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神殿里的金盔与神盾"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神殿裡的金盔與神盾"
+          }
         }
       }
     },
@@ -2222,6 +3706,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "三连注"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三連注"
+          }
+        }
+      }
+    },
+    "Try the new slots. The God of Wealth is in!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要不要试试新版老虎机？财神在等你。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要不要試試新版老虎機？財神在等你。"
           }
         }
       }
@@ -2234,6 +3740,12 @@
             "state": "translated",
             "value": "撤销"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤銷"
+          }
         }
       }
     },
@@ -2241,6 +3753,12 @@
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本"
+          }
+        },
+        "zh-Hant": {
           "stringUnit": {
             "state": "translated",
             "value": "版本"
@@ -2256,6 +3774,12 @@
             "state": "translated",
             "value": "震动"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "震動"
+          }
         }
       }
     },
@@ -2266,6 +3790,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "赢"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贏"
           }
         }
       }
@@ -2278,6 +3808,12 @@
             "state": "translated",
             "value": "看广告"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看廣告"
+          }
         }
       }
     },
@@ -2288,6 +3824,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "看广告免费领 %lld 金币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看廣告免費領 %lld 金幣"
           }
         }
       }
@@ -2300,6 +3842,12 @@
             "state": "translated",
             "value": "欢迎来到弹子机！往下拉弹簧，松手发射。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "歡迎來到彈子機！往下拉彈簧，鬆手發射。"
+          }
         }
       }
     },
@@ -2310,6 +3858,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "欢迎光临！选一个游戏吧。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "歡迎光臨！選一個遊戲吧。"
           }
         }
       }
@@ -2322,15 +3876,27 @@
             "state": "translated",
             "value": "百搭：在中奖线上可以当任何水果、宝石、皇冠或 7。只出现在第 2、3、4 列。"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "百搭：在中獎線上可以當任何水果、寶石、皇冠或 7。只出現在第 2、3、4 列。"
+          }
         }
       }
     },
-    "Wild: the God of Wealth replaces any symbol on a line. Appears on reels 2, 3 and 4.": {
+    "Wild: replaces any symbol on a line. Appears on reels 2, 3 and 4.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "百搭：财神可以代替中奖线上的任何图案，只出现在第 2、3、4 列。"
+            "value": "百搭：可以代替中奖线上的任何图案，只出现在第 2、3、4 列。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "百搭：可以代替中獎線上的任何圖案，只出現在第 2、3、4 列。"
           }
         }
       }
@@ -2343,6 +3909,12 @@
             "state": "translated",
             "value": "你赢了"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你贏了"
+          }
         }
       }
     },
@@ -2354,6 +3926,12 @@
             "state": "translated",
             "value": "赢了 %lld 枚！"
           }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贏了 %lld 枚！"
+          }
         }
       }
     },
@@ -2364,6 +3942,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "这一轮赢了 %lld 枚！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這一輪贏了 %lld 枚！"
+          }
+        }
+      }
+    },
+    "Your free coins are ready. Tap the red envelope!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免费金币可以领了，点一下红包！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "免費金幣可以領了，點一下紅包！"
           }
         }
       }
