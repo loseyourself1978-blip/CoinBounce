@@ -28,6 +28,7 @@ struct HelpView: View {
                 if AppRouter.isAvailable(.roulette) {
                 Section("Roulette") {
                     row("circle.circle.fill", "Pick a chip, tap the table to place bets, then tap SPIN. You can bet up to 50 coins per spin.")
+                    row("hand.draw.fill", "Press and slide on the table to aim: on a line between two numbers, on a corner of four, or on the left edge of a row. The covered numbers light up with the payout. Release to place the chip.")
                     row("list.number", "A single number pays 35 to 1. A dozen or a column pays 2 to 1. Red or black, odd or even, 1–18 or 19–36 pay 1 to 1. Zero wins only for a bet on 0.")
                 }
                 }

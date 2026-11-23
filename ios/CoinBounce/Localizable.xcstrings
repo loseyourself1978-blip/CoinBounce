@@ -2728,6 +2728,22 @@
         }
       }
     },
+    "Press and slide on the table to aim: on a line between two numbers, on a corner of four, or on the left edge of a row. The covered numbers light up with the payout. Release to place the chip.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住在桌上滑动来选注：停在两个号码之间的线上、四个号码的角上，或者一行的左边线上。被覆盖的号码会亮起来并显示赔率，松手就下注。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住在桌上滑動來選注：停在兩個號碼之間的線上、四個號碼的角上，或者一行的左邊線上。被覆蓋的號碼會亮起來並顯示賠率，放開就下注。"
+          }
+        }
+      }
+    },
     "Privacy Policy": {
       "extractionState": "manual",
       "localizations": {
