@@ -42,8 +42,16 @@ struct RouletteView: View {
                     // 转盘（左）+ 兔女郎荷官和气泡（右）
                     HStack(alignment: .bottom, spacing: 0) {
                         ZStack {
-                            RouletteWheelView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
-                                .frame(width: wheelD, height: wheelD)
+                            // v12.9：立体的转盘（-fxOff 时退回 2D 画法）
+                            if VisualFX.enabled {
+                                RouletteWheel3DView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
+                                    .frame(width: wheelD, height: wheelD)
+                                    .accessibilityElement()
+                                    .accessibilityIdentifier("rouletteWheel")
+                            } else {
+                                RouletteWheelView(spinStart: spinStart, wheelStart: wheelStart, result: ballNumber)
+                                    .frame(width: wheelD, height: wheelD)
+                            }
                             if game.phase == .result, let n = game.result {
                                 resultBadge(n).transition(.scale(scale: 0.4).combined(with: .opacity))
                             }
