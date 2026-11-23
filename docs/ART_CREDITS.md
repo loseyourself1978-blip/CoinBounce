@@ -27,6 +27,12 @@
 - App 里用的是裁掉透明边、缩到 1100 高的版本（头像 800 高）：`CaishenGreet`、`CaishenWave`、`CaishenCheer`、`CaishenHead`、`CaishenIngot`、`CaishenIdle`。
 - 财神是公有领域的民间神祇形象，这一版是原创生成的造型，没有照搬任何现成游戏或影视里的角色。
 
+## 孙悟空、雅典娜和老虎机背景（v13.3 起使用）
+
+- 2026-11-23 hj 用 ChatGPT 生成：孙悟空 6 张（`~/Downloads/兔女郎素材/wukong/`）、雅典娜 7 张（`athena/`，其中「金盔致意像」比例不一致没有用）、三张背景画（财神的在 `caishen/`）。提示词在 `~/Downloads/兔女郎素材/金币勇士_美术素材清单.md` 和项目讨论里。
+- App 里的素材名：`WukongGreet / Wave / Cheer / Head / Staff / Idle`，`AthenaGreet / Wave / Cheer / Head / Shield / Idle`，`CaishenBG / WukongBG / AthenaBG`（背景放大到 1206 宽，存成 JPEG）。
+- 孙悟空取自《西游记》，雅典娜取自希腊神话，都是公有领域题材；造型是原创生成的，没有照搬任何现成动画、电影、游戏里的角色。
+
 ## 国王与王后（v12 / 1.1 起使用）
 
 | 素材名 | 尺寸 | 用途 |

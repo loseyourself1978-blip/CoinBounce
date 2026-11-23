@@ -649,7 +649,20 @@ struct CaishenBackdrop: View {
     var body: some View {
         ZStack {
             LinearGradient(colors: theme.backdrop, startPoint: .top, endPoint: .bottom)
-            RadialGradient(colors: [theme.glow.opacity(0.4), .clear], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: 420)
+            if let bg = theme.background {
+                // v13.3：背景画。上面压一层暗色，转轮、奖池和按钮上的字才清楚
+                GeometryReader { geo in
+                    Image(uiImage: bg)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+                LinearGradient(stops: [.init(color: .black.opacity(0.45), location: 0), .init(color: .black.opacity(0.12), location: 0.3),
+                                       .init(color: .black.opacity(0.2), location: 0.7), .init(color: .black.opacity(0.6), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            RadialGradient(colors: [theme.glow.opacity(theme.background == nil ? 0.4 : 0.15), .clear], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: 420)
             // 斜格的暗纹（窗棂）
             Canvas { ctx, size in
                 let step: CGFloat = 34

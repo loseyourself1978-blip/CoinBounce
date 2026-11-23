@@ -14,7 +14,7 @@ enum BunnyScript {
     static let lobbyGreetings: [String] = [
         String(localized: "Welcome! Pick a game."),
         String(localized: "Feeling lucky today?"),
-        String(localized: "The roulette table is open!"),
+        String(localized: "Three slot machines are waiting!"),
         String(localized: "Coins are falling at the pusher!"),
         String(localized: "Out of coins? Watch a short ad for 50."),
     ]

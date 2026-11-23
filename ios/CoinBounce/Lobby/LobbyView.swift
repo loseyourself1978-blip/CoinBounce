@@ -52,15 +52,19 @@ struct LobbyView: View {
                                 router.open(.pusher)
                             }
                             .accessibilityIdentifier("doorPusher")
+                            if AppRouter.isAvailable(.roulette) {
                             LobbyDoor(title: String(localized: "Roulette"), tint: Color(red: 0.2, green: 0.75, blue: 0.45), icon: .roulette, locked: false, width: doorW, height: doorH) {
                                 router.open(.roulette)
                             }
                             .accessibilityIdentifier("doorRoulette")
+                            }
                             // v12.7：第三扇门换成弹球台（弹子机的代码还在，-startPachinko 能进）
+                            if AppRouter.isAvailable(.pinball) {
                             LobbyDoor(title: String(localized: "Pinball"), tint: Color(red: 0.45, green: 0.6, blue: 1.0), icon: .pachinko, locked: false, width: doorW, height: doorH) {
                                 router.open(.pinball)
                             }
                             .accessibilityIdentifier("doorPachinko")
+                            }
                             // v12.8：第四扇门，老虎机
                             LobbyDoor(title: String(localized: "Slots"), tint: Color(red: 0.85, green: 0.3, blue: 0.75), icon: .slots, locked: false, width: doorW, height: doorH) {
                                 router.open(.slots)

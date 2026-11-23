@@ -101,6 +101,9 @@ enum SlotTheme: String, CaseIterable, Hashable, Identifiable {
         return UIImage(named: name)
     }
 
+    /// 这台机器的背景画（hj 出的图）；没有时用配色画的渐变
+    var background: UIImage? { UIImage(named: assetPrefix + "BG") }
+
     /// 存档用的键：每台机器各存各的下注、统计和 GRAND 奖池（财神这一台沿用原来的键）
     var saveKey: String {
         self == .caishen ? "CoinBounce.SlotsCaishen.v1" : "CoinBounce.Slots.\(rawValue).v1"

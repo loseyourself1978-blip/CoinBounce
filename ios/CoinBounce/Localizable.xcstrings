@@ -816,7 +816,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "财神到"
+            "value": "天降财神"
           }
         }
       }
@@ -1667,6 +1667,16 @@
         }
       }
     },
+    "Pick one of three machines. Set your bet and tap SPIN. Matching symbols on any of 10 lines, starting from the left reel, win a multiple of your bet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台机器任选一台。调好下注，点 SPIN。10 条中奖线上从最左一列开始连成相同图案，就赢下注的若干倍。"
+          }
+        }
+      }
+    },
     "Pinball": {
       "extractionState": "manual",
       "localizations": {
@@ -1983,6 +1993,16 @@
         }
       }
     },
+    "Six or more coins lock in place and start Hold & Respin. Fill all 15 spaces to win the GRAND jackpot.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次出现 6 枚以上金币会锁在原位，开始锁定重转。15 格全满赢 GRAND 大奖。"
+          }
+        }
+      }
+    },
     "Slots": {
       "extractionState": "manual",
       "localizations": {
@@ -2172,7 +2192,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "财神到！"
+            "value": "财神驾到！"
           }
         }
       }
@@ -2248,6 +2268,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "郁金香开了！"
+          }
+        }
+      }
+    },
+    "Three slot machines are waiting!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三台老虎机等你来转！"
           }
         }
       }
