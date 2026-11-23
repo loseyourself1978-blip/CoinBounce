@@ -36,14 +36,15 @@ final class Look3DTests: XCTestCase {
     // MARK: 大厅
     func test_lobbyDoors_matchTheRouterAndStandInARow() {
         let scene = Lobby3DScene.shared
-        // v13.3：首发只开推币机和老虎机，轮盘和弹球台的门先藏起来
-        XCTAssertEqual(scene.doors.map(\.screen), [.pusher, .slots])
-        XCTAssertEqual(scene.doors.map(\.identifier), ["doorPusher", "doorSlots"], "和 2D 大厅同一套标识")
+        // v13.3：首发开推币机、轮盘、老虎机，只把弹球台的门藏起来
+        XCTAssertEqual(scene.doors.map(\.screen), [.pusher, .roulette, .slots])
+        XCTAssertEqual(scene.doors.map(\.identifier), ["doorPusher", "doorRoulette", "doorSlots"], "和 2D 大厅同一套标识")
         XCTAssertTrue(scene.doors.allSatisfy { !$0.title.isEmpty })
-        XCTAssertEqual(scene.doors[0].x, -scene.doors[1].x, accuracy: 1e-5, "左右对称")
-        XCTAssertFalse(AppRouter.isAvailable(.roulette, arguments: []))
+        XCTAssertEqual(scene.doors[0].x, -scene.doors[2].x, accuracy: 1e-5, "左右对称")
+        XCTAssertEqual(scene.doors[1].x, 0, accuracy: 1e-5)
+        XCTAssertTrue(AppRouter.isAvailable(.roulette, arguments: []))
         XCTAssertFalse(AppRouter.isAvailable(.pinball, arguments: []))
-        XCTAssertTrue(AppRouter.isAvailable(.roulette, arguments: ["-showAllGames"]))
+        XCTAssertTrue(AppRouter.isAvailable(.pinball, arguments: ["-showAllGames"]))
         // 四扇门都显示时的排法没变
         let all = Lobby3DScene.layout(Lobby3DScene.allDoors)
         XCTAssertEqual(all.map(\.identifier), ["doorPusher", "doorRoulette", "doorPachinko", "doorSlots"])
@@ -68,7 +69,7 @@ final class Look3DTests: XCTestCase {
             let doors = scene.doorRects()
             let sign = scene.signRect()
             XCTAssertEqual(doors.count, scene.doors.count)
-            XCTAssertEqual(doors.count, 2, "首发只开两扇门")
+            XCTAssertEqual(doors.count, 3, "首发开三扇门")
             for (i, r) in doors.enumerated() {
                 XCTAssertGreaterThanOrEqual(r.minX, -1, "\(size) 第 \(i + 1) 扇门左边没出画面")
                 XCTAssertLessThanOrEqual(r.maxX, size.width + 1, "\(size) 第 \(i + 1) 扇门右边没出画面")

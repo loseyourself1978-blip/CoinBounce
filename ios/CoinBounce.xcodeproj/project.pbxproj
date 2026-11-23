@@ -15,6 +15,7 @@
 		184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB71AAE3EE93F8793ACBED3E /* SlotsHallView.swift */; };
 		18F0A683ACAB7E2A161946B6 /* Look3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB8043ACBF1ABCAC4903181 /* Look3DTests.swift */; };
 		22A6A0D9EA11E150B261230E /* PachinkoBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD1C79C13D02DD45B5F0E98 /* PachinkoBoard.swift */; };
+		29672ADE467F693E5E6AF9D0 /* TesterMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FD6E13356B497A4CC6D8C6 /* TesterMode.swift */; };
 		2A19393A2484843B2A26505E /* sfx_pk_nail_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */; };
 		2DDA713780278ED4154D583C /* CaishenMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D249B1492E6A97B3A58EDDB /* CaishenMath.swift */; };
 		2F7E076F83C8BAFF7644BAC3 /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
@@ -165,6 +166,7 @@
 		7DF928B901EA8D655B87044F /* PinballRules.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinballRules.swift; sourceTree = "<group>"; };
 		7FAF6779E27419A23B922DE4 /* sfx_pk_reach.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_reach.wav; sourceTree = "<group>"; };
 		89F6178C545882280857C1B8 /* SlotsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsView.swift; sourceTree = "<group>"; };
+		89FD6E13356B497A4CC6D8C6 /* TesterMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TesterMode.swift; sourceTree = "<group>"; };
 		8F9D22FB65982B81AE3BA40B /* CaishenView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CaishenView.swift; path = CaishenView.swift; sourceTree = "<group>"; };
 		9CD7704557FE7D86E3DF6A15 /* sfx_pk_launch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_launch.wav; sourceTree = "<group>"; };
 		9FDACF94A05A4C256E1C0D07 /* sfx_pk_nail_1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_nail_1.wav; sourceTree = "<group>"; };
@@ -354,6 +356,7 @@
 				B1A1E1E22C00000100000001 /* CoinBounceApp.swift */,
 				C0C08BE306C19A1AD748AA16 /* AppConfig.swift */,
 				FDC5E8C7942286AE1B061531 /* ReviewPrompt.swift */,
+				89FD6E13356B497A4CC6D8C6 /* TesterMode.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -732,6 +735,7 @@
 				30D07A2ADCF173BD896C99CF /* SlotTheme.swift in Sources */,
 				184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */,
 				4571102CABCA941350B23894 /* ReviewPrompt.swift in Sources */,
+				29672ADE467F693E5E6AF9D0 /* TesterMode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

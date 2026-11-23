@@ -131,6 +131,17 @@ final class LobbyTests: XCTestCase {
             XCTAssertFalse(line.text.isEmpty)
         }
         XCTAssertEqual(seen.count, BunnyScript.lobbyGreetings.count, "每一句都会出现")
+        // v13.3：轮盘没开时不说轮盘；奖池和红包的两句只在给了情况时才有
+        var s2 = 0.0
+        var dynamic = Set<String>()
+        for _ in 0..<120 {
+            let l = BunnyScript.greeting(random: { s2 += 0.137; return s2.truncatingRemainder(dividingBy: 1) }, jackpot: 1234, giftReady: true, rouletteOpen: false)
+            XCTAssertNotEqual(l.text, BunnyScript.rouletteLine)
+            dynamic.insert(l.text)
+        }
+        XCTAssertEqual(dynamic.count, BunnyScript.lobbyGreetings.count - 1 + 2)
+        XCTAssertTrue(dynamic.contains { $0.contains("1234") || $0.contains("1,234") })
+        XCTAssertFalse(TesterMode.enabled, "跑测试时不自动补币")
         XCTAssertEqual(poses.count, BunnyScript.greetingPoses.count, "每个动作都会出现")
         XCTAssertNotEqual(BunnyScript.greeting().id, BunnyScript.greeting().id, "每次都是新的一句（动作重播）")
         for pose in BunnyScript.greetingPoses { XCTAssertNotNil(pose.image, "\(pose) 的图在") }

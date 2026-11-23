@@ -106,9 +106,11 @@ struct LobbyView: View {
         .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(isPresented: $showHelp) { HelpView() }
         .onReceive(MotionParallax.shared.$offset) { Lobby3DScene.shared.setTilt($0) }
+        .onReceive(Timer.publish(every: 7, on: .main, in: .common).autoconnect()) { _ in greet() }
         .onAppear {
             glow = true
             greet()
+            testerTopUp()
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
@@ -211,7 +213,17 @@ struct LobbyView: View {
         .frame(height: 36)
     }
 
-    private func greet() { line = BunnyScript.greeting() }
+    private func greet() {
+        line = BunnyScript.greeting(jackpot: Int(gameState.jackpotPool), giftReady: TimedGift.shared.ready())
+    }
+
+    /// 测试模式（只在调试版里有，商店版没有）：回到大厅时金币不到 100 就补到 100
+    private func testerTopUp() {
+        guard TesterMode.enabled, gameState.availableCoins < TesterMode.coins else { return }
+        gameState.addCoins(TesterMode.coins - gameState.availableCoins, source: .other)
+        gameState.saveNow()
+        say(String(localized: "Test mode: coins topped up to \(TesterMode.coins)."), pose: .clap)
+    }
     private func say(_ text: String, pose: BunnyPose) { line = BunnyLine(text: text, pose: pose) }
 }
 

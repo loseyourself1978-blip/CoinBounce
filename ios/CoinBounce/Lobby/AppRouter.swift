@@ -35,9 +35,10 @@ final class AppRouter: ObservableObject {
     }
 
     /// 启动后先到哪里：正常是大厅。自动化测试和调试参数（-autoplay…、-debug…）直接进推币机，原来的验收脚本和测试不用改
-    /// v13.3 首发先不开的游戏（hj 2026-11-23 定：轮盘和弹球台没磨好，先隐藏，磨好一个开一个）。
+    /// v13.3 首发先不开的游戏。hj 2026-11-23 先定了轮盘和弹球台都隐藏，当天在手机上看过以后改成只隐藏弹球台
+    /// （轮盘玩法完整，放回大厅）。
     /// 代码都还在；调试参数 -showAllGames 可以把门都显示出来，-startRoulette / -startPinball 也还能直接进
-    static let hiddenAtLaunch: Set<Screen> = [.roulette, .pinball]
+    static let hiddenAtLaunch: Set<Screen> = [.pinball]
     static func isAvailable(_ screen: Screen, arguments: [String] = ProcessInfo.processInfo.arguments) -> Bool {
         arguments.contains("-showAllGames") || !hiddenAtLaunch.contains(screen)
     }

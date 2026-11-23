@@ -11,17 +11,28 @@ struct BunnyLine: Equatable, Identifiable {
 
 enum BunnyScript {
     /// 大厅迎宾：随机一句 + 随机动作
+    static let rouletteLine = String(localized: "The roulette table is open!")
     static let lobbyGreetings: [String] = [
         String(localized: "Welcome! Pick a game."),
         String(localized: "Feeling lucky today?"),
         String(localized: "Three slot machines are waiting!"),
         String(localized: "Coins are falling at the pusher!"),
+        String(localized: "Try the new slots. The God of Wealth is in!"),
+        String(localized: "The Monkey King has a prize for you."),
+        String(localized: "Athena's Temple just opened. Take a look?"),
+        rouletteLine,
         String(localized: "Out of coins? Watch a short ad for 50."),
     ]
     static let greetingPoses: [BunnyPose] = [.idle, .blowKiss, .clap, .cheer, .jump]
 
-    static func greeting(random: () -> Double = { Double.random(in: 0..<1) }) -> BunnyLine {
-        BunnyLine(text: pick(lobbyGreetings, random), pose: pick(greetingPoses, random))
+    /// v13.3：欢迎语除了固定的几句，还会按当时的情况多出两句——推币机奖池有多少、定时红包能不能领。
+    /// 轮盘没开的时候不说轮盘那句
+    static func greeting(random: () -> Double = { Double.random(in: 0..<1) }, jackpot: Int? = nil, giftReady: Bool = false,
+                         rouletteOpen: Bool = AppRouter.isAvailable(.roulette)) -> BunnyLine {
+        var lines = lobbyGreetings.filter { rouletteOpen || $0 != rouletteLine }
+        if let jackpot, jackpot > 0 { lines.append(String(localized: "The pusher jackpot is at \(jackpot) coins. Want a try?")) }
+        if giftReady { lines.append(String(localized: "Your free coins are ready. Tap the red envelope!")) }
+        return BunnyLine(text: pick(lines, random), pose: pick(greetingPoses, random))
     }
     static func pick<T>(_ items: [T], _ random: () -> Double) -> T {
         items[min(items.count - 1, Int(random() * Double(items.count)))]
