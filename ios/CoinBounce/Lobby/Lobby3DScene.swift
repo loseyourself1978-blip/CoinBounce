@@ -63,7 +63,7 @@ final class Lobby3DScene: NSObject, SCNSceneRendererDelegate {
     /// 把要显示的门左右对称地排开。门少的时候间距放宽一点，不然两扇门挤在正中间
     static func layout(_ shown: [Door]) -> [Door] {
         let n = shown.count
-        let dx = doorSpacing * (n <= 2 ? 1.5 : 1)
+        let dx = doorSpacing * (n <= 2 ? 1.5 : (n == 3 ? 1.28 : 1))
         return shown.enumerated().map { i, d in
             Door(screen: d.screen, identifier: d.identifier, title: d.title, tint: d.tint, x: (Float(i) - Float(n - 1) / 2) * dx)
         }
