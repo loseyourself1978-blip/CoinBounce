@@ -25,6 +25,7 @@ struct PinballView: View {
     @State private var bigBanner: String?
     @State private var screenFlash = false
     @State private var coinFlyToken = 0
+    @State private var coinFlyActive = false
     @State private var pose: BunnyPose = .headshot
 
     var body: some View {
@@ -64,7 +65,7 @@ struct PinballView: View {
                                 .allowsHitTesting(false)
                                 .accessibilityIdentifier("pinballBanner")
                         }
-                        if coinFlyToken > 0 {
+                        if coinFlyActive {
                             WinCoinFly(from: CGPoint(x: w / 2, y: h * 0.3), to: CGPoint(x: 70, y: -min(74, h * 0.1) - 30))
                                 .id(coinFlyToken)
                                 .allowsHitTesting(false)
@@ -177,7 +178,12 @@ struct PinballView: View {
             scene3D?.flashBulbs(seconds: 4)
         case .missionAdvanced: audio.play(.pkReach)
         case .ballSaved: audio.play(.winSmall); flash(String(localized: "BALL SAVED"))
-        case .coins: audio.play(.coinDrop); haptic.coinFall(); coinFlyToken += 1
+        case .coins:
+            audio.play(.coinDrop); haptic.coinFall()
+            coinFlyToken += 1
+            coinFlyActive = true
+            let token = coinFlyToken
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { if coinFlyToken == token { coinFlyActive = false } }
         case .maxWin: flash(String(localized: "MAX WIN THIS BALL"))
         case .turnOver(_, let coins, _):
             if coins > 0 { audio.play(.applause) }

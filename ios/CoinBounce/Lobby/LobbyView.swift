@@ -15,8 +15,8 @@ struct LobbyView: View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             let side = w * 0.045 + 10   // 两侧立柱里面再留一点
-            let doorW = min((w - side * 2 - 8 * 2) / 3, 150)
-            let doorH = min(doorW * 1.95, h * 0.3)
+            let doorW = min((w - side * 2 - 6 * 3) / 4, 150)
+            let doorH = min(doorW * 2.1, h * 0.3)
             let bunnyH = min(h * 0.42, 380)
             ZStack {
                 LobbyBackdrop().ignoresSafeArea()
@@ -33,7 +33,7 @@ struct LobbyView: View {
                         .padding(.horizontal, 22)
                         .padding(.top, h * 0.02)
                     Spacer(minLength: 8)
-                    HStack(alignment: .bottom, spacing: 8) {
+                    HStack(alignment: .bottom, spacing: 6) {
                         LobbyDoor(title: String(localized: "Coin Pusher"), tint: ArtPalette.gold, icon: .pusher, locked: false, width: doorW, height: doorH) {
                             router.open(.pusher)
                         }
@@ -47,6 +47,11 @@ struct LobbyView: View {
                             router.open(.pinball)
                         }
                         .accessibilityIdentifier("doorPachinko")
+                        // v12.8：第四扇门，老虎机
+                        LobbyDoor(title: String(localized: "Slots"), tint: Color(red: 0.85, green: 0.3, blue: 0.75), icon: .slots, locked: false, width: doorW, height: doorH) {
+                            router.open(.slots)
+                        }
+                        .accessibilityIdentifier("doorSlots")
                     }
                     Spacer(minLength: 8)
                     // 兔女郎迎宾：点她换一句话、换一个动作
@@ -221,7 +226,7 @@ struct LobbySign: View {
 
 // MARK: - 游戏入口：拱门 + 图标 + 名牌
 struct LobbyDoor: View {
-    enum Icon { case pusher, roulette, pachinko }
+    enum Icon { case pusher, roulette, pachinko, slots }
     let title: String
     let tint: Color
     let icon: Icon
@@ -288,6 +293,20 @@ struct LobbyDoor: View {
                 ArtCoin(size: width * 0.30).offset(x: width * 0.14, y: width * 0.12)
                 ArtCoin(size: width * 0.36).offset(y: -width * 0.06)
             }
+        case .slots:
+            // 三格小转轮：7 7 7
+            HStack(spacing: width * 0.02) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Text(verbatim: "7")
+                        .font(.system(size: width * 0.26, weight: .black, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.4, blue: 0.4), Color(red: 0.7, green: 0, blue: 0.1)], startPoint: .top, endPoint: .bottom))
+                        .frame(width: width * 0.2, height: width * 0.36)
+                        .background(RoundedRectangle(cornerRadius: 3).fill(LinearGradient(colors: [Color(white: 0.75), .white, Color(white: 0.75)], startPoint: .top, endPoint: .bottom)))
+                }
+            }
+            .padding(width * 0.035)
+            .background(RoundedRectangle(cornerRadius: 6).fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom)))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(ArtPalette.outline.opacity(0.7), lineWidth: 1))
         case .roulette:
             RouletteWheelFace()
                 .overlay(Circle().stroke(ArtPalette.goldLight, lineWidth: 2))

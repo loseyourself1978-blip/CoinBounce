@@ -35,6 +35,10 @@ struct RootView: View {
                 RouletteView(onExit: { router.backToLobby() })
                     .transition(.opacity)
             }
+            if router.screen == .slots {
+                SlotsView(onExit: { router.backToLobby() })
+                    .transition(.opacity)
+            }
             if router.screen == .pinball {
                 PinballView(onExit: { router.backToLobby() })
                     .transition(.opacity)

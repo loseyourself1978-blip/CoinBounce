@@ -42,3 +42,26 @@
 | Spin times | 3 / 1.5 / 0.8 s (holds < 2 / ≥ 2 / ≥ 4); support 1 s, hit 4 s; reach 7 s; super reach 11 s (3 s with Reduce Motion) |
 | Return | target 0.960, test band 0.95–0.97; measured coupled 10 × 1M balls: 0.9568 (v12.6 rules) |
 | Physics | board 1 × 1.25 units, ball r 0.0165, nail r 0.006, gravity 7, step 1/240 s |
+
+## Pinball (v12.7, `PinballRules.swift` / `PinballEngine.swift`)
+| Constant | Value |
+|---|---|
+| Ball price | 1 coin per ball; a weak launch that rolls back is shot again for free |
+| Coins | 9,500 points per coin, leftover points carry to the next ball, at most 15 coins per ball |
+| Points | bumper 100 (×3 during super bumpers), slingshot 30, top lane 250 (repeat 50), all three lanes 1,000 and multiplier +1 (max ×5), drop target 400, all three 2,500, standup 300 (repeat 100), all three 2,000, Lucky Hole 500, inlane 150, outlane 300, mystery 3,000, jackpot 15,000, end bonus 200 per lit item |
+| Mission | drops → 12 bumper hits → three stars → Lucky Hole (jackpot + 2 extra balls); saved across balls |
+| Ball save | one free return if the ball drains within 7 s of entering the field |
+| Physics | table 1 × 1.9, ball r 0.022, gravity 1.9, step 1/480 s, flipper up 30 rad/s, bumper kick 1.55, sling kick 1.25 |
+| Return (auto-play bots, 9,000 balls each) | no flipping 0.51, average 0.94, expert 2.40 |
+
+## Slots (v12.8, `SlotsMath.swift`)
+| Constant | Value |
+|---|---|
+| Layout | 5 reels × 3 rows, 10 fixed lines, left to right; bets 1 / 2 / 5 / 10 |
+| Line pays (× total bet, 3 / 4 / 5) | cherry, lemon 1 / 3 / 8; grapes, strawberry 1 / 4 / 12; diamond 2 / 6 / 20; crown 3 / 10 / 40; seven 5 / 25 / 100 |
+| Wild | reels 2, 3, 4; substitutes for line symbols |
+| Free spins | 3 / 4 / 5 scatters pay ×2 / ×5 / ×20 and award 8 / 12 / 20 spins; line wins ×2; no retrigger, no chest |
+| Chest bonus | chests on reels 1, 3, 5; one of ×4, ×6, ×10, ×15, ×25 at equal odds |
+| Strip lengths | 35, 34, 37, 34, 35 (counts in `stripCounts`) |
+| Return | exact 0.9440 (lines 0.6163, scatter 0.0434, free spins 0.1984, chest 0.0858); hit rate 25.6% |
+
