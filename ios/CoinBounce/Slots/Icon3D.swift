@@ -864,8 +864,12 @@ enum Icon3D {
         let base = UIFont.systemFont(ofSize: 10, weight: .black)
         let font = hasCJK ? (UIFont(name: "PingFangSC-Semibold", size: 10) ?? base)
                           : (base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 10) } ?? base)
-        // 汉字笔画细，倒角大了边会翻出毛刺：只给很小的倒角
-        let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: hasCJK ? 0.03 : 0.3, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
+        // 汉字不做倒角：SCNText 给某些字（財神駕到、鎖定重轉、超級大獎）加倒角时会把网格算坏，画出一大片刺或一整块
+        let t = text(string, font: font, depth: hasCJK ? 2.6 : 3.2, chamfer: hasCJK ? 0 : 0.3, front: lacquer(front, glow: 0.55, rough: 0.22), side: gold(rough: 0.14), height: 1.5, width: 6.2)
+        // 保险：网格的外框离谱（字号 10 的一行字，高应该在 5–16 之间，宽不超过每个字 13）就不用这张图，画面退回普通的金字
+        let (lo, hi) = t.geometry?.boundingBox ?? (SCNVector3Zero, SCNVector3Zero)
+        let boxH = hi.y - lo.y, boxW = hi.x - lo.x
+        guard boxH > 5, boxH < 16, boxW < Float(string.count) * 13 + 5 else { return nil }
         let holder = SCNNode()
         holder.addChildNode(t)
         root.addChildNode(holder)
@@ -976,6 +980,17 @@ enum Icon3D {
             }
         }
         try? sheet.pngData()?.write(to: dir.appendingPathComponent("icons_sheet.png"))
+        // 立体字：简繁都导出来看（有的字形 SCNText 会画坏）
+        for (k, str) in ["财神驾到！", "財神駕到！", "財神", "駕到", "大聖駕到！", "女神降臨！", "鎖定重轉", "超級大獎！", "巨獎！"].enumerated() {
+            if let img = title(str) {
+                let one = UIGraphicsImageRenderer(size: img.size, format: fmt).image { ctx in
+                    UIColor(red: 0.2, green: 0.02, blue: 0.04, alpha: 1).setFill()
+                    ctx.fill(CGRect(origin: .zero, size: img.size))
+                    img.draw(at: .zero)
+                }
+                try? one.jpegData(compressionQuality: 0.8)?.write(to: dir.appendingPathComponent("title_\(k).jpg"))
+            }
+        }
         for (name, img) in all where name == "ingot" || name == "pile" {
             // 单张的垫上深色底再存（透明底的图在看图工具里是白底，看不清金色）
             let one = UIGraphicsImageRenderer(size: img.size, format: fmt).image { ctx in
