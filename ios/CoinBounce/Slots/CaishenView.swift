@@ -789,9 +789,12 @@ struct CaishenReels: View {
                 .fill(Color(red: 0.05, green: 0.0, blue: 0.01))
                 .frame(width: cell * 5 + 16, height: cellH * 3 + 8)
                 .shadow(color: .black.opacity(0.7), radius: 10, y: 6)
+            // 转轮和锁定重转的格子直接换，不淡入淡出：整屏对 phase 有 0.25 秒动画，
+            // 淡入淡出时两边都半透明，中间会露出深色内胆，录屏里看到的就是黑一帧（v13.4，hj 11-24）
             if feature {
                 featureGrid
                     .frame(width: cell * 5 + 8, height: cellH * 3)
+                    .transition(.identity)
             } else {
                 TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !spinning)) { ctx in
                     let t = spinStart.map { ctx.date.timeIntervalSince($0) } ?? 1000
@@ -803,6 +806,7 @@ struct CaishenReels: View {
                 }
                 .frame(width: cell * 5 + 8, height: cellH * 3)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .transition(.identity)
                 LinearGradient(stops: [.init(color: .black.opacity(0.3), location: 0), .init(color: .clear, location: 0.14),
                                        .init(color: Color.white.opacity(0.06), location: 0.5),
                                        .init(color: .clear, location: 0.86), .init(color: .black.opacity(0.3), location: 1)],
@@ -810,6 +814,7 @@ struct CaishenReels: View {
                     .frame(width: cell * 5 + 8, height: cellH * 3)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .allowsHitTesting(false)
+                    .transition(.identity)
             }
             ReelFrame3D(reels: CGSize(width: cell * 5 + 8, height: cellH * 3))
                 .allowsHitTesting(false)
