@@ -192,8 +192,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         var coinRadius: Float = 0.42
         var coinThickness: Float = 0.42 * PusherScene3D.coinThicknessRatio
         var pusherPeriod: TimeInterval = GameConstants.pusherPeriod
-        var maxCoins = 480
-        var prefillCoins = 280
+        var maxCoins = 520
+        // v13.5（hj 11-24，对照参考的厚金币墙）：280 → 380，铺三层
+        var prefillCoins = 380
     }
 
     let scene = SCNScene()
@@ -294,6 +295,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     /// 等待在渲染线程生成的下落金币（主线程投币时放进来）
     private var pendingSpawns: [(CGPoint, CGVector, Bool, Bool)] = []
     private let coinGeometry: SCNCylinder
+    /// v13.5 金币的其他深浅档（和 coinGeometry 同尺寸，见 coinShades）
+    private var shadeGeometries: [SCNCylinder] = []
     private let coinMaterial = SCNMaterial()
     private var pusher: SCNNode!
     private let machineRoot = SCNNode()
@@ -428,21 +431,33 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         coinMaterial.normal.wrapS = .repeat
         coinMaterial.normal.contentsTransform = SCNMatrix4MakeScale(28, 1, 1)
         coinMaterial.metalness.contents = 1.0
-        coinMaterial.roughness.contents = 0.2
+        coinMaterial.roughness.contents = 0.32
         coinMaterial.multiply.contents = PusherScene3D.coinTint
-        // v11.5：更亮的金色——微弱的金色自发光托住暗部，粗糙度更低、反光更集中
+        // v11.5 微弱的金色自发光托住暗部；v13.5 压低（0.12 → 0.05），古铜色才不发白
         coinMaterial.emission.contents = PusherScene3D.coinGlow
-        coinMaterial.emission.intensity = 0.12
+        coinMaterial.emission.intensity = 0.05
         let face = SCNMaterial()
         face.lightingModel = .physicallyBased
         face.diffuse.contents = PusherScene3D.coinFaceImage()
         face.normal.contents = PusherScene3D.coinFaceNormalImage()
         face.metalness.contents = 1.0
-        face.roughness.contents = 0.18
+        face.roughness.contents = 0.28
         face.multiply.contents = PusherScene3D.coinTint
         face.emission.contents = PusherScene3D.coinGlow
-        face.emission.intensity = 0.16
+        face.emission.intensity = 0.06
         coinGeometry.materials = [coinMaterial, face, face]
+        // 深浅档：同样的几何参数，材质只换乘色
+        shadeGeometries = PusherScene3D.coinShades.dropFirst().map { k in
+            let g = coinGeometry.copy() as! SCNCylinder
+            g.materials = coinGeometry.materials.map { m in
+                let c = m.copy() as! SCNMaterial
+                var r: CGFloat = 0, gg: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+                PusherScene3D.coinTint.getRed(&r, green: &gg, blue: &b, alpha: &a)
+                c.multiply.contents = UIColor(red: min(1, r * k), green: min(1, gg * k), blue: min(1, b * k), alpha: 1)
+                return c
+            }
+            return g
+        }
         // 只照金币的高光灯：从机器后上方照向相机方向，平放的金币正面把它反射进镜头（金色反光）；
         // 不照台面和铜件，机器整体亮度不变
         let glint = SCNNode()
@@ -479,6 +494,12 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         felt.diffuse.wrapS = .repeat; felt.diffuse.wrapT = .repeat
         felt.diffuse.contentsTransform = SCNMatrix4MakeScale(4, 4, 1)
         materials["felt"] = felt
+        // v13.5（hj 11-24，对照参考）：两侧斜坡用暗一档的绒布，迎光也不发白，和台面分出层次
+        let rampFelt = pbr(.white, metal: 0, rough: 0.95)
+        rampFelt.diffuse.contents = PusherScene3D.feltImage(base: PusherScene3D.rampFelt)
+        rampFelt.diffuse.wrapS = .repeat; rampFelt.diffuse.wrapT = .repeat
+        rampFelt.diffuse.contentsTransform = SCNMatrix4MakeScale(4, 4, 1)
+        materials["rampFelt"] = rampFelt
         materials["pusherTop"] = pbr(UIColor(red: 0.26, green: 0.24, blue: 0.12, alpha: 1), metal: 0.6, rough: 0.45)   // 暗橄榄色
         materials["pusherFace"] = pbr(UIColor(red: 0.03, green: 0.03, blue: 0.03, alpha: 1), metal: 0.2, rough: 0.6)  // 黑色前脸
         materials["backFelt"] = pbr(PusherScene3D.redFelt, metal: 0, rough: 0.9)
@@ -524,6 +545,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         config.coinThickness = radius * PusherScene3D.coinThicknessRatio
         coinGeometry.radius = CGFloat(radius)
         coinGeometry.height = CGFloat(config.coinThickness)
+        for g in shadeGeometries { g.radius = CGFloat(radius); g.height = CGFloat(config.coinThickness) }
         specialGeometry.radius = CGFloat(radius)
         specialGeometry.height = CGFloat(config.coinThickness)
     }
@@ -697,7 +719,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             let front = g.rampExtendedFrontZ
             let depth: Float = front - g.backPanelZ
             let plate = SCNBox(width: CGFloat(length), height: 0.08, length: CGFloat(depth), chamferRadius: 0.02)
-            plate.materials = [materials["felt"]!]
+            plate.materials = [materials["rampFelt"]!]
             let ramp = SCNNode(geometry: plate)
             ramp.name = side < 0 ? "rampLeft" : "rampRight"
             ramp.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 - 0.04, front - depth / 2)
@@ -712,6 +734,15 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
             ramp.physicsBody = rb
             machineRoot.addChildNode(ramp)
             rampNodes.append(ramp)
+            // v13.5 斜坡前沿一根圆的黄铜压条（只是外观，没有碰撞体）：斜坡有了厚度和收边
+            let rail = SCNCylinder(radius: 0.07, height: CGFloat(length))
+            rail.radialSegmentCount = 10
+            rail.materials = [materials["brass"]!]
+            let railNode = SCNNode(geometry: rail)
+            railNode.name = "brassRail"   // 不叫 ramp…：测试按名字前缀数斜坡
+            railNode.position = SCNVector3((inner.x + outer.x) / 2, (inner.y + outer.y) / 2 + 0.02, front - 0.02)
+            railNode.eulerAngles = SCNVector3(0, 0, atan2(dy, dx) - .pi / 2)   // 圆柱的轴是 Y：转到沿斜坡方向
+            machineRoot.addChildNode(railNode)
             // 斜坡前沿的挡边（看不见）：金币只能顺着斜坡滑到推板上，不会从斜坡前沿滚落到台阶上
             // 挡边高出斜面约 2.3：弹起的金币也翻不过去（翻过去会落进台阶后面看不见的角落）
             let guardBox = SCNBox(width: CGFloat(length), height: 2.4, length: 0.12, chamferRadius: 0)
@@ -973,7 +1004,8 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         guard _coins.count < config.maxCoins else { rejectedCount += 1; return nil }
         // 物理节点不带几何体，外观放在子节点里：下落中按深度缩放外观时不会动到物理体
         let node = SCNNode()
-        let visual = SCNNode(geometry: special ? specialGeometry : coinGeometry)
+        let shade = Int.random(in: 0...shadeGeometries.count)
+        let visual = SCNNode(geometry: special ? specialGeometry : (shade == 0 ? coinGeometry : shadeGeometries[shade - 1]))
         visual.name = "coinVisual"
         visual.categoryBitMask = 1 | PusherScene3D.coinLightMask
         visual.castsShadow = true
@@ -1134,7 +1166,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         let c = config, g = geo
         let d = c.coinRadius * 2.02
         var placed = 0
-        for layer in 0..<2 {
+        for layer in 0..<3 {
             var row = 0
             var z = g.lipZ - c.coinRadius - 0.03 - Float(layer) * d * 0.5   // 第一排紧贴凸起的铜边
             while z > g.pusherFrontExtendedZ + c.coinRadius && placed < c.prefillCoins {
@@ -1145,9 +1177,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
                     let y = c.coinThickness / 2 + Float(layer) * (c.coinThickness + 0.01) + 0.02
                     addCoin(at: SCNVector3(x + Float.random(in: -0.04...0.04), y, z), tilt: Float.random(in: -0.04...0.04))
                     placed += 1
-                    x += d * (layer == 0 ? 1.0 : 1.08)
+                    x += d * (layer == 0 ? 1.0 : layer == 1 ? 1.08 : 1.16)
                 }
-                z -= d * 0.87 * (layer == 0 ? 1.0 : 1.08)
+                z -= d * 0.87 * (layer == 0 ? 1.0 : layer == 1 ? 1.08 : 1.16)
                 row += 1
             }
         }
@@ -1886,8 +1918,11 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
     static let rampFriction: CGFloat = 0.9
     /// 推板顶面摩擦：金币在推板顶面停留约 7.5 秒后被推到金币堆（参考 6.5–8.5 秒）
     static let pusherTopFriction: CGFloat = 0.31
-    static let coinTint = UIColor(red: 1.0, green: 0.79, blue: 0.40, alpha: 1)
-    static let coinGlow = UIColor(red: 1.0, green: 0.66, blue: 0.14, alpha: 1)
+    // v13.5（hj 11-24，对照参考）：金币从亮黄改成偏古铜的暖金，自发光压低，堆里才看得出深浅
+    static let coinTint = UIColor(red: 0.84, green: 0.58, blue: 0.32, alpha: 1)
+    static let coinGlow = UIColor(red: 0.85, green: 0.50, blue: 0.12, alpha: 1)
+    /// 每枚金币随机取一档深浅（乘在 coinTint 上）：一堆金币不再是一片同色
+    static let coinShades: [CGFloat] = [1.0, 0.86, 1.1]
     /// 高光灯只照这个类别的节点（金币外观节点 = 默认类别 1 | 这个）
     static let coinLightMask = 1 << 4
     /// 只照下落中金币的灯（下落时外观节点加上这个类别，落地解除约束时去掉）
@@ -1935,9 +1970,9 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
         UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { ctx in
             let cg = ctx.cgContext
             let rect = CGRect(x: 0, y: 0, width: size, height: size)
-            let colors = [UIColor(red: 1, green: 0.95, blue: 0.65, alpha: 1).cgColor,
-                          UIColor(red: 1, green: 0.8, blue: 0.2, alpha: 1).cgColor,
-                          UIColor(red: 0.8, green: 0.5, blue: 0.05, alpha: 1).cgColor] as CFArray
+            let colors = [UIColor(red: 0.98, green: 0.86, blue: 0.56, alpha: 1).cgColor,
+                          UIColor(red: 0.90, green: 0.66, blue: 0.26, alpha: 1).cgColor,
+                          UIColor(red: 0.66, green: 0.40, blue: 0.10, alpha: 1).cgColor] as CFArray
             let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.6, 1])!
             cg.drawRadialGradient(g, startCenter: CGPoint(x: size * 0.4, y: size * 0.35), startRadius: 0,
                                   endCenter: CGPoint(x: size / 2, y: size / 2), endRadius: size * 0.7, options: .drawsAfterEndLocation)
@@ -1962,6 +1997,7 @@ final class PusherScene3D: NSObject, SCNSceneRendererDelegate, SCNPhysicsContact
 
     /// 台面：青绿菱格绒布
     static let greenFelt = UIColor(red: 0.22, green: 0.53, blue: 0.16, alpha: 1)   // 参考取色 #388629
+    static let rampFelt = UIColor(red: 0.13, green: 0.36, blue: 0.10, alpha: 1)    // v13.5 斜坡：比台面暗一档
     static let redFelt = UIColor(red: 0.53, green: 0.09, blue: 0.04, alpha: 1)     // 参考取色 #881809
 
     /// 接币盘两侧的彩色侧柜面板（原创渐变 + 斜纹）：左粉紫、右金黄

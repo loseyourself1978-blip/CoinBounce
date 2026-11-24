@@ -21,6 +21,12 @@
             "state": "translated",
             "value": "金幣勇士大闖關"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コインバウンス"
+          }
         }
       }
     },
@@ -43,6 +49,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "用於為你提供更相關的廣告。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あなたに合った広告を表示するために使用します。"
           }
         }
       }

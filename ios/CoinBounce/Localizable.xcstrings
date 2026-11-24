@@ -15,6 +15,12 @@
             "state": "translated",
             "value": "免費轉 %lld 次"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリースピン %lld 回"
+          }
         }
       }
     },
@@ -32,6 +38,12 @@
             "state": "translated",
             "value": "%lld 回合"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ラウンド"
+          }
         }
       }
     },
@@ -48,6 +60,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 連莊！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 連チャン！"
           }
         }
       }
@@ -83,6 +101,12 @@
             "state": "translated",
             "value": "還要轉 %lld 次"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あと %lld 回転"
+          }
         }
       }
     },
@@ -99,6 +123,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "+%lld 金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld メダル"
           }
         }
       }
@@ -117,6 +147,12 @@
             "state": "translated",
             "value": "10 條固定中獎線，從最左邊一列開始連。每次中獎都是總下注的整數倍。期望返還約 94%。金幣是虛擬的，沒有現實價值。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 本の固定ラインで、左端のリールからそろうと当たり。配当はすべて合計ベットの倍数です。期待還元率は約 94%。メダルは仮想のもので、現実の価値はありません。"
+          }
         }
       }
     },
@@ -132,6 +168,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "10 條固定中獎線，從最左邊一列開始連。所有中獎都是總下注的倍數。期望返還率約 95%。金幣是虛擬的，沒有任何現實價值。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 本の固定ラインで、左端のリールからそろうと当たり。配当はすべて合計ベットの倍数です。期待還元率は約 95%。メダルは仮想のもので、現実の価値はありません。"
           }
         }
       }
@@ -150,6 +192,12 @@
             "state": "translated",
             "value": "10 條線 · 中獎按總下注的倍數賠"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 ライン・配当はベットの倍数"
+          }
         }
       }
     },
@@ -166,6 +214,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "3 個寶箱"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宝箱 3 つ"
           }
         }
       }
@@ -184,6 +238,12 @@
             "state": "translated",
             "value": "3 個以上"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 つ以上"
+          }
         }
       }
     },
@@ -200,6 +260,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "五連"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 つそろい"
           }
         }
       }
@@ -218,6 +284,12 @@
             "state": "translated",
             "value": "5 列轉輪 · 10 條中獎線"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 リール・10 ライン"
+          }
         }
       }
     },
@@ -233,6 +305,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "出 6 枚金幣開始鎖定重轉"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル 6 枚でホールド＆リスピン"
           }
         }
       }
@@ -251,6 +329,12 @@
             "state": "translated",
             "value": "開球 7 秒內掉下去的球免費還一次。返還率看技術：不打擋板約 50%，普通水平約 95%。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "発射から 7 秒以内に落ちたボールは 1 回だけ無料で戻ります。還元率は腕しだい：フリッパーを使わないと約 50%、ふつうに遊んで約 95%。"
+          }
         }
       }
     },
@@ -267,6 +351,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金幣穿過 BONUS 滑塊會轉動老虎機。中間一行從最左邊起連續 3 個及以上相同符號贏金幣，整行相同就是 JACKPOT。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルが BONUS スライダーを通るとスロットが回ります。中段に左から同じ絵柄が 3 つ以上並ぶとメダル獲得、横一列すべてそろうと JACKPOT！"
           }
         }
       }
@@ -285,6 +375,12 @@
             "state": "translated",
             "value": "金幣從水果燈中間穿過會點亮它。7 個水果全部點亮後可以選一張獎勵卡，然後水果全部熄滅，開始新一輪。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フルーツの真ん中をメダルが通ると点灯します。7 つ全部点灯するとご褒美カードを 1 枚選べて、フルーツはリセットされます。"
+          }
         }
       }
     },
@@ -300,6 +396,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "送你一點小禮物，4 小時後再來領哦！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ささやかなプレゼントです。また 4 時間後に来てね！"
           }
         }
       }
@@ -318,6 +420,12 @@
             "state": "translated",
             "value": "單個號碼賠 35 倍。一打或一列賠 2 倍。紅黑、單雙、1–18 / 19–36 賠 1 倍。開出 0 時只有押 0 的贏。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つの数字は 35 倍。ダズン・カラムは 2 倍。赤／黒、奇数／偶数、1–18／19–36 は 1 倍。0 が出たときは 0 に賭けた分だけが当たりです。"
+          }
         }
       }
     },
@@ -335,6 +443,12 @@
             "state": "translated",
             "value": "三顆星全亮！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スター全点灯！"
+          }
         }
       }
     },
@@ -347,6 +461,12 @@
           }
         },
         "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "女神降臨！"
+          }
+        },
+        "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "女神降臨！"
@@ -367,6 +487,12 @@
             "state": "translated",
             "value": "雅典娜的神殿"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アテナの神殿"
+          }
         }
       }
     },
@@ -383,6 +509,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "自動"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オート"
           }
         }
       }
@@ -401,6 +533,12 @@
             "state": "translated",
             "value": "廣告隱私選項"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "広告のプライバシー設定"
+          }
         }
       }
     },
@@ -417,6 +555,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "直接加入餘額"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "残高に追加"
           }
         }
       }
@@ -435,6 +579,12 @@
             "state": "translated",
             "value": "水果全亮！選一張卡"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フルーツ全点灯！カードを選んでね"
+          }
         }
       }
     },
@@ -451,6 +601,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "水果燈全亮！金珠雨來啦！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランプ全点灯！ゴールデンシャワー！"
           }
         }
       }
@@ -469,6 +625,12 @@
             "state": "translated",
             "value": "中獎全部翻倍"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配当すべて 2 倍"
+          }
         }
       }
     },
@@ -484,6 +646,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "雅典娜的神殿剛開門，來看看？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アテナの神殿がオープンしたよ。のぞいてみる？"
           }
         }
       }
@@ -502,6 +670,12 @@
             "state": "translated",
             "value": "本球結束"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボール終了"
+          }
         }
       }
     },
@@ -518,6 +692,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "本球結束 · +%lld 金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボール終了・+%lld メダル"
           }
         }
       }
@@ -536,6 +716,12 @@
             "state": "translated",
             "value": "保球！再來一次"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボールセーブ！"
+          }
         }
       }
     },
@@ -552,6 +738,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "下注"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベット"
           }
         }
       }
@@ -570,6 +762,12 @@
             "state": "translated",
             "value": "大獎！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ビッグウィン！"
+          }
         }
       }
     },
@@ -586,6 +784,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "燃爆！x%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "炎上！x%lld"
           }
         }
       }
@@ -604,6 +808,12 @@
             "state": "translated",
             "value": "倍數 ×%lld · 幸運洞亮了"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボーナス ×%lld・ラッキーホール点灯"
+          }
         }
       }
     },
@@ -620,6 +830,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "BOSS 立即掉 %lld%% 血"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボスの HP が %lld%% 減る"
           }
         }
       }
@@ -638,6 +854,12 @@
             "state": "translated",
             "value": "兔女郎的好運"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バニーフォーチュン"
+          }
         }
       }
     },
@@ -654,6 +876,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "回大廳"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロビーに戻る"
           }
         }
       }
@@ -672,6 +900,12 @@
             "state": "translated",
             "value": "回到普通狀態，這一輪結束！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通常に戻りました。ラウンド終了！"
+          }
         }
       }
     },
@@ -688,6 +922,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "打過的球"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレイしたボール"
           }
         }
       }
@@ -706,6 +946,12 @@
             "state": "translated",
             "value": "打出的珠數"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打った玉"
+          }
         }
       }
     },
@@ -722,6 +968,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "單串最高贏取"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連チャン最高獲得"
           }
         }
       }
@@ -740,6 +992,12 @@
             "state": "translated",
             "value": "下次好運！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次はきっと当たるよ！"
+          }
         }
       }
     },
@@ -755,6 +1013,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "下注桌"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベットテーブル"
           }
         }
       }
@@ -773,6 +1037,12 @@
             "state": "translated",
             "value": "黑"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黒"
+          }
         }
       }
     },
@@ -789,6 +1059,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "中獎！2 回合！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当たり！2 ラウンド！"
           }
         }
       }
@@ -807,6 +1083,12 @@
             "state": "translated",
             "value": "寶箱：第 1、3、5 列同時出現寶箱就開寶箱遊戲，選一個，贏 ×4 到 ×25。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ボーナス：1・3・5 列目に宝箱がそろうと宝箱ゲーム。1 つ選んで ×4〜×25！"
+          }
         }
       }
     },
@@ -822,6 +1104,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "兔女郎"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バニー"
           }
         }
       }
@@ -840,6 +1128,12 @@
             "state": "translated",
             "value": "遊戲大廳"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ゲームロビー"
+          }
         }
       }
     },
@@ -853,6 +1147,12 @@
           }
         },
         "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短  %lld"
+          }
+        },
+        "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "時短  %lld"
@@ -874,6 +1174,12 @@
             "state": "translated",
             "value": "時短 12"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短 12"
+          }
         }
       }
     },
@@ -890,6 +1196,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金幣勇士"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コインバウンス"
           }
         }
       }
@@ -908,6 +1220,12 @@
             "state": "translated",
             "value": "連擊！x3"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンボ！x3"
+          }
         }
       }
     },
@@ -924,6 +1242,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "即將開放"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近日公開"
           }
         }
       }
@@ -942,6 +1266,12 @@
             "state": "translated",
             "value": "時短！12 轉快轉。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時短！12 回転を高速で。"
+          }
         }
       }
     },
@@ -957,6 +1287,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "選一台機器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "台を選んでね"
           }
         }
       }
@@ -975,6 +1311,12 @@
             "state": "translated",
             "value": "清空下注"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベットをクリア"
+          }
         }
       }
     },
@@ -991,6 +1333,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "推幣機"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルプッシャー"
           }
         }
       }
@@ -1009,6 +1357,12 @@
             "state": "translated",
             "value": "推幣機正在掉金幣哦！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プッシャーでメダルが落ちてるよ！"
+          }
         }
       }
     },
@@ -1025,6 +1379,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金幣是虛擬的，沒有現實價值。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルは仮想のもので、現実の価値はありません。"
           }
         }
       }
@@ -1043,6 +1403,12 @@
             "state": "translated",
             "value": "金幣穿過戰鬥區，國王就攻擊 BOSS。打倒它救出王后，50 枚金幣從頂部落下。點一下戰鬥區可以跳過慶祝動畫。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バトルエリアをメダルが通ると王様がボスを攻撃。倒して王妃を助けると、上から 50 枚のメダルが降ってきます。バトルエリアをタップすると演出をスキップできます。"
+          }
         }
       }
     },
@@ -1059,6 +1425,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金幣從頂部滑塊落下，彈跳著穿過老虎機、戰鬥區和水果燈排，最後落到推幣台上。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルは上のスライダーから落ち、スロット・バトル・フルーツの列を跳ねながら通って、プッシャーに着地します。"
           }
         }
       }
@@ -1077,6 +1449,12 @@
             "state": "translated",
             "value": "贏得的金幣"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獲得メダル"
+          }
         }
       }
     },
@@ -1093,6 +1471,12 @@
             "state": "translated",
             "value": "金幣：一次出現 6 枚以上就鎖在原位，開始鎖定重轉，有 3 次重轉；每落一枚新金幣，重轉次數補回 3 次。每枚金幣按上面的數字 × 下注賠，或者賠 MINI、MINOR、MAJOR 獎池。15 格全滿贏 GRAND 大獎。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル：一度に 6 枚以上出るとその場で固定され、リスピン 3 回のホールド＆リスピンが始まります。新しいメダルが出るたびにリスピンは 3 回に戻ります。各メダルは書かれた数字 × ベット、または MINI・MINOR・MAJOR ジャックポットを配当。15 マスすべて埋めると GRAND！"
+          }
         }
       }
     },
@@ -1108,6 +1492,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "角注"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コーナー"
+          }
+        }
+      }
+    },
+    "Daily bonus: %lld coins! See you tomorrow.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日奖励：%lld 枚金币！明天见～"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日獎勵：%lld 枚金幣！明天見～"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デイリーボーナス：メダル %lld 枚！また明日ね。"
           }
         }
       }
@@ -1126,6 +1538,12 @@
             "state": "translated",
             "value": "完成"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
         }
       }
     },
@@ -1141,6 +1559,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "加倍下注"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベットを 2 倍"
           }
         }
       }
@@ -1159,6 +1583,12 @@
             "state": "translated",
             "value": "往下拖再鬆手，發射一顆珠"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下に引いて離すと玉を発射"
+          }
         }
       }
     },
@@ -1175,6 +1605,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "投幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル投入"
           }
         }
       }
@@ -1193,6 +1629,12 @@
             "state": "translated",
             "value": "雙"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偶数"
+          }
         }
       }
     },
@@ -1209,6 +1651,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "從前沿推落的每枚金幣得 1 枚；從兩側滑落的不算。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手前から押し出されたメダルは 1 枚につき 1 枚獲得。横から落ちたメダルはなくなります。"
           }
         }
       }
@@ -1227,6 +1675,12 @@
             "state": "translated",
             "value": "所有獎勵都變成真的金幣從頂部落下，從前沿掉下來才算你的。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "賞品はすべて本物のメダルとして上から降ってきます。手前から落ちたらあなたのものです。"
+          }
         }
       }
     },
@@ -1243,6 +1697,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "確變  %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確変  %lld"
           }
         }
       }
@@ -1261,6 +1721,12 @@
             "state": "translated",
             "value": "確變 12"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確変 12"
+          }
         }
       }
     },
@@ -1278,6 +1744,12 @@
             "state": "translated",
             "value": "狂熱！x5"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィーバー！x5"
+          }
         }
       }
     },
@@ -1293,6 +1765,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "天降財神"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "財神降臨"
           }
         }
       }
@@ -1311,6 +1789,12 @@
             "state": "translated",
             "value": "免費"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無料"
+          }
         }
       }
     },
@@ -1326,6 +1810,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免費 +%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無料 +%lld"
           }
         }
       }
@@ -1344,6 +1834,12 @@
             "state": "translated",
             "value": "免費轉"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリースピン"
+          }
         }
       }
     },
@@ -1360,6 +1856,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "剩餘免費轉：%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリースピン残り：%lld"
           }
         }
       }
@@ -1378,6 +1880,12 @@
             "state": "translated",
             "value": "免費轉共贏 %lld"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリースピン獲得 %lld"
+          }
         }
       }
     },
@@ -1394,6 +1902,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免費轉 · 中獎全部 ×2"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリースピン・配当すべて ×2"
           }
         }
       }
@@ -1412,6 +1926,12 @@
             "state": "translated",
             "value": "今天手氣怎麼樣？"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日はツイてる？"
+          }
         }
       }
     },
@@ -1428,6 +1948,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "確變（K、Q、7 之後）：12 轉，中獎率 1/8。時短（其他大獎之後）：12 轉快轉，中獎率不變。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確変（K・Q・7 の後）：12 回転、当選確率 1/8。時短（その他の大当たりの後）：12 回転を高速で、確率はそのまま。"
           }
         }
       }
@@ -1446,6 +1972,12 @@
             "state": "translated",
             "value": "確變！12 轉高概率！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確変！高確率で 12 回転！"
+          }
         }
       }
     },
@@ -1461,6 +1993,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "15 格全滿贏 GRAND 大獎"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 マス埋めて GRAND"
           }
         }
       }
@@ -1478,6 +2016,12 @@
             "state": "translated",
             "value": "四連注"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファーストフォー"
+          }
         }
       }
     },
@@ -1493,6 +2037,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "免費金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無料メダル"
+          }
+        }
+      }
+    },
+    "Free coins soon": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "马上送金币"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "馬上送金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まもなく無料メダル"
           }
         }
       }
@@ -1511,6 +2083,12 @@
             "state": "translated",
             "value": "免費轉：任意位置出現 3、4、5 個，賠 ×2、×5、×20，並送 8、12、20 次免費轉。免費轉裡的中獎翻倍。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリー：どこでも 3・4・5 つで ×2・×5・×20、さらにフリースピン 8・12・20 回。フリースピン中の配当は 2 倍。"
+          }
         }
       }
     },
@@ -1526,6 +2104,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "財神駕到！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "財神様！"
           }
         }
       }
@@ -1544,6 +2128,12 @@
             "state": "translated",
             "value": "金珠雨！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ゴールデンシャワー！"
+          }
         }
       }
     },
@@ -1560,6 +2150,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "領 %lld 金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル %lld 枚をもらう"
           }
         }
       }
@@ -1578,6 +2174,12 @@
             "state": "translated",
             "value": "發光的是特殊金幣：每推落一枚得 2 金幣。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "光るメダルは特別：押し出すと 1 枚で 2 枚分。"
+          }
         }
       }
     },
@@ -1594,6 +2196,12 @@
             "state": "translated",
             "value": "元寶紅包，財神送禮"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金塊とお年玉袋"
+          }
         }
       }
     },
@@ -1609,6 +2217,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "鎖定重轉"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホールド＆リスピン"
           }
         }
       }
@@ -1627,6 +2241,12 @@
             "state": "translated",
             "value": "火熱！x4"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アツい！x4"
+          }
         }
       }
     },
@@ -1642,6 +2262,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金箍棒一揮，蟠桃滿天飛"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天宮で大暴れ"
           }
         }
       }
@@ -1660,6 +2286,12 @@
             "state": "translated",
             "value": "幫助"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルプ"
+          }
         }
       }
     },
@@ -1676,6 +2308,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "幫助與隱私"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルプとプライバシー"
           }
         }
       }
@@ -1694,6 +2332,12 @@
             "state": "translated",
             "value": "最高分"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ハイスコア"
+          }
         }
       }
     },
@@ -1710,6 +2354,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "玩法說明"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遊び方"
           }
         }
       }
@@ -1728,6 +2378,12 @@
             "state": "translated",
             "value": "大獎！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ジャックポット！"
+          }
         }
       }
     },
@@ -1744,6 +2400,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "大獎：三格同圖，大入賞口張開 2、5 或 10 回合。每進一球賠 4 枚，進滿 5 球算一回合。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大当たり：3 つそろうとアタッカーが 2・5・10 ラウンド開放。1 玉入るごとに 4 枚、5 玉で 1 ラウンド終了。"
           }
         }
       }
@@ -1762,6 +2424,12 @@
             "state": "translated",
             "value": "大獎次數"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大当たり回数"
+          }
         }
       }
     },
@@ -1778,6 +2446,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "K-Q-J 全倒！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K-Q-J 全部倒した！"
           }
         }
       }
@@ -1796,6 +2470,12 @@
             "state": "translated",
             "value": "國王"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "王様"
+          }
         }
       }
     },
@@ -1812,6 +2492,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "國王重擊"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "王様の一撃"
           }
         }
       }
@@ -1830,6 +2516,12 @@
             "state": "translated",
             "value": "幸運燈"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラッキーランプ"
+          }
         }
       }
     },
@@ -1846,6 +2538,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "7 盞全亮 下金珠雨"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 つ点灯でゴールデンシャワー"
           }
         }
       }
@@ -1864,6 +2562,12 @@
             "state": "translated",
             "value": "連線賠付（總下注的倍數）"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ライン配当（合計ベットの倍数）"
+          }
         }
       }
     },
@@ -1880,6 +2584,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "廣告加載中"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "広告を読み込み中…"
           }
         }
       }
@@ -1898,6 +2608,12 @@
             "state": "translated",
             "value": "最長連莊"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最長連チャン"
+          }
         }
       }
     },
@@ -1914,6 +2630,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "幸運杯接住啦！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラッキーカップ！ナイスキャッチ！"
           }
         }
       }
@@ -1932,6 +2654,12 @@
             "state": "translated",
             "value": "幸運燈"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラッキーランプ"
+          }
         }
       }
     },
@@ -1948,6 +2676,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "幸運燈：珠子每進一次鬱金香或幸運杯，點亮一盞水果燈。7 盞全亮，頂上落下 6 顆免費的金珠。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラッキーランプ：チューリップかラッキーカップに玉が入るたびにフルーツランプが 1 つ点灯。7 つ全部点くと、上から無料の金玉が 6 個降ってきます。"
           }
         }
       }
@@ -1966,6 +2700,12 @@
             "state": "translated",
             "value": "超級連擊！x%lld"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マックスコンボ！x%lld"
+          }
         }
       }
     },
@@ -1982,6 +2722,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "這一球已贏到上限"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このボールの上限に到達"
           }
         }
       }
@@ -2000,6 +2746,12 @@
             "state": "translated",
             "value": "超級大獎！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メガウィン！"
+          }
         }
       }
     },
@@ -2016,6 +2768,12 @@
             "state": "translated",
             "value": "MINI 是下注的 %lld 倍，MINOR %lld 倍，MAJOR %lld 倍，GRAND %lld 倍。每次下注的百分之一會累積進 GRAND，直到你贏走它。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MINI はベットの %lld 倍、MINOR は %lld 倍、MAJOR は %lld 倍、GRAND は %lld 倍。ベットの 100 分の 1 が当たるまで GRAND に積み立てられます。"
+          }
         }
       }
     },
@@ -2031,6 +2789,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "大聖鬧天宮"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斉天大聖"
           }
         }
       }
@@ -2049,6 +2813,12 @@
             "state": "translated",
             "value": "多球！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マルチボール！"
+          }
         }
       }
     },
@@ -2065,6 +2835,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "神秘獎：+%lld 分"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミステリー：+%lld 点"
           }
         }
       }
@@ -2083,6 +2859,12 @@
             "state": "translated",
             "value": "神秘獎：加一顆球"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミステリー：エクストラボール"
+          }
         }
       }
     },
@@ -2099,6 +2881,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "神秘獎：蘑菇柱 ×3"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミステリー：スーパーバンパー ×3"
           }
         }
       }
@@ -2117,6 +2905,12 @@
             "state": "translated",
             "value": "任務 1/4：打倒 K、Q、J"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション 1/4：K・Q・J を倒せ"
+          }
         }
       }
     },
@@ -2133,6 +2927,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "任務 2/4：撞蘑菇柱 %lld/%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション 2/4：バンパー %lld/%lld"
           }
         }
       }
@@ -2151,6 +2951,12 @@
             "state": "translated",
             "value": "任務 3/4：點亮三顆星"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション 3/4：スター 3 つを点灯"
+          }
         }
       }
     },
@@ -2167,6 +2973,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "任務 4/4：打進幸運洞！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション 4/4：ラッキーホールを狙え！"
           }
         }
       }
@@ -2185,6 +2997,12 @@
             "state": "translated",
             "value": "任務：打倒 K-Q-J → 撞蘑菇柱 12 次 → 點亮三顆星 → 打進幸運洞，開大獎並進入三球齊發。點亮 7-7-7 會提高得分倍數（最高 ×5），並點亮幸運洞的神秘獎。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション：K-Q-J を倒す → バンパーに 12 回当てる → スター 3 つを点灯 → ラッキーホールに入れてジャックポットと 3 ボールのマルチボール。7-7-7 を点灯するとボーナス倍率が上がり（最大 ×5）、ラッキーホールのミステリー賞が点灯します。"
+          }
         }
       }
     },
@@ -2201,6 +3019,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "背景音樂"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BGM"
           }
         }
       }
@@ -2219,6 +3043,12 @@
             "state": "translated",
             "value": "下一枚金幣"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次のメダル"
+          }
         }
       }
     },
@@ -2235,6 +3065,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "下一回合"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次のラウンド"
           }
         }
       }
@@ -2253,6 +3089,12 @@
             "state": "translated",
             "value": "漂亮！x2"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ナイス！x2"
+          }
         }
       }
     },
@@ -2270,6 +3112,12 @@
             "state": "translated",
             "value": "進了！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ナイスショット！"
+          }
         }
       }
     },
@@ -2285,6 +3133,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "暫時沒有可用的廣告，請檢查網路後再試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今は広告がありません。通信状態を確認してもう一度お試しください。"
           }
         }
       }
@@ -2303,6 +3157,12 @@
             "state": "translated",
             "value": "停止下注！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベット締め切り！"
+          }
         }
       }
     },
@@ -2319,6 +3179,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "金幣不足"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルが足りません"
           }
         }
       }
@@ -2337,6 +3203,12 @@
             "state": "translated",
             "value": "金幣不夠了。看廣告領 +50！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルが足りません。広告を見て +50！"
+          }
         }
       }
     },
@@ -2353,6 +3225,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "單個號碼 35:1 · 打 / 列 2:1 · 其他 1:1"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数字 35:1・ダズン／カラム 2:1・その他 1:1"
           }
         }
       }
@@ -2371,6 +3249,12 @@
             "state": "translated",
             "value": "單"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奇数"
+          }
         }
       }
     },
@@ -2388,6 +3272,12 @@
             "state": "translated",
             "value": "概率：每轉中獎率 1/21.2。金色區下的期望返還約 96%，其他力度更低。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確率：1 回転あたり大当たり 1/21.2。金色ゾーンでの期待還元率は約 96%、それ以外の強さでは下がります。"
+          }
         }
       }
     },
@@ -2403,6 +3293,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "每一轉都有可能迎來一次神仙駕臨，撒下下注 %lld 到 %lld 倍的金幣。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "どの回転でも、突然の来訪でベットの %lld〜%lld 倍のメダルがばらまかれることがあります。"
           }
         }
       }
@@ -2421,6 +3317,12 @@
             "state": "translated",
             "value": "一枚金幣一顆球。把右下角的彈簧往下拉、鬆手發射。點螢幕左半邊或右半邊，打對應的擋板，別讓球掉下去。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル 1 枚でボール 1 個。右下のスプリングを下に引いて離すと発射。画面の左半分・右半分をタップするとそのフリッパーが動きます。ボールを落とさないように！"
+          }
         }
       }
     },
@@ -2437,6 +3339,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "一枚金幣買一顆珠。把彈簧拉桿往下拉、鬆手就發射；「自動」會按上一髮的力度連續打。拉到金色那一段最好打。太輕掉回來的珠子不扣幣。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダル 1 枚で玉 1 個。スプリングを下に引いて離すと発射、「オート」は前回の強さで打ち続けます。金色ゾーンまで引くのがおすすめ。弱すぎて戻った玉は無料です。"
           }
         }
       }
@@ -2455,6 +3363,12 @@
             "state": "translated",
             "value": "再亮一盞水果燈就滿了！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あと 1 つでフルーツランプ全点灯！"
+          }
         }
       }
     },
@@ -2471,6 +3385,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "珠子打完了，再來點？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "玉がなくなりました。追加する？"
           }
         }
       }
@@ -2489,6 +3409,12 @@
             "state": "translated",
             "value": "金幣不夠？看個短廣告領 50。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルが足りない？短い広告を見て 50 枚。"
+          }
         }
       }
     },
@@ -2506,6 +3432,12 @@
             "state": "translated",
             "value": "選一個寶箱"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宝箱を選んでね"
+          }
         }
       }
     },
@@ -2521,6 +3453,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "開玩"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレイ"
           }
         }
       }
@@ -2539,6 +3477,12 @@
             "state": "translated",
             "value": "下拉"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "引く"
+          }
         }
       }
     },
@@ -2555,6 +3499,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "彈子機"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パチンコ"
           }
         }
       }
@@ -2573,6 +3523,12 @@
             "state": "translated",
             "value": "彈子機即將開放！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パチンコは近日オープン！"
+          }
         }
       }
     },
@@ -2589,6 +3545,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "彈子機統計"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パチンコの記録"
           }
         }
       }
@@ -2607,6 +3569,12 @@
             "state": "translated",
             "value": "賠付表"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配当表"
+          }
         }
       }
     },
@@ -2624,6 +3592,12 @@
             "state": "translated",
             "value": "選一個籌碼，點台面下注，再點 SPIN。每局最多下注 50 枚金幣。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チップを選んでテーブルをタップしてベット、SPIN をタップ。1 回のベットは最大 50 枚です。"
+          }
         }
       }
     },
@@ -2639,6 +3613,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "三台機器任選一台。調好下注，點 SPIN。10 條中獎線上從最左一列開始連成相同圖案，就贏下注的若干倍。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 台から 1 台を選んで、ベットを決めて SPIN。10 本のラインのどれかで左のリールから同じ絵柄がそろうと、ベットの何倍かがもらえます。"
           }
         }
       }
@@ -2657,6 +3637,12 @@
             "state": "translated",
             "value": "彈球台"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ピンボール"
+          }
         }
       }
     },
@@ -2673,6 +3659,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "彈球台統計"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ピンボールの記録"
           }
         }
       }
@@ -2691,6 +3683,12 @@
             "state": "translated",
             "value": "請下注！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベットしてください！"
+          }
         }
       }
     },
@@ -2707,6 +3705,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "入口：中間的始動口賠 1 幣並轉一次數字盤。鬱金香賠 2 幣，每進一球開合一次。兩側袖口賠 1 幣。底部來回滑動的幸運杯賠 2 幣。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入賞口：中央のスタートチャッカーは 1 枚でリールが回ります。チューリップは 2 枚で、入るたびに開閉。左右の袖は 1 枚。下を往復するラッキーカップは 2 枚。"
           }
         }
       }
@@ -2725,6 +3729,12 @@
             "state": "translated",
             "value": "力度"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "強さ"
+          }
         }
       }
     },
@@ -2740,6 +3750,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "按住在桌上滑動來選注：停在兩個號碼之間的線上、四個號碼的角上，或者一行的左邊線上。被覆蓋的號碼會亮起來並顯示賠率，放開就下注。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テーブルを押したままスライドして狙いを決めます：2 つの数字の間の線、4 つの数字の角、または列の左端。対象の数字が配当と一緒に光るので、指を離すとベットされます。"
           }
         }
       }
@@ -2758,6 +3774,12 @@
             "state": "translated",
             "value": "隱私政策"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライバシーポリシー"
+          }
         }
       }
     },
@@ -2774,6 +3796,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "下拉彈簧發射 · 一幣一球"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スプリングを引いて発射・1 枚で 1 玉"
           }
         }
       }
@@ -2792,6 +3820,12 @@
             "state": "translated",
             "value": "聽牌"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リーチ"
+          }
         }
       }
     },
@@ -2807,6 +3841,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "重轉"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リスピン"
           }
         }
       }
@@ -2825,6 +3865,12 @@
             "state": "translated",
             "value": "第 %lld/%lld 回合"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラウンド %lld/%lld"
+          }
         }
       }
     },
@@ -2841,6 +3887,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "聽牌！來呀……"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リーチ！来い…"
           }
         }
       }
@@ -2859,6 +3911,12 @@
             "state": "translated",
             "value": "紅"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赤"
+          }
         }
       }
     },
@@ -2875,6 +3933,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "轉輪"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リール"
           }
         }
       }
@@ -2893,6 +3957,12 @@
             "state": "translated",
             "value": "重復上一局"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前回と同じベット"
+          }
         }
       }
     },
@@ -2909,6 +3979,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "實際返還率"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "実際の還元率"
           }
         }
       }
@@ -2927,6 +4003,12 @@
             "state": "translated",
             "value": "獎勵到手！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ご褒美ゲット！"
+          }
         }
       }
     },
@@ -2943,6 +4025,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "獎勵規則"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配当ルール"
           }
         }
       }
@@ -2961,6 +4049,12 @@
             "state": "translated",
             "value": "輪盤"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ルーレット"
+          }
         }
       }
     },
@@ -2977,6 +4071,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld 回合！繼續打！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラウンド %lld！打ち続けて！"
           }
         }
       }
@@ -2995,6 +4095,12 @@
             "state": "translated",
             "value": "開始啦！瞄准中間的口。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スタート！真ん中の入賞口を狙って。"
+          }
         }
       }
     },
@@ -3011,6 +4117,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "皇家大獎！5 回合！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロイヤル大当たり！5 ラウンド！"
           }
         }
       }
@@ -3029,6 +4141,12 @@
             "state": "translated",
             "value": "三個七！10 回合！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "777！10 ラウンド！"
+          }
         }
       }
     },
@@ -3045,6 +4163,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "繼續打！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打って！"
           }
         }
       }
@@ -3063,6 +4187,12 @@
             "state": "translated",
             "value": "超級聽牌"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スーパーリーチ"
+          }
         }
       }
     },
@@ -3080,6 +4210,12 @@
             "state": "translated",
             "value": "超級聽牌！這次有戲！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スーパーリーチ！これは来るかも！"
+          }
         }
       }
     },
@@ -3095,6 +4231,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "超級大獎！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スーパーウィン！"
           }
         }
       }
@@ -3113,6 +4255,12 @@
             "state": "translated",
             "value": "撞蘑菇柱、彈弓，過 7-7-7 滾道，打 K-Q-J 落靶、三顆星和幸運洞都得分。每 9,500 分換 1 枚金幣，沒用完的分數留到下一球。一顆球最多贏 15 枚金幣。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バンパー、スリングショット、7-7-7 レーン、K-Q-J ドロップターゲット、スター 3 つ、ラッキーホールで得点。9,500 点ごとにメダル 1 枚、余った点は次のボールに持ち越し。1 ボールで最大 15 枚までです。"
+          }
         }
       }
     },
@@ -3126,6 +4274,12 @@
           }
         },
         "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "設定"
@@ -3146,6 +4300,12 @@
             "state": "translated",
             "value": "線注"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シックスライン"
+          }
         }
       }
     },
@@ -3161,6 +4321,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "一次出現 6 枚以上金幣會鎖在原位，開始鎖定重轉。15 格全滿贏 GRAND 大獎。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メダルが 6 枚以上出るとその場で固定され、ホールド＆リスピンが始まります。15 マスすべて埋めると GRAND ジャックポット！"
           }
         }
       }
@@ -3179,6 +4345,12 @@
             "state": "translated",
             "value": "老虎機"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スロット"
+          }
         }
       }
     },
@@ -3195,6 +4367,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "就差一點！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あと少し！"
           }
         }
       }
@@ -3213,6 +4391,12 @@
             "state": "translated",
             "value": "聲音與震動"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サウンドとバイブ"
+          }
         }
       }
     },
@@ -3229,6 +4413,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "音效"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "効果音"
           }
         }
       }
@@ -3247,6 +4437,12 @@
             "state": "translated",
             "value": "特殊圖案"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "特別な絵柄"
+          }
         }
       }
     },
@@ -3262,6 +4458,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "分注"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スプリット"
           }
         }
       }
@@ -3280,6 +4482,12 @@
             "state": "translated",
             "value": "彈簧拉桿"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スプリング発射台"
+          }
         }
       }
     },
@@ -3296,6 +4504,12 @@
             "state": "translated",
             "value": "直注"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ストレート"
+          }
         }
       }
     },
@@ -3311,6 +4525,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "街注"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ストリート"
           }
         }
       }
@@ -3329,6 +4549,12 @@
             "state": "translated",
             "value": "支援"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サポート"
+          }
         }
       }
     },
@@ -3345,6 +4571,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "點左邊"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左をタップ"
           }
         }
       }
@@ -3363,6 +4595,12 @@
             "state": "translated",
             "value": "點右邊"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右をタップ"
+          }
         }
       }
     },
@@ -3378,6 +4616,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "大聖駕到！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大聖降臨！"
           }
         }
       }
@@ -3396,6 +4640,12 @@
             "state": "translated",
             "value": "太輕了，再拉多一點"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弱すぎ — もっと引いて"
+          }
         }
       }
     },
@@ -3412,6 +4662,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "每局最多下注 %lld 枚"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 回のベット上限：%lld 枚"
           }
         }
       }
@@ -3430,6 +4686,12 @@
             "state": "translated",
             "value": "點按 $ 按鈕投一枚金幣，按住不放可以連續投幣。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$ ボタンをタップでメダルを 1 枚投入。長押しで連続投入。"
+          }
         }
       }
     },
@@ -3446,6 +4708,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "點按跳過"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップでスキップ"
           }
         }
       }
@@ -3464,6 +4732,12 @@
             "state": "translated",
             "value": "點頂部的 ▶ +50 看一段短廣告領 50 金幣，每 90 秒一次，每天最多 10 次。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上の ▶ +50 をタップして短い広告を見るとメダル 50 枚。90 秒に 1 回、1 日 10 回まで。"
+          }
         }
       }
     },
@@ -3480,6 +4754,12 @@
             "state": "translated",
             "value": "測試模式：金幣補到 %lld 了。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テストモード：メダルを %lld 枚まで補充しました。"
+          }
         }
       }
     },
@@ -3495,6 +4775,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "大聖鬧天宮開張了，去轉兩把？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斉天大聖がプレゼントを用意してるよ。"
           }
         }
       }
@@ -3513,6 +4799,12 @@
             "state": "translated",
             "value": "大口開著呢，接著打！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アタッカー開放中。打ち続けて！"
+          }
         }
       }
     },
@@ -3528,6 +4820,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "推幣機獎池現在有 %lld 枚，要不要去試試？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プッシャーのジャックポットは今 %lld 枚。挑戦してみる？"
           }
         }
       }
@@ -3546,6 +4844,12 @@
             "state": "translated",
             "value": "推板前後往復，被推出前沿掉下去的金幣都歸你。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プッシャーは前後に動きます。手前から押し出されたメダルはあなたのもの。"
+          }
         }
       }
     },
@@ -3562,6 +4866,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "輪盤開台啦！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ルーレットテーブル、オープン！"
           }
         }
       }
@@ -3580,6 +4890,12 @@
             "state": "translated",
             "value": "老虎機免費轉 %lld 次"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スロットが %lld 回無料で回る"
+          }
         }
       }
     },
@@ -3597,6 +4913,12 @@
             "state": "translated",
             "value": "鬱金香開了！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チューリップが開いた！"
+          }
         }
       }
     },
@@ -3612,6 +4934,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "三台老虎機等你來轉！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スロット 3 台が待ってるよ！"
           }
         }
       }
@@ -3630,6 +4958,12 @@
             "state": "translated",
             "value": "太重了，試試金色那一段。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "強すぎ。金色ゾーンを狙って。"
+          }
         }
       }
     },
@@ -3646,6 +4980,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "太輕了！彈簧再拉多一點。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弱すぎ！スプリングをもっと引いて。"
           }
         }
       }
@@ -3664,6 +5004,12 @@
             "state": "translated",
             "value": "力度太小，珠子退回上皿了。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弱すぎて玉が戻りました。"
+          }
         }
       }
     },
@@ -3677,6 +5023,12 @@
           }
         },
         "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上皿"
+          }
+        },
+        "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "上皿"
@@ -3697,6 +5049,12 @@
             "state": "translated",
             "value": "神殿裡的金盔與神盾"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "神殿の宝物"
+          }
         }
       }
     },
@@ -3713,6 +5071,12 @@
             "state": "translated",
             "value": "三連注"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "トリオ"
+          }
         }
       }
     },
@@ -3728,6 +5092,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "要不要試試新版老虎機？財神在等你。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいスロットはどう？財神様が待ってるよ！"
           }
         }
       }
@@ -3746,6 +5116,12 @@
             "state": "translated",
             "value": "撤銷"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り消し"
+          }
         }
       }
     },
@@ -3762,6 +5138,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "版本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バージョン"
           }
         }
       }
@@ -3780,6 +5162,12 @@
             "state": "translated",
             "value": "震動"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バイブレーション"
+          }
         }
       }
     },
@@ -3796,6 +5184,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "贏"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獲得"
           }
         }
       }
@@ -3814,6 +5208,12 @@
             "state": "translated",
             "value": "看廣告"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "広告を見る"
+          }
         }
       }
     },
@@ -3830,6 +5230,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "看廣告免費領 %lld 金幣"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "広告を見てメダル %lld 枚を無料でもらう"
           }
         }
       }
@@ -3848,6 +5254,12 @@
             "state": "translated",
             "value": "歡迎來到彈子機！往下拉彈簧，鬆手發射。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パチンコへようこそ！スプリングを引いて離してね。"
+          }
         }
       }
     },
@@ -3864,6 +5276,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "歡迎光臨！選一個遊戲吧。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いらっしゃいませ！ゲームを選んでね。"
           }
         }
       }
@@ -3882,6 +5300,12 @@
             "state": "translated",
             "value": "百搭：在中獎線上可以當任何水果、寶石、皇冠或 7。只出現在第 2、3、4 列。"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワイルド：ライン上のフルーツ・宝石・王冠・7 の代わりになります。2・3・4 列目にだけ出ます。"
+          }
         }
       }
     },
@@ -3897,6 +5321,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "百搭：可以代替中獎線上的任何圖案，只出現在第 2、3、4 列。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワイルド：ライン上のどの絵柄の代わりにもなります。2・3・4 列目にだけ出ます。"
           }
         }
       }
@@ -3915,6 +5345,12 @@
             "state": "translated",
             "value": "你贏了"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獲得"
+          }
         }
       }
     },
@@ -3931,6 +5367,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "贏了 %lld 枚！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 枚獲得！"
           }
         }
       }
@@ -3949,6 +5391,12 @@
             "state": "translated",
             "value": "這一輪贏了 %lld 枚！"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このラウンドで %lld 枚獲得！"
+          }
         }
       }
     },
@@ -3964,6 +5412,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "免費金幣可以領了，點一下紅包！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無料メダルの準備ができたよ。お年玉袋をタップ！"
           }
         }
       }

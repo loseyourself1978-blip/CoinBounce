@@ -111,6 +111,7 @@ struct LobbyView: View {
             glow = true
             greet()
             testerTopUp()
+            dailyBonus()
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
@@ -223,6 +224,13 @@ struct LobbyView: View {
         gameState.addCoins(TesterMode.coins - gameState.availableCoins, source: .other)
         gameState.saveNow()
         say(String(localized: "Test mode: coins topped up to \(TesterMode.coins)."), pose: .clap)
+    }
+    /// v13.5：每天第一次进大厅送 DailyBonus.coins 枚，兔女郎说一句（XCTest 里不发，免得改动测试的余额）
+    private func dailyBonus() {
+        guard NSClassFromString("XCTestCase") == nil, DailyBonus.shared.claimIfNew() else { return }
+        gameState.addCoins(DailyBonus.coins, source: .other)
+        gameState.saveNow()
+        say(String(localized: "Daily bonus: \(DailyBonus.coins) coins! See you tomorrow."), pose: .clap)
     }
     private func say(_ text: String, pose: BunnyPose) { line = BunnyLine(text: text, pose: pose) }
 }
