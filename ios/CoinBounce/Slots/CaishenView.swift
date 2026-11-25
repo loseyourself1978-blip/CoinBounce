@@ -456,7 +456,7 @@ struct CaishenView: View {
     }
 
     #if DEBUG
-    /// -slotsDemo [feature | gift | big]：第一转直接出锁定重转 / 财神 / 大奖；不带参数就自动转
+    /// -slotsDemo [feature | gift | big | super]：第一转直接出锁定重转 / 财神 / 大奖；不带参数就自动转
     private func debugStart() {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("-slotsDemo") else { return }
@@ -465,11 +465,13 @@ struct CaishenView: View {
         if args.contains("feature") { want = { $0.triggers } }
         if args.contains("big") { want = { $0.linePay >= 15 && !$0.triggers } }
         if args.contains("gift") { want = { $0.linePay == 0 && !$0.triggers } }
+        // super：中奖线合计 80 倍以上（超级大奖的演出；商店预览视频用）
+        if args.contains("super") { want = { $0.linePay >= 80 && !$0.triggers } }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             if let want {
-                game.changeBet(2)
+                game.changeBet(args.contains("super") ? 3 : 2)
                 var rng = PachinkoRandom(seed: 5)
-                for _ in 0..<400_000 {
+                for _ in 0..<(args.contains("super") ? 6_000_000 : 400_000) {
                     let stops = CaishenMath.randomStops(&rng)
                     if want(CaishenMath.evaluate(CaishenMath.window(stops))) {
                         if game.debugSpin(stops: stops, gift: args.contains("gift") ? 20 : nil, noGift: !args.contains("gift")) { beginReels() }
