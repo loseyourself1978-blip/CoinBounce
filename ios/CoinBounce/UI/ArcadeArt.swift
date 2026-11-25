@@ -585,11 +585,18 @@ struct CabinetPillar: View {
             ZStack {
                 // 圆柱高光：两侧暗、中间亮
                 // v11.1 按参考：红褐木纹立柱（取色 #ad4c50 / #4b1f05），中间一条金色嵌条，琥珀色灯泡
-                LinearGradient(colors: [Color(red: 0.29, green: 0.12, blue: 0.03), Color(red: 0.68, green: 0.30, blue: 0.31),
-                                        Color(red: 0.55, green: 0.22, blue: 0.18), Color(red: 0.29, green: 0.12, blue: 0.03)],
+                // v13.5（hj 11-24，对照参考）：保留原来的红褐木纹立柱，加一道柔和的竖向高光和两侧金色倒角边条，做出圆柱体积
+                LinearGradient(colors: [Color(red: 0.20, green: 0.08, blue: 0.02), Color(red: 0.68, green: 0.30, blue: 0.31),
+                                        Color(red: 0.55, green: 0.22, blue: 0.18), Color(red: 0.20, green: 0.08, blue: 0.02)],
                                startPoint: .leading, endPoint: .trailing)
                     .overlay(Rectangle().fill(ArtPalette.gold.opacity(0.85)).frame(width: max(1.5, w * 0.06)))
-                    .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.6), lineWidth: 0.8))
+                    .overlay(alignment: .leading) {
+                        LinearGradient(colors: [.white.opacity(0), .white.opacity(0.28), .white.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: w * 0.14).offset(x: w * 0.2)
+                    }
+                    .overlay(alignment: .leading) { PillarTrim().frame(width: max(2, w * 0.09)) }
+                    .overlay(alignment: .trailing) { PillarTrim().frame(width: max(2, w * 0.09)) }
+                    .overlay(Rectangle().stroke(ArtPalette.outline.opacity(0.7), lineWidth: 1))
                     .drawingGroup()
                 // v11.6 性能：灯泡两种亮法各画一次，闪烁只动上层的不透明度（原来每帧重画整根立柱）
                 BlinkPair(duration: 0.5) { phase in
@@ -601,6 +608,8 @@ struct CabinetPillar: View {
                                                  : [Color(red: 0.85, green: 0.45, blue: 0.2), Color(red: 0.45, green: 0.18, blue: 0.08)],
                                                  center: .center, startRadius: 0, endRadius: w * 0.3))
                             .overlay(Circle().stroke(Color(red: 0.35, green: 0.2, blue: 0.1), lineWidth: 1))
+                            // 灯座：一圈暗色凹槽，灯泡像嵌进立柱里
+                            .background(Circle().fill(Color.black.opacity(0.55)).padding(-w * 0.06).offset(y: w * 0.02))
                             .shadow(color: Color(red: 1, green: 0.6, blue: 0.2).opacity((i % 2 == 0) == phase ? 0.9 : 0.2), radius: w * 0.3)
                             .frame(width: w * 0.42, height: w * 0.42)
                             .frame(maxHeight: .infinity)
@@ -610,6 +619,14 @@ struct CabinetPillar: View {
             }
             .frame(width: w, height: geo.size.height)
         }
+    }
+}
+
+/// 立柱两侧的金色倒角边条：外暗、中亮、内暗，像一条凸起的金属边
+struct PillarTrim: View {
+    var body: some View {
+        LinearGradient(colors: [ArtPalette.goldDeep, ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep],
+                       startPoint: .leading, endPoint: .trailing)
     }
 }
 
@@ -719,5 +736,85 @@ struct BunnyArt: View {
                     .frame(width: geo.size.width, height: geo.size.height)
             }
         }
+    }
+}
+
+// MARK: - v13.5 彩虹光带边框（hj 11-24，对照参考：整屏外圈一条流动的彩虹光）
+
+/// 整屏外圈一条彩虹色光带，颜色沿边框慢慢流动；大奖时转快、变亮。
+/// 用 Core Animation 做（锥形渐变层旋转 + 边框形状遮罩）：动画在渲染服务器上跑，主线程每帧不用重画
+struct RainbowBorder: UIViewRepresentable {
+    var excited: Bool
+    var width: CGFloat = 5
+
+    func makeUIView(context: Context) -> RainbowBorderView {
+        let v = RainbowBorderView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
+    }
+    func updateUIView(_ v: RainbowBorderView, context: Context) {
+        v.lineWidth = width
+        v.setExcited(excited)
+    }
+}
+
+final class RainbowBorderView: UIView {
+    private let container = CALayer()      // 不转：挂着边框形状的遮罩
+    private let gradient = CAGradientLayer()   // 转：颜色沿边框流动
+    private let borderMask = CAShapeLayer()
+    private var excited: Bool?
+    var lineWidth: CGFloat = 5 { didSet { setNeedsLayout() } }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        gradient.type = .conic
+        gradient.startPoint = CGPoint(x: 0.5, y: 0.5)
+        gradient.endPoint = CGPoint(x: 0.5, y: 0)
+        let hues: [CGFloat] = [0, 0.08, 0.16, 0.33, 0.5, 0.62, 0.75, 0.88, 1]
+        gradient.colors = hues.map { UIColor(hue: $0, saturation: 0.9, brightness: 1, alpha: 1).cgColor }
+        borderMask.fillColor = UIColor.clear.cgColor
+        borderMask.strokeColor = UIColor.black.cgColor
+        container.addSublayer(gradient)
+        container.mask = borderMask
+        layer.addSublayer(container)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let side = hypot(bounds.width, bounds.height)
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        container.frame = bounds
+        gradient.bounds = CGRect(x: 0, y: 0, width: side, height: side)
+        gradient.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        // 全面屏的屏幕是圆角的（约 55 点）；有 Home 键的老机型是直角
+        let rounded = (window?.safeAreaInsets.bottom ?? 0) > 0
+        let r = bounds.insetBy(dx: lineWidth / 2, dy: lineWidth / 2)
+        borderMask.frame = bounds
+        borderMask.path = UIBezierPath(roundedRect: r, cornerRadius: rounded ? 55 - lineWidth / 2 : 0).cgPath
+        borderMask.lineWidth = lineWidth
+        CATransaction.commit()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        setNeedsLayout()
+        // 回到前台 / 重新挂到窗口时 Core Animation 会清掉动画：重新加上
+        if let e = excited { excited = nil; setExcited(e) }
+    }
+
+    func setExcited(_ on: Bool) {
+        guard on != excited else { return }
+        excited = on
+        gradient.removeAnimation(forKey: "flow")
+        let a = CABasicAnimation(keyPath: "transform.rotation.z")
+        a.fromValue = 0
+        a.toValue = 2 * Double.pi
+        a.duration = on ? 1.6 : 9
+        a.repeatCount = .infinity
+        a.isRemovedOnCompletion = false
+        gradient.add(a, forKey: "flow")
+        alpha = on ? 1 : 0.75
     }
 }

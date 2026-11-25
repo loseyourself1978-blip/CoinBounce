@@ -44,6 +44,20 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    /// v13.5：繁体中文和日文也要每条都有，占位符和英文一致、顺序相同（不用 %1$lld 这种带位置的写法）
+    func test_everyKey_hasTraditionalChineseAndJapanese() throws {
+        let strings = try catalog("Localizable.xcstrings")
+        for (key, entry) in strings {
+            for lang in ["zh-Hant", "ja"] {
+                let t = try XCTUnwrap(value(entry, lang), "缺少 \(lang)：\(key)")
+                XCTAssertFalse(t.isEmpty, "\(lang) \(key)")
+                XCTAssertEqual(specifiers(t), specifiers(key), "\(lang) 占位符不一致：\(key)")
+            }
+        }
+        let info = try catalog("InfoPlist.xcstrings")
+        XCTAssertNotNil(value(info["CFBundleDisplayName"], "ja"))
+    }
+
     func test_infoPlistStrings_bothLanguages() throws {
         let strings = try catalog("InfoPlist.xcstrings")
         for key in ["CFBundleDisplayName", "NSUserTrackingUsageDescription"] {

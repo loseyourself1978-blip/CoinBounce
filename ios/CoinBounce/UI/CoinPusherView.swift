@@ -17,6 +17,33 @@ private struct FloatingScoreLayer: View {
 }
 
 /// v12.0：还没落下的奖励金币「+N」（余额下面）。只观察 RewardMeter，每落一枚只重画这一小块
+/// v13.5 金币少时的回补倒计时：「+10 · 12:30」（余额 ≥ 30 时不显示）
+private struct RefillChip: View {
+    let balance: Int
+    @ObservedObject var meter: RewardMeter
+    @ObservedObject var refill = CoinRefill.shared
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { tl in
+            if meter.pending == 0, let left = refill.remaining(balance: balance, now: tl.date) {
+                let s = Int(left.rounded(.up))
+                HStack(spacing: 4) {
+                    ArtCoin(size: 13)
+                    Text(verbatim: "+\(CoinRefill.step) · \(s / 60):\(String(format: "%02d", s % 60))")
+                        .font(.system(size: 13, weight: .black, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(ArtPalette.goldLight)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Capsule().fill(Color.black.opacity(0.62)))
+                .overlay(Capsule().stroke(Color.arcadeGold.opacity(0.6), lineWidth: 1))
+                .fixedSize()
+                .accessibilityIdentifier("coinRefill")
+                .accessibilityLabel(Text("Free coins soon"))
+            }
+        }
+    }
+}
+
 private struct RewardIncomingChip: View {
     @ObservedObject var meter: RewardMeter
     var body: some View {
@@ -214,6 +241,10 @@ struct CoinPusherView: View {
                 RewardIncomingChip(meter: gameState.rewardMeter)
                     .position({ let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.midX, y: r.maxY + 13) }())
                     .allowsHitTesting(false)
+                // v13.5：金币少时显示回补倒计时（有奖励金币在落时让位给上面的「+N」）
+                RefillChip(balance: gameState.availableCoins, meter: gameState.rewardMeter)
+                    .position({ let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size); return CGPoint(x: r.midX, y: r.maxY + 13) }())
+                    .allowsHitTesting(false)
 
                 // 奖励/庆祝层
                 if gameState.showJackpotExplosion {
@@ -238,10 +269,23 @@ struct CoinPusherView: View {
                     .place(in: layout.jackpot.insetBy(dx: -layout.jackpot.width * 0.05, dy: -layout.jackpot.height * 0.25))
                 FilmOverlay()
                     .frame(width: sw, height: sh)
+                // v13.5（hj 11-24，对照参考）：整屏外圈的彩虹光带，大奖时转快变亮
+                RainbowBorder(excited: gameState.showJackpotExplosion || gameState.celebration != nil, width: 7)
+                    .frame(width: sw, height: sh)
+                    .allowsHitTesting(false)
             }
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
             .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
+            // v13.5 不靠广告补币：每秒走一次表，到点直接加到余额（离开 App 的时间也算，回来第一秒就补上）
+            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
+                let give = CoinRefill.shared.tick(balance: gameState.availableCoins, now: now)
+                guard give > 0 else { return }
+                gameState.addCoins(give, source: .other)
+                gameState.saveNow()
+                let r = ReferenceBoxes.rect(ReferenceBoxes.balancePill, layout.size)
+                gameState.addFloatingScore(text: "+\(give)", x: r.midX, y: r.maxY + 30, color: .yellow, big: true)
+            }
             .animation(.spring(response: 0.45, dampingFraction: 0.7), value: gameState.celebration)
             .onAppear {
                 gameState.updateLayout(layout)

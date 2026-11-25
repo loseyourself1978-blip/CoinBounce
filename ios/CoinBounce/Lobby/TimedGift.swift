@@ -114,3 +114,76 @@ struct TimedGiftButton: View {
         .onAppear { withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) { wiggle = true } }
     }
 }
+
+// MARK: - v13.5 不靠广告补币（hj 11-24 同意）：金币少时自动回补 + 每日登录奖励
+/// 余额低于 cap（30）时开始计时，每 15 分钟送 10 枚，补到 30 为止；离开 App 的时间也算。
+/// 余额回到 30 以上时停表，下次再低于 30 重新计时。只记计时起点（存 UserDefaults）
+final class CoinRefill: ObservableObject {
+    static let shared = CoinRefill()
+    static let cap = 30
+    static let step = 10
+    static let interval: TimeInterval = 15 * 60
+
+    private let defaults: UserDefaults
+    private let key: String
+    @Published private(set) var anchor: Date?
+
+    init(defaults: UserDefaults = .standard, key: String = "CoinBounce.CoinRefill.anchor") {
+        self.defaults = defaults
+        self.key = key
+        let t = defaults.double(forKey: key)
+        anchor = t > 0 ? Date(timeIntervalSince1970: t) : nil
+    }
+
+    /// 按现在的余额走一次表，返回这次该送几枚（0 = 不送）。调用方负责把金币加上
+    func tick(balance: Int, now: Date = Date()) -> Int {
+        guard balance < CoinRefill.cap else { setAnchor(nil); return 0 }
+        guard let a = anchor, a <= now else { setAnchor(now); return 0 }   // 刚开始计时，或时钟被往回拨
+        let n = Int(now.timeIntervalSince(a) / CoinRefill.interval)
+        guard n > 0 else { return 0 }
+        let give = min(n * CoinRefill.step, CoinRefill.cap - balance)
+        let next = a.addingTimeInterval(Double(n) * CoinRefill.interval)
+        setAnchor(balance + give >= CoinRefill.cap ? nil : next)
+        return give
+    }
+
+    /// 离下一次送币还有几秒；余额够了（不计时）时为 nil
+    func remaining(balance: Int, now: Date = Date()) -> TimeInterval? {
+        guard balance < CoinRefill.cap else { return nil }
+        guard let a = anchor else { return CoinRefill.interval }
+        let since = max(0, now.timeIntervalSince(a))
+        return CoinRefill.interval - since.truncatingRemainder(dividingBy: CoinRefill.interval)
+    }
+
+    private func setAnchor(_ d: Date?) {
+        guard d != anchor else { return }
+        anchor = d
+        if let d { defaults.set(d.timeIntervalSince1970, forKey: key) } else { defaults.removeObject(forKey: key) }
+    }
+}
+
+/// 每天第一次进大厅送 30 枚（按本地日期）
+final class DailyBonus {
+    static let shared = DailyBonus()
+    static let coins = 30
+    private let defaults: UserDefaults
+    private let key: String
+
+    init(defaults: UserDefaults = .standard, key: String = "CoinBounce.DailyBonus.day") {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    static func dayKey(_ d: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    /// 今天还没领就记下并返回 true（调用方加金币、播提示）
+    func claimIfNew(now: Date = Date()) -> Bool {
+        let today = DailyBonus.dayKey(now)
+        guard defaults.string(forKey: key) != today else { return false }
+        defaults.set(today, forKey: key)
+        return true
+    }
+}

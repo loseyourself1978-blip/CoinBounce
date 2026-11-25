@@ -349,22 +349,15 @@ struct SymbolContent: View {
                 .blur(radius: 8)
             
             // 主符号（矢量绘制）：v11.6 放大、加深色描边投影和顶部高光，立体感和对比更强
-            SlotSymbolArt(type: type, size: size * 0.66)
+            // v13.5（hj 11-24，对照参考）：只留图案、不写字，图案放大居中
+            SlotSymbolArt(type: type, size: size * 0.8)
                 .shadow(color: .black.opacity(0.85), radius: 0, x: size * 0.02, y: size * 0.025)
                 .shadow(color: config.glowColor.opacity(0.9), radius: 5, x: 0, y: 0)
                 .overlay(
                     LinearGradient(colors: [Color.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center)
-                        .mask(SlotSymbolArt(type: type, size: size * 0.66))
+                        .mask(SlotSymbolArt(type: type, size: size * 0.8))
                         .blendMode(.plusLighter)
                 )
-                .offset(y: -size * 0.06)
-            
-            // 底部标签
-            Text(config.label)
-                .font(.system(size: size * 0.16, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .shadow(color: .black, radius: 2, x: 0, y: 1)
-                .offset(y: size * 0.28)
         }
     }
     

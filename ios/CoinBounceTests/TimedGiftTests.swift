@@ -45,3 +45,63 @@ final class TimedGiftTests: XCTestCase {
         XCTAssertEqual(TimedGift.clock(61), "0:01:01")
     }
 }
+
+/// v13.5 金币少时自动回补、每日登录奖励
+final class CoinRefillTests: XCTestCase {
+    private func fresh() -> (CoinRefill, UserDefaults) {
+        let name = "CoinRefillTests.\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return (CoinRefill(defaults: d, key: "a"), d)
+    }
+
+    func test_noRefill_whenBalanceAtOrAboveCap() {
+        let (r, _) = fresh()
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertEqual(r.tick(balance: 30, now: t0), 0)
+        XCTAssertNil(r.remaining(balance: 30, now: t0))
+        XCTAssertEqual(r.tick(balance: 500, now: t0.addingTimeInterval(3600)), 0)
+    }
+
+    func test_tenCoinsEvery15Minutes_upToCap() {
+        let (r, _) = fresh()
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertEqual(r.tick(balance: 0, now: t0), 0)                       // 开始计时
+        XCTAssertEqual(r.tick(balance: 0, now: t0.addingTimeInterval(899)), 0)
+        XCTAssertEqual(r.tick(balance: 0, now: t0.addingTimeInterval(900)), 10)
+        XCTAssertEqual(r.remaining(balance: 10, now: t0.addingTimeInterval(900)) ?? -1, 900, accuracy: 0.001)
+        // 离开两个小时：最多补到 30
+        XCTAssertEqual(r.tick(balance: 10, now: t0.addingTimeInterval(900 + 7200)), 20)
+        XCTAssertNil(r.anchor)
+    }
+
+    func test_persistsAcrossLaunches_andRestartsAfterSpending() {
+        let (r, d) = fresh()
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        _ = r.tick(balance: 5, now: t0)
+        let again = CoinRefill(defaults: d, key: "a")
+        XCTAssertEqual(again.tick(balance: 5, now: t0.addingTimeInterval(1800)), 20)
+        XCTAssertEqual(again.tick(balance: 25, now: t0.addingTimeInterval(1801)), 0)   // 新一轮从这里开始计时
+        XCTAssertEqual(again.tick(balance: 25, now: t0.addingTimeInterval(1801 + 900)), 5)
+    }
+
+    func test_clockSetBackwards_restartsTimerInsteadOfPaying() {
+        let (r, _) = fresh()
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        _ = r.tick(balance: 0, now: t0)
+        XCTAssertEqual(r.tick(balance: 0, now: t0.addingTimeInterval(-5000)), 0)
+        XCTAssertEqual(r.tick(balance: 0, now: t0.addingTimeInterval(-5000 + 900)), 10)
+    }
+
+    func test_dailyBonus_oncePerLocalDay() {
+        let name = "DailyBonusTests.\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        let b = DailyBonus(defaults: d, key: "b")
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let morning = cal.date(from: DateComponents(year: 2026, month: 11, day: 24, hour: 8))!
+        XCTAssertTrue(b.claimIfNew(now: morning))
+        XCTAssertFalse(b.claimIfNew(now: morning.addingTimeInterval(3600 * 12)))
+        XCTAssertTrue(b.claimIfNew(now: morning.addingTimeInterval(3600 * 24)))
+    }
+}
