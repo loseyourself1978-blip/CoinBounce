@@ -438,6 +438,7 @@ struct CaishenView: View {
         if tier >= 2 { audio.play(.applause) }
         celebrationShown = 0
         celebration = Celebration(amount: amount, tier: tier)
+        GameCenter.shared.report(amount, to: GameCenter.slotsBiggestWin)
         punchIn()
         flash = 0.75
         withAnimation(.easeOut(duration: 0.45)) { flash = 0 }

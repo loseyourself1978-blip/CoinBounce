@@ -112,6 +112,8 @@ struct LobbyView: View {
             greet()
             testerTopUp()
             dailyBonus()
+            GameCenter.shared.authenticate()
+            GameCenter.shared.report(gameState.totalCoinsWon, to: GameCenter.totalCoinsWon)
             #if DEBUG
             // 量首次进入时间：-debugEnterPachinkoAfter 5 → 5 秒后自动进弹子机
             let args = ProcessInfo.processInfo.arguments
@@ -200,7 +202,7 @@ struct LobbyView: View {
 
     /// v12.6：余额框的宽度按屏幕算（SE 上固定 150 会把顶栏撑出屏幕，整个大厅跟着偏到右边）
     private func topBar(width: CGFloat) -> some View {
-        let fixed: CGFloat = (ads.adsEnabled ? AdHUDButton.size.width + 8 : 0) + 30 + 30 + 16
+        let fixed: CGFloat = (ads.adsEnabled ? AdHUDButton.size.width + 8 : 0) + 30 + 30 + 16 + 32 + 8 + 6   // v13.8：多了奖杯按钮
         return HStack(spacing: 8) {
             CoinBalanceView(coins: gameState.availableCoins, height: 30, width: max(90, min(150, width - fixed)))
             Spacer(minLength: 0)
@@ -208,6 +210,17 @@ struct LobbyView: View {
                 AdHUDButton(ads: ads, gameState: gameState, showUnavailableHint: $showAdUnavailableHint)
                     .frame(width: AdHUDButton.size.width, height: AdHUDButton.size.height)
             }
+            // v13.8 排行榜（Game Center）
+            Button { GameCenter.shared.showLeaderboards() } label: {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(ArtPalette.goldLight)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color.black.opacity(0.6)))
+                    .overlay(Circle().stroke(ArtPalette.gold.opacity(0.85), lineWidth: 1.5))
+            }
+            .accessibilityIdentifier("lobbyLeaderboards")
+            .accessibilityLabel(Text("Leaderboards"))
             HelpButton { showHelp = true }
             SettingsButton { showSettings = true }
         }

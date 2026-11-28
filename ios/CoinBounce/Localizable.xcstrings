@@ -2569,6 +2569,28 @@
         }
       }
     },
+    "Leaderboards": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排行榜"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排行榜"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランキング"
+          }
+        }
+      }
+    },
     "Light all 7 for a golden shower": {
       "extractionState": "manual",
       "localizations": {

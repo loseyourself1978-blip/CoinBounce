@@ -1028,6 +1028,7 @@ class GameState: ObservableObject {
         let pay = Int(jackpotPool.rounded(.down))
         lastJackpotPayout = pay
         jackpotExplosionAmount = pay
+        GameCenter.shared.report(pay, to: GameCenter.pusherBiggestJackpot)
         jackpotPool = GameConstants.jackpotSeed
         payReward(pay, source: .jackpot)
         // 金额由 JACKPOT 爆炸画面显示（v11.7 去掉重复的飘字，两行 JACKPOT 叠在一起看不清）
