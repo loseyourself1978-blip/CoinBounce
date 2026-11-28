@@ -102,6 +102,7 @@ struct LobbyView: View {
                 }
             }
         }
+        .overlay(FestivalOverlay(festival: Festival.current))
         .overlay(FilmOverlay())
         .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(isPresented: $showHelp) { HelpView() }

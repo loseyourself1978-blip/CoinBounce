@@ -31,6 +31,7 @@
 		53E26B2916F98BAEEBF01912 /* PachinkoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA22958088F526918E564A6 /* PachinkoView.swift */; };
 		551D53120C98B6BC03E2CEB4 /* PachinkoSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006C168AA7011D0B5B7BB8C /* PachinkoSimulator.swift */; };
 		60178DF6F82CA9C65E0BD365 /* SlotsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6E520CCE4903CFD956E323 /* SlotsTests.swift */; };
+		638284282E92AF2CFDB16C4C /* Festival.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E1DAFBFC2A86117243EE97 /* Festival.swift */; };
 		691A974BE570C6713AA79B47 /* PachinkoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3EC9E71B808E5E0B73DA19 /* PachinkoTests.swift */; };
 		6A899AEB6DB1EC1EBA022400 /* PachinkoReelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1A75F48750EC29CE2F60F8 /* PachinkoReelView.swift */; };
 		6C9D0B2EB8F3BC39C1FF27F4 /* GameCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D41D735EA0A518CF7003A359 /* GameCenter.swift */; };
@@ -247,6 +248,7 @@
 		D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_attacker.wav; sourceTree = "<group>"; };
 		D41D735EA0A518CF7003A359 /* GameCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameCenter.swift; sourceTree = "<group>"; };
 		D46437215F0A7ED0248FC3F7 /* Icon3D.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Icon3D.swift; sourceTree = "<group>"; };
+		D8E1DAFBFC2A86117243EE97 /* Festival.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Festival.swift; sourceTree = "<group>"; };
 		D9FBF4D8D96DEE0AFC059038 /* CaishenGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaishenGame.swift; sourceTree = "<group>"; };
 		DD2D74B680A438DF63D13977 /* SlotsMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsMath.swift; sourceTree = "<group>"; };
 		DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pachinko3DScene.swift; sourceTree = "<group>"; };
@@ -363,6 +365,7 @@
 				89FD6E13356B497A4CC6D8C6 /* TesterMode.swift */,
 				23D699E467F9447BF3A79663 /* ShareCard.swift */,
 				D41D735EA0A518CF7003A359 /* GameCenter.swift */,
+				D8E1DAFBFC2A86117243EE97 /* Festival.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -745,6 +748,7 @@
 				29672ADE467F693E5E6AF9D0 /* TesterMode.swift in Sources */,
 				8000D58EC614E15DC4C29798 /* ShareCard.swift in Sources */,
 				6C9D0B2EB8F3BC39C1FF27F4 /* GameCenter.swift in Sources */,
+				638284282E92AF2CFDB16C4C /* Festival.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

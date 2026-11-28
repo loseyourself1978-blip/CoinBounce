@@ -2294,6 +2294,28 @@
         }
       }
     },
+    "Happy New Year! May your jackpots be big.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年快乐！祝你大奖连连。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年快樂！祝你大獎連連。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あけましておめでとう！大当たりがたくさん来ますように。"
+          }
+        }
+      }
+    },
     "Havoc in the Heavenly Palace": {
       "localizations": {
         "zh-Hans": {
@@ -2381,6 +2403,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "ハイスコア"
+          }
+        }
+      }
+    },
+    "Ho ho ho! Feeling lucky this Christmas?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "吼吼吼！这个圣诞手气怎么样？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "吼吼吼！這個聖誕手氣怎麼樣？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホーホーホー！このクリスマス、ツイてる？"
           }
         }
       }
@@ -2957,6 +3001,28 @@
         }
       }
     },
+    "Merry Christmas! Santa left some coins for you.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圣诞快乐！圣诞老人给你留了金币哦。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聖誕快樂！聖誕老人給你留了金幣哦。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メリークリスマス！サンタさんがメダルを置いていったよ。"
+          }
+        }
+      }
+    },
     "Mission 1/4: knock down K, Q, J": {
       "extractionState": "manual",
       "localizations": {
@@ -3160,6 +3226,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "ナイス！x2"
+          }
+        }
+      }
+    },
+    "New year, new luck. Let's spin!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的一年，新的好运，转起来！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的一年，新的好運，轉起來！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい年、新しい運。さあ回そう！"
           }
         }
       }
