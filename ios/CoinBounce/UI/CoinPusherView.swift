@@ -279,7 +279,7 @@ struct CoinPusherView: View {
                     .allowsHitTesting(false)
                 if let amount = jackpotShare, !gameState.showJackpotExplosion {
                     Button {
-                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.24)
+                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.14)
                         jackpotShare = nil
                         ShareCard.present(card, amount: amount, machine: String(localized: "Coin Pusher"))
                     } label: {
@@ -318,7 +318,7 @@ struct CoinPusherView: View {
                     #if DEBUG
                     let args = ProcessInfo.processInfo.arguments
                     if let i = args.firstIndex(of: "-dumpShareCard"), i + 1 < args.count {
-                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.24)
+                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.14)
                         try? card.pngData()?.write(to: URL(fileURLWithPath: args[i + 1]))
                     }
                     #endif

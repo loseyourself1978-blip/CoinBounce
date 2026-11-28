@@ -171,6 +171,8 @@ struct JackpotCelebrationView: View {
                     .shadow(color: .orange, radius: 8)
             }
             .scaleEffect(pulse ? 1.06 : 0.97)
+            // 字放在老虎机屏上（屏幕上三分之一处）：兔女郎从侧面出场时站在下半屏，不再挡住字
+            .offset(y: -UIScreen.main.bounds.height * 0.17)
             Color.white.opacity(flash).ignoresSafeArea()
         }
         .allowsHitTesting(false)
