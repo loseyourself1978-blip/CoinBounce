@@ -131,6 +131,7 @@
 		DC593E2133B8DA37A609FD31 /* sfx_pk_attacker.wav in Resources */ = {isa = PBXBuildFile; fileRef = D2D35DF00E38C8621F77996A /* sfx_pk_attacker.wav */; };
 		E37CF97BA763ECA1DD12900A /* CaishenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9D22FB65982B81AE3BA40B /* CaishenView.swift */; };
 		E98F81BA05FF98E5CCE2A9D4 /* PinballGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A80A0461A30A3992F5749FF /* PinballGame.swift */; };
+		F39B348E4089D7748238A3F5 /* RampTableProto.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF0496E3C6F9211B73D0B16 /* RampTableProto.swift */; };
 		F8714687D110A5DC517E1DDA /* PachinkoPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BCDA936C12141219AFE21 /* PachinkoPhysics.swift */; };
 		FE6872D42E0742E7F79B793A /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
 /* End PBXBuildFile section */
@@ -250,6 +251,7 @@
 		D46437215F0A7ED0248FC3F7 /* Icon3D.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Icon3D.swift; sourceTree = "<group>"; };
 		D8E1DAFBFC2A86117243EE97 /* Festival.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Festival.swift; sourceTree = "<group>"; };
 		D9FBF4D8D96DEE0AFC059038 /* CaishenGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaishenGame.swift; sourceTree = "<group>"; };
+		DCF0496E3C6F9211B73D0B16 /* RampTableProto.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RampTableProto.swift; sourceTree = "<group>"; };
 		DD2D74B680A438DF63D13977 /* SlotsMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsMath.swift; sourceTree = "<group>"; };
 		DE823216B1A80F11C76B25B0 /* Pachinko3DScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pachinko3DScene.swift; sourceTree = "<group>"; };
 		E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PachinkoConstants.swift; sourceTree = "<group>"; };
@@ -308,6 +310,7 @@
 				5A80A0461A30A3992F5749FF /* PinballGame.swift */,
 				65DD2475C2F97A8ED49B02EA /* Pinball3DScene.swift */,
 				060744781071BBA307B2EAF6 /* PinballView.swift */,
+				DCF0496E3C6F9211B73D0B16 /* RampTableProto.swift */,
 			);
 			name = Pinball;
 			path = Pinball;
@@ -749,6 +752,7 @@
 				8000D58EC614E15DC4C29798 /* ShareCard.swift in Sources */,
 				6C9D0B2EB8F3BC39C1FF27F4 /* GameCenter.swift in Sources */,
 				638284282E92AF2CFDB16C4C /* Festival.swift in Sources */,
+				F39B348E4089D7748238A3F5 /* RampTableProto.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

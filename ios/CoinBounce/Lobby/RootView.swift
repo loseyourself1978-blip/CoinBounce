@@ -40,8 +40,14 @@ struct RootView: View {
                     .transition(.opacity)
             }
             if router.screen == .pinball {
-                PinballView(onExit: { router.backToLobby() })
-                    .transition(.opacity)
+                // v14 立体样台：-startPinball -pinballProto（给 hj 判断 3D 手感用，不计分）
+                if ProcessInfo.processInfo.arguments.contains("-pinballProto") {
+                    RampTableProtoView(onExit: { router.backToLobby() })
+                        .transition(.opacity)
+                } else {
+                    PinballView(onExit: { router.backToLobby() })
+                        .transition(.opacity)
+                }
             }
             if router.screen == .pachinko {
                 // 进场不淡入：直接出现在大厅下面，由大厅在上面淡出。建这个画面会卡主线程约 0.15 秒，
