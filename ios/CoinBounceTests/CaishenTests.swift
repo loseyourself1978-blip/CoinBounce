@@ -308,4 +308,18 @@ final class CaishenTests: XCTestCase {
         XCTAssertEqual(a2.grandPoolCents, 10)
         d.removePersistentDomain(forName: "CaishenTests.themes")
     }
+
+    /// v13.7：前四列连成四个时最后一列放慢——只看前四列，百搭可以替，金币不算
+    func test_fourInARow_detectsOnlyLineSymbolsOnALine() {
+        typealias S = CoinBounce.CaishenSymbol
+        let line = CaishenMath.lines[0]
+        var win: [[S]] = Array(repeating: [S.jack, S.queenCard, S.kingCard], count: 5)
+        // 每列在第 0 条线的那一格放元宝，第 2 列放百搭
+        for r in 0..<4 { win[r][line[r]] = r == 1 ? .wild : .ingot }
+        // 其余格子打散，避免别的线碰巧连上
+        for r in 0..<5 { for k in 0..<3 where k != line[r] { win[r][k] = [S.jack, .lantern, .fu, .ace, .redEnvelope][(r + k * 2) % 5] } }
+        XCTAssertTrue(CaishenView.fourInARow(win))
+        win[3][line[3]] = .coin
+        XCTAssertFalse(CaishenView.fourInARow(win))
+    }
 }

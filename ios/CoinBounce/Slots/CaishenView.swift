@@ -296,6 +296,23 @@ struct CaishenView: View {
         beginReels()
     }
 
+    /// 前四列在任意一条中奖线上从左连成四个相同图案（百搭可以替）
+    static func fourInARow(_ win: [[CaishenSymbol]]) -> Bool {
+        for line in CaishenMath.lines {
+            var sym: CaishenSymbol?
+            var ok = true
+            for r in 0..<4 {
+                let x = win[r][line[r]]
+                if x == .wild { continue }
+                guard x.isLine else { ok = false; break }
+                if let s = sym, s != x { ok = false; break }
+                sym = x
+            }
+            if ok && sym != nil { return true }
+        }
+        return false
+    }
+
     private func beginReels() {
         guard let s = game.spin else { return }
         shareOffer = nil
@@ -309,6 +326,8 @@ struct CaishenView: View {
         let win = CaishenMath.window(s.stops)
         for r in 0..<CaishenMath.reels {
             if coins >= 4 && !fast { time += 0.7 }
+            // v13.7 大奖爽感：前四列已经在某条线上连成四个（只差最后一列就是五连），最后一列多转一会儿吊一下胃口
+            else if r == CaishenMath.reels - 1 && !fast && Self.fourInARow(win) { time += 0.9 }
             times.append(time)
             time += fast ? 0.16 : 0.3
             coins += win[r].filter { $0 == .coin }.count
