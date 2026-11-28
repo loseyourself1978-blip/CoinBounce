@@ -301,13 +301,14 @@ struct CoinPusherView: View {
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: jackpotShare)
-            // v13.7：JACKPOT 演出开始 1.2 秒后截图；演出结束后亮 8 秒「分享」按钮（只对 100 枚以上的大奖）
+            // v13.7：JACKPOT 演出里数字滚完后截图；演出结束后亮 8 秒「分享」按钮（只对 100 枚以上的大奖）
             .onChange(of: gameState.showJackpotExplosion) { on in
                 let amount = gameState.jackpotExplosionAmount
                 guard amount >= 100, NSClassFromString("XCTestCase") == nil else { return }
                 if on {
                     jackpotShare = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    // 2.9 秒：数字滚完、放大之后（演出一共 4 秒）
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.9) {
                         if gameState.showJackpotExplosion { jackpotShot = ShareCard.windowShot(afterUpdates: true) }
                     }
                 } else if jackpotShot != nil {

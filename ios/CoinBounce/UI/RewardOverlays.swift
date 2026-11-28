@@ -136,40 +136,62 @@ extension RewardCard {
 struct JackpotCelebrationView: View {
     let amount: Int
     @State private var pulse = false
-    @State private var spin = false
+    // v13.7 大奖爽感（hj 11-28）：先闪白一下、字从大砸下来，数字越滚越快，震动越来越密，滚完再重重一下
+    @State private var flash = 0.85
+    @State private var slam: CGFloat = 2.6
+    @State private var shown = 0.0
+    @State private var landed = false
+    private let roll = 2.2
 
     var body: some View {
         ZStack {
-            RadialGradient(colors: [Color.yellow.opacity(0.55), Color.orange.opacity(0.25), .clear],
-                           center: .center, startRadius: 10, endRadius: 420)
+            RadialGradient(colors: [Color.yellow.opacity(0.55), Color.orange.opacity(0.28), .clear],
+                           center: .center, startRadius: 10, endRadius: 460)
+                .ignoresSafeArea()
+            SunRays(color: ArtPalette.goldLight, rays: 20)
+                .blendMode(.plusLighter)
+                .opacity(0.8)
+                .ignoresSafeArea()
+            GoldSparks()
                 .ignoresSafeArea()
 
-            // 旋转光芒
-            ForEach(0..<12, id: \.self) { i in
-                Capsule()
-                    .fill(Color.yellow.opacity(0.35))
-                    .frame(width: 10, height: 260)
-                    .offset(y: -130)
-                    .rotationEffect(.degrees(Double(i) * 30 + (spin ? 30 : 0)))
-            }
-
-            VStack(spacing: 6) {
+            VStack(spacing: 2) {
                 Text("JACKPOT!")
-                    .font(.system(size: 52, weight: .black, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [.yellow, .white, .orange], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: .red, radius: 8)
-                Text("+\(amount)")
-                    .font(.system(size: 36, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-                    .shadow(color: .orange, radius: 6)
+                    .font(.system(size: 60, weight: .black, design: .rounded))
+                    .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight, ArtPalette.gold, .orange], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: ArtPalette.outline, radius: 0, x: 3, y: 4)
+                    .shadow(color: .red.opacity(0.9), radius: 10)
+                    .scaleEffect(slam)
+                CountingText(value: shown, prefix: "+")
+                    .font(.system(size: 46, weight: .black, design: .rounded))
+                    .fixedSize()
+                    .scaleEffect(landed ? 1.18 : 1)   // 放大用缩放做：改字号做动画时，截图会截到排版到一半的字
+                    .foregroundStyle(LinearGradient(colors: [.white, ArtPalette.goldLight], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: ArtPalette.outline, radius: 0, x: 2, y: 3)
+                    .shadow(color: .orange, radius: 8)
             }
-            .scaleEffect(pulse ? 1.12 : 0.92)
+            .scaleEffect(pulse ? 1.06 : 0.97)
+            Color.white.opacity(flash).ignoresSafeArea()
         }
         .allowsHitTesting(false)
         .transition(.opacity)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.35).repeatForever(autoreverses: true)) { pulse = true }
-            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) { spin = true }
+            withAnimation(.easeOut(duration: 0.35)) { flash = 0 }
+            withAnimation(.interpolatingSpring(stiffness: 220, damping: 11)) { slam = 1 }
+            withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) { pulse = true }
+            // 数字先慢后快
+            withAnimation(.easeIn(duration: roll).delay(0.25)) { shown = Double(amount) }
+            // 震动：14 下，间隔从 0.3 秒缩到 0.05 秒；滚完时重重一下、数字放大
+            var t = 0.3
+            for k in 0..<14 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + t) { HapticManager.shared.coinDrop() }
+                t += max(0.05, 0.3 - Double(k) * 0.022)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + roll + 0.3) {
+                HapticManager.shared.jackpot()
+                AudioManager.shared.play(.winBig)
+                withAnimation(.interpolatingSpring(stiffness: 300, damping: 9)) { landed = true }
+            }
         }
     }
 }
