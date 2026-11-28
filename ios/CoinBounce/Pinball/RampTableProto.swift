@@ -9,17 +9,47 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     let cameraNode = SCNNode()
     private let table = SCNNode()          // 整张台面（最后整体后仰 tilt 度）
     private var ball = SCNNode()
-    private var leftFlipper = SCNNode(), rightFlipper = SCNNode()
     private var bumperCaps: [SCNNode] = []
     private var pyramidTop = SCNNode()
-    private var camPos = SCNVector3(0, 13, 19), camLook = SCNVector3(0, 0, 4)
-    private let demo = ProcessInfo.processInfo.arguments.contains("-pinballDemo")
+    private var camPos = SCNVector3(0, 7.8, 17.6), camLook = SCNVector3(0, 0.5, 5.2)
+    private let args = ProcessInfo.processInfo.arguments
+    private lazy var demo = args.contains("-pinballDemo")
+    private lazy var logging = args.contains("-protoLog")
     private var lastLaunch: TimeInterval = 0
     private var pendingLaunch = false
-    private var leftUp = false, rightUp = false
     private var slowSince: TimeInterval?
+    private var lastTime: TimeInterval = 0
+    private var lastLog: TimeInterval = 0
+    private var onRail = false
 
-    static let tilt: Float = 7 * .pi / 180
+    /// 一块挡板：角度自己一帧一帧推（不用动作），这样知道它这一帧扫过了哪里、转得多快，
+    /// 球被扫到时按「板面速度」算出球该飞多快——只靠物理引擎的话，板一帧转十几度，球经常被穿过去或者只是被挤开
+    private final class Flipper {
+        let node = SCNNode()
+        let left: Bool
+        let pivot: SCNVector3
+        var angle: Float
+        var wantUp = false
+        var kicked = false
+        var botRelease: TimeInterval = 0, botCooldown: TimeInterval = 0
+        var rest: Float { left ? -0.44 : 0.44 }
+        var up: Float { left ? 0.52 : -0.52 }
+        init(left: Bool, pivot: SCNVector3) { self.left = left; self.pivot = pivot; angle = left ? -0.44 : 0.44 }
+        /// 板的方向（从轴指向板尖）和朝台面远端的法线，台面坐标的 (x, z)
+        var dir: (Float, Float) { left ? (cos(angle), -sin(angle)) : (-cos(angle), sin(angle)) }
+        var normal: (Float, Float) { (-sin(angle), -cos(angle)) }
+        /// 球相对板：沿板的距离 a、离板面中线的高度 h
+        func local(_ p: SCNVector3) -> (a: Float, h: Float) {
+            let rx = p.x - pivot.x, rz = p.z - pivot.z
+            return (rx * dir.0 + rz * dir.1, rx * normal.0 + rz * normal.1)
+        }
+    }
+    private let flipperL = Flipper(left: true, pivot: SCNVector3(-2.7, 0.27, 7.3))
+    private let flipperR = Flipper(left: false, pivot: SCNVector3(1.9, 0.27, 7.3))
+    static let flipperLength: Float = 1.75
+    static let flipUpRate: Float = 15, flipDownRate: Float = 9      // 弧度/秒
+
+    static let tilt: Float = 9 * .pi / 180
     static let ballR: CGFloat = 0.28
     private static let catBall = 1, catTable = 2, catBumper = 4, catTarget = 8
 
@@ -48,18 +78,23 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     }()
 
     // MARK: 搭建
-    @discardableResult
-    private func solid(_ g: SCNGeometry, _ m: SCNMaterial, at p: SCNVector3, restitution: CGFloat = 0.35, friction: CGFloat = 0.25, category: Int = catTable) -> SCNNode {
-        g.firstMaterial = m
-        let n = SCNNode(geometry: g)
-        n.position = p
+    private func staticBody(_ g: SCNGeometry, restitution: CGFloat, friction: CGFloat, category: Int = catTable) -> SCNPhysicsBody {
         let b = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: g, options: nil))
         b.restitution = restitution
         b.friction = friction
         b.categoryBitMask = category
         b.contactTestBitMask = category == Self.catTable ? 0 : Self.catBall
-        n.physicsBody = b
-        table.addChildNode(n)
+        return b
+    }
+
+    @discardableResult
+    private func solid(_ g: SCNGeometry, _ m: SCNMaterial, at p: SCNVector3, restitution: CGFloat = 0.35, friction: CGFloat = 0.25, category: Int = catTable,
+                       in parent: SCNNode? = nil) -> SCNNode {
+        g.firstMaterial = m
+        let n = SCNNode(geometry: g)
+        n.position = p
+        n.physicsBody = staticBody(g, restitution: restitution, friction: friction, category: category)
+        (parent ?? table).addChildNode(n)
         return n
     }
 
@@ -75,33 +110,66 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     }
 
     private func build() {
-        // 物理：重力加大（台面只斜 7 度，球才有真机的速度），步长细一点防止球穿墙
-        scene.physicsWorld.gravity = SCNVector3(0, -60, 0)
+        // 物理：重力加大、台面斜 9 度（球沿台面的加速度约 11，接近真机的手感），步长细一点防止球穿墙
+        scene.physicsWorld.gravity = SCNVector3(0, -70, 0)
         scene.physicsWorld.timeStep = 1.0 / 240
         scene.physicsWorld.contactDelegate = self
         scene.background.contents = UIColor(red: 0.02, green: 0.02, blue: 0.05, alpha: 1)
 
-        // 台面：10 宽、20 长，远端在 -z。先用旧台面的画当底图（样台阶段）
-        let floorM = pbr(.white, metal: 0, rough: 0.35)
-        floorM.diffuse.contents = Pinball3DScene.tableArt()
-        floorM.clearCoat.contents = 0.15
-        solid(SCNBox(width: 10, height: 0.4, length: 20, chamferRadius: 0), floorM, at: SCNVector3(0, -0.2, 0), friction: 0.12)
+        // 台面：10 宽、20 长，远端在 -z。碰撞用一块看不见的厚板，画贴在一张平面上
+        solid(SCNBox(width: 10, height: 0.4, length: 20, chamferRadius: 0), invisible, at: SCNVector3(0, -0.2, 0), friction: 0.12)
+        let floorM = pbr(.white, metal: 0, rough: 0.3)
+        floorM.diffuse.contents = UIImage(named: "PinballPharaohField")
+        floorM.clearCoat.contents = 0.25
+        floorM.clearCoatRoughness.contents = 0.15
+        let art = SCNNode(geometry: SCNPlane(width: 10, height: 20))
+        art.geometry!.firstMaterial = floorM
+        art.eulerAngles.x = -.pi / 2
+        table.addChildNode(art)
         // 玻璃盖（看不见）：球飞不出去
         solid(SCNBox(width: 10, height: 0.2, length: 20, chamferRadius: 0), invisible, at: SCNVector3(0, 2.9, 0))
-        // 机柜四边
-        for (x, z, w, l) in [(Float(-5.3), Float(0), Float(0.6), Float(21.2)), (5.3, 0, 0.6, 21.2), (0, -10.3, 11.2, 0.6), (0, 10.3, 11.2, 0.6)] {
+        // 机柜：两侧和远端高，靠玩家这边矮（不挡挡板）；再往外一块台沿，镜头下面不露黑
+        for (x, z, w, l) in [(Float(-5.3), Float(0), Float(0.6), Float(21.2)), (5.3, 0, 0.6, 21.2), (0, -10.3, 11.2, 0.6)] {
             solid(SCNBox(width: CGFloat(w), height: 1.8, length: CGFloat(l), chamferRadius: 0.1), wood, at: SCNVector3(x, 0.5, z))
         }
-        // 拱顶：半圆，12 段
+        solid(SCNBox(width: 11.2, height: 1.2, length: 0.6, chamferRadius: 0.1), wood, at: SCNVector3(0, 0.2, 10.3))
+        // 四边再各加一堵看不见的高墙，一直顶到玻璃：球被弹飞起来也翻不出机柜
+        for (x, z, w, l) in [(Float(-5.3), Float(0), Float(0.6), Float(21.2)), (5.3, 0, 0.6, 21.2), (0, -10.3, 11.2, 0.6), (0, 10.3, 11.2, 0.6)] {
+            solid(SCNBox(width: CGFloat(w), height: 3.2, length: CGFloat(l), chamferRadius: 0), invisible, at: SCNVector3(x, 1.4, z))
+        }
+        let apron = SCNNode(geometry: SCNBox(width: 11.2, height: 1.2, length: 4, chamferRadius: 0.1))
+        apron.geometry!.firstMaterial = wood
+        apron.position = SCNVector3(0, 0.19, 12.6)
+        table.addChildNode(apron)
+        let trim = SCNNode(geometry: SCNBox(width: 11.2, height: 0.08, length: 0.14, chamferRadius: 0.03))
+        trim.geometry!.firstMaterial = gold
+        trim.position = SCNVector3(0, 0.82, 10.05)
+        table.addChildNode(trim)
+        // 背板：立在远端的灯箱画（真机的 backglass）
+        let glassM = SCNMaterial()
+        glassM.lightingModel = .constant
+        glassM.diffuse.contents = UIImage(named: "PinballPharaohBackdrop")
+        let back = SCNNode(geometry: SCNPlane(width: 11.2, height: 4.38))
+        back.geometry!.firstMaterial = glassM
+        back.position = SCNVector3(0, 1.4 + 2.19, -10.5)
+        back.eulerAngles.x = -0.12
+        table.addChildNode(back)
+        let backTrim = SCNNode(geometry: SCNBox(width: 11.4, height: 0.16, length: 0.2, chamferRadius: 0.05))
+        backTrim.geometry!.firstMaterial = gold
+        backTrim.position = SCNVector3(0, 1.42, -10.2)
+        table.addChildNode(backTrim)
+
+        // 拱顶：半圆
         let n = 14
         for i in 0..<n {
             let a0 = Float.pi * Float(i) / Float(n), a1 = Float.pi * Float(i + 1) / Float(n)
             wall(5 * cos(a0), -5 - 5 * sin(a0), 5 * cos(a1), -5 - 5 * sin(a1), height: 1.0)
+            wall(5.1 * cos(a0), -5 - 5.1 * sin(a0), 5.1 * cos(a1), -5 - 5.1 * sin(a1), y: 1.0, height: 1.8, invisible)   // 上面接一段看不见的，球翻不过拱顶
         }
         // 发射轨道的内墙；两侧通往挡板的斜导轨
         wall(4.2, -4.6, 4.2, 10)
-        wall(-5, 3.2, -2.75, 7.05, restitution: 0.25)
-        wall(4.2, 3.2, 1.95, 7.05, restitution: 0.25)
+        wall(-5, 3.2, -2.9, 7.05, restitution: 0.25)
+        wall(4.2, 3.2, 2.1, 7.05, restitution: 0.25)
         // 发射轨道底下的挡块
         solid(SCNBox(width: 0.8, height: 0.8, length: 0.4, chamferRadius: 0.05), rubber, at: SCNVector3(4.6, 0.4, 9.4), restitution: 0.1)
 
@@ -117,43 +185,65 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     }
 
     private func buildFlippers() {
-        func flipper(pivot: SCNVector3, dir: Float, rest: Float) -> SCNNode {
-            let p = SCNNode()
-            p.position = pivot
-            p.eulerAngles.y = rest
-            let L: CGFloat = 1.75
+        for f in [flipperL, flipperR] {
+            let dir: Float = f.left ? 1 : -1
+            let L = CGFloat(Self.flipperLength)
+            f.node.position = f.pivot
+            f.node.eulerAngles.y = f.angle
             let g = SCNBox(width: L, height: 0.5, length: 0.34, chamferRadius: 0.16)
             g.firstMaterial = pbr(UIColor(red: 0.92, green: 0.1, blue: 0.18, alpha: 1), metal: 0.1, rough: 0.25, glow: UIColor(red: 0.5, green: 0, blue: 0.08, alpha: 1), intensity: 0.5)
             let b = SCNNode(geometry: g)
             b.position = SCNVector3(dir * Float(L) / 2, 0, 0)
-            let body = SCNPhysicsBody(type: .kinematic, shape: SCNPhysicsShape(geometry: g, options: nil))
-            body.restitution = 0.5
+            f.node.addChildNode(b)
+            // 碰撞体挂在轴上（形状往板的方向偏半个板长），跟着轴转
+            let shape = SCNPhysicsShape(shapes: [SCNPhysicsShape(geometry: g, options: nil)],
+                                        transforms: [NSValue(scnMatrix4: SCNMatrix4MakeTranslation(dir * Float(L) / 2, 0, 0))])
+            let body = SCNPhysicsBody(type: .kinematic, shape: shape)
+            body.restitution = 0.3
             body.friction = 0.4
             body.categoryBitMask = Self.catTable
-            b.physicsBody = body
-            p.addChildNode(b)
+            f.node.physicsBody = body
             let cap = SCNNode(geometry: SCNCylinder(radius: 0.2, height: 0.56))
             cap.geometry!.firstMaterial = chrome
-            p.addChildNode(cap)
-            table.addChildNode(p)
-            return p
+            f.node.addChildNode(cap)
+            table.addChildNode(f.node)
         }
-        leftFlipper = flipper(pivot: SCNVector3(-2.55, 0.27, 7.3), dir: 1, rest: -0.44)
-        rightFlipper = flipper(pivot: SCNVector3(1.75, 0.27, 7.3), dir: -1, rest: 0.44)
     }
 
     func setFlipper(left: Bool, up: Bool) {
-        if left { guard leftUp != up else { return }; leftUp = up } else { guard rightUp != up else { return }; rightUp = up }
-        let node = left ? leftFlipper : rightFlipper
-        let angle: CGFloat = left ? (up ? 0.52 : -0.44) : (up ? -0.52 : 0.44)
-        node.removeAllActions()
-        node.runAction(.rotateTo(x: 0, y: angle, z: 0, duration: up ? 0.05 : 0.09, usesShortestUnitArc: true))
+        let f = left ? flipperL : flipperR
+        guard f.wantUp != up else { return }
+        f.wantUp = up
         if up { HapticManager.shared.slotColumnStop() }
+    }
+
+    /// 每帧推挡板的角度；板往上扫的时候碰到球，就按板面在那一点的速度把球打出去
+    private func stepFlipper(_ f: Flipper, dt: Float, ballPos p: SCNVector3) {
+        let target = f.wantUp ? f.up : f.rest
+        if !f.wantUp { f.kicked = false }
+        guard f.angle != target else { return }
+        let rate = f.wantUp ? Self.flipUpRate : Self.flipDownRate
+        let d = target - f.angle
+        f.angle += abs(d) <= rate * dt ? d : (d > 0 ? 1 : -1) * rate * dt
+        f.node.eulerAngles.y = f.angle
+        guard f.wantUp, !f.kicked, p.y < 0.9, let body = ball.physicsBody else { return }
+        let (a, h) = f.local(p)
+        guard a > -0.05, a < Self.flipperLength + 0.25, h > -0.45, h < 0.5 else { return }
+        let n = f.normal
+        let v = table.convertVector(body.velocity, from: nil)
+        let vn = v.x * n.0 + v.z * n.1
+        let vs = Self.flipUpRate * max(a, 0.3)
+        let out = vs + 0.35 * (vs - vn)
+        guard out > vn else { return }
+        let dv = table.convertVector(SCNVector3((out - vn) * n.0, 0, (out - vn) * n.1), to: nil)
+        body.velocity = SCNVector3(body.velocity.x + dv.x, body.velocity.y + dv.y, body.velocity.z + dv.z)
+        f.kicked = true
+        if logging { print(String(format: "PB KICK %@ a=%.2f h=%.2f vn=%.1f out=%.1f", f.left ? "L" : "R", a, h, vn, out)) }
     }
 
     private func buildBumpers() {
         let colors = [UIColor(red: 1, green: 0.42, blue: 0.16, alpha: 1), UIColor(red: 0.1, green: 0.85, blue: 0.78, alpha: 1), UIColor(red: 1, green: 0.78, blue: 0.25, alpha: 1)]
-        for (k, p) in [(Float(-1.9), Float(-5.0)), (1.3, -5.0), (-0.3, -3.1)].enumerated() {
+        for (k, p) in [(Float(0.2), Float(-6.0)), (2.4, -5.2), (0.9, -3.6)].enumerated() {
             let body = solid(SCNCylinder(radius: 0.5, height: 0.9), pbr(UIColor(white: 0.1, alpha: 1), metal: 0.6, rough: 0.3), at: SCNVector3(p.0, 0.45, p.1),
                              restitution: 0.9, category: Self.catBumper)
             body.name = "bumper\(k)"
@@ -179,46 +269,52 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         }
     }
 
-    /// 坡道（从台面中左冲上二层）+ 铁丝轨道（绕回左侧，把球送回左挡板）
+    /// 坡道（从台面中左冲上二层）+ 铁丝轨道（在远端拐个 U 形弯，沿左墙把球送回左挡板上方）
     private func buildRamp() {
-        // 坡道：z 2 → -5，升到 1.5 高
-        let rise: Float = 1.5, run: Float = 7
+        // 坡道：z 1.5 → -4.5，升到 1.25 高。两边的护板一直落到台面，球钻不到坡道底下
+        let rise: Float = 1.3, run: Float = 6
         let len = hypot(rise, run), ang = atan2(rise, run)
-        let rampM = pbr(UIColor(red: 0.08, green: 0.3, blue: 0.36, alpha: 1), metal: 0.3, rough: 0.3, glow: UIColor(red: 0.1, green: 0.85, blue: 0.78, alpha: 1), intensity: 0.08)
-        let plate = solid(SCNBox(width: 1.3, height: 0.1, length: CGFloat(len), chamferRadius: 0.02), rampM, at: SCNVector3(-1.6, rise / 2, -1.5), restitution: 0.1, friction: 0.1)
-        plate.eulerAngles.x = ang
+        let rampM = pbr(UIColor(red: 0.08, green: 0.3, blue: 0.36, alpha: 1), metal: 0.3, rough: 0.3, glow: UIColor(red: 0.1, green: 0.85, blue: 0.78, alpha: 1), intensity: 0.1)
+        let sideM = pbr(UIColor(red: 0.16, green: 0.45, blue: 0.5, alpha: 1), metal: 0.7, rough: 0.3)
+        let ramp = SCNNode()
+        ramp.position = SCNVector3(-1.6, rise / 2 - 0.05, -1.5)
+        ramp.eulerAngles.x = ang
+        table.addChildNode(ramp)
+        solid(SCNBox(width: 1.3, height: 0.1, length: CGFloat(len), chamferRadius: 0), rampM, at: SCNVector3Zero, restitution: 0.1, friction: 0.1, in: ramp)
         for dx: Float in [-0.7, 0.7] {
-            let rail = solid(SCNBox(width: 0.1, height: 0.5, length: CGFloat(len), chamferRadius: 0.03), chrome, at: SCNVector3(-1.6 + dx, rise / 2 + 0.28, -1.5), restitution: 0.3)
-            rail.eulerAngles.x = ang
+            solid(SCNBox(width: 0.1, height: 2.2, length: CGFloat(len), chamferRadius: 0.02), sideM, at: SCNVector3(dx, -0.55, 0), restitution: 0.3, in: ramp)
+            let rail = SCNNode(geometry: SCNCylinder(radius: 0.06, height: CGFloat(len)))
+            rail.geometry!.firstMaterial = chrome
+            rail.eulerAngles.x = .pi / 2
+            rail.position = SCNVector3(dx, 0.56, 0)
+            ramp.addChildNode(rail)
         }
-        // 铁丝轨道：一串槽（底 + 两边的管），沿这些点走
-        let pts: [SCNVector3] = [SCNVector3(-1.6, 1.5, -5), SCNVector3(-2.1, 1.5, -6.5), SCNVector3(-3.3, 1.46, -7.0), SCNVector3(-4.2, 1.38, -6.0),
-                                 SCNVector3(-4.35, 1.2, -3.5), SCNVector3(-4.35, 0.85, -0.6), SCNVector3(-4.35, 0.55, 1.5)]
+        // 坡道背面封成一个尖角（平的话球会停在上面）
+        wall(-1.6, -5.25, -2.38, -4.4, height: 1.15, thick: 0.12, sideM, restitution: 0.3)
+        wall(-1.6, -5.25, -0.82, -4.4, height: 1.15, thick: 0.12, sideM, restitution: 0.3)
+
+        // 铁丝轨道经过的点：先在远端转 180 度（10 小段），再沿左墙一路往下，在 z=2 的地方把球放回台面
+        var pts: [SCNVector3] = [SCNVector3(-1.6, 1.28, -4.5)]
+        let cx: Float = -2.95, cz: Float = -4.5, r: Float = 1.35
+        for i in 1...10 {
+            let a = Float.pi * Float(i) / 10
+            pts.append(SCNVector3(cx + r * cos(a), 1.28 - 0.014 * Float(i), cz - r * sin(a)))
+        }
+        pts += [SCNVector3(-4.3, 1.0, -2.5), SCNVector3(-4.3, 0.9, -0.5), SCNVector3(-4.3, 0.8, 1.0), SCNVector3(-4.3, 0.75, 2.0)]
         for i in 0..<(pts.count - 1) {
             let a = pts[i], b = pts[i + 1]
             let d = SCNVector3(b.x - a.x, b.y - a.y, b.z - a.z)
             let l = (d.x * d.x + d.y * d.y + d.z * d.z).squareRoot()
-            let mid = SCNVector3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
             let seg = SCNNode()
-            seg.position = mid
+            seg.position = SCNVector3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
             seg.look(at: b, up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))   // 这时 table 还没后仰：台面坐标 = 世界坐标
             table.addChildNode(seg)
-            func part(_ g: SCNGeometry, _ m: SCNMaterial, _ off: SCNVector3, rot: Bool = false) {
-                g.firstMaterial = m
-                let n = SCNNode(geometry: g)
-                n.position = off
-                if rot { n.eulerAngles.x = .pi / 2 }
-                let body = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: g, options: nil))
-                body.restitution = 0.1; body.friction = 0.05; body.categoryBitMask = Self.catTable
-                n.physicsBody = body
-                seg.addChildNode(n)
-            }
-            part(SCNBox(width: 0.9, height: 0.06, length: CGFloat(l + 0.2), chamferRadius: 0), invisible, SCNVector3(0, -0.03, 0))
-            for dx: Float in [-0.42, 0.42] {
-                part(SCNBox(width: 0.08, height: 0.5, length: CGFloat(l + 0.35), chamferRadius: 0), invisible, SCNVector3(dx, 0.22, 0))
+            solid(SCNBox(width: 1.0, height: 0.06, length: CGFloat(l + 0.12), chamferRadius: 0), invisible, at: SCNVector3(0, -0.03, 0), restitution: 0.05, friction: 0.05, in: seg)
+            for dx: Float in [-0.46, 0.46] {
+                solid(SCNBox(width: 0.08, height: 1.3, length: CGFloat(l + 0.1), chamferRadius: 0), invisible, at: SCNVector3(dx, 0.62, 0), restitution: 0.05, friction: 0.03, in: seg)
                 // 看得见的是四根镀铬的管：下面两根托着球，上面两根拦着球
-                for (ox, oy) in [(dx * 0.55, Float(-0.02)), (dx, Float(0.34))] {
-                    let tube = SCNNode(geometry: SCNCylinder(radius: 0.05, height: CGFloat(l + 0.2)))
+                for (ox, oy) in [(dx * 0.5, Float(-0.03)), (dx, Float(0.36))] {
+                    let tube = SCNNode(geometry: SCNCylinder(radius: 0.065, height: CGFloat(l + 0.08)))
                     tube.geometry!.firstMaterial = chrome
                     tube.eulerAngles.x = .pi / 2
                     tube.position = SCNVector3(ox, oy, 0)
@@ -226,26 +322,30 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
                 }
             }
         }
-        // 轨道的支柱
-        for p in [pts[1], pts[3], pts[4], pts[5]] {
-            let post = SCNNode(geometry: SCNCylinder(radius: 0.06, height: CGFloat(p.y)))
+        // 轨道的支柱（只是样子，不挡球）
+        for p in [pts[3], pts[8], pts[11], pts[12], pts[13]] {
+            let post = SCNNode(geometry: SCNCylinder(radius: 0.05, height: CGFloat(p.y)))
             post.geometry!.firstMaterial = gold
-            post.position = SCNVector3(p.x, p.y / 2, p.z)
+            post.position = SCNVector3(p.x - 0.5, p.y / 2, p.z)
             table.addChildNode(post)
         }
     }
 
     /// 中央机关：一座金字塔。球打到塔前的靶子，塔尖升起来、亮一下
     private func buildPyramid() {
-        let base = SCNPyramid(width: 2.2, height: 1.1, length: 2.2)
-        solid(base, sand, at: SCNVector3(1.9, 0, -0.6), restitution: 0.5)
+        // 看得见的是金字塔，碰撞用一个直上直下的方块（斜面会把球铲飞）
+        let base = SCNNode(geometry: SCNPyramid(width: 2.2, height: 1.1, length: 2.2))
+        base.geometry!.firstMaterial = pbr(UIColor(red: 0.95, green: 0.68, blue: 0.22, alpha: 1), metal: 0.9, rough: 0.38)
+        base.position = SCNVector3(1.9, 0, -0.6)
+        table.addChildNode(base)
+        solid(SCNCylinder(radius: 1.0, height: 1.2), invisible, at: SCNVector3(1.9, 0.6, -0.6), restitution: 0.5)
         let tip = SCNPyramid(width: 0.9, height: 0.75, length: 0.9)
         tip.firstMaterial = pbr(UIColor(red: 1, green: 0.8, blue: 0.3, alpha: 1), metal: 1, rough: 0.15, glow: UIColor(red: 1, green: 0.75, blue: 0.2, alpha: 1), intensity: 0.6)
         pyramidTop = SCNNode(geometry: tip)
         pyramidTop.position = SCNVector3(1.9, 0.72, -0.6)
         table.addChildNode(pyramidTop)
         let target = solid(SCNBox(width: 1.2, height: 0.7, length: 0.16, chamferRadius: 0.04),
-                           pbr(UIColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1), metal: 0.2, rough: 0.3, glow: UIColor(red: 1, green: 0.3, blue: 0.7, alpha: 1), intensity: 0.9),
+                           pbr(UIColor(red: 0.75, green: 0.05, blue: 0.1, alpha: 1), metal: 0.2, rough: 0.3, glow: UIColor(red: 1, green: 0.15, blue: 0.1, alpha: 1), intensity: 0.7),
                            at: SCNVector3(1.9, 0.35, 0.75), restitution: 0.7, category: Self.catTarget)
         target.name = "target"
     }
@@ -270,17 +370,22 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         resetBall()
     }
 
+    private var shotIndex = 0
     private func resetBall() {
         ball.physicsBody?.clearAllForces()
         ball.physicsBody?.velocity = SCNVector3Zero
         ball.physicsBody?.angularVelocity = SCNVector4Zero
         ball.position = SCNVector3(4.6, Float(Self.ballR) + 0.02, 8.6)
         ball.physicsBody?.resetTransform()
-        // 调试：-protoRampShot 每次都从坡道正下方把球直直打上去（检查坡道和铁丝轨道走不走得通）
-        if ProcessInfo.processInfo.arguments.contains("-protoRampShot") {
-            ball.position = SCNVector3(-1.6, Float(Self.ballR) + 0.02, 5.5)
+        // 调试：-protoRampShot 每次都从左挡板那里朝坡道口打一球，力度轮流换（检查坡道和铁丝轨道走不走得通）
+        if args.contains("-protoRampShot") {
+            let speeds: [Float] = [20, 23, 26, 29]
+            let v = speeds[shotIndex % speeds.count]
+            shotIndex += 1
+            ball.position = SCNVector3(-1.6, Float(Self.ballR) + 0.02, 6.5)
             ball.physicsBody?.resetTransform()
-            ball.physicsBody?.velocity = SCNVector3(0, 0, -19)
+            ball.physicsBody?.velocity = table.convertVector(SCNVector3(0, 0, -v), to: nil)
+            if logging { print("PB SHOT v=\(v)") }
         }
     }
 
@@ -300,11 +405,11 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         cameraNode.position = camPos
         scene.rootNode.addChildNode(cameraNode)
         // 暗场 + 一盏从玩家头顶打下来的聚光灯（带影子）
-        let amb = SCNNode(); amb.light = SCNLight(); amb.light!.type = .ambient; amb.light!.intensity = 90
+        let amb = SCNNode(); amb.light = SCNLight(); amb.light!.type = .ambient; amb.light!.intensity = 140
         scene.rootNode.addChildNode(amb)
         let spot = SCNNode(); spot.light = SCNLight()
         spot.light!.type = .spot
-        spot.light!.intensity = 900
+        spot.light!.intensity = 1000
         spot.light!.spotInnerAngle = 50; spot.light!.spotOuterAngle = 95
         spot.light!.castsShadow = true
         spot.light!.shadowRadius = 5
@@ -317,19 +422,24 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         scene.lightingEnvironment.intensity = 0.9
     }
 
-    // MARK: 每帧：相机跟球、掉球重来、发射、自动打
+    // MARK: 每帧：挡板、相机跟球、掉球重来、发射、自动打
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        let dt = Float(min(1.0 / 30, max(1.0 / 240, time - lastTime)))
+        lastTime = time
         let p = ball.presentation.position            // 台面坐标
         let w = ball.presentation.worldPosition
-        let v = ball.physicsBody?.velocity ?? SCNVector3Zero
+        let v = table.convertVector(ball.physicsBody?.velocity ?? SCNVector3Zero, from: nil)
         // 掉进挡板中间，或者不知怎么飞出去了：回发射轨道
-        if (p.z > 9.3 && p.x < 4.1) || p.y < -2 || abs(p.x) > 6 { resetBall() }
+        if (p.z > 9.2 && p.x < 4.1) || p.y < -2 || abs(p.x) > 6 {
+            if logging { print(String(format: "PB DRAIN x=%.2f z=%.2f", p.x, p.z)) }
+            resetBall()
+        }
         let inLane = p.x > 4.25 && p.z > 6.5
         if inLane && abs(v.z) < 0.6 && (pendingLaunch || (demo && time - lastLaunch > 1.5)) {
-            // 冲量沿台面往远端（台面是后仰的，所以带一点向上的分量）
-            let k: Float = 21.5 + Float.random(in: -0.6...0.6)
-            ball.physicsBody?.applyForce(SCNVector3(0, k * sin(Self.tilt), -k * cos(Self.tilt)), asImpulse: true)
+            let k: Float = 27 + Float.random(in: -0.8...0.8)
+            ball.physicsBody?.applyForce(table.convertVector(SCNVector3(0, 0, -k), to: nil), asImpulse: true)
             lastLaunch = time
+            if logging { print("PB LAUNCH") }
             DispatchQueue.main.async { AudioManager.shared.play(.pkLaunch) }
         }
         pendingLaunch = false
@@ -338,20 +448,40 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         if !inLane && speed < 0.25 {
             if slowSince == nil { slowSince = time }
             if let t0 = slowSince, time - t0 > 1.5 {
+                if logging { print(String(format: "PB STUCK x=%.2f y=%.2f z=%.2f", p.x, p.y, p.z)) }
                 ball.physicsBody?.applyForce(SCNVector3(Float.random(in: -1.5...1.5), 1.5, 3), asImpulse: true)
                 slowSince = nil
             }
         } else { slowSince = nil }
         if demo {
-            // 自动打：球到挡板上方、正在往下落时抬板
-            let nearL = p.z > 6.3 && p.z < 8.1 && p.x < -0.4 && p.x > -3.2 && v.z > -1
-            let nearR = p.z > 6.3 && p.z < 8.1 && p.x >= -0.4 && p.x < 2.6 && v.z > -1
-            DispatchQueue.main.async { self.setFlipper(left: true, up: nearL); self.setFlipper(left: false, up: nearR) }
+            // 自动打：球落到挡板外半截上方就拍一下（0.2 秒后放下），不按住
+            for f in [flipperL, flipperR] {
+                if f.wantUp {
+                    if time > f.botRelease { f.wantUp = false }
+                } else if time > f.botCooldown, p.y < 0.9 {
+                    let (a, h) = f.local(p)
+                    if a > 0.75, a < 1.7, h > 0, h < 0.85 {
+                        f.wantUp = true
+                        f.botRelease = time + 0.2
+                        f.botCooldown = time + 0.5
+                    }
+                }
+            }
         }
-        // 相机：在球的后上方，球越往远端相机越跟上去；发射轨道里时看全场
-        let tx = max(-2.2, min(2.2, w.x * 0.45)), tz = max(-4, min(8.5, w.z))
-        let wantPos = SCNVector3(tx * 0.6, w.y + 9.5, tz + 12.5)
-        let wantLook = SCNVector3(tx * 0.8, 0.5, tz - 1.5)
+        stepFlipper(flipperL, dt: dt, ballPos: p)
+        stepFlipper(flipperR, dt: dt, ballPos: p)
+        if logging {
+            let rail = p.y > 0.95 && p.x < -2.4
+            if rail != onRail { onRail = rail; print(rail ? "PB RAIL on" : String(format: "PB RAIL off x=%.2f y=%.2f z=%.2f", p.x, p.y, p.z)) }
+            if time - lastLog > 0.1 {
+                lastLog = time
+                print(String(format: "PB %.1f  %.2f %.2f %.2f  v %.1f %.1f %.1f", time, p.x, p.y, p.z, v.x, v.y, v.z))
+            }
+        }
+        // 相机：在玩家这头的上方，跟着球前后挪一小段（挡板一直在画面里），左右也稍微跟一点
+        let tx = max(-2.2, min(2.2, w.x * 0.45)), tz = max(0.8, min(2.8, w.z))
+        let wantPos = SCNVector3(tx * 0.3, 7.8, tz + 13.6)
+        let wantLook = SCNVector3(tx * 0.4, 0.5, tz + 1.2)
         let s: Float = 0.07
         camPos = SCNVector3(camPos.x + (wantPos.x - camPos.x) * s, camPos.y + (wantPos.y - camPos.y) * s, camPos.z + (wantPos.z - camPos.z) * s)
         camLook = SCNVector3(camLook.x + (wantLook.x - camLook.x) * s, camLook.y + (wantLook.y - camLook.y) * s, camLook.z + (wantLook.z - camLook.z) * s)
@@ -366,7 +496,7 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         if name.hasPrefix("bumper"), let k = Int(name.dropFirst(6)) {
             let c = other.presentation.position, p = ball.presentation.position
             let dx = p.x - c.x, dz = p.z - c.z, l = max(0.01, hypot(dx, dz))
-            ball.physicsBody?.applyForce(SCNVector3(dx / l * 7, 0, dz / l * 7), asImpulse: true)
+            ball.physicsBody?.applyForce(table.convertVector(SCNVector3(dx / l * 8, 0, dz / l * 8), to: nil), asImpulse: true)
             let cap = bumperCaps[k]
             cap.removeAllActions()
             cap.runAction(.sequence([.moveBy(x: 0, y: -0.16, z: 0, duration: 0.03), .moveBy(x: 0, y: 0.16, z: 0, duration: 0.1)]))
