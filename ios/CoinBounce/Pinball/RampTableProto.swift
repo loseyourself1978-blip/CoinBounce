@@ -11,7 +11,7 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     private var ball = SCNNode()
     private var bumperCaps: [SCNNode] = []
     private var pyramidTop = SCNNode()
-    private var camPos = SCNVector3(0, 7.8, 17.6), camLook = SCNVector3(0, 0.5, 5.2)
+    private let camPos = SCNVector3(0, 21.4, 15.6), camLook = SCNVector3(0, 0.5, 1.0)
     private let args = ProcessInfo.processInfo.arguments
     private lazy var demo = args.contains("-pinballDemo")
     private lazy var logging = args.contains("-protoLog")
@@ -21,6 +21,9 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
     private var lastTime: TimeInterval = 0
     private var lastLog: TimeInterval = 0
     private var onRail = false
+    /// 得分（样台先有个数：蘑菇柱 100、弹射 10、金字塔靶 500、走完铁丝轨道 1000）
+    var onScore: ((Int) -> Void)?
+    private func score(_ n: Int) { DispatchQueue.main.async { self.onScore?(n) } }
 
     /// 一块挡板：角度自己一帧一帧推（不用动作），这样知道它这一帧扫过了哪里、转得多快，
     /// 球被扫到时按「板面速度」算出球该飞多快——只靠物理引擎的话，板一帧转十几度，球经常被穿过去或者只是被挤开
@@ -118,9 +121,9 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
 
         // 台面：10 宽、20 长，远端在 -z。碰撞用一块看不见的厚板，画贴在一张平面上
         solid(SCNBox(width: 10, height: 0.4, length: 20, chamferRadius: 0), invisible, at: SCNVector3(0, -0.2, 0), friction: 0.12)
-        let floorM = pbr(.white, metal: 0, rough: 0.3)
+        let floorM = pbr(.white, metal: 0, rough: 0.5)
         floorM.diffuse.contents = UIImage(named: "PinballPharaohField")
-        floorM.clearCoat.contents = 0.25
+        floorM.clearCoat.contents = 0.06
         floorM.clearCoatRoughness.contents = 0.15
         let art = SCNNode(geometry: SCNPlane(width: 10, height: 20))
         art.geometry!.firstMaterial = floorM
@@ -168,8 +171,17 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         }
         // 发射轨道的内墙；两侧通往挡板的斜导轨
         wall(4.2, -4.6, 4.2, 10)
-        wall(-5, 3.2, -2.9, 7.05, restitution: 0.25)
-        wall(4.2, 3.2, 2.1, 7.05, restitution: 0.25)
+        let slingL = wall(-5, 3.2, -2.9, 7.05, restitution: 0.25), slingR = wall(4.2, 3.2, 2.1, 7.05, restitution: 0.25)
+        // 两条导轨带弹射：球撞得够重就被弹回场内（轻轻滚下来的不弹），外面套一圈红橡皮
+        for (n, name) in [(slingL, "slingL"), (slingR, "slingR")] {
+            n.name = name
+            n.physicsBody?.categoryBitMask = Self.catBumper
+            n.physicsBody?.contactTestBitMask = Self.catBall
+            let band = SCNNode(geometry: SCNBox(width: 4.5, height: 0.22, length: 0.3, chamferRadius: 0.1))
+            band.geometry!.firstMaterial = rubber
+            band.position = SCNVector3(0, 0.05, 0)
+            n.addChildNode(band)
+        }
         // 发射轨道底下的挡块
         solid(SCNBox(width: 0.8, height: 0.8, length: 0.4, chamferRadius: 0.05), rubber, at: SCNVector3(4.6, 0.4, 9.4), restitution: 0.1)
 
@@ -393,7 +405,7 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
 
     private func buildLightsAndCamera() {
         let cam = SCNCamera()
-        cam.fieldOfView = 62
+        cam.fieldOfView = 58
         cam.projectionDirection = .vertical
         cam.zNear = 0.5; cam.zFar = 120
         cam.wantsHDR = true
@@ -403,19 +415,20 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         cam.vignettingIntensity = 0.6; cam.vignettingPower = 1.2
         cameraNode.camera = cam
         cameraNode.position = camPos
+        cameraNode.look(at: camLook)
         scene.rootNode.addChildNode(cameraNode)
         // 暗场 + 一盏从玩家头顶打下来的聚光灯（带影子）
         let amb = SCNNode(); amb.light = SCNLight(); amb.light!.type = .ambient; amb.light!.intensity = 140
         scene.rootNode.addChildNode(amb)
         let spot = SCNNode(); spot.light = SCNLight()
         spot.light!.type = .spot
-        spot.light!.intensity = 1000
+        spot.light!.intensity = 800
         spot.light!.spotInnerAngle = 50; spot.light!.spotOuterAngle = 95
         spot.light!.castsShadow = true
         spot.light!.shadowRadius = 5
         spot.light!.shadowColor = UIColor.black.withAlphaComponent(0.6)
         spot.light!.shadowMapSize = CGSize(width: 2048, height: 2048)
-        spot.position = SCNVector3(-2, 18, 8)
+        spot.position = SCNVector3(-6, 20, -4)
         spot.look(at: SCNVector3(0, 0, -1))
         scene.rootNode.addChildNode(spot)
         scene.lightingEnvironment.contents = PusherScene3D.sharedCasinoEnvironment
@@ -470,23 +483,20 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
         }
         stepFlipper(flipperL, dt: dt, ballPos: p)
         stepFlipper(flipperR, dt: dt, ballPos: p)
+        let rail = p.y > 0.95 && p.x < -2.4
+        if rail != onRail {
+            onRail = rail
+            if !rail && p.z > 1 { score(1000); DispatchQueue.main.async { AudioManager.shared.play(.fruitLit); HapticManager.shared.fruitLit() } }
+            if logging { print(rail ? "PB RAIL on" : String(format: "PB RAIL off x=%.2f y=%.2f z=%.2f", p.x, p.y, p.z)) }
+        }
         if logging {
-            let rail = p.y > 0.95 && p.x < -2.4
-            if rail != onRail { onRail = rail; print(rail ? "PB RAIL on" : String(format: "PB RAIL off x=%.2f y=%.2f z=%.2f", p.x, p.y, p.z)) }
             if time - lastLog > 0.1 {
                 lastLog = time
                 print(String(format: "PB %.1f  %.2f %.2f %.2f  v %.1f %.1f %.1f", time, p.x, p.y, p.z, v.x, v.y, v.z))
             }
         }
-        // 相机：在玩家这头的上方，跟着球前后挪一小段（挡板一直在画面里），左右也稍微跟一点
-        let tx = max(-2.2, min(2.2, w.x * 0.45)), tz = max(0.8, min(2.8, w.z))
-        let wantPos = SCNVector3(tx * 0.3, 7.8, tz + 13.6)
-        let wantLook = SCNVector3(tx * 0.4, 0.5, tz + 1.2)
-        let s: Float = 0.07
-        camPos = SCNVector3(camPos.x + (wantPos.x - camPos.x) * s, camPos.y + (wantPos.y - camPos.y) * s, camPos.z + (wantPos.z - camPos.z) * s)
-        camLook = SCNVector3(camLook.x + (wantLook.x - camLook.x) * s, camLook.y + (wantLook.y - camLook.y) * s, camLook.z + (wantLook.z - camLook.z) * s)
-        cameraNode.position = camPos
-        cameraNode.look(at: camLook)
+        // 相机（hj 11-28：更正对台面）：固定在高处往下看 55 度，整张台子和背板一直都在画面里，不再跟球
+        _ = w
     }
 
     // MARK: 碰撞：蘑菇柱弹开、金字塔的靶子
@@ -501,7 +511,16 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
             cap.removeAllActions()
             cap.runAction(.sequence([.moveBy(x: 0, y: -0.16, z: 0, duration: 0.03), .moveBy(x: 0, y: 0.16, z: 0, duration: 0.1)]))
             DispatchQueue.main.async { AudioManager.shared.play(.baffleHit); HapticManager.shared.baffleHit() }
+            score(100)
+        } else if name.hasPrefix("sling"), contact.collisionImpulse > 4.5 {
+            let nx: Float = name == "slingL" ? 0.878 : -0.878
+            ball.physicsBody?.applyForce(table.convertVector(SCNVector3(nx * 7, 0, -0.479 * 7), to: nil), asImpulse: true)
+            other.removeAllActions()
+            other.runAction(.sequence([.scale(to: 1.06, duration: 0.03), .scale(to: 1, duration: 0.1)]))
+            score(10)
+            DispatchQueue.main.async { AudioManager.shared.play(.baffleHit); HapticManager.shared.baffleHit() }
         } else if name == "target" {
+            score(500)
             pyramidTop.removeAllActions()
             pyramidTop.runAction(.sequence([.moveBy(x: 0, y: 0.9, z: 0, duration: 0.18), .wait(duration: 0.5), .moveBy(x: 0, y: -0.9, z: 0, duration: 0.35)]))
             DispatchQueue.main.async { AudioManager.shared.play(.fruitLit); HapticManager.shared.fruitLit() }
@@ -513,6 +532,7 @@ final class RampTableScene: NSObject, SCNSceneRendererDelegate, SCNPhysicsContac
 struct RampTableProtoView: View {
     var onExit: () -> Void
     @State private var table = RampTableScene()
+    @State private var points = 0
 
     var body: some View {
         ZStack {
@@ -528,9 +548,11 @@ struct RampTableProtoView: View {
                 HStack {
                     LobbyBackButton { onExit() }
                     Spacer()
-                    Text(verbatim: "PROTOTYPE")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                    Text(verbatim: "\(points)")
+                        .font(.system(size: 26, weight: .black, design: .monospaced))
+                        .foregroundColor(ArtPalette.goldLight)
+                        .shadow(color: .orange.opacity(0.8), radius: 6)
+                        .contentTransition(.numericText())
                 }
                 .padding(.horizontal, 14).padding(.top, 6)
                 Spacer()
@@ -549,6 +571,7 @@ struct RampTableProtoView: View {
             }
         }
         .background(Color.black.ignoresSafeArea())
+        .onAppear { table.onScore = { n in withAnimation(.easeOut(duration: 0.2)) { points += n } } }
     }
 }
 
