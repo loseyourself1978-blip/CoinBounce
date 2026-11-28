@@ -89,6 +89,10 @@ struct CoinPusherView: View {
     @State private var arrowBounce = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showNoCoinsHint = false
+    /// v13.7 分享 JACKPOT：演出中截的图；演出结束后「分享」按钮亮 8 秒
+    @State private var jackpotShot: UIImage?
+    @State private var jackpotShare: Int?
+    @State private var jackpotShareToken = 0
     /// 1.0.0：点领币按钮时没有广告（没网 / 还在加载）的提示
     @State private var showAdUnavailableHint = false
     @State private var dropPressed = false
@@ -273,9 +277,53 @@ struct CoinPusherView: View {
                 RainbowBorder(excited: gameState.showJackpotExplosion || gameState.celebration != nil, width: 7)
                     .frame(width: sw, height: sh)
                     .allowsHitTesting(false)
+                if let amount = jackpotShare, !gameState.showJackpotExplosion {
+                    Button {
+                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.24)
+                        jackpotShare = nil
+                        ShareCard.present(card, amount: amount, machine: String(localized: "Coin Pusher"))
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .black))
+                            Text("Share this win").font(.system(size: 18, weight: .black, design: .rounded))
+                        }
+                        .foregroundColor(Color(red: 0.25, green: 0.1, blue: 0))
+                        .padding(.horizontal, 22).padding(.vertical, 11)
+                        .background(Capsule().fill(LinearGradient(colors: [ArtPalette.goldLight, ArtPalette.gold, ArtPalette.goldDeep], startPoint: .top, endPoint: .bottom)))
+                        .overlay(Capsule().stroke(ArtPalette.outline, lineWidth: 1.5))
+                        .shadow(color: .black.opacity(0.5), radius: 5, y: 3)
+                    }
+                    .accessibilityIdentifier("pusherShareWin")
+                    .position(x: sw / 2, y: layout.dropButton.minY - 34)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
             }
             .frame(width: sw, height: sh)
             .animation(.easeOut(duration: 0.25), value: gameState.showJackpotExplosion)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: jackpotShare)
+            // v13.7：JACKPOT 演出开始 1.2 秒后截图；演出结束后亮 8 秒「分享」按钮（只对 100 枚以上的大奖）
+            .onChange(of: gameState.showJackpotExplosion) { on in
+                let amount = gameState.jackpotExplosionAmount
+                guard amount >= 100, NSClassFromString("XCTestCase") == nil else { return }
+                if on {
+                    jackpotShare = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        if gameState.showJackpotExplosion { jackpotShot = ShareCard.windowShot(afterUpdates: true) }
+                    }
+                } else if jackpotShot != nil {
+                    jackpotShareToken += 1
+                    let t = jackpotShareToken
+                    jackpotShare = amount
+                    #if DEBUG
+                    let args = ProcessInfo.processInfo.arguments
+                    if let i = args.firstIndex(of: "-dumpShareCard"), i + 1 < args.count {
+                        let card = ShareCard.render(shot: jackpotShot, headline: "JACKPOT", amount: amount, machine: String(localized: "Coin Pusher"), focus: 0.24)
+                        try? card.pngData()?.write(to: URL(fileURLWithPath: args[i + 1]))
+                    }
+                    #endif
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 8) { if jackpotShareToken == t { jackpotShare = nil } }
+                }
+            }
             .animation(.easeOut(duration: 0.25), value: gameState.showCardSelection)
             // v13.5 不靠广告补币：每秒走一次表，到点直接加到余额（离开 App 的时间也算，回来第一秒就补上）
             .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in

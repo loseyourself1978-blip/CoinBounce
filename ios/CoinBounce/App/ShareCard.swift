@@ -7,7 +7,8 @@ enum ShareCard {
     /// 带来源标记的商店链接（App 分析里能看到分享带来多少下载；pt 是开发者账号的，ct=share）
     static let shareURL = URL(string: "https://apps.apple.com/app/apple-store/id6832182341?pt=128457129&ct=share&mt=8")!
 
-    static func render(shot: UIImage?, headline: String, amount: Int, machine: String) -> UIImage {
+    /// focus：截图从屏幕高度的这个比例开始取（老虎机 0.2 = 角色的头；推币机 0.24 = 老虎机屏到金币堆）
+    static func render(shot: UIImage?, headline: String, amount: Int, machine: String, focus: CGFloat = 0.2) -> UIImage {
         let bg = UIColor(red: 0.2, green: 0.03, blue: 0.05, alpha: 1)
         let size = CGSize(width: 1080, height: 1350)
         let fmt = UIGraphicsImageRendererFormat(); fmt.scale = 1
@@ -19,7 +20,7 @@ enum ShareCard {
                 let s = max(box.width / shot.size.width, box.height / shot.size.height)
                 let w = shot.size.width * s, h = shot.size.height * s
                 cg.saveGState(); cg.clip(to: box)
-                shot.draw(in: CGRect(x: (box.width - w) / 2, y: (box.height - h) * 0.393, width: w, height: h))
+                shot.draw(in: CGRect(x: (box.width - w) / 2, y: -h * focus, width: w, height: h))
                 cg.restoreGState()
             }
             let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [bg.withAlphaComponent(0).cgColor, bg.cgColor] as CFArray, locations: [0, 1])!
@@ -48,11 +49,11 @@ enum ShareCard {
     }
 
     /// 当前窗口的截图（SwiftUI 画面；3D 视图要用它自己的 snapshot）
-    static func windowShot() -> UIImage? {
+    static func windowShot(afterUpdates: Bool = false) -> UIImage? {
         guard let window = keyWindow else { return nil }
         let fmt = UIGraphicsImageRendererFormat(); fmt.scale = 2
         return UIGraphicsImageRenderer(bounds: window.bounds, format: fmt).image { _ in
-            window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: afterUpdates)
         }
     }
 
