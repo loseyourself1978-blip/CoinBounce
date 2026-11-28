@@ -154,6 +154,7 @@ struct JackpotCelebrationView: View {
                 .ignoresSafeArea()
             GoldSparks()
                 .ignoresSafeArea()
+            FestivalOverlay(festival: Festival.current).ignoresSafeArea()   // v13.9：圣诞飘雪、新年烟花
 
             VStack(spacing: 2) {
                 Text("JACKPOT!")

@@ -166,6 +166,8 @@ final class CoinRefill: ObservableObject {
 final class DailyBonus {
     static let shared = DailyBonus()
     static let coins = 30
+    /// v13.9 节日期间每日奖励加码：圣诞 50，新年 60
+    static func amount(_ festival: Festival = .current) -> Int { festival == .christmas ? 50 : festival == .newYear ? 60 : coins }
     private let defaults: UserDefaults
     private let key: String
 

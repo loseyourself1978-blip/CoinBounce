@@ -242,9 +242,14 @@ struct LobbyView: View {
     /// v13.5：每天第一次进大厅送 DailyBonus.coins 枚，兔女郎说一句（XCTest 里不发，免得改动测试的余额）
     private func dailyBonus() {
         guard NSClassFromString("XCTestCase") == nil, DailyBonus.shared.claimIfNew() else { return }
-        gameState.addCoins(DailyBonus.coins, source: .other)
+        let n = DailyBonus.amount()
+        gameState.addCoins(n, source: .other)
         gameState.saveNow()
-        say(String(localized: "Daily bonus: \(DailyBonus.coins) coins! See you tomorrow."), pose: .clap)
+        switch Festival.current {
+        case .christmas: say(String(localized: "A Christmas gift for you: \(n) coins!"), pose: .clap)
+        case .newYear: say(String(localized: "New Year lucky money: \(n) coins!"), pose: .clap)
+        case .none: say(String(localized: "Daily bonus: \(n) coins! See you tomorrow."), pose: .clap)
+        }
     }
     private func say(_ text: String, pose: BunnyPose) { line = BunnyLine(text: text, pose: pose) }
 }

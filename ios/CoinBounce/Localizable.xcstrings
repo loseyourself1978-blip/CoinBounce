@@ -337,6 +337,28 @@
         }
       }
     },
+    "A Christmas gift for you: %lld coins!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圣诞礼物送你：%lld 枚金币！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聖誕禮物送你：%lld 枚金幣！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリスマスプレゼント：メダル %lld 枚！"
+          }
+        }
+      }
+    },
     "A ball lost in the first 7 seconds is returned once for free. Return depends on skill: about 50% without flipping, about 95% for average play.": {
       "extractionState": "manual",
       "localizations": {
@@ -2294,6 +2316,28 @@
         }
       }
     },
+    "Happy New Year!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年快乐！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年快樂！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あけましておめでとう！"
+          }
+        }
+      }
+    },
     "Happy New Year! May your jackpots be big.": {
       "localizations": {
         "zh-Hans": {
@@ -3001,6 +3045,28 @@
         }
       }
     },
+    "Merry Christmas!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圣诞快乐！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聖誕快樂！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メリークリスマス！"
+          }
+        }
+      }
+    },
     "Merry Christmas! Santa left some coins for you.": {
       "localizations": {
         "zh-Hans": {
@@ -3226,6 +3292,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "ナイス！x2"
+          }
+        }
+      }
+    },
+    "New Year lucky money: %lld coins!": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年红包：%lld 枚金币！"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新年紅包：%lld 枚金幣！"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お年玉：メダル %lld 枚！"
           }
         }
       }

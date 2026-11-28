@@ -252,6 +252,7 @@ struct CaishenView: View {
                 .frame(width: w * 1.5, height: w * 1.5)
                 .position(x: w / 2, y: h * 0.4)
             if !reduceMotion {
+                FestivalOverlay(festival: Festival.current).ignoresSafeArea()   // v13.9：圣诞飘雪、新年烟花
                 SunRays(color: ArtPalette.goldLight)
                     .frame(width: w * 2.2, height: w * 2.2)
                     .position(x: w / 2, y: h * 0.4)

@@ -8,8 +8,11 @@ enum ShareCard {
     static let shareURL = URL(string: "https://apps.apple.com/app/apple-store/id6832182341?pt=128457129&ct=share&mt=8")!
 
     /// focus：截图从屏幕高度的这个比例开始取（老虎机 0.2 = 角色的头；推币机 0.24 = 老虎机屏到金币堆）
-    static func render(shot: UIImage?, headline: String, amount: Int, machine: String, focus: CGFloat = 0.2) -> UIImage {
-        let bg = UIColor(red: 0.2, green: 0.03, blue: 0.05, alpha: 1)
+    static func render(shot: UIImage?, headline: String, amount: Int, machine: String, focus: CGFloat = 0.2, festival: Festival = .current) -> UIImage {
+        // v13.9 节日卡片：圣诞深红、新年深蓝
+        let bg: UIColor = festival == .christmas ? UIColor(red: 0.36, green: 0.04, blue: 0.08, alpha: 1)
+                        : festival == .newYear ? UIColor(red: 0.04, green: 0.05, blue: 0.2, alpha: 1)
+                        : UIColor(red: 0.2, green: 0.03, blue: 0.05, alpha: 1)
         let size = CGSize(width: 1080, height: 1350)
         let fmt = UIGraphicsImageRendererFormat(); fmt.scale = 1
         return UIGraphicsImageRenderer(size: size, format: fmt).image { ctx in
@@ -20,7 +23,7 @@ enum ShareCard {
                 let s = max(box.width / shot.size.width, box.height / shot.size.height)
                 let w = shot.size.width * s, h = shot.size.height * s
                 cg.saveGState(); cg.clip(to: box)
-                shot.draw(in: CGRect(x: (box.width - w) / 2, y: -h * focus, width: w, height: h))
+                shot.draw(in: CGRect(x: (box.width - w) / 2, y: -h * focus + (festival == .none ? 0 : 110), width: w, height: h))   // 节日卡片顶上有缎带，画面往下让一点
                 cg.restoreGState()
             }
             let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [bg.withAlphaComponent(0).cgColor, bg.cgColor] as CFArray, locations: [0, 1])!
@@ -37,6 +40,19 @@ enum ShareCard {
             let gold = UIColor(red: 1, green: 0.83, blue: 0.35, alpha: 1)
             // 截图里已经有「SUPER WIN! +830」这样的大字，卡片上不再重复写；没有截图时才补一行
             if shot == nil { text("\(headline)  +\(amount.formatted())", 925, 104, .black, gold, stroke: true) }
+            if festival != .none {   // 雪花或彩纸撒满卡片，顶上一条问候的缎带
+                var seed: UInt64 = UInt64(amount) &+ 99
+                func rnd() -> CGFloat { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return CGFloat((seed >> 33) % 10_000) / 10_000 }
+                for _ in 0..<80 {
+                    let x = rnd() * 1080, y = rnd() * 1350, r = 3 + rnd() * 7
+                    let c: UIColor = festival == .christmas ? UIColor.white.withAlphaComponent(0.85)
+                        : [gold, UIColor(red: 1, green: 0.4, blue: 0.5, alpha: 1), UIColor(red: 0.5, green: 0.85, blue: 1, alpha: 1)][Int(rnd() * 2.99)]
+                    c.setFill(); cg.fillEllipse(in: CGRect(x: x, y: y, width: r, height: r))
+                }
+                let ribbon = festival == .christmas ? UIColor(red: 0.1, green: 0.42, blue: 0.22, alpha: 0.94) : UIColor(red: 0.55, green: 0.42, blue: 0.1, alpha: 0.94)
+                ribbon.setFill(); cg.fill(CGRect(x: 0, y: 36, width: 1080, height: 96))
+                text(festival == .christmas ? String(localized: "Merry Christmas!") : String(localized: "Happy New Year!"), 46, 60, .black, gold)
+            }
             text(machine, 1150, 46, .heavy, .white)
             text(String(localized: "COIN BOUNCE"), 1212, 58, .black, gold)
             text(String(localized: "Free on the App Store"), 1288, 34, .semibold, UIColor.white.withAlphaComponent(0.85))
