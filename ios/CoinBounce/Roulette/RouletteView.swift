@@ -325,6 +325,8 @@ struct RouletteView: View {
             .truncatingRemainder(dividingBy: 2 * .pi)
         spinStart = nil
         ballNumber = n
+        // v13.8 成就：押中单个号码（settle 之后下注会清掉，先看）
+        if game.bets.keys.contains(where: { if case .straight(let k) = $0 { return k == n }; return false }) { GameCenter.shared.unlock(GameCenter.achStraightUp) }
         game.settle()
         AudioManager.shared.play(.slotStop)
         if game.lastReturn > 0 {

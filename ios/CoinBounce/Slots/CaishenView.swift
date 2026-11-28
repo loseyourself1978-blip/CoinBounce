@@ -439,6 +439,8 @@ struct CaishenView: View {
         celebrationShown = 0
         celebration = Celebration(amount: amount, tier: tier)
         GameCenter.shared.report(amount, to: GameCenter.slotsBiggestWin)
+        GameCenter.shared.bigWin(onMachine: theme.rawValue)
+        if grand { GameCenter.shared.unlock(GameCenter.achGrand) }
         punchIn()
         flash = 0.75
         withAnimation(.easeOut(duration: 0.45)) { flash = 0 }

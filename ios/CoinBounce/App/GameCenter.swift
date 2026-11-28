@@ -28,6 +28,29 @@ final class GameCenter {
         GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: [board]) { _ in }
     }
 
+    // MARK: 成就（v13.8）
+    static let achFirstJackpot = "cb.first_jackpot"        // 推币机第一次 JACKPOT
+    static let achGrand = "cb.grand"                        // 锁定重转 15 格全满
+    static let achThreeMachines = "cb.three_machines"      // 三台老虎机都中过大奖
+    static let achStraightUp = "cb.straight_up"            // 轮盘押中单个号码
+
+    func unlock(_ id: String, percent: Double = 100) {
+        guard !disabled, GKLocalPlayer.local.isAuthenticated else { return }
+        let a = GKAchievement(identifier: id)
+        a.percentComplete = min(100, percent)
+        a.showsCompletionBanner = true
+        GKAchievement.report([a]) { _ in }
+    }
+
+    /// 在哪几台老虎机上中过大奖（记在本机），三台齐了解锁
+    func bigWin(onMachine key: String) {
+        let d = UserDefaults.standard, k = "CoinBounce.GC.bigWinMachines"
+        var set = Set(d.stringArray(forKey: k) ?? [])
+        set.insert(key)
+        d.set(Array(set), forKey: k)
+        unlock(Self.achThreeMachines, percent: Double(set.count) / 3 * 100)
+    }
+
     func showLeaderboards() {
         guard GKLocalPlayer.local.isAuthenticated else { authenticate(); return }
         let vc = GKGameCenterViewController(state: .leaderboards)
