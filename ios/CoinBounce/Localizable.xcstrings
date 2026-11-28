@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@: I won %lld coins 🪙 Can you beat it?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：我赢了 %lld 枚金币 🪙 你能超过吗？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：我贏了 %lld 枚金幣 🪙 你能超過嗎？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：メダル %lld 枚ゲット 🪙 超えられる？"
+          }
+        }
+      }
+    },
     "%lld Free Spins": {
       "extractionState": "manual",
       "localizations": {
@@ -2065,6 +2087,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "まもなく無料メダル"
+          }
+        }
+      }
+    },
+    "Free on the App Store": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 免费下载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store 免費下載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store で無料"
           }
         }
       }
@@ -4283,6 +4327,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "設定"
+          }
+        }
+      }
+    },
+    "Share this win": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享这次大奖"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享這次大獎"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この当たりをシェア"
           }
         }
       }

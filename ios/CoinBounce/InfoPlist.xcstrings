@@ -30,6 +30,34 @@
         }
       }
     },
+    "NSPhotoLibraryAddUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save your win card to Photos."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把大奖卡片存到相册。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把大獎卡片存到相簿。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当たりカードを写真に保存します。"
+          }
+        }
+      }
+    },
     "NSUserTrackingUsageDescription": {
       "extractionState": "manual",
       "localizations": {

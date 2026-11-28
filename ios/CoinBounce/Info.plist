@@ -6,6 +6,8 @@
 	<string>ca-app-pub-9469890002230148~5839128885</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save your win card to Photos.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver more relevant ads to you.</string>
 	<key>SKAdNetworkItems</key>

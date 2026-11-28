@@ -36,6 +36,7 @@
 		6D718B9AE32C4BAECE98CB50 /* SlotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F6178C545882280857C1B8 /* SlotsView.swift */; };
 		78F936A1CDA0E1E0342E482E /* CaishenGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FBF4D8D96DEE0AFC059038 /* CaishenGame.swift */; };
 		7CB20CEDABF6EE2B7D6731A8 /* Icon3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46437215F0A7ED0248FC3F7 /* Icon3D.swift */; };
+		8000D58EC614E15DC4C29798 /* ShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23D699E467F9447BF3A79663 /* ShareCard.swift */; };
 		84D24F6E668F2F6F9E6EEE87 /* SlotsGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259FCAFDED30AC92645ED110 /* SlotsGame.swift */; };
 		85DDBB635E9A641A32140D6C /* CaishenGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FBF4D8D96DEE0AFC059038 /* CaishenGame.swift */; };
 		87AA804587217EFE94073D26 /* PachinkoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30FB1E61D1F7A429D4B536B /* PachinkoConstants.swift */; };
@@ -147,6 +148,7 @@
 		060744781071BBA307B2EAF6 /* PinballView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinballView.swift; sourceTree = "<group>"; };
 		1D84389FD89837773F507262 /* sfx_pk_count.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_count.wav; sourceTree = "<group>"; };
 		1E437F0B110E73380F71621E /* sfx_pk_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_pk_start.wav; sourceTree = "<group>"; };
+		23D699E467F9447BF3A79663 /* ShareCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareCard.swift; sourceTree = "<group>"; };
 		259FCAFDED30AC92645ED110 /* SlotsGame.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsGame.swift; sourceTree = "<group>"; };
 		2C6E520CCE4903CFD956E323 /* SlotsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlotsTests.swift; sourceTree = "<group>"; };
 		376343C1D9840D127C12A132 /* ReviewPromptTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReviewPromptTests.swift; sourceTree = "<group>"; };
@@ -357,6 +359,7 @@
 				C0C08BE306C19A1AD748AA16 /* AppConfig.swift */,
 				FDC5E8C7942286AE1B061531 /* ReviewPrompt.swift */,
 				89FD6E13356B497A4CC6D8C6 /* TesterMode.swift */,
+				23D699E467F9447BF3A79663 /* ShareCard.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -737,6 +740,7 @@
 				184647BDC8231015213B4748 /* SlotsHallView.swift in Sources */,
 				4571102CABCA941350B23894 /* ReviewPrompt.swift in Sources */,
 				29672ADE467F693E5E6AF9D0 /* TesterMode.swift in Sources */,
+				8000D58EC614E15DC4C29798 /* ShareCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

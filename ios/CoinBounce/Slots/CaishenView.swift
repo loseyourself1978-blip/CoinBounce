@@ -44,6 +44,10 @@ struct CaishenView: View {
     @State private var mascotPop: CGFloat = 1
     @State private var mascotToken = 0
     @State private var punch: CGFloat = 1
+    /// v13.7 分享大奖：演出里数字滚完时截的图和这次的奖；演出结束后「分享」按钮亮几秒
+    @State private var shareShot: UIImage?
+    @State private var shareOffer: Celebration?
+    @State private var shareToken = 0
     @State private var flash = 0.0
 
     struct Celebration: Equatable {
@@ -124,6 +128,26 @@ struct CaishenView: View {
                 }
                 if let gift { giftOverlay(gift, w: w, h: h) }
                 if let celebration { celebrationOverlay(celebration, w: w, h: h) }
+                if let offer = shareOffer, celebration == nil {
+                    Button {
+                        let card = ShareCard.render(shot: shareShot, headline: String(localized: "BIG WIN!"), amount: offer.amount, machine: theme.title)
+                        shareOffer = nil
+                        ShareCard.present(card, amount: offer.amount, machine: theme.title)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .black))
+                            Text("Share this win").font(.system(size: 18, weight: .black, design: .rounded))
+                        }
+                        .foregroundColor(Color(red: 0.25, green: 0.1, blue: 0))
+                        .padding(.horizontal, 22).padding(.vertical, 11)
+                        .background(GoldGloss(shape: Capsule()))
+                        .overlay(Capsule().stroke(ArtPalette.outline, lineWidth: 1.5))
+                        .shadow(color: .black.opacity(0.5), radius: 5, y: 3)
+                    }
+                    .accessibilityIdentifier("slotsShareWin")
+                    .position(x: w / 2, y: h * 0.715)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
                 if game.outOfCoins {
                     Text("Not enough coins. Watch an ad for +50!")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -274,6 +298,7 @@ struct CaishenView: View {
 
     private func beginReels() {
         guard let s = game.spin else { return }
+        shareOffer = nil
         spinToken += 1
         let token = spinToken
         let fast = reduceMotion || game.auto
@@ -400,6 +425,14 @@ struct CaishenView: View {
         let roll = 1.2 + Double(tier) * 0.6
         withAnimation(.easeOut(duration: roll).delay(0.3)) { celebrationShown = Double(amount) }
         let token = spinToken
+        // 数字滚完、金币还在飞的时候截一张图，留给分享卡片
+        shareShot = nil
+        if tier >= 1 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + roll + 0.7) {
+                guard spinToken == token, celebration != nil else { return }
+                shareShot = ShareCard.windowShot()
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + roll + 1.6) {
             guard spinToken == token else { return }
             endCelebration()
@@ -427,12 +460,26 @@ struct CaishenView: View {
     }
 
     private func endCelebration() {
-        guard celebration != nil else { return }
+        guard let ended = celebration else { return }
         celebration = nil
         setMascot(.cheer, backAfter: 2.2)
         // 大奖演出结束后，合适的时候请玩家评分（自动转的时候不打断）
         if !game.auto, ReviewPrompt().recordBigWin() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { requestReview() }
+        } else if !game.auto, ended.tier >= 1, shareShot != nil {
+            // v13.7：同一次大奖只出一样——没请评分的时候，亮 8 秒「分享」按钮（下一转开始就收起）
+            shareToken += 1
+            let t = shareToken
+            shareOffer = ended
+            #if DEBUG
+            // -dumpShareCard <路径>：把分享卡片写成 PNG（模拟器上检查卡片长什么样）
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-dumpShareCard"), i + 1 < args.count {
+                let card = ShareCard.render(shot: shareShot, headline: String(localized: "BIG WIN!"), amount: ended.amount, machine: theme.title)
+                try? card.pngData()?.write(to: URL(fileURLWithPath: args[i + 1]))
+            }
+            #endif
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { if shareToken == t { shareOffer = nil } }
         }
         let token = spinToken
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proceed(token: token) }
