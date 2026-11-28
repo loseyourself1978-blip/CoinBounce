@@ -718,7 +718,12 @@ enum BunnyPose: String, CaseIterable {
 
     /// 大奖时随机出现的动作
     static let celebrationPoses: [BunnyPose] = [.cheer, .clap, .blowKiss, .jump]
-    var image: UIImage? { UIImage(named: rawValue) }
+    /// v13.9：节日期间换成节日装（圣诞红衣红帽 / 新年金色礼服），那套里没有这张图就用平时的
+    var image: UIImage? { image(for: .current) }
+    func image(for festival: Festival) -> UIImage? {
+        if let prefix = festival.bunnyAssetPrefix, let img = UIImage(named: prefix + rawValue) { return img }
+        return UIImage(named: rawValue)
+    }
 }
 
 struct BunnyArt: View {

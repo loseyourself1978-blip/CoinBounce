@@ -22,6 +22,15 @@ enum Festival: String {
         return .none
     }
 
+    /// 节日装兔女郎图片名的前缀（XmasBunnyIdle、NewYearBunnyIdle …）
+    var bunnyAssetPrefix: String? {
+        switch self {
+        case .none: return nil
+        case .christmas: return "Xmas"
+        case .newYear: return "NewYear"
+        }
+    }
+
     /// 大厅里兔女郎多出来的节日问候
     var greetings: [String] {
         switch self {

@@ -147,6 +147,18 @@ final class LobbyTests: XCTestCase {
         for pose in BunnyScript.greetingPoses { XCTAssertNotNil(pose.image, "\(pose) 的图在") }
     }
 
+    /// v13.9：圣诞、新年两套节日装，六个动作的图都在，而且确实和平时那套不是同一张
+    func test_bunny_festivalOutfits_haveEveryPose() {
+        for festival in [Festival.christmas, .newYear] {
+            for pose in BunnyPose.allCases {
+                let img = pose.image(for: festival)
+                XCTAssertNotNil(img, "\(festival) \(pose)")
+                XCTAssertNotEqual(img?.pngData(), pose.image(for: .none)?.pngData(), "\(festival) \(pose) 用的是节日装")
+            }
+        }
+        XCTAssertNil(Festival.none.bunnyAssetPrefix)
+    }
+
     /// v12.6：兔女郎的摇摆由时钟算出来；幅度有上限，换动作不靠淡入淡出
     func test_bunnyMotion_isBoundedAndPeriodic() {
         for pose in BunnyPose.allCases {
