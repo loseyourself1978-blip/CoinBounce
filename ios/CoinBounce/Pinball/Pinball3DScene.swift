@@ -9,7 +9,13 @@ import UIKit
 final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
     typealias T = PinballTable
     static let W: Float = 10
-    static let tilt: Float = -0.40
+    // v13.6（hj 11-28 重做一稿）：台面往后仰得更多、视角更广，近大远小更明显，像站在真机前面
+    static let tilt: Float = -0.62
+    static let fov: Float = 28
+    /// 蘑菇柱帽子的高度（被撞时压下去再弹回这里）
+    static let capZ: Float = 0.9
+    /// 背箱（台面远端竖着的灯箱）的高度
+    static let backboxHeight: Float = 4.6
     static let railWidth: Float = 0.45
 
     let scene = SCNScene()
@@ -85,7 +91,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
     private func buildScene() {
         scene.background.contents = nil
         let cam = SCNCamera()
-        cam.fieldOfView = 22
+        cam.fieldOfView = CGFloat(Self.fov)
         cam.projectionDirection = .vertical
         cam.zNear = 1
         cam.zFar = 200
@@ -130,15 +136,32 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let amb = SCNNode()
         amb.light = SCNLight()
         amb.light!.type = .ambient
-        amb.light!.intensity = 240
+        amb.light!.intensity = 130
         scene.rootNode.addChildNode(amb)
         scene.lightingEnvironment.contents = on ? PusherScene3D.sharedCasinoEnvironment : PusherScene3D.environmentImage()
-        scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity * 0.5 : 1.0
+        scene.lightingEnvironment.intensity = on ? VisualFX.environmentIntensity * 0.75 : 1.0
 
         root.eulerAngles = SCNVector3(Self.tilt, 0, 0)
         scene.rootNode.addChildNode(root)
         root.addChildNode(ballRoot)
         root.addChildNode(fxRoot)
+        // v13.6：台面上方三盏彩色点光（蘑菇柱一带金色、弹弓一带青绿、拱顶一带品红），像真机的台内照明
+        func glow(_ x: Double, _ y: Double, _ color: UIColor, _ intensity: CGFloat) {
+            let n = SCNNode()
+            n.light = SCNLight()
+            n.light!.type = .omni
+            n.light!.color = color
+            n.light!.intensity = intensity
+            n.light!.attenuationStartDistance = 0.5
+            n.light!.attenuationEndDistance = 8
+            n.position = Self.world(x, y, z: 2.4)
+            root.addChildNode(n)
+        }
+        if !lowTier {
+            glow(T.fieldCenter, 1.24, UIColor(red: 1, green: 0.72, blue: 0.3, alpha: 1), 130)
+            glow(T.fieldCenter, 0.5, UIColor(red: 0.2, green: 0.9, blue: 0.85, alpha: 1), 80)
+            glow(T.fieldCenter, 1.66, UIColor(red: 1, green: 0.3, blue: 0.7, alpha: 1), 80)
+        }
     }
 
     // MARK: 台面
@@ -147,10 +170,10 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let hw = W / 2, hh = W * Float(T.height) / 2
         let chromeM = Self.pbr(Self.chrome, metal: 1, rough: 0.12)
         // v13：机柜是青金石蓝的漆（原来的红漆在 HDR 下发白）
-        let lacquer = Self.pbr(UIColor(red: 0.03, green: 0.1, blue: 0.4, alpha: 1), metal: 0, rough: 0.7)
-        lacquer.emission.contents = UIColor(red: 0.01, green: 0.04, blue: 0.16, alpha: 1)
-        lacquer.clearCoat.contents = 0.05
-        lacquer.clearCoatRoughness.contents = 0.3
+        // v13.6：机柜换成深色胡桃木 + 清漆（原来的蓝漆是平的一块色，像玩具）
+        let lacquer = Self.pbr(.white, metal: 0, rough: 0.9)
+        lacquer.diffuse.contents = Self.woodImage()
+        lacquer.diffuse.wrapS = .repeat; lacquer.diffuse.wrapT = .repeat
         let goldM = Self.pbr(Self.gold, metal: 1, rough: 0.22)
         let rubber = Self.pbr(UIColor(white: 0.08, alpha: 1), metal: 0, rough: 0.6)
         let redRubber = Self.pbr(UIColor(red: 0.85, green: 0.08, blue: 0.15, alpha: 1), metal: 0, rough: 0.45)
@@ -164,7 +187,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         plateM.clearCoatRoughness.contents = 0.3
         // v13：台面只留一点自发光（原来 0.62，再过一遍泛光，整张图发灰发糊）
         plateM.emission.contents = art
-        plateM.emission.intensity = 0.3
+        plateM.emission.intensity = 0.2
         plateM.diffuse.mipFilter = .linear
         plateM.diffuse.maxAnisotropy = 8
         plateM.emission.mipFilter = .linear
@@ -189,6 +212,10 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         box(wx(T.laneOuter), -hh - rw, hw + rw, hh + rw, z0: -0.4, z1: 1.0, lacquer)
         box(-hw - rw, hh - 0.02, hw + rw, hh + rw, z0: -0.4, z1: 1.0, lacquer)
         box(-hw - rw, -hh - rw, hw + rw, -hh + 0.02, z0: -0.4, z1: 1.0, lacquer)
+        // v13.6：两侧的金色压条，近端一条镀铬的锁杆
+        box(wx(T.wallLeft) - 0.12, -hh, wx(T.wallLeft) - 0.02, hh, z0: 0.98, z1: 1.07, goldM, chamfer: 0.03)
+        box(wx(T.laneOuter) + 0.02, -hh, wx(T.laneOuter) + 0.12, hh, z0: 0.98, z1: 1.07, goldM, chamfer: 0.03)
+        box(-hw - rw - 0.05, -hh - rw - 0.12, hw + rw + 0.05, -hh - rw + 0.3, z0: 0.6, z1: 1.14, chromeM, chamfer: 0.12)
         box(wx(T.wallLeft) - 0.03, -hh, wx(T.wallLeft) + 0.05, wy(T.archCY), z0: 0, z1: 0.62, chromeM, chamfer: 0.03)
         box(wx(T.laneOuter) - 0.05, -hh, wx(T.laneOuter) + 0.03, wy(T.archCY), z0: 0, z1: 0.62, chromeM, chamfer: 0.03)
         // 下面的挡板（球从挡板中间掉进它下面）
@@ -251,17 +278,24 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             tri.addLine(to: CGPoint(x: CGFloat(wx(mx(T.slingB.x))), y: CGFloat(wy(T.slingB.y))))
             tri.addLine(to: CGPoint(x: CGFloat(wx(mx(T.slingC.x))), y: CGFloat(wy(T.slingC.y))))
             tri.close()
-            let shape = SCNShape(path: tri, extrusionDepth: 0.3)
+            let shape = SCNShape(path: tri, extrusionDepth: 0.5)
             let m = Self.pbr(UIColor(red: 0.02, green: 0.2, blue: 0.22, alpha: 1), metal: 0.2, rough: 0.3, emission: Self.cyan, intensity: 0.45)
+            m.clearCoat.contents = 1.0
             shape.firstMaterial = m
             slingMats.append(m)
             let n = SCNNode(geometry: shape)
-            n.position = SCNVector3(0, 0, 0.15)
+            n.position = SCNVector3(0, 0, 0.25)
             root.addChildNode(n)
+            // v13.6：顶上一块金边盖板
+            let lid = SCNShape(path: tri, extrusionDepth: 0.05)
+            lid.firstMaterial = m
+            let ln = SCNNode(geometry: lid)
+            ln.position = SCNVector3(0, 0, 0.53)
+            root.addChildNode(ln)
             let ax = wx(mx(T.slingA.x)), ay = wy(T.slingA.y), cx = wx(mx(T.slingC.x)), cyy = wy(T.slingC.y)
             let band = SCNNode(geometry: SCNBox(width: CGFloat(hypot(cx - ax, cyy - ay)), height: 0.1, length: 0.22, chamferRadius: 0.05))
             band.geometry!.firstMaterial = redRubber
-            band.position = SCNVector3((ax + cx) / 2, (ay + cyy) / 2, 0.36)
+            band.position = SCNVector3((ax + cx) / 2, (ay + cyy) / 2, 0.3)
             band.eulerAngles.z = atan2(cyy - ay, cx - ax)
             fixed.addChildNode(band)
         }
@@ -280,15 +314,54 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             tn.position = Self.world(p.x, p.y, z: 0.26)
             fixed.addChildNode(tn)
         }
+        // v13.6 立体摆件（都在球到不了的地方）：拱顶外面两个角各一座方尖碑和一座小金字塔
+        let sandM = Self.pbr(UIColor(red: 0.78, green: 0.6, blue: 0.36, alpha: 1), metal: 0, rough: 0.75)
+        let tipM = Self.pbr(Self.gold, metal: 1, rough: 0.18, emission: Self.gold, intensity: 0.5)
+        for sx: Float in [-1, 1] {
+            let ox = sx * (hw - 0.75), oy = hh - 0.85
+            // 圆锥的轴是 Y：外面套一层节点把它立到 +Z（垂直台面），里面那层再转 45° 让四个面对齐
+            func upright(_ g: SCNGeometry, x: Float, y: Float, z: Float) {
+                let holder = SCNNode()
+                holder.eulerAngles.x = .pi / 2
+                holder.position = SCNVector3(x, y, z)
+                let n = SCNNode(geometry: g)
+                n.eulerAngles.y = .pi / 4
+                holder.addChildNode(n)
+                root.addChildNode(holder)   // 不进 fixed：flattenedClone 会把套了两层旋转的节点摆错
+            }
+            let shaft = SCNCone(topRadius: 0.17, bottomRadius: 0.3, height: 2.1)
+            shaft.radialSegmentCount = 4
+            shaft.firstMaterial = sandM
+            upright(shaft, x: ox, y: oy, z: 1.0 + 1.05)
+            let tip = SCNCone(topRadius: 0, bottomRadius: 0.17, height: 0.34)
+            tip.radialSegmentCount = 4
+            tip.firstMaterial = tipM
+            upright(tip, x: ox, y: oy, z: 1.0 + 2.1 + 0.17)
+            let pyr = SCNCone(topRadius: 0, bottomRadius: 0.82, height: 0.95)
+            pyr.radialSegmentCount = 4
+            pyr.firstMaterial = Self.pbr(UIColor(red: 0.9, green: 0.68, blue: 0.3, alpha: 1), metal: 0.6, rough: 0.35)
+            upright(pyr, x: sx * (hw - 2.25), y: hh - 0.8, z: 1.0 + 0.475)
+        }
+        // 挡板两边的说明卡（真机的习惯）
+        for sx in 0..<2 {
+            let cx0 = sx == 0 ? (wx(T.wallLeft) + wx(0.335)) / 2 : (wx(T.mirror(0.335)) + wx(T.laneInner) - 0.08) / 2
+            let card = SCNNode(geometry: SCNPlane(width: 2.1, height: 0.72))
+            let cm = Self.pbr(.white, metal: 0, rough: 0.5)
+            cm.diffuse.contents = Self.cardImage(left: sx == 0)
+            card.geometry!.firstMaterial = cm
+            card.position = SCNVector3(cx0, (-hh + apronTop) / 2 - 0.05, 0.76)
+            fixed.addChildNode(card)
+        }
         root.addChildNode(fixed.flattenedClone())
 
         // 蘑菇柱：底座 + 发光的帽子（被撞时往下一压、一闪）
         for (k, bp) in T.bumpers.enumerated() {
             let rr = CGFloat(T.bumperRadius) * CGFloat(W)
-            let base = SCNNode(geometry: SCNCylinder(radius: rr * 0.82, height: 0.5))
-            base.geometry!.firstMaterial = Self.pbr(.white, metal: 0.1, rough: 0.3)
+            // v13.6：柱身加高、深色，腰上一圈跟帽子同色的灯环，帽子加大、加金边
+            let base = SCNNode(geometry: SCNCylinder(radius: rr * 0.86, height: 0.8))
+            base.geometry!.firstMaterial = Self.pbr(UIColor(white: 0.1, alpha: 1), metal: 0.6, rough: 0.3)
             base.eulerAngles.x = .pi / 2
-            base.position = Self.world(bp.x, bp.y, z: 0.25)
+            base.position = Self.world(bp.x, bp.y, z: 0.4)
             root.addChildNode(base)
             let skirt = SCNNode(geometry: SCNTorus(ringRadius: rr * 0.92, pipeRadius: 0.07))
             skirt.geometry!.firstMaterial = chromeM
@@ -298,12 +371,21 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             let color = [Self.pink, Self.cyan, Self.gold][k % 3]
             let m = Self.pbr(color, metal: 0.2, rough: 0.25, emission: color, intensity: 0.7)
             m.clearCoat.contents = 1.0
-            let capGeo = SCNCylinder(radius: rr * 1.02, height: 0.22)
-            capGeo.radialSegmentCount = 28
+            let halo = SCNNode(geometry: SCNTorus(ringRadius: rr * 0.9, pipeRadius: 0.06))
+            halo.geometry!.firstMaterial = m
+            halo.eulerAngles.x = .pi / 2
+            halo.position = Self.world(bp.x, bp.y, z: 0.5)
+            root.addChildNode(halo)
+            let capGeo = SCNCylinder(radius: rr * 1.16, height: 0.24)
+            capGeo.radialSegmentCount = 32
             capGeo.firstMaterial = m
             let cap = SCNNode(geometry: capGeo)
             cap.eulerAngles.x = .pi / 2
-            cap.position = Self.world(bp.x, bp.y, z: 0.62)
+            cap.position = Self.world(bp.x, bp.y, z: Self.capZ)
+            let rim = SCNNode(geometry: SCNTorus(ringRadius: rr * 1.16, pipeRadius: 0.05))
+            rim.geometry!.firstMaterial = goldM
+            rim.position = SCNVector3(0, 0.1, 0)
+            cap.addChildNode(rim)
             let star = SCNNode(geometry: SCNPlane(width: rr * 1.5, height: rr * 1.5))
             let sm = SCNMaterial()
             sm.lightingModel = .constant
@@ -311,7 +393,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             sm.blendMode = .alpha
             star.geometry!.firstMaterial = sm
             star.eulerAngles.x = -.pi / 2
-            star.position = SCNVector3(0, 0.115, 0)
+            star.position = SCNVector3(0, 0.125, 0)
             cap.addChildNode(star)
             root.addChildNode(cap)
             bumperCaps.append(cap)
@@ -471,7 +553,39 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         }
         root.addChildNode(bulbs)
         layoutPlunger(pull: 0, hasBall: true)
+        buildBackbox(halfWidth: hw + rw, farEdge: hh + rw, wood: lacquer, gold: goldM)
     }
+
+    // MARK: v13.6 背箱：台面远端竖着的灯箱（世界坐标里是竖直的，正对相机），画着发光的背板
+    private func buildBackbox(halfWidth: Float, farEdge: Float, wood: SCNMaterial, gold: SCNMaterial) {
+        let t = Self.tilt, H = Self.backboxHeight
+        // 台面远端上沿在世界坐标里的位置
+        let ey = farEdge * cos(t) - 1.0 * sin(t), ez = farEdge * sin(t) + 1.0 * cos(t)
+        let box = SCNNode()
+        box.position = SCNVector3(0, ey + H / 2 - 0.5, ez - 0.7)
+        let body = SCNNode(geometry: SCNBox(width: CGFloat(halfWidth * 2 + 0.3), height: CGFloat(H), length: 1.2, chamferRadius: 0.08))
+        body.geometry!.firstMaterial = wood
+        box.addChildNode(body)
+        let art = Self.backglassImage()
+        let gm = SCNMaterial()
+        gm.lightingModel = .constant
+        gm.diffuse.contents = art
+        let glass = SCNNode(geometry: SCNPlane(width: CGFloat(halfWidth * 2 - 0.3), height: CGFloat(H - 0.6)))
+        glass.geometry!.firstMaterial = gm
+        glass.position = SCNVector3(0, 0, 0.61)
+        box.addChildNode(glass)
+        // 金色画框
+        let w = halfWidth * 2 - 0.3, h = H - 0.6
+        for (x, y, bw, bh) in [(Float(0), h / 2, w + 0.16, Float(0.12)), (0, -h / 2, w + 0.16, 0.12), (-w / 2, 0, 0.12, h), (w / 2, 0, 0.12, h)] {
+            let f = SCNNode(geometry: SCNBox(width: CGFloat(bw), height: CGFloat(bh), length: 0.1, chamferRadius: 0.04))
+            f.geometry!.firstMaterial = gold
+            f.position = SCNVector3(x, y, 0.64)
+            box.addChildNode(f)
+        }
+        scene.rootNode.addChildNode(box)
+        backboxTop = SCNVector3(halfWidth + 0.15, ey + H - 0.5, ez - 0.1)
+    }
+    private var backboxTop = SCNVector3Zero
 
     // MARK: 相机：整张台面放进视图
     func fit(viewSize: CGSize) {
@@ -479,24 +593,30 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
         let W = Self.W
         let halfH = W * Float(T.height) / 2 + Self.railWidth
         let halfW = W / 2 + Self.railWidth
-        let c = cos(Self.tilt), s = sin(-Self.tilt)
-        let fovV = Float(22.0 * .pi / 180)
-        let aspect = Float(viewSize.width / viewSize.height)
-        let tanV = tan(fovV / 2), tanH = tanV * aspect
-        // 近边（台面下沿）离相机近 halfH·s，在画面里最宽、最低；远边最高
-        var d: Float = 14
+        let c = cos(Self.tilt), s = sin(Self.tilt)
+        let tanV = tan(Self.fov * .pi / 180 / 2), tanH = tanV * Float(viewSize.width / viewSize.height)
+        // 要放进画面的点（世界坐标）：机柜四个角的上沿和下沿，加上背箱的两个上角
+        var pts: [SCNVector3] = []
+        for x in [-halfW, halfW] {
+            for y in [-halfH - 0.3, halfH] {
+                for z: Float in [-0.4, 1.1] { pts.append(SCNVector3(x, y * c - z * s, y * s + z * c)) }
+            }
+        }
+        pts.append(backboxTop)
+        pts.append(SCNVector3(-backboxTop.x, backboxTop.y, backboxTop.z))
+        var d: Float = 12, cy: Float = 0
         for _ in 0..<400 {
-            let near = d - halfH * s, far = d + halfH * s
-            let fitsW = halfW / near <= tanH
-            let fitsH = (halfH * c) / near <= tanV * 1.0 && (halfH * c) / far <= tanV
-            if fitsW && fitsH { break }
+            // 相机上下挪到上下留白一样多
+            for _ in 0..<6 {
+                let ty = pts.map { ($0.y - cy) / (d - $0.z) }
+                cy += (ty.max()! + ty.min()!) / 2 * d
+            }
+            let ty = pts.map { abs($0.y - cy) / (d - $0.z) }.max()!
+            let tx = pts.map { abs($0.x) / (d - $0.z) }.max()!
+            if tx <= tanH && ty <= tanV { break }
             d += 0.25
         }
-        // 往下看一点，把近大远小带来的上下留白摆匀
-        let near = d - halfH * s, far = d + halfH * s
-        let top = (halfH * c) / far, bottom = (halfH * c) / near
-        let shift = (bottom - top) / 2 * d
-        cameraNode.position = SCNVector3(0, -shift * 0.9, d)
+        cameraNode.position = SCNVector3(0, cy, d)
         cameraNode.eulerAngles = SCNVector3(0, 0, 0)
     }
 
@@ -627,7 +747,7 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             let cap = bumperCaps[k], m = bumperMats[k]
             cap.removeAllActions()
             let z = cap.position.z
-            cap.runAction(.sequence([.moveBy(x: 0, y: 0, z: -0.14, duration: 0.03), .moveBy(x: 0, y: 0, z: CGFloat(0.62 - (z - 0.14)), duration: 0.09)]))
+            cap.runAction(.sequence([.moveBy(x: 0, y: 0, z: -0.14, duration: 0.03), .moveBy(x: 0, y: 0, z: CGFloat(Self.capZ - (z - 0.14)), duration: 0.09)]))
             m.emission.intensity = 3.2
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { m.emission.intensity = 0.7 }
             ringFX(at: Self.world(T.bumpers[k].x, T.bumpers[k].y, z: 0.5), color: [Self.pink, Self.cyan, Self.gold][k % 3])
@@ -886,8 +1006,159 @@ final class Pinball3DScene: NSObject, SCNSceneRendererDelegate {
             }
             c.strokePath()
         }
-        artCache = img
-        return img
+        let out = decorate(img, format: format)
+        artCache = out
+        return out
+    }
+
+    /// v13.6：在台面图上再叠一层——四周压暗、蘑菇柱下面一团金光、通往各个目标的灯位（箭头和圆灯）
+    private static func decorate(_ base: UIImage, format: UIGraphicsImageRendererFormat) -> UIImage {
+        let w: CGFloat = 1024, h: CGFloat = 1946
+        func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * Double(w), y: (T.height - y) / T.height * Double(h)) }
+        return UIGraphicsImageRenderer(size: CGSize(width: w, height: h), format: format).image { ctx in
+            let c = ctx.cgContext
+            base.draw(in: CGRect(x: 0, y: 0, width: w, height: h))
+            let space = CGColorSpaceCreateDeviceRGB()
+            func radial(_ p: CGPoint, _ r: CGFloat, _ col: UIColor, _ a: CGFloat) {
+                let g = CGGradient(colorsSpace: space, colors: [col.withAlphaComponent(a).cgColor, col.withAlphaComponent(0).cgColor] as CFArray, locations: [0, 1])!
+                c.drawRadialGradient(g, startCenter: p, startRadius: 0, endCenter: p, endRadius: r, options: [])
+            }
+            // 四周压暗
+            let vg = CGGradient(colorsSpace: space, colors: [UIColor.black.withAlphaComponent(0).cgColor, UIColor.black.withAlphaComponent(0.62).cgColor] as CFArray, locations: [0.45, 1])!
+            c.drawRadialGradient(vg, startCenter: CGPoint(x: w * 0.46, y: h * 0.45), startRadius: 0, endCenter: CGPoint(x: w * 0.46, y: h * 0.45), endRadius: h * 0.62, options: [.drawsAfterEndLocation])
+            c.setBlendMode(.screen)
+            let gold = UIColor(red: 1, green: 0.75, blue: 0.25, alpha: 1), cyan = UIColor(red: 0.2, green: 0.95, blue: 0.9, alpha: 1)
+            let orange = UIColor(red: 1, green: 0.45, blue: 0.15, alpha: 1), magenta = UIColor(red: 1, green: 0.3, blue: 0.75, alpha: 1)
+            radial(pt(T.fieldCenter, 1.24), 330, gold, 0.16)
+            radial(pt(T.fieldCenter, 0.42), 240, cyan, 0.1)
+            func lamp(_ p: CGPoint, _ r: CGFloat, _ col: UIColor) {
+                radial(p, r * 2.6, col, 0.3)
+                c.setFillColor(col.withAlphaComponent(0.9).cgColor)
+                c.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
+                c.setStrokeColor(UIColor.white.withAlphaComponent(0.8).cgColor)
+                c.setLineWidth(2.5)
+                c.strokeEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
+            }
+            func arrow(_ p: CGPoint, _ angle: CGFloat, _ k: CGFloat, _ col: UIColor) {
+                radial(p, k * 2.2, col, 0.28)
+                c.saveGState()
+                c.translateBy(x: p.x, y: p.y); c.rotate(by: angle)
+                c.move(to: CGPoint(x: k, y: 0)); c.addLine(to: CGPoint(x: -k * 0.7, y: -k * 0.75)); c.addLine(to: CGPoint(x: -k * 0.7, y: k * 0.75)); c.closePath()
+                c.setFillColor(col.withAlphaComponent(0.92).cgColor); c.fillPath()
+                c.restoreGState()
+            }
+            // 蘑菇柱周围一圈小灯
+            for b in T.bumpers {
+                for i in 0..<10 {
+                    let a = Double(i) / 10 * 2 * .pi
+                    lamp(pt(b.x + 0.085 * cos(a), b.y + 0.085 * sin(a)), 6, gold)
+                }
+            }
+            // 指向落靶、立靶的箭头
+            for y in T.targetY {
+                for k in 0..<3 {
+                    arrow(pt(T.dropX + 0.06 + Double(k) * 0.045, y), .pi, 15 - CGFloat(k) * 2, orange)
+                    arrow(pt(T.standupX - 0.06 - Double(k) * 0.045, y), 0, 15 - CGFloat(k) * 2, cyan)
+                }
+            }
+            // 通往幸运洞的三盏灯、顶部滚道下面的三角灯
+            for k in 0..<3 { lamp(pt(T.holeX - 0.05 - Double(k) * 0.045, T.holeY - 0.05 - Double(k) * 0.045), 11, gold) }
+            for x in T.topLaneX { arrow(pt(x, T.topLaneY0 - 0.06), -.pi / 2, 16, magenta) }
+            // 挡板上方的中心大灯和两条内道的灯
+            lamp(pt(T.fieldCenter, 0.5), 15, magenta)
+            for sx in [T.slingB.x - 0.045, T.mirror(T.slingB.x - 0.045)] {
+                for k in 0..<3 { lamp(pt(sx, 0.47 + Double(k) * 0.06), 9, cyan) }
+            }
+        }
+    }
+
+    /// 深色胡桃木纹（机柜）
+    static func woodImage() -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 256, height: 256)).image { ctx in
+            let c = ctx.cgContext
+            UIColor(red: 0.075, green: 0.018, blue: 0.008, alpha: 1).setFill()
+            c.fill(CGRect(x: 0, y: 0, width: 256, height: 256))
+            var seed: UInt64 = 0x9E3779B97F4A7C15
+            func rnd() -> CGFloat { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return CGFloat((seed >> 33) % 10_000) / 10_000 }
+            for _ in 0..<90 {
+                let x = rnd() * 256, wv = 0.6 + rnd() * 2.4, l = rnd()
+                c.setStrokeColor(UIColor(red: 0.06 + l * 0.14, green: 0.015 + l * 0.035, blue: 0.006 + l * 0.01, alpha: 0.5).cgColor)
+                c.setLineWidth(wv)
+                c.move(to: CGPoint(x: x, y: 0))
+                c.addCurve(to: CGPoint(x: x + (rnd() - 0.5) * 10, y: 256), control1: CGPoint(x: x + (rnd() - 0.5) * 16, y: 80), control2: CGPoint(x: x + (rnd() - 0.5) * 16, y: 170))
+                c.strokePath()
+            }
+        }
+    }
+
+    /// 挡板两边的说明卡：米色卡纸、金边、几行示意的字条和一颗星
+    static func cardImage(left: Bool) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 420, height: 144)).image { ctx in
+            let c = ctx.cgContext
+            UIColor(red: 0.96, green: 0.92, blue: 0.8, alpha: 1).setFill()
+            c.fill(CGRect(x: 0, y: 0, width: 420, height: 144))
+            c.setStrokeColor(UIColor(red: 0.75, green: 0.52, blue: 0.12, alpha: 1).cgColor)
+            c.setLineWidth(8); c.stroke(CGRect(x: 6, y: 6, width: 408, height: 132))
+            let col = left ? UIColor(red: 0.8, green: 0.12, blue: 0.1, alpha: 1) : UIColor(red: 0.05, green: 0.4, blue: 0.5, alpha: 1)
+            col.setFill()
+            c.fill(CGRect(x: 24, y: 24, width: 150, height: 20))
+            UIColor(white: 0.25, alpha: 1).setFill()
+            for k in 0..<4 { c.fill(CGRect(x: 24, y: 58 + CGFloat(k) * 17, width: 240 - CGFloat(k % 2) * 50, height: 7)) }
+            let star = NSAttributedString(string: "★", attributes: [.font: UIFont.systemFont(ofSize: 76, weight: .black), .foregroundColor: col])
+            star.draw(at: CGPoint(x: 312, y: 26))
+        }
+    }
+
+    /// 背箱的背板：夜空、落日、三座金字塔和游戏名（代码画的；以后可以换成 hj 出的图）
+    static func backglassImage() -> UIImage {
+        let w: CGFloat = 1024, h: CGFloat = 400
+        return UIGraphicsImageRenderer(size: CGSize(width: w, height: h)).image { ctx in
+            let c = ctx.cgContext
+            let space = CGColorSpaceCreateDeviceRGB()
+            let sky = CGGradient(colorsSpace: space, colors: [UIColor(red: 0.05, green: 0.03, blue: 0.2, alpha: 1).cgColor, UIColor(red: 0.45, green: 0.1, blue: 0.4, alpha: 1).cgColor,
+                                                              UIColor(red: 1.0, green: 0.5, blue: 0.15, alpha: 1).cgColor] as CFArray, locations: [0, 0.55, 1])!
+            c.drawLinearGradient(sky, start: .zero, end: CGPoint(x: 0, y: h), options: [])
+            // 落日和光芒
+            let sun = CGPoint(x: w / 2, y: h * 0.86)
+            c.saveGState(); c.setBlendMode(.screen)
+            for i in 0..<24 {
+                let a = CGFloat(i) / 24 * .pi + .pi
+                c.move(to: sun); c.addLine(to: CGPoint(x: sun.x + cos(a - 0.03) * 900, y: sun.y + sin(a - 0.03) * 900)); c.addLine(to: CGPoint(x: sun.x + cos(a + 0.03) * 900, y: sun.y + sin(a + 0.03) * 900)); c.closePath()
+            }
+            c.setFillColor(UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 0.16).cgColor); c.fillPath()
+            let sg = CGGradient(colorsSpace: space, colors: [UIColor(red: 1, green: 0.97, blue: 0.75, alpha: 1).cgColor, UIColor(red: 1, green: 0.7, blue: 0.2, alpha: 0.6).cgColor, UIColor(red: 1, green: 0.5, blue: 0.1, alpha: 0).cgColor] as CFArray, locations: [0, 0.3, 1])!
+            c.drawRadialGradient(sg, startCenter: sun, startRadius: 0, endCenter: sun, endRadius: 300, options: [])
+            c.restoreGState()
+            // 星星
+            var seed: UInt64 = 42
+            func rnd() -> CGFloat { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return CGFloat((seed >> 33) % 10_000) / 10_000 }
+            for _ in 0..<70 {
+                let r = 1 + rnd() * 2
+                c.setFillColor(UIColor(white: 1, alpha: 0.4 + rnd() * 0.6).cgColor)
+                c.fillEllipse(in: CGRect(x: rnd() * w, y: rnd() * h * 0.5, width: r, height: r))
+            }
+            // 三座金字塔：亮面和暗面
+            func pyramid(_ cx: CGFloat, _ base: CGFloat, _ ph: CGFloat) {
+                let b = h, apex = CGPoint(x: cx, y: b - ph)
+                c.move(to: CGPoint(x: cx - base / 2, y: b)); c.addLine(to: apex); c.addLine(to: CGPoint(x: cx + base * 0.12, y: b)); c.closePath()
+                c.setFillColor(UIColor(red: 0.95, green: 0.68, blue: 0.25, alpha: 1).cgColor); c.fillPath()
+                c.move(to: CGPoint(x: cx + base * 0.12, y: b)); c.addLine(to: apex); c.addLine(to: CGPoint(x: cx + base / 2, y: b)); c.closePath()
+                c.setFillColor(UIColor(red: 0.42, green: 0.2, blue: 0.12, alpha: 1).cgColor); c.fillPath()
+            }
+            pyramid(w * 0.17, 330, 150); pyramid(w * 0.84, 380, 175); pyramid(w * 0.36, 200, 95)
+            // 游戏名：金字、深色描边
+            let para = NSMutableParagraphStyle(); para.alignment = .center
+            let font = UIFont(name: "Didot-Bold", size: 104) ?? UIFont.systemFont(ofSize: 104, weight: .black)
+            let small = UIFont(name: "Didot-Bold", size: 64) ?? UIFont.systemFont(ofSize: 64, weight: .black)
+            for (text, f, y) in [("PHARAOH'S", small, CGFloat(46)), ("TREASURE", font, CGFloat(112))] {
+                let stroke: [NSAttributedString.Key: Any] = [.font: f, .paragraphStyle: para, .kern: 6, .strokeColor: UIColor(red: 0.25, green: 0.08, blue: 0.02, alpha: 1), .strokeWidth: 9, .foregroundColor: UIColor.clear]
+                let fill: [NSAttributedString.Key: Any] = [.font: f, .paragraphStyle: para, .kern: 6, .foregroundColor: UIColor(red: 1, green: 0.86, blue: 0.42, alpha: 1)]
+                let r = CGRect(x: 0, y: y, width: w, height: 140)
+                NSAttributedString(string: text, attributes: stroke).draw(in: r.offsetBy(dx: 3, dy: 4))
+                NSAttributedString(string: text, attributes: stroke).draw(in: r)
+                NSAttributedString(string: text, attributes: fill).draw(in: r)
+            }
+        }
     }
 }
 
